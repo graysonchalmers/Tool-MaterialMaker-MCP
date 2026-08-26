@@ -1,5 +1,6 @@
 import json
 import os
+import glob
 
 
 def _parse_param(p: dict) -> dict:
@@ -37,3 +38,38 @@ def parse_node(mmg_path: str) -> dict | None:
     parameters = [_parse_param(p) for p in sm.get("parameters", [])]
     return {"type": type_name, "inputs": inputs,
             "outputs": outputs, "parameters": parameters}
+
+
+SPECIAL_TYPES = {"graph", "comment", "remote", "shader",
+                 "buffer", "image", "switch", "debug"}
+
+
+def build_catalog(nodes_dir: str) -> dict:
+    catalog = {}
+    for path in glob.glob(os.path.join(nodes_dir, "*.mmg")):
+        try:
+            node = parse_node(path)
+        except (ValueError, KeyError):
+            node = None
+        if node:
+            catalog[node["type"]] = node
+    return catalog
+
+
+def write_catalog(nodes_dir: str, out_path: str) -> int:
+    catalog = build_catalog(nodes_dir)
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    with open(out_path, "w", encoding="utf-8") as fh:
+        json.dump(catalog, fh, indent=1)
+    return len(catalog)
+
+
+if __name__ == "__main__":
+    from mm_mcp.config import load_config
+    cfg = load_config()
+    out = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+        "catalog", "catalog.json",
+    )
+    count = write_catalog(cfg.nodes_dir, out)
+    print(f"Wrote {count} node types to {out}")
