@@ -95,7 +95,54 @@ metallic down on the patches. Recolor both layers to retarget the weathering:
   that needs surface relief, start from a sharp-edged example (cracks, bricks,
   cells), not a smooth blobby one. A smooth source (`rock`) is fine only when
   the target is genuinely near-flat, e.g. polished granite (`s02`).
-- **Still open — crisp directional relief** (`m02` brushed aluminum): needs a
-  sharp *directional* generator feeding a working normal_map. Stretching a
-  smooth perlin/`rock` gives soft streaks + a flat normal. Candidate: a
-  stretched sharp pattern, or a directional `warp` of a sharp noise.
+## The flat-normal fix: `normal_map` `param4=0` (the real root cause)
+
+The "normals render flat" problem has a definitive cause and a one-parameter fix.
+
+`normal_map` is a **compound** node. Internally:
+
+```
+input -> buffer(size 2^param0) -> switch(source = param4) -> edge_detect(param1) -> normal
+                    \-------------------> (switch port 0, raw input) ---/
+```
+
+- `param0` = internal buffer size (2^n)
+- `param1` = relief **strength** (the edge_detect amount)
+- `param4` = the **switch**: `1` = edge-detect the pre-rendered *buffer*; `0` =
+  edge-detect the *raw* input directly.
+
+With the default **`param4=1`**, edge_detect runs on a buffered copy of the
+input. For an input fed **directly from an analytic generator** (voronoi,
+`diagonal_weave`, perlin through a colorize), that buffer comes back effectively
+constant, so the normal is **FLAT**. This is why every crocodile_skin / wood
+donor normal rendered flat (and why hand-built `generator -> normal_map` chains
+looked flat too).
+
+**The fix: set `param4=0`.** That routes the raw analytic input straight into
+edge_detect, and the generator's real gradients produce relief. Then tune
+`param1` for strength (0.2–0.4 is a good subtle range; 1+ oversaturates).
+
+```python
+node(g, "normal_map_0")["parameters"] = {
+    "param0": 11, "param1": 0.25, "param2": 0, "param4": 0}
+```
+
+This unblocked `f01` denim (a clean diagonal twill in the normal, from
+`diagonal_weave`) and is a **general lever**: any graph whose normal is fed
+directly from an analytic generator can get a real normal this way. Examples
+that already looked fine (`dry_earth`/`bricks` donors, `param4=1`) work because
+their input reaches `normal_map` through a `blend`/buffered chain, so the buffer
+path has real content.
+
+Practical guidance now:
+- Relief from a **cloned working chain** (dry_earth cracks, bricks, beehive
+  heightmap): keep it as-is, it works.
+- Relief from a **directly-fed analytic generator** (weave, stretched noise,
+  voronoi): set `normal_map` `param4=0` and tune `param1`.
+- A smooth source is still fine when the target is genuinely near-flat (polished
+  granite `s02`); the fix is for when you *want* the generator's pattern in the
+  normal.
+
+`m02` brushed aluminum (previously "still open — crisp directional relief") is
+covered by the same lever: its streaks read in albedo + roughness already, and
+`param4=0` would add real directional micro-relief if a sharper normal is wanted.

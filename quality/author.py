@@ -448,24 +448,30 @@ def retype(graph: dict, node_name: str, new_type: str, params: dict) -> None:
 def build_f01_woven_denim(iter_label: str) -> list[str]:
     """Blue denim = diagonal twill weave in the normal + indigo base + matte
     cloth. No bundled example uses the weave nodes, so GRAFT diagonal_weave into
-    crocodile_skin's working generator->colorize->normal_map chain: swap its
-    voronoi_0 for diagonal_weave so the woven diagonal pattern drives albedo,
-    the normal (twill relief), and roughness. Recolor to indigo, force matte,
-    non-metallic (uniform_0 is already black = metallic 0)."""
+    crocodile_skin's generator->colorize->normal_map chain: swap voronoi_0 for
+    diagonal_weave so the woven diagonal pattern drives albedo, the normal, and
+    roughness. Recolor to indigo, matte, non-metallic (uniform_0 = black metal).
+
+    THE FIX (flat-normal blocker, resolved): normal_map is a compound node
+    input -> [buffer] -> switch(param4) -> edge_detect(param1). With the default
+    param4=1 the edge_detect runs on a pre-rendered BUFFER of the input, which
+    comes back FLAT for a directly-fed analytic generator (this is why every
+    crocodile/wood-donor normal rendered flat). Setting **param4=0** routes the
+    raw analytic input straight into edge_detect, so the weave's real gradients
+    produce the twill normal. param1 tunes strength. This same param4=0 switch
+    can give real normals to any analytic-generator graph (granite, aluminum...)."""
     paths = []
-    for n, (size, lo, hi) in enumerate(
-            [(24, (0.10, 0.13, 0.30), (0.26, 0.34, 0.55)),
-             (18, (0.08, 0.11, 0.26), (0.30, 0.38, 0.60))], start=1):
+    for n, (size, lo, hi, strength) in enumerate(
+            [(22, (0.10, 0.13, 0.30), (0.26, 0.34, 0.55), 0.25),
+             (18, (0.08, 0.11, 0.26), (0.30, 0.38, 0.60), 0.3)], start=1):
         g = load_example("crocodile_skin")
         retype(g, "voronoi_0", "diagonal_weave", {"size": size})
         set_gradient(g, "colorize_1", [(0.0, *lo), (1.0, *hi)])   # indigo threads
         set_gradient(g, "colorize_3",                             # matte, high
                      [(0.0, 0.80, 0.80, 0.80), (1.0, 0.93, 0.93, 0.93)])
-        # colorize_0 feeds the NORMAL height. crocodile's ramp was tuned for
-        # voronoi's distribution and clips the weave to flat; make it linear so
-        # the full diagonal weave drives real relief.
-        set_gradient(g, "colorize_0", [(0.0, 0, 0, 0), (1.0, 1, 1, 1)])
-        set_param(g, "normal_map_0", "param1", 1.3)               # twill relief
+        set_gradient(g, "colorize_0", [(0.0, 0, 0, 0), (1.0, 1, 1, 1)])  # linear height
+        node(g, "normal_map_0")["parameters"] = {
+            "param0": 11, "param1": strength, "param2": 0, "param4": 0}  # raw, not buffered
         paths.append(save_variant(g, iter_label, "f01_woven_denim", n))
     return paths
 
