@@ -1,5 +1,9 @@
 # STATUS — Tool-MaterialMaker-MCP
 
+> ⚠️ **Super-alpha.** Built by an artist/animator (not a software engineer) with
+> heavy AI help. "Verified" below means "worked on the one machine it was built
+> on," not "battle-tested." Expect breakage. See the README warning.
+
 Gate ledger. Three states only: ✅ verified · 🔌 wired · ⬜ not started.
 
 _Last updated: 2026-08-26_

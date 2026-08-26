@@ -1,5 +1,8 @@
 # Example materials
 
+> ⚠️ Super-alpha, artist-built with AI help. These are "good enough to finish in
+> the app" at best, not photoreal. See the main README warning.
+
 Each `<name>/<name>.ptex` is a real graph this server authored from a one-line
 prompt. Open any of them in Material Maker to inspect or edit the node network,
 or render it headlessly (see the repo README). The `images/` previews are the

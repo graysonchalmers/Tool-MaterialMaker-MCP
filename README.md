@@ -10,6 +10,31 @@ the server validates it against Material Maker's own node catalog and renders it
 with Godot, and you get back the maps plus an editable graph. The assistant gets
 you most of the way there; you tweak the rest in Material Maker.
 
+> ## ⚠️ Super, super, super alpha. Read this first.
+>
+> I am an artist and animator in the game industry, not a software engineer. I do
+> not really know what I am doing on the code side. This project was built mostly
+> by AI assistants with me steering, and it is at an extremely early, rough,
+> experimental stage.
+>
+> What that means for you:
+> - **Expect breakage.** Rough edges, sharp corners, things that only work on the
+>   one machine they were built on. It has been verified on exactly one setup
+>   (Windows, a specific Godot build, a specific Material Maker checkout).
+> - **No stability promises.** Anything can change or break between versions. There
+>   is no test coverage beyond a small smoke and unit set.
+> - **Not production-ready.** Please do not rely on this for anything that matters.
+>   Back up your work. Assume it will misbehave.
+> - **The material "quality" bar is deliberately low.** The goal is "gets you 80%
+>   of the way there so you finish in the app," not "photoreal." See the
+>   `quality/` scorecard for exactly how well (and badly) it does on 15 prompts:
+>   it currently passes 11 of them by a generous, artist's eyeball standard.
+>
+> I am sharing it in the open because it is a fun experiment and someone might find
+> it useful or want to build on it, not because it is polished. Feedback, issues,
+> and "you're doing this wrong" corrections from actual developers are very
+> welcome.
+
 ## Gallery
 
 Each of these was authored by the server from the one-line prompt beside it, then
@@ -162,10 +187,13 @@ project's setup):
 
 ## Project status
 
-Phases 0 through 3 are complete and verified. See [STATUS.md](STATUS.md) for the
-gate ledger and [docs/PLAN.md](docs/PLAN.md) for the phase plan. Authoring
-quality is measured against a frozen 15-case test set in [`quality/`](quality/);
-the current scorecard is 11/15 usable (see `quality/scorecards/`).
+Very early alpha (see the warning up top). Phases 0 through 3 of my own rough plan
+are done and verified on one machine. See [STATUS.md](STATUS.md) for the gate
+ledger and [docs/PLAN.md](docs/PLAN.md) for the phase plan. Authoring quality is
+measured against a frozen 15-case test set in [`quality/`](quality/); the current
+scorecard is 11/15 usable by an artist's eyeball standard (see
+`quality/scorecards/`). "Verified" here means "worked when I ran it," not
+"battle-tested."
 
 ## License and attribution
 
