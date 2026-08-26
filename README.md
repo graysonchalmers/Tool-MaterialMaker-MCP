@@ -40,12 +40,12 @@ you most of the way there; you tweak the rest in Material Maker.
 Each of these was authored by the server from the one-line prompt beside it, then
 rendered headlessly. Full graphs and previews are in [`examples/`](examples/).
 
-| | | |
-|:--:|:--:|:--:|
-| ![red brick wall](examples/images/s01_red_brick_wall.png) | ![polished gray granite](examples/images/s02_gray_granite.png) | ![brushed aluminum](examples/images/m02_brushed_aluminum.png) |
-| "red brick wall" | "polished gray granite" | "brushed aluminum" |
-| ![weathered copper](examples/images/m01_weathered_copper.png) | ![mossy forest floor](examples/images/o01_mossy_forest_floor.png) | ![brown leather](examples/images/f02_brown_leather.png) |
-| "weathered copper" | "mossy forest floor" | "brown leather" |
+| | | | |
+|:--:|:--:|:--:|:--:|
+| ![polished gray granite](examples/images/s02_gray_granite.png) | ![woven denim](examples/images/f01_woven_denim.png) | ![weathered copper](examples/images/m01_weathered_copper.png) | ![rusted painted steel](examples/images/combo01_rusted_painted_steel.png) |
+| "polished gray granite" | "blue denim fabric" | "weathered copper" | "rusted painted steel, peeling" |
+| ![ceramic hex tiles](examples/images/man02_ceramic_hex_tiles.png) | ![brushed aluminum](examples/images/m02_brushed_aluminum.png) | ![mossy forest floor](examples/images/o01_mossy_forest_floor.png) | ![red brick wall](examples/images/s01_red_brick_wall.png) |
+| "white ceramic hexagon tiles" | "brushed aluminum" | "mossy forest floor" | "red brick wall" |
 
 ## How it works
 
@@ -191,7 +191,7 @@ Very early alpha (see the warning up top). Phases 0 through 3 of my own rough pl
 are done and verified on one machine. See [STATUS.md](STATUS.md) for the gate
 ledger and [docs/PLAN.md](docs/PLAN.md) for the phase plan. Authoring quality is
 measured against a frozen 15-case test set in [`quality/`](quality/); the current
-scorecard is 11/15 usable by an artist's eyeball standard (see
+scorecard is 15/15 usable by an artist's eyeball standard (see
 `quality/scorecards/`). "Verified" here means "worked when I ran it," not
 "battle-tested."
 
