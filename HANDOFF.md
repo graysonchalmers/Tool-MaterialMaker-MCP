@@ -61,14 +61,21 @@ aluminum showcase pieces — both now have real micro-relief instead of flat
 normals. Quality was already DONE at 15/15; the frozen test set is maxed, so any
 further work would be new cases or higher fidelity, not the gate.
 
-**C. Robustness / cross-platform (makes "verified on one machine" less scary)**
-- Test on macOS/Linux (path handling, `_console.exe` is Windows-only — the code
-  already falls back to the plain binary, but it's untested off-Windows).
-- Widen validator param ranges or clamp gracefully: voronoi/perlin `scale_*`
-  emit "outside [1,32]" warnings at the fleck/streak scales that actually render
-  fine. Cosmetic now, but noisy for users.
-- Add a couple more unit tests around `author.py`'s new `rewire`/`drop_conn`
-  helpers so future graph surgery is guarded.
+**C. Robustness / cross-platform — partially DONE this session.**
+- ✅ Validator noise: numeric slider params outside their declared `[min, max]`
+  (voronoi/perlin `scale_*` at fleck/streak scales) now read as an advisory
+  ("not shader-clamped, often fine; verify visually") instead of an alarming
+  "outside [1, 32]". Enum params out of range still read as a real problem
+  (an out-of-range enum index is genuinely invalid, unlike a slider). See
+  `src/mm_mcp/validator.py`.
+- ✅ Added `tests/test_author_helpers.py`: unit tests for `author.py`'s
+  `rewire`/`drop_conn`/`add_node`/`node` graph-surgery helpers (repoint, append,
+  no-op-when-missing, only-touch-matching-port, composition). These back every
+  Phase 3 recipe, so a regression here would silently corrupt authored
+  materials without failing anything else.
+- ⬜ Still open: test on macOS/Linux (path handling, `_console.exe` is
+  Windows-only — the code already falls back to the plain binary, but it's
+  untested off-Windows). No Mac/Linux machine available this session.
 
 **D. Phase 4/5 from the original plan (bigger lifts)**
 - **Phase 4 (public packaging, deeper):** publish to PyPI so `pip install mm-mcp`
@@ -135,6 +142,17 @@ the 15-case set still has an avoidable flat normal.
 ---
 
 ## 🕓 Session log
+
+### 2026-08-26 (evening, cont. 2) — Robustness: validator noise + author-helper tests
+- Softened the validator's numeric-out-of-range warning wording: it now says
+  a slider's `min`/`max` isn't shader-enforced and often still renders fine,
+  instead of reading like a real problem. Kept enum out-of-range wording as a
+  genuine warning (an invalid index actually is a problem, unlike a slider).
+  Verified against the real granite graph's `scale_x=44`/`scale_y=44`.
+- Added `tests/test_author_helpers.py` covering `author.py`'s `rewire`,
+  `drop_conn`, `add_node`, and `node` helpers (10 tests) plus 2 new
+  `test_validator.py` cases for the two new message flavors. Fast suite
+  80 → 92 passed.
 
 ### 2026-08-26 (evening, cont.) — Social preview uploaded live
 - Uploaded `docs/social-preview.png` as the repo's social preview via the

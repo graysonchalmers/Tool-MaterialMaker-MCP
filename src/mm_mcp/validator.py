@@ -29,9 +29,24 @@ def validate_graph(ptex: dict, catalog: dict) -> list[dict]:
             spec = declared[pname]
             if isinstance(pval, (int, float)) and "min" in spec and "max" in spec:
                 if pval < spec["min"] or pval > spec["max"]:
+                    if spec.get("type") == "enum":
+                        # min/max on an enum are the valid index range, not a
+                        # UI hint - an out-of-range index is a real problem.
+                        msg = (f"parameter '{pname}'={pval} outside enum index "
+                               f"range [{spec['min']}, {spec['max']}] - likely "
+                               f"invalid, will probably render wrong or fail")
+                    else:
+                        # min/max on a numeric slider come from Material
+                        # Maker's editor UI, not a shader-enforced clamp;
+                        # values outside it commonly still render correctly
+                        # (e.g. a fine voronoi/perlin scale for flecks or
+                        # brush streaks), so this is advisory, not alarming.
+                        msg = (f"parameter '{pname}'={pval} outside the "
+                               f"editor's default slider range "
+                               f"[{spec['min']}, {spec['max']}] - not "
+                               f"shader-clamped, often fine; verify visually")
                     problems.append({"severity": "warning", "where": n.get("name", "?"),
-                                     "message": f"parameter '{pname}'={pval} outside "
-                                                f"[{spec['min']}, {spec['max']}]"})
+                                     "message": msg})
 
     for c in ptex.get("connections", []):
         for end in ("from", "to"):

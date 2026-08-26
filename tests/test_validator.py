@@ -70,6 +70,28 @@ def test_param_out_of_range_is_warning():
     assert any("scale_x" in w["message"] for w in warns)
 
 
+def test_numeric_param_out_of_range_reads_as_advisory():
+    """A slider's min/max is an editor UI hint, not a shader clamp (verified:
+    voronoi scale_x=40/44/48 render fine for the granite/aluminum cases). The
+    message for a numeric param should say so, not read like a real problem."""
+    g = _good()
+    g["nodes"][0]["parameters"] = {"scale_x": 40}
+    warns = [p for p in validate_graph(g, CATALOG) if p["severity"] == "warning"]
+    msg = next(w["message"] for w in warns if "scale_x" in w["message"])
+    assert "not shader-clamped" in msg
+    assert "invalid" not in msg
+
+
+def test_enum_param_out_of_range_reads_as_a_real_problem():
+    """An enum's min/max is a valid-index range, not a UI hint - an
+    out-of-range index is a genuine problem, so the message should say so."""
+    g = _good()
+    g["nodes"][1]["parameters"] = {"blend_type": 9}
+    warns = [p for p in validate_graph(g, CATALOG) if p["severity"] == "warning"]
+    msg = next(w["message"] for w in warns if "blend_type" in w["message"])
+    assert "invalid" in msg
+
+
 def test_special_type_is_accepted():
     g = _good()
     g["nodes"].append({"name": "c", "type": "comment", "parameters": {}})
