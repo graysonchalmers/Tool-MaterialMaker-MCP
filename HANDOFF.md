@@ -1,35 +1,40 @@
 # 🧭 Session Handoff — Tool-MaterialMaker-MCP
 
-_Last updated: 2026-08-26 (evening) CT (America/Chicago)_
+_Last updated: 2026-08-26 (evening, cont. 3) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**Public v0.1.0 release, perfect Phase 3 score, normal-map polish pass, social
-preview live.** The repo is **public** on GitHub with an MIT license, a public
-README (8-material gallery + super-alpha disclaimer), a pip-installable package
-(`mm-mcp` entry point), an `examples/` showcase (8 materials), a live social
-preview card (uploaded via repo Settings → Social preview, confirmed persisting
-after reload), and a tagged **`v0.1.0`** release. Phases 0-3 all done and
-verified; **Phase 3 authoring quality is 15/15 (100%)**. The flat-normal blocker
-that dogged several cases is **SOLVED** (`normal_map` `param4=0`), applied to
-every case that had it, including the two remaining flat-normal HITs (`s02`
-granite, `m02` aluminum) this session. Working tree is clean, `main` is level
-with `origin/main` at commit `e3461c2`.
+**v0.2.0 PyPI packaging + v0.3.0 setup doctor landed and pushed. Distribution is
+GitHub-clone for now (PyPI on hold).** Public repo, MIT, Phase 3 still 15/15.
+This session made the package genuinely installable and added a first-run setup
+preflight:
+- **v0.2.0** (`3ab2859`+`23bef31`): fixed `config.py` so a `pip`-installed copy
+  works (was `_PROJECT_ROOT` resolving into site-packages); `.env` now cwd-based
+  (or `MM_DOTENV`), `MM_OUTPUT_DIR` defaults to `./output`, personal path
+  defaults removed; lowered `requires-python` to **3.10** (no 3.13-only syntax);
+  added classifiers/keywords + a Windows-only OS classifier (honest alpha);
+  `MANIFEST.in` prunes `tests/` from the sdist.
+- **v0.3.0** (`3abc4d2`): **`mm-mcp --check`** setup doctor — one green/red
+  checklist (project path, node defs, examples, `steam_appid.txt` contents,
+  Godot binary + console-variant detection, output-dir writability, catalog
+  build), exits 1 on any failure. Plus `--version`, `--help`, unknown-flag
+  handling, and **lazy server startup** (importing `server` no longer validates;
+  `_ensure_ready()` materializes config+catalog on first use, never caching a
+  failed init).
+
+`main` is level with `origin/main` at **`3abc4d2`**; tags **`v0.2.0`** and
+**`v0.3.0`** pushed. Fast suite **103 passed**, integration render green.
+`dist/` built for 0.3.0 and `twine`-clean (gitignored).
 
 ## 📌 Where we stopped
 
-Applied the `param4=0` normal-map upgrade to granite and aluminum (option B from
-the previous handoff), re-rendered and eyeballed both, restored their HIT
-verdicts in the scorecard (rendering resets `_result.json` verdicts, so these
-were manually re-patched with the original judge notes plus an appended
-normal-upgrade note), copied the fixed graphs into the public `examples/`
-showcase, and updated `docs/AUTHORING.md` + `examples/README.md`. Fast test
-suite 80/80. Committed and pushed as `e3461c2`. Then uploaded
-`docs/social-preview.png` as the repo's social preview via the browser (GitHub
-has no API for this) and confirmed it persists after a page reload. No
-unfinished work in flight.
+Finished, committed, pushed, and tagged v0.3.0 (setup doctor). Ran the full
+suite (103 fast + 1 integration) and eyeballed the live CLI (green checklist,
+red checklist, `--version`, `--help`, unknown-flag). No work in flight. The only
+deferred thing is the actual **PyPI upload**, which Grayson put on hold in favor
+of GitHub-clone distribution (the built `dist/` is ready if that reverses).
 
 ## ⭐ The flat-normal fix (the session's key discovery)
 
@@ -44,89 +49,83 @@ their input reaches normal_map via a buffered blend. Full notes in
 
 ## ▶️ Next concrete step
 
-Nothing is required — v0.1.0 is public, Phase 3 is 15/15, and the social preview
-is live. Pick from the menu below, or start a new thread of work entirely.
+Nothing is required — Phase 3 is 15/15, packaging + setup doctor are done and
+pushed. Pick from the menu below, or start a new thread of work entirely.
 
 ## 🧭 Next-up options (pick any; none are blocking)
 
-**A. DONE this session.** Uploaded `docs/social-preview.png` as the repo social
-preview (manual, GitHub has no API for it) and confirmed it persists. Still
-open if wanted: eyeball the live README render at
-https://github.com/graysonchalmers/Tool-MaterialMaker-MCP, or consider a short
-GIF of an assistant authoring a material end to end (prompt → graph → render)
-for the README top.
+**A. Extend authoring cases.** Grow the proven recipe library beyond the frozen
+15 (new material categories: fabrics, organics, sci-fi panels, terrain).
+Meatiest option, plays directly to the tool's core strength, produces visible
+textures.
 
-**B. DONE this session.** Applied the `param4=0` normal fix to the granite and
-aluminum showcase pieces — both now have real micro-relief instead of flat
-normals. Quality was already DONE at 15/15; the frozen test set is maxed, so any
-further work would be new cases or higher fidelity, not the gate.
+**B. Front-door polish.** A prompt-to-render quickstart and a short demo GIF
+(assistant authoring a material end to end) for the README top. Lands the repo
+well for GitHub visitors now that GitHub-clone is the distribution route.
 
-**C. Robustness / cross-platform — partially DONE this session.**
-- ✅ Validator noise: numeric slider params outside their declared `[min, max]`
-  (voronoi/perlin `scale_*` at fleck/streak scales) now read as an advisory
-  ("not shader-clamped, often fine; verify visually") instead of an alarming
-  "outside [1, 32]". Enum params out of range still read as a real problem
-  (an out-of-range enum index is genuinely invalid, unlike a slider). See
-  `src/mm_mcp/validator.py`.
-- ✅ Added `tests/test_author_helpers.py`: unit tests for `author.py`'s
-  `rewire`/`drop_conn`/`add_node`/`node` graph-surgery helpers (repoint, append,
-  no-op-when-missing, only-touch-matching-port, composition). These back every
-  Phase 3 recipe, so a regression here would silently corrupt authored
-  materials without failing anything else.
-- ⬜ Still open: test on macOS/Linux (path handling, `_console.exe` is
-  Windows-only — the code already falls back to the plain binary, but it's
-  untested off-Windows). No Mac/Linux machine available this session.
+**C. Phase 5 — live control.** Drive Material Maker over its in-app socket for a
+watchable, interactive build instead of batch render. Biggest swing, most
+uncertain.
 
-**D. Phase 4/5 from the original plan (bigger lifts)**
-- **Phase 4 (public packaging, deeper):** publish to PyPI so `pip install mm-mcp`
-  works without a clone; a real quickstart; maybe a Dockerfile.
-- **Phase 5 (live control):** drive Material Maker over its in-app socket for a
-  watchable, interactive build instead of batch render.
+**D. PyPI publish (ON HOLD).** The v0.3.0 `dist/` is built and `twine`-clean;
+Grayson chose GitHub-clone distribution instead. Revive only if that reverses:
+needs a PyPI account + token, then
+`python -m twine upload dist\mm_mcp-0.3.0*` (username `__token__`).
 
-**E. The flat-normal question — RESOLVED and applied everywhere it mattered.**
-Root cause (`normal_map` `param4=1` buffers a directly-fed analytic input) found
-via denim, then applied to granite and aluminum this session. No known case in
-the 15-case set still has an avoidable flat normal.
+**E. Cross-platform test (still open).** The package declares 3.10+ but is only
+Windows-verified; `_console.exe` fallback on macOS/Linux is untested. No
+Mac/Linux machine available. Marked honestly (Windows OS classifier + README
+note) rather than claimed.
 
 ## ❓ Open questions
 
-- Do you want a PyPI publish (Phase 4), or is clone-and-`pip install -e .` fine
-  for the alpha audience?
+- PyPI publish, or stay GitHub-clone only? (Currently leaning GitHub-only;
+  packaging is done either way.)
 - Keep authoring 2 variants/case, or drop to 1 for speed? (Scoring has only ever
   needed variant 1.)
-- Is the flat-normal limitation acceptable long-term, or worth a dedicated dig
-  (option E)?
+- Worth building a Dockerfile / cross-platform CI, or is Windows-only fine for
+  the alpha audience?
 
-## 🗂️ Changed this session
+## 🗂️ Changed this session (v0.2.0 packaging + v0.3.0 doctor)
 
-- Branch: `feat/phase3` → merged to `main` (`ed6986b`), pushed. Tag `v0.1.0` at
-  `4eaaca9`. Repo flipped **public**.
-- **Phase 3 gate closed 10/15 → 11/15**: rewrote two `author.py` builders.
-  - `s02` granite: root-caused the fog (cloned `rock` but only shrank the perlin,
-    leaving the albedo voronoi at scale 4). Fix feeds the albedo colorize from
-    **voronoi output port 2** (`rand3` = flat random value per cell) at a fine
-    scale → crisp multi-tone mineral flecks. Added a `rewire` helper.
-  - `m02` brushed aluminum: cloned `wood` (directional-streak generator with a
-    **working** normal chain), straightened the grain (fed `blend_0` from the
-    un-warped `perlin_2`), neutralized to gray, forced metallic (`drop_conn`
-    helper drops the grain-driven metallic map so the scalar `metallic=1`
-    applies). Streaks read in albedo + roughness.
-- **Packaging:** added MIT `LICENSE`; made `pyproject.toml` pip-installable
-  (src layout, build-system) with an `mm-mcp` console entry point (`server.main`);
-  rewrote `README.md` for a public audience (gallery, generic install/config, MCP
-  client snippet, tool table, gotchas, attribution); fixed the stale `--export`
-  ref; added `examples/` (6 `.ptex` + 512px previews + table); refreshed
-  `__init__` (v0.1.0).
-- **Disclaimer:** prominent super-alpha / artist-built warning added to README,
-  STATUS.md, and examples/README ("verified" = "worked on the one machine").
-- Recorded s02/m02 verdicts in the iter1 `_result.json`s and rebuilt the
-  scorecard; STATUS.md Phase 3 rows → ✅ verified.
+- Branch: `main` throughout. Commits `3ab2859`, `23bef31`, `3abc4d2`, all pushed.
+  Tags `v0.2.0` and `v0.3.0` pushed.
+- **`config.py` installed-case fix (why):** `_PROJECT_ROOT` resolved from
+  `__file__` up 3 levels, which points into site-packages once `pip install`ed —
+  so the `.env` lookup and `MM_OUTPUT_DIR` default were both wrong for a real
+  install. Now `.env` is read from cwd (or `MM_DOTENV`), `MM_OUTPUT_DIR` defaults
+  to `./output`, and the personal path defaults are emptied so a stranger gets
+  the actionable "set MM_PROJECT_PATH" message. Verified via a clean-venv install
+  from outside the repo.
+- **`pyproject.toml`:** `requires-python` → `>=3.10` (grep found no 3.13-only
+  syntax, only `X | None` unions); classifiers + keywords; Windows-only OS
+  classifier (only platform verified); Repository/Issues URLs; a `release` extra
+  (build, twine). `MANIFEST.in` prunes `tests/` from the sdist (tests import
+  `quality/author.py`, which isn't shipped).
+- **Setup doctor (`doctor.py`, new):** `check_setup(cfg)` runs every check and
+  returns them as data (never raising, unlike `require_valid` which stops at the
+  first). `mm-mcp --check` prints the checklist and exits 1 on any failure.
+- **`server.py` lazy startup:** import no longer validates/builds; `_ensure_ready()`
+  memoizes only on success; `_reset()` clears it. `main(argv)` returns an int exit
+  code and handles `--version`/`--help`/unknown-flag before touching config.
+- **README:** clone-first install (PyPI noted as packaged-but-unpublished), a
+  "Check your setup" section, Python-3.10/Windows-verified notes.
+- **Tests:** `tests/test_doctor.py` (11 tests). Fast suite 92 → 103.
+- **Version:** 0.1.0 → 0.2.0 (packaging) → 0.3.0 (doctor).
 
 ## ⚠️ Heads-up for the next agent
 
 - **Run tests with `.venv\Scripts\python.exe`** (or activate the venv). The
-  package is now `pip install -e .`, so `import mm_mcp` works from anywhere.
-  Fast suite: `pytest -q -m "not integration"` (80 passed).
+  package is `pip install -e .`, so `import mm_mcp` works from anywhere.
+  Fast suite: `pytest -q -m "not integration"` (103 passed); `pytest -q` adds the
+  Godot-launching integration render.
+- **Server startup is lazy now.** Importing `mm_mcp.server` does NOT validate
+  config or build the catalog; `_ensure_ready()` does that on first tool use (or
+  at `mcp.run()`). If you write a test that calls a tool under bad config, call
+  `server._reset()` in setup AND teardown so you don't cache state across tests.
+- **`mm-mcp --check`** is the setup doctor (green/red preflight); `--version`,
+  `--help` also work. Build/release tooling lives in the `release` extra
+  (`pip install -e .[release]` → build, twine). `dist/` is gitignored.
 - **Pillow is installed in `.venv` but deliberately NOT in `pyproject.toml`** — it
   was a one-time tool to downscale the `examples/images/` previews. Don't add it
   as a dependency.
@@ -142,6 +141,29 @@ the 15-case set still has an avoidable flat normal.
 ---
 
 ## 🕓 Session log
+
+### 2026-08-26 (evening, cont. 3) — v0.2.0 PyPI packaging + v0.3.0 setup doctor
+- **Phase 4 packaging (v0.2.0).** Made the package actually installable: fixed
+  `config.py` (`_PROJECT_ROOT` resolved into site-packages once pip-installed —
+  the `.env` lookup and `MM_OUTPUT_DIR` default were both wrong for a real
+  install). `.env` now cwd/`MM_DOTENV`-based, output defaults to `./output`,
+  personal defaults emptied. Lowered `requires-python` to 3.10, added
+  classifiers/keywords + Windows-only OS classifier, `MANIFEST.in` prunes tests
+  from the sdist. Built wheel + sdist, `twine check` clean, and **verified by
+  installing the wheel into a clean venv outside the repo** (imports as the
+  version, `mm-mcp` on PATH, actionable error with no config, 392-node catalog
+  with real config). Commits `3ab2859` + `23bef31`, tag `v0.2.0`.
+- **Setup doctor (v0.3.0).** Built `mm-mcp --check`: `doctor.py` runs every
+  prerequisite check and returns results as data (never raising), so a cloner
+  gets one green/red checklist instead of a startup exception. Added `--version`,
+  `--help`, unknown-flag handling, and refactored `server.py` to lazy startup so
+  those work when config is broken. Addressed an advisor review (failed init not
+  cached, `steam_appid.txt` contents checked, output-dir check has no side
+  effect, unknown flags fail legibly). 11 new tests, fast suite 92 → 103,
+  integration green. Commit `3abc4d2`, tag `v0.3.0`.
+- **Distribution decision:** Grayson put PyPI on hold; **GitHub-clone is the
+  route.** The v0.3.0 `dist/` is built and ready if that reverses. README
+  reworked clone-first.
 
 ### 2026-08-26 (evening, cont. 2) — Robustness: validator noise + author-helper tests
 - Softened the validator's numeric-out-of-range warning wording: it now says

@@ -6,7 +6,7 @@
 
 Gate ledger. Three states only: ✅ verified · 🔌 wired · ⬜ not started.
 
-_Last updated: 2026-08-26_
+_Last updated: 2026-08-26 (v0.3.0)_
 
 ## Phases
 
@@ -19,7 +19,7 @@ _Last updated: 2026-08-26_
 | 3A | Test set + scoring harness | Harness renders a known case → contact sheet + scorecard, exit 0; 15-case set frozen after Grayson review | ✅ | harness ✅: `run_case.py` on bricks-as-`s01_red_brick_wall` → 4 maps + `source.ptex` + scorecard, exit 0. Test set ✅: 15 cases across 7 categories, Grayson-reviewed (m02 anisotropy softened), `_meta.frozen=true` 2026-08-26 |
 | 3B | Baseline measurement | Baseline scorecard, all 15 scored + miss taxonomy, recorded | ✅ | **baseline = 3/15 (20%)** with nearest-example-as-is, 1 variant/case, size 512. HITs: `s01` bricks, `o02` dry_earth, `m03` rusted_metal. Scorecard: `quality/scorecards/2026-08-26-baseline.md`. Miss taxonomy (3C worklist): wrong-example ×5 (m02,s02,s03,o01,man02), missing-composite ×3 (m01,man01,combo01), recolor-only ×2 (w02,f02), weak-attribute ×1 (w01), render-broken ×1 (f01) |
 | 3C | Tuning loop | ≥70% hit-rate scorecard, Grayson-audited | ✅ | **iter1 = 15/15 (100%)**, up from 3/15 baseline. Levers: recolor (f02, w02, m01, s03) + grain-ramp (w01) + clone-a-sharp-edged-example (o01 moss) + voronoi per-cell-random flecks (s02) + wood-grain-as-brush (m02) + beehive hex clone (man01, man02) + paint-over-rust peel composite (combo01) + **weave-graft + normal_map fix (f01 denim)**. **FLAT-NORMAL BLOCKER RESOLVED:** `normal_map` is a compound (input → buffer → switch(**param4**) → edge_detect(param1)); default `param4=1` runs edge_detect on a pre-rendered buffer that comes back FLAT for a directly-fed analytic generator. Setting **`param4=0`** feeds the raw analytic input into edge_detect → real relief. This unblocked denim's twill normal and is a general fix for any analytic-generator graph. **Polish pass (post-15/15):** applied the same `param4=0` fix to `s02` granite and `m02` aluminum — both were HITs already but rendered flat normals; now both show real micro-relief (subtle polished-stone speckle / parallel brush-scratch) with albedo/roughness and HIT verdict unchanged. Scorecard: `quality/scorecards/2026-08-26-iter1.md`; recipes in `docs/AUTHORING.md`. |
-| 4 | Public packaging (later) | Config-driven, cross-platform, docs | ⬜ | — |
+| 4 | Public packaging | Config-driven, cross-platform, docs | 🔌 | **Installable + config-driven + docs done; cross-platform still unverified.** `pip install -e .` (or built wheel) → `mm-mcp` on PATH; `config.py` fixed for the installed case (`.env` cwd/`MM_DOTENV`, `MM_OUTPUT_DIR`→`./output`, no personal defaults); `requires-python>=3.10`; classifiers + Windows-only OS classifier; `MANIFEST.in` prunes tests from sdist; `twine check` clean; **clean-venv install verified outside the repo** (v0.2.0). `mm-mcp --check` setup doctor + `--version`/`--help` + lazy startup (v0.3.0). PyPI upload ON HOLD (GitHub-clone distribution); ⬜ macOS/Linux untested. Tags `v0.2.0`, `v0.3.0`. |
 | 5 | Live-control (later) | In-app socket drive, watchable build | ⬜ | — |
 
 ## Components
@@ -33,4 +33,6 @@ _Last updated: 2026-08-26_
 | catalog_builder.py | ✅ | Builds `catalog.json` from `.mmg` files; all 43 bundled examples validate against it |
 | graph.py (build + validate) | ✅ | `Graph.to_ptex`/`from_ptex` + `validate_graph`; covered by `tests/test_graph.py`, `tests/test_validator.py` |
 | render.py (runner) | ✅ | Headless Godot render runner; `tests/test_render.py` incl. the integration test that renders `bricks.ptex` for real |
-| server.py (MCP) | ✅ | All seven tools + `catalog://nodes` resource; exercised end to end by `smoke/smoke_mcp.py` |
+| server.py (MCP) | ✅ | All seven tools + `catalog://nodes` resource; exercised end to end by `smoke/smoke_mcp.py`. Lazy startup (`_ensure_ready`); `main(argv)` handles `--check`/`--version`/`--help` |
+| doctor.py (setup preflight) | ✅ | `mm-mcp --check` green/red checklist; `tests/test_doctor.py` (11 tests) |
+| Packaging (pip/wheel/sdist) | 🔌 | Installable, `twine`-clean, clean-venv verified; PyPI upload on hold, macOS/Linux untested |
