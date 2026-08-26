@@ -79,17 +79,7 @@ checkout:
 
 ## Install
 
-From PyPI:
-
-```bash
-pip install mm-mcp
-```
-
-That puts the `mm-mcp` command on your PATH. Configure it with `MM_*`
-environment variables (the recommended path; see the MCP client example below),
-or with a `.env` file in the directory you launch it from.
-
-To hack on the server itself, install from source instead:
+Install from a clone (the supported path for now):
 
 ```bash
 git clone https://github.com/graysonchalmers/Tool-MaterialMaker-MCP.git
@@ -113,6 +103,23 @@ MM_OUTPUT_DIR=/path/to/where/rendered/maps/should/go
 path in `MM_DOTENV` if set). Config can also be supplied via `MM_*` environment
 variables, which take precedence over `.env`. `MM_OUTPUT_DIR` is optional and
 defaults to an `output/` folder in the working directory.
+
+Either way you get an `mm-mcp` command on your PATH. (A `pip install mm-mcp`
+from PyPI is packaged and ready but not yet published; the clone above is the
+current route.)
+
+## Check your setup
+
+Before wiring it into a client, confirm every prerequisite is in place:
+
+```bash
+mm-mcp --check
+```
+
+It prints a green/red checklist (Godot binary, Material Maker checkout, node
+definitions, examples, `steam_appid.txt`, output dir, and a catalog build) and
+exits non-zero if anything is missing, so you find problems before your MCP
+client does. `mm-mcp --version` prints the version.
 
 ## Verify
 
