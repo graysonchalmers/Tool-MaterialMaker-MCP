@@ -33,17 +33,56 @@ A prompt-to-graph attempt is scored per `quality/test_set.json`:
 
 ## Node & pattern recipes
 
-_(Filled during 3C — mined from the ~100 bundled examples. Empty by design for
-the 3B baseline.)_
+_Filled during 3C from the bundled examples + the miss taxonomy. Each recipe
+names a base example and the edit that turns it toward a prompt._
 
-### Base tones & color
+### The recolor lever (highest payoff)
+
+Many materials differ from a bundled example only in COLOR, not structure. A
+`colorize` node holds a `gradient.points` list of `{pos, r, g, b, a}`. Find the
+colorize whose points are **saturated** (not gray): that is the albedo color
+ramp. The gray-valued colorize nodes feed roughness/height/metallic — leave them
+unless you mean to change surface response.
+
+Verified conversions (baseline MISS → iter1 HIT):
+- **Brown leather** ← `crocodile_skin`: recolor the green albedo ramp
+  (`colorize_1`) to brown `(0,.20,.11,.05)→(1,.52,.34,.18)`. Cellular grain is
+  already right.
+- **Weathered barn wood** ← `wood`: recolor the vivid albedo ramp (`colorize_2`)
+  to faded gray-brown, and push the roughness ramp (`colorize_0`) high
+  (`.72→.9`). Grain + knots are already right.
+
+### Two-layer weathering (base metal + patina)
+
+`rusted_metal` is the reusable pattern: a `blend` composites a **base** colorize
+over a **patch** colorize through a **mask** colorize; a separate mask drives
+metallic down on the patches. Recolor both layers to retarget the weathering:
+- **Weathered copper** ← `rusted_metal`: base `colorize_2` gray→copper
+  `(0,.45,.22,.10)→(1,.72,.40,.19)`; patch `colorize_1` orange-rust→verdigris
+  `(0,.05,.20,.15)→(1,.33,.60,.47)`. Widen the patina by lowering the mask
+  threshold (`colorize_3` 0.45→0.35).
+- **Rusted iron** = `rusted_metal` as-is (already a HIT).
 
 ### Surface pattern generators (brick, tile, hex, planks)
 
-### Weathering & edge wear (rust, patina, peeling, dirt)
+- **Brick / block coursing**: `bricks` / `improved_brick` (running bond, mortar
+  in normal+height) — a HIT for red brick as-is; recolor for other brick tones.
+- **Cracked ground**: `dry_earth` (voronoi plates + recessed cracks) — a HIT for
+  dry mud as-is.
+- Planks: `wooden_floor` gives plank divisions but weak grain; the `wood`
+  example has strong grain but no divisions. Oak planks wants BOTH (open item —
+  needs a blend of plank cuts over strong grain).
+- Hex cells (grating, hex tiles) are an open item — no single example ships a
+  hexagon generator wired to a material; needs `shape`/`pattern` hex authored in.
 
-### Normal / height / roughness pairing
+## Common pitfalls (from the miss taxonomy)
 
-## Common pitfalls
-
-_(Filled during 3C from the miss taxonomy.)_
+- **Wrong nearest example**: the closest-named example often depicts a different
+  material (e.g. `tiles` is fish-scale scallops, not hexagons; `marble` is veined
+  + gold-framed, not speckled granite). Check the render, don't trust the name.
+- **Albedo-only examples**: some examples (e.g. `paper`) emit only an albedo, no
+  normal/height/orm — unusable under the "all four maps" rule. Build the material
+  outputs explicitly.
+- **Transient Godot crash**: renders intermittently die with exit `0xC0000005` /
+  `0xC0000409` mid-export (GPU, not the graph). Re-run the same case; it passes.
+  Candidate for a retry in `render.py`.
