@@ -6,12 +6,15 @@ The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**Shipped a first public release.** The repo is now **public** on GitHub with an
-MIT license, a public README (gallery + super-alpha disclaimer), a pip-installable
-package (`mm-mcp` entry point), a six-material `examples/` showcase, and a tagged
-**`v0.1.0`** release. Phases 0-3 are all done and verified; **Phase 3 authoring
-quality met its gate at 11/15 (73%)**. Working tree is clean and `main` is level
-with `origin/main`. Nothing is mid-edit.
+**Shipped a first public release, then kept improving it.** The repo is **public**
+on GitHub with an MIT license, a public README (gallery + super-alpha disclaimer),
+a pip-installable package (`mm-mcp` entry point), a six-material `examples/`
+showcase, a social-preview card (`docs/social-preview.png`, needs manual upload
+via repo Settings → Social preview), and a tagged **`v0.1.0`** release. Phases 0-3
+are all done and verified; **Phase 3 authoring quality is now at 13/15 (87%)**
+after landing the two hex cases (man01 metal grating + man02 ceramic hex tiles)
+via a beehive clone. Working tree is clean and `main` is level with `origin/main`.
+Nothing is mid-edit.
 
 ## 📌 Where we stopped
 
@@ -35,17 +38,19 @@ options" you asked to record).
 - Consider a short GIF/screen-capture of an assistant authoring a material end to
   end (prompt → graph → render) for the README top.
 
-**B. Push authoring quality past 11/15 (the fun artist work)**
-Remaining MISS cases, roughly easiest → hardest:
+**B. Push authoring quality past 13/15 (the fun artist work)**
+Two MISS cases remain (both harder composites):
 - `f01` denim weave — needs a woven twill pattern with a real normal (the paper
-  example emits albedo only). Look for a fabric/weave generator to clone.
-- `man01`/`man02` hex (metal grating + ceramic hex tiles) — build a hexagon
-  generator once, reuse for both. Biggest reusable payoff.
+  example emits albedo only). Look for a fabric/weave generator to clone; the
+  `weave`/`weave2` nodes may exist, else build a crossed-directional pattern.
 - `combo01` paint-over-rust-with-peel — a flat colored paint coat blended over
-  `rusted_metal` via an irregular peel mask, with roughness contrast.
-- Reusable recipes already proven this session: **voronoi port-2 per-cell-random
-  flecks** (granite) and **wood-grain-as-brush-streaks** (aluminum). See
-  `docs/AUTHORING.md`.
+  `rusted_metal` via an irregular peel mask, with roughness contrast between
+  smooth paint and rough rust. A masked two-layer blend, like the copper patina
+  but with a harder-edged peel mask.
+- Reusable recipes proven so far (see `docs/AUTHORING.md`): voronoi port-2
+  per-cell-random flecks (granite), wood-grain-as-brush-streaks (aluminum),
+  **beehive hex clone** (both hex cases — man01 relief via heightmap, man02
+  drives albedo off the clean hex field bypassing the per-cell random).
 
 **C. Robustness / cross-platform (makes "verified on one machine" less scary)**
 - Test on macOS/Linux (path handling, `_console.exe` is Windows-only — the code
