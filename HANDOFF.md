@@ -5,29 +5,35 @@ The session baton. Read at pickup, rewrite at wrap-up.
 ## Where things stand
 
 - **Date:** 2026-08-25
-- **Phase:** 0 (harness) — scaffolding just created.
-- Project bootstrapped from the approved design. Nothing implemented yet beyond
-  scaffold. Upstream Material Maker verified to render headlessly on this machine.
+- **Phase:** 1 and 2 complete. Catalog, graph builder/validator, render runner,
+  and the MCP server (all seven tools + `catalog://nodes` resource) are built,
+  tested, and wired end to end.
+- Phase 2 gate is green: `smoke/smoke_mcp.py` loads the bundled `bricks` example
+  through `mm_mcp.server`, validates it, and renders it via `render_graph` —
+  `SMOKE PASS: rendered 4 image(s)`, exit 0. Full suite (`pytest -v`, 76 tests,
+  including the Godot-launching integration test) passes.
 
 ## What just happened
 
-- Brainstormed and approved the design: thin batch-render MCP first, live-control
-  deferred. Me-first audience.
-- Confirmed feasibility against the upstream repo: `.ptex` is JSON, `--export`
-  renders headless, ~392 nodes carry machine-readable schemas.
-- Created project scaffold + design spec. Pushed to GitHub.
+- Implemented catalog_builder, graph/validator, render runner, and the MCP
+  server across Tasks 1-8.
+- Task 9: wrote `smoke/smoke_mcp.py` (the Phase 2 capstone smoke), ran it green,
+  ran the full test suite green, and updated STATUS.md/HANDOFF.md/README.md.
 
 ## Next concrete step
 
-- Have Grayson review the design spec
-  ([docs/superpowers/specs/2026-08-25-material-maker-mcp-design.md](docs/superpowers/specs/2026-08-25-material-maker-mcp-design.md)).
-- Then create the implementation plan (writing-plans skill) and start Phase 0:
-  the smoke test that renders a known example `.ptex` and asserts a PNG appears.
+- Start Phase 3 (authoring quality): build a material test set and iterate on
+  prompt-to-graph authoring quality, tuning catalog descriptions and authoring
+  guidance. This is an iterative tuning loop, not bite-sized TDD — it gets its
+  own plan.
+- Two open knobs to settle before/at Phase 3 kickoff:
+  - The Phase 3 usable-hit-rate target (the quality bar for "good enough").
+  - Whether to add multi-variant generation, or defer it further.
 
 ## Open questions
 
 - Phase 3 usable-hit-rate target (the quality bar) not yet set.
-- Whether Phase 1 ships variant generation or defers it.
+- Whether to add multi-variant generation.
 
 ## Heads-up for the next agent
 

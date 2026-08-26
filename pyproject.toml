@@ -1,0 +1,12 @@
+[project]
+name = "mm-mcp"
+version = "0.0.1"
+description = "MCP server for authoring and rendering Material Maker graphs"
+requires-python = ">=3.13"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+markers = [
+    "integration: tests that launch Godot (slow)",
+]
