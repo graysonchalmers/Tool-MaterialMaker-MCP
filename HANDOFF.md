@@ -1,17 +1,25 @@
 # 🧭 Session Handoff — Tool-MaterialMaker-MCP
 
-_Last updated: 2026-08-26 (night) CT (America/Chicago)_
+_Last updated: 2026-08-26 (late night) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**Authoring cookbook grown across all 4 planned categories: fabrics, organics,
-sci-fi panels, terrain.** 16 new materials, 20/24 clean HIT + 4 documented
-partials/fixed-after-one-try, all informal (no scorecard gate, separate from
-the frozen 15-case Phase 3 set). 4 commits, `main` pushed through `afb3290`.
-Packaging (v0.2.0) and the setup doctor (v0.3.0) from the prior session are
-untouched and still current — see the session log below for that history.
+**Phase 5 (live-control) is now speced, not implemented.** Brainstormed the
+"D" option from the prior handoff's next-up menu: a Godot addon (explicitly
+*not* a source fork of Material Maker) bridged to the Python MCP server over
+a local socket, so Claude can see and edit whatever's open in the live GUI
+and Grayson can watch it happen. Spec committed at
+`docs/superpowers/specs/2026-08-26-live-control-addon-design.md`
+(`311e502`). Deferred, no implementation started, no target date. Also ran a
+live, from-scratch verification that the existing batch MVP (Phases 0-3)
+actually delivers end to end through the real public tool functions, not
+just the test harness, see below.
+
+Prior session's cookbook growth (fabrics/organics/sci-fi/terrain, 16 new
+materials) and packaging/doctor (v0.2.0/v0.3.0) are untouched and still
+current, see the session log below for that history.
 
 Per-category results:
 - **Fabrics** (`a714faf`): canvas/burlap HIT, silk/satin HIT, velvet HIT
@@ -35,9 +43,43 @@ scorecard machinery. `quality/README.md` documents the convention.
 
 ## 📌 Where we stopped
 
-All 4 categories finished, documented in `docs/AUTHORING.md`, and committed.
-Working tree is clean (only the pre-existing gitignored `dist/` untracked).
-No work in flight — this is a clean stopping point, not a partial one.
+Spec written, reviewed in chat, and committed. Batch MVP verification ran
+clean (see below). Working tree is clean (only the pre-existing gitignored
+`dist/` untracked). No work in flight, no implementation started on Phase 5.
+This is a clean stopping point, not a partial one.
+
+## 🔌 Phase 5 design: no fork, an addon + disposable overlay
+
+Grayson's key pushback during brainstorming: the original Phase 5 sketch said
+"a forked Material Maker," and he doesn't want to maintain a diverging copy
+of someone else's codebase. Resolution: the live-control code is a Godot
+**addon** (the same additive mechanism Material Maker's own
+`addons/material_maker` uses), versioned inside *this* repo, never inside
+`z-Git\material-maker`. A build step layers the addon onto a disposable
+working copy of the pristine checkout (plus one autoload line in
+`project.godot`) whenever it's stale, so nothing is ever hand-copied, not by
+Grayson, not by a future contributor cloning the repo. Full design, including
+the two open feasibility risks (Godot autoload wiring for a running project,
+and Material Maker's actual in-process graph-mutation surface), is in
+`docs/superpowers/specs/2026-08-26-live-control-addon-design.md`.
+
+Also clarified during brainstorming: the "watch it build live" use case and
+the "headless agent makes me a texture" use case are separate. The second one
+already works today (see verification below) and Phase 5 only adds the
+first, as a second interaction mode, not a replacement.
+
+## ✅ Batch MVP verification (2026-08-26 late night)
+
+Ran a fresh, live round trip through `mm_mcp.server`'s actual public tool
+functions (not `pytest`, not the cookbook harness) to prove the
+request-to-delivery loop Grayson described: `list_examples` →
+`load_example("bricks")` → recolored the brick gradient warmer/redder (the
+same lever documented in `docs/AUTHORING.md`) → `validate` (0 errors) →
+`render_graph` (4 non-empty PBR maps) → `save_graph`. Delivered the albedo,
+normal map, and `.ptex` back to Grayson via file share. Confirms the Phase
+0-3 MVP is real and consumer-usable as-is, independent of whether Phase 5
+ever gets built. Verification script + output live in a local scratch dir,
+nothing added to the repo (output/ is gitignored anyway).
 
 ## ⭐ The flat-normal fix (the session's key discovery)
 
@@ -52,7 +94,7 @@ their input reaches normal_map via a buffered blend. Full notes in
 
 ## ▶️ Next concrete step
 
-Nothing is required — this was open-ended cookbook growth, not a gated phase.
+Nothing is required — Phase 5 is deliberately deferred with no target date.
 Pick from the menu below, or start a new thread of work entirely.
 
 ## 🧭 Next-up options (pick any; none are blocking)
@@ -68,11 +110,16 @@ loose threads if perfection matters more than coverage.
 
 **C. Front-door polish.** A prompt-to-render quickstart and a short demo GIF
 (assistant authoring a material end to end) for the README top. Now has 16
-more example materials to potentially draw from for a refreshed gallery.
+more example materials to potentially draw from for a refreshed gallery, plus
+a real request-to-delivery example from tonight's verification.
 
-**D. Phase 5 — live control.** Drive Material Maker over its in-app socket for
-a watchable, interactive build instead of batch render. Biggest swing, most
-uncertain, unrelated to the cookbook work.
+**D. Phase 5 — live control (SPECED, not started).** Design is done and
+committed (`docs/superpowers/specs/2026-08-26-live-control-addon-design.md`):
+a Godot addon, no source fork, layered onto a disposable auto-rebuilt overlay,
+TCP bridge, turn-based collaborative editing. Two feasibility risks flagged in
+the spec need a quick check before real implementation starts (Godot autoload
+wiring for a running project; Material Maker's in-process graph-mutation
+surface). Next step if picked up: `writing-plans` off that spec.
 
 **E. PyPI publish (ON HOLD).** The v0.3.0 `dist/` is still built and
 `twine`-clean from the prior session; GitHub-clone remains the chosen
@@ -84,42 +131,39 @@ Mac/Linux machine available.
 
 ## ❓ Open questions
 
+- When (if ever) to pick up Phase 5 implementation. No target date by design;
+  the spec exists so it's ready whenever.
+- The two feasibility risks in the Phase 5 spec are unverified: does a
+  `project.godot` autoload entry actually start a socket server for a
+  *running* (not editor) project, and does Material Maker expose a sane
+  in-process way to mutate a live graph? Worth a short spike before
+  `writing-plans` if Phase 5 gets picked up.
 - Worth root-causing the circuit-board mask-opacity bug, or is the documented
   partial good enough? (No lead on the cause after 3 iterations.)
 - Is there a better loop-knit approximation for wool than coarse `weave`, or
   is "chunky basket-weave" an acceptable stand-in permanently?
-- PyPI publish, or stay GitHub-clone only? (Carried over from the prior
-  session, still unresolved — currently leaning GitHub-only.)
+- PyPI publish, or stay GitHub-clone only? (Carried over from prior sessions,
+  still unresolved, currently leaning GitHub-only.)
 - Worth building a Dockerfile / cross-platform CI, or is Windows-only fine for
   the alpha audience? (Also carried over, still open.)
 
-## 🗂️ Changed this session (cookbook growth: fabrics, organics, sci-fi, terrain)
+## 🗂️ Changed this session (Phase 5 design + batch MVP verification)
 
-- Branch: `main` throughout. Commits `a714faf`, `bec23b5`, `61c83bd`,
-  `afb3290`, all local (not pushed — not asked to this session).
-- **New pattern, not touching frozen infra:** `quality/cookbook_<category>.py`
-  (graph-surgery builders importing `author.py`'s helpers), `quality/
-  render_cookbook.py <label>` (validate+render without the `test_set.json`
-  lookup `run_case.py` requires), `quality/_make_previews.py <label>`
-  (Pillow downscale into `docs/images/cookbook-<label>/`, generalized this
-  session from a fabrics-only hardcode). `quality/README.md` documents the
-  convention for future categories.
-- **New authoring levers found and written up in `docs/AUTHORING.md`:**
-  `weave`/`weave2`/`diagonal_weave` for fabric grids (no true loop-knit
-  generator exists in this catalog); `perlin`/`fbm` over `voronoi` for
-  soft/continuous materials (voronoi's cell edges stay hard no matter how
-  narrow the color gradient); the `pattern` node family (x/y wave generators
-  + a mix mode) for sci-fi geometric panels, including the specific
-  `pattern → colorize → transform` wiring order metal_pattern_2 requires;
-  `rusted_metal`'s two-layer masked-blend structure reused 3 more times
-  (lichen, grass) beyond its original copper/rust use.
-- **Two things that didn't fully resolve, documented honestly rather than
-  hidden:** `pattern`'s `mix=Xor` produced zero visible output at every
-  threshold tried (silently dead, not just wrong); circuit board's chip
-  shapes still bleed trace-stripe color through them for a reason not
-  identified after 3 iterations. Mask-threshold DIRECTION (raise vs lower to
-  favor a layer) turned out unpredictable by analogy across cases even on
-  the same donor graph — grass field needed an empirical flip to fix.
+- Branch: `main` throughout. One commit this session: `311e502` (the
+  live-control addon design spec). The verification pass wrote only to a
+  gitignored `output/` dir and a local scratch script, nothing tracked.
+- **Design decision (the session's main output):** Phase 5's original
+  "forked Material Maker" sketch is replaced with an addon-plus-disposable-
+  overlay approach after Grayson rejected maintaining a real fork. Full
+  rationale and architecture in
+  `docs/superpowers/specs/2026-08-26-live-control-addon-design.md`.
+- **Verification (not new engineering):** confirmed the Phases 0-3 batch
+  pipeline is a real, working request-to-delivery MVP by running it live
+  through `mm_mcp.server`'s actual public functions on a fresh request
+  ("brick, warmer/redder"), not just replaying existing tests. Delivered the
+  output to Grayson to close the loop for real.
+- Prior sessions' changes (cookbook growth, packaging, doctor) are unchanged
+  this session; full detail is in the session log below.
 
 ## ⚠️ Heads-up for the next agent
 
@@ -141,6 +185,10 @@ Mac/Linux machine available.
   scorecards + test_set are the committed evidence, `author.py` reproduces renders.
 - All Phase 1-2 render gotchas still hold (see CLAUDE.md): `--export-material`,
   `_console.exe`, no `--headless`, `steam_appid.txt`.
+- **Minor, non-blocking:** `.gitignore` has no `dist` entry even though
+  CLAUDE.md and this doc call `dist/` gitignored; that's just why
+  `git status` shows it untracked instead of ignored. Doesn't affect
+  anything, worth a one-line `.gitignore` fix next time packaging is touched.
 - `normal_map` is a compound node; real params `param0` (size), `param1`
   (strength), `param2`, `param4` — NOT `amount`/`size`.
 - Voronoi **output port 2** = `rand3` random-per-cell (the fleck/speckle source);
@@ -158,6 +206,40 @@ Mac/Linux machine available.
 ---
 
 ## 🕓 Session log
+
+### 2026-08-26 (late night) — Phase 5 design spec + batch MVP verification
+- Picked up option D from the prior handoff's menu (Phase 5 live control).
+  Classified it architectural per `superpowers:brainstorming` and ran the
+  full process: questions, approaches, sectioned design, written spec.
+- **Key pivot during questioning:** Grayson pushed back on the original
+  "forked Material Maker" framing, he doesn't want to maintain a diverging
+  copy of someone else's codebase, just "control it from the outside."
+  Resolved by distinguishing a Godot **addon** (additive, the same mechanism
+  Material Maker's own `addons/material_maker` uses) from a true source fork,
+  and by having the addon live in *this* repo, layered onto a disposable,
+  auto-rebuilt overlay of the pristine checkout rather than baked into it.
+- **Also clarified:** the live-GUI collaborative mode and the headless
+  "agent makes me a texture" mode are two separate use cases. Grayson is
+  fine deferring real-time back-and-forth for now (turn-based is enough),
+  and confirmed the headless case is what the existing batch pipeline
+  (Phases 0-3) already does.
+- Picked transport (a TCP/WebSocket server run by the addon, Python connects
+  as a client) over two alternatives, ruled out for not fitting
+  "attach to an already-open instance" (subprocess-owned pipes) or not
+  feeling real-time (file-based polling).
+- Wrote and committed
+  `docs/superpowers/specs/2026-08-26-live-control-addon-design.md` (`311e502`).
+  Flagged two unverified feasibility risks inline rather than glossing over
+  them: Godot autoload wiring for a *running* (non-editor) project, and
+  whether Material Maker exposes a sane in-process graph-mutation surface.
+  No implementation started; deliberately no target date.
+- **Batch MVP verification:** ran a fresh, live round trip through
+  `mm_mcp.server`'s real public tool functions (`list_examples` →
+  `load_example` → edit → `validate` → `render_graph` → `save_graph`) on a
+  novel request ("brick, warmer/redder"), not a replay of an existing test
+  case. All 4 PBR maps rendered non-empty, albedo visually confirmed the
+  request landed. Delivered the result to Grayson directly, closing the
+  request-to-delivery loop for real rather than asserting it via test count.
 
 ### 2026-08-26 (night) — Cookbook growth: fabrics, organics, sci-fi, terrain
 - Extended the proven authoring recipe library beyond the frozen 15-case
