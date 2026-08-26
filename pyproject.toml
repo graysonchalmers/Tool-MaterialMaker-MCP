@@ -1,8 +1,31 @@
 [project]
 name = "mm-mcp"
-version = "0.0.1"
-description = "MCP server for authoring and rendering Material Maker graphs"
+version = "0.1.0"
+description = "MCP server for authoring and rendering Material Maker node graphs"
+readme = "README.md"
 requires-python = ">=3.13"
+license = { text = "MIT" }
+authors = [{ name = "Grayson Chalmers" }]
+dependencies = [
+    "mcp>=2,<3",
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0.0"]
+
+[project.scripts]
+mm-mcp = "mm_mcp.server:main"
+
+[project.urls]
+Homepage = "https://github.com/graysonchalmers/Tool-MaterialMaker-MCP"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]

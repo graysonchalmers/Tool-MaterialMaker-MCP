@@ -1,0 +1,190 @@
+{
+  "_meta": {
+    "version": 1,
+    "frozen": true,
+    "frozen_date": "2026-08-26",
+    "frozen_note": "Reviewed by Grayson 2026-08-26; m02 anisotropy criterion softened to directional streaking before freeze. Cases + rubric are now locked for Phase 3 tuning.",
+    "case_count": 15,
+    "note": "JSON has no comments; rubric lives in _rubric below. Do NOT edit cases or the rubric during Phase 3 tuning (3C). Freeze at the end of 3A after Grayson's review by setting frozen=true. Adding cases later is a NEW scorecard, not an edit to this set."
+  },
+  "_rubric": {
+    "scoring": "any-variant: a case is a HIT if AT LEAST ONE of its 2-3 rendered variants is usable.",
+    "usable_definition": "The rendered PBR maps read as the prompted material without manual graph repair. Opening the .ptex in Material Maker to tweak to taste is fine; opening it to fix breakage is a MISS.",
+    "usable_requires_all": [
+      "every must_have criterion is visibly present in the rendered maps",
+      "no must_not criterion is present",
+      "no render errors (RenderResult.ok is true, all four maps produced)",
+      "no obviously broken map: albedo not flat-black or flat-white, normal not flat (uniform blue), heightmap/orm not uniform"
+    ],
+    "gate": ">= 70% hit-rate (>= 11 of 15 cases) with any-variant scoring, Grayson-audited, recorded in STATUS.md.",
+    "judging": "Claude vision scores each case against must_have/must_not; Grayson audits every miss + a sample of hits. Disputed case = Grayson rules."
+  },
+  "cases": [
+    {
+      "id": "m01_weathered_copper",
+      "prompt": "weathered copper",
+      "category": "metal",
+      "must_have": [
+        "copper/orange-brown metallic base tone",
+        "green-to-teal verdigris patina in recessed or aged areas",
+        "metallic albedo with non-uniform roughness (patina duller than bare metal)"
+      ],
+      "must_not": ["clean uniform polished copper with no patina"]
+    },
+    {
+      "id": "m02_brushed_aluminum",
+      "prompt": "brushed aluminum",
+      "category": "metal",
+      "must_have": [
+        "neutral light-gray metallic tone",
+        "fine directional brush streaks visible in normal or roughness",
+        "the streaking is directional (aligned along one axis), not isotropic noise"
+      ],
+      "must_not": ["colored tint (gold/copper/blue)", "heavy rust or corrosion"]
+    },
+    {
+      "id": "m03_rusted_iron",
+      "prompt": "rusted iron",
+      "category": "metal",
+      "must_have": [
+        "orange-brown rust patches over a darker metal base",
+        "rough, pitted surface where rust has formed",
+        "roughness higher on rusted areas than on remaining bare metal"
+      ],
+      "must_not": ["uniform clean metal", "green patina (that is copper, not iron)"]
+    },
+    {
+      "id": "s01_red_brick_wall",
+      "prompt": "red brick wall",
+      "category": "stone_masonry",
+      "must_have": [
+        "regular running-bond brick coursing (offset rows)",
+        "recessed mortar lines visible in the heightmap/normal",
+        "red-to-brown brick color with lighter mortar"
+      ],
+      "must_not": ["random noise with no brick pattern", "single flat color"]
+    },
+    {
+      "id": "s02_gray_granite",
+      "prompt": "polished gray granite",
+      "category": "stone_masonry",
+      "must_have": [
+        "speckled gray base with fine mineral grain variation",
+        "low roughness consistent with a polished stone surface",
+        "subtle multi-tone speckle (light and dark flecks), not a single gray"
+      ],
+      "must_not": ["large cracks or heavy relief", "obvious repeating tile seams"]
+    },
+    {
+      "id": "s03_cracked_concrete",
+      "prompt": "cracked concrete",
+      "category": "stone_masonry",
+      "must_have": [
+        "light-gray rough concrete base",
+        "network of dark cracks recessed in the heightmap",
+        "surface roughness variation and subtle staining"
+      ],
+      "must_not": ["clean smooth concrete with no cracks", "brick or tile pattern"]
+    },
+    {
+      "id": "w01_oak_planks",
+      "prompt": "oak wood planks",
+      "category": "wood",
+      "must_have": [
+        "parallel plank divisions with gaps/grooves between boards",
+        "directional wood grain running along the plank length",
+        "warm brown wood tone with grain-driven color variation"
+      ],
+      "must_not": ["no grain (flat brown)", "stone or brick pattern"]
+    },
+    {
+      "id": "w02_weathered_barn_wood",
+      "prompt": "weathered gray barn wood",
+      "category": "wood",
+      "must_have": [
+        "faded gray-brown weathered wood tone",
+        "pronounced rough grain and splitting along the grain",
+        "higher roughness than fresh finished wood"
+      ],
+      "must_not": ["glossy varnished finish", "vivid saturated wood color"]
+    },
+    {
+      "id": "f01_woven_denim",
+      "prompt": "blue denim fabric",
+      "category": "fabric_leather",
+      "must_have": [
+        "twill/woven diagonal thread pattern in the normal",
+        "indigo-blue base with subtle thread-level color variation",
+        "matte, high-roughness cloth surface"
+      ],
+      "must_not": ["smooth flat plastic look", "metallic sheen"]
+    },
+    {
+      "id": "f02_brown_leather",
+      "prompt": "brown leather",
+      "category": "fabric_leather",
+      "must_have": [
+        "organic cellular/wrinkle grain typical of leather",
+        "warm brown tone with subtle highlight/lowlight in the grain",
+        "medium roughness, soft non-metallic surface"
+      ],
+      "must_not": ["woven thread pattern (that is fabric)", "hard reflective metal look"]
+    },
+    {
+      "id": "o01_mossy_forest_floor",
+      "prompt": "mossy forest floor",
+      "category": "organic_ground",
+      "must_have": [
+        "green moss patches over a darker soil/earth base",
+        "irregular organic clumping, not a regular grid",
+        "bumpy relief from moss and debris in the heightmap"
+      ],
+      "must_not": ["uniform flat green", "man-made tile/brick pattern"]
+    },
+    {
+      "id": "o02_cracked_dry_mud",
+      "prompt": "cracked dry mud",
+      "category": "organic_ground",
+      "must_have": [
+        "polygonal cracked plates (dried-mud cell pattern)",
+        "deep recessed cracks between plates in the heightmap",
+        "tan/brown earth tone, matte high roughness"
+      ],
+      "must_not": ["regular straight-line grid (that is tile)", "wet glossy look"]
+    },
+    {
+      "id": "man01_metal_grating",
+      "prompt": "hexagonal metal grating",
+      "category": "manufactured",
+      "must_have": [
+        "regular hexagonal cell pattern",
+        "metallic tone with cell edges raised or holes recessed in the heightmap",
+        "consistent manufactured regularity across the tile"
+      ],
+      "must_not": ["organic irregular pattern", "non-metallic surface"]
+    },
+    {
+      "id": "man02_ceramic_hex_tiles",
+      "prompt": "white ceramic hexagon tiles",
+      "category": "manufactured",
+      "must_have": [
+        "regular hexagon tile layout with recessed grout lines",
+        "white/off-white tile faces with a low-roughness glazed look",
+        "grout lines darker and rougher than the tile faces"
+      ],
+      "must_not": ["metallic surface", "no visible grout/tile separation"]
+    },
+    {
+      "id": "combo01_rusted_painted_steel",
+      "prompt": "rusted painted steel, paint peeling to bare metal",
+      "category": "weathering_combo",
+      "must_have": [
+        "a painted top layer (flat colored coat) partially removed",
+        "rust and/or bare metal exposed where paint has peeled",
+        "roughness contrast between smooth paint and rough rust",
+        "irregular peel edges, not a clean geometric mask"
+      ],
+      "must_not": ["fully clean paint with no wear", "fully rust with no paint remaining"]
+    }
+  ]
+}

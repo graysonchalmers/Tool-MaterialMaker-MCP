@@ -64,10 +64,20 @@ def render(ptex: dict, size: int = 512, outdir: str | None = None,
         "-t", "Godot/Godot 4 Standard",
         "-o", outdir, "--size", str(size),
     ]
-    try:
-        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
-    except subprocess.TimeoutExpired:
-        return RenderResult(ok=False, error="Godot render timed out after 180s")
+
+    # Godot occasionally dies mid-export with a Windows crash code (access
+    # violation 0xC0000005 = 3221225477, stack-guard 0xC0000409 = 3221226505)
+    # that is unrelated to the graph — the identical .ptex renders on a re-run.
+    # Retry those transient crashes a couple of times before giving up.
+    _TRANSIENT = {3221225477, 3221226505}
+    proc = None
+    for attempt in range(3):
+        try:
+            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
+        except subprocess.TimeoutExpired:
+            return RenderResult(ok=False, error="Godot render timed out after 180s")
+        if proc.returncode not in _TRANSIENT:
+            break
 
     log = (proc.stdout or "") + (proc.stderr or "")
     log_tail = "\n".join(log.splitlines()[-20:])

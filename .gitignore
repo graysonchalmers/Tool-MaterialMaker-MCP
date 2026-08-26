@@ -17,6 +17,11 @@ output/
 *.tmp.ptex
 run.log
 
+# Phase 3 quality: keep test_set + scorecards; ignore heavy renders and the
+# authored .ptex variants (author.py regenerates them deterministically).
+quality/runs/
+quality/authored/
+
 # OS junk
 Thumbs.db
 Desktop.ini
