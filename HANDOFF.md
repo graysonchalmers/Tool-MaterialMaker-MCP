@@ -1,56 +1,58 @@
 # 🧭 Session Handoff — Tool-MaterialMaker-MCP
 
-_Last updated: 2026-08-26 06:05 CT (America/Chicago)_
+_Last updated: 2026-08-26 06:50 CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**Shipped a first public release, then kept improving it.** The repo is **public**
-on GitHub with an MIT license, a public README (gallery + super-alpha disclaimer),
-a pip-installable package (`mm-mcp` entry point), a six-material `examples/`
-showcase, a social-preview card (`docs/social-preview.png`, needs manual upload
-via repo Settings → Social preview), and a tagged **`v0.1.0`** release. Phases 0-3
-are all done and verified; **Phase 3 authoring quality is now at 13/15 (87%)**
-after landing the two hex cases (man01 metal grating + man02 ceramic hex tiles)
-via a beehive clone. Working tree is clean and `main` is level with `origin/main`.
-Nothing is mid-edit.
+**Public v0.1.0 release, then improved to a perfect Phase 3 score.** The repo is
+**public** on GitHub with an MIT license, a public README (8-material gallery +
+super-alpha disclaimer), a pip-installable package (`mm-mcp` entry point), an
+`examples/` showcase (8 materials), a refreshed social-preview card
+(`docs/social-preview.png`, still needs manual upload via repo Settings → Social
+preview), and a tagged **`v0.1.0`** release. Phases 0-3 all done and verified;
+**Phase 3 authoring quality is 15/15 (100%)**. The flat-normal blocker that dogged
+several cases is **SOLVED** (`normal_map` `param4=0`). Working tree is clean, `main`
+is level with `origin/main`. Nothing is mid-edit.
 
 ## 📌 Where we stopped
 
-Everything for the release is landed, pushed, and public. Last commit is
-`4eaaca9` (the super-alpha disclaimer); `v0.1.0` tags it. The session's final act
-was cutting the release. There is no unfinished work in flight.
+Everything is landed, pushed, and public. Final acts: solved the flat-normal
+blocker to reach 15/15, then refreshed the gallery + social card for the perfect
+set. Last commit `9273ec5`. No unfinished work in flight.
+
+## ⭐ The flat-normal fix (the session's key discovery)
+
+`normal_map` is a compound node: `input → buffer(2^param0) → switch(param4) →
+edge_detect(param1)`. Default **`param4=1`** edge-detects a pre-rendered BUFFER of
+the input, which comes back FLAT for a directly-fed analytic generator (voronoi,
+weave, perlin-through-colorize) — the cause of every flat normal. Set **`param4=0`**
+to edge-detect the raw input → real relief; `param1` tunes strength (0.2-0.4
+subtle). Cloned working chains (dry_earth/bricks/beehive) already worked because
+their input reaches normal_map via a buffered blend. Full notes in
+`docs/AUTHORING.md`; it's a general lever (granite/aluminum can get real normals too).
 
 ## ▶️ Next concrete step
 
-Nothing is required — v0.1.0 is a clean stopping point. When you want to keep
-going, pick from the **Next-up options** menu below (that's the "bunch of next-up
-options" you asked to record).
+Nothing is required — v0.1.0 is public and Phase 3 is 15/15. The one loose thread
+is the **manual social-preview upload** (repo Settings → General → Social preview,
+upload `docs/social-preview.png`). Otherwise pick from the menu below.
 
 ## 🧭 Next-up options (pick any; none are blocking)
 
 **A. Polish the public page (cheap, high-visibility)**
-- Eyeball the live README render for image/table correctness:
+- Upload `docs/social-preview.png` as the repo social preview (manual, GitHub has
+  no API for it).
+- Eyeball the live README render:
   https://github.com/graysonchalmers/Tool-MaterialMaker-MCP
-- Add a repo social-preview image (Settings → General → Social preview) so link
-  shares show a material, not a gray box. A contact sheet of the gallery works.
-- Consider a short GIF/screen-capture of an assistant authoring a material end to
-  end (prompt → graph → render) for the README top.
+- Consider a short GIF of an assistant authoring a material end to end
+  (prompt → graph → render) for the README top.
 
-**B. Push authoring quality past 13/15 (the fun artist work)**
-Two MISS cases remain (both harder composites):
-- `f01` denim weave — needs a woven twill pattern with a real normal (the paper
-  example emits albedo only). Look for a fabric/weave generator to clone; the
-  `weave`/`weave2` nodes may exist, else build a crossed-directional pattern.
-- `combo01` paint-over-rust-with-peel — a flat colored paint coat blended over
-  `rusted_metal` via an irregular peel mask, with roughness contrast between
-  smooth paint and rough rust. A masked two-layer blend, like the copper patina
-  but with a harder-edged peel mask.
-- Reusable recipes proven so far (see `docs/AUTHORING.md`): voronoi port-2
-  per-cell-random flecks (granite), wood-grain-as-brush-streaks (aluminum),
-  **beehive hex clone** (both hex cases — man01 relief via heightmap, man02
-  drives albedo off the clean hex field bypassing the per-cell random).
+**B. Quality is DONE at 15/15.** Optional polish: apply the `param4=0` normal fix
+to the granite and aluminum showcase pieces for real micro-relief (they render
+flat normals now, defensible but upgradeable). The frozen test set is maxed; any
+further work would be new cases or higher fidelity, not the gate.
 
 **C. Robustness / cross-platform (makes "verified on one machine" less scary)**
 - Test on macOS/Linux (path handling, `_console.exe` is Windows-only — the code
@@ -128,6 +130,18 @@ Two MISS cases remain (both harder composites):
 ---
 
 ## 🕓 Session log
+
+### 2026-08-26 (late pm) — 15/15 via the flat-normal fix + gallery refresh
+- Went for 15/15. Landed `combo01` (paint-over-rust peel composite: flat paint
+  coat blended over rusted_metal through an irregular perlin peel mask) → 14/15.
+- Cracked the flat-normal blocker: `normal_map` is a compound
+  `input→buffer→switch(param4)→edge_detect`; default `param4=1` buffers the input
+  and returns flat for analytic generators. **`param4=0`** fixes it. That gave
+  `f01` denim a real diagonal-twill normal (diagonal_weave grafted into
+  crocodile_skin) → **15/15 (100%)**. Documented in `docs/AUTHORING.md`.
+- Refreshed the `examples/` gallery to 8 materials (added denim, ceramic hex,
+  rusted painted steel) and re-cut `docs/social-preview.png` as a 4x2 grid.
+  Updated README gallery + status to 15/15. Commits through `9273ec5`.
 
 ### 2026-08-26 (pm) — Close Phase 3 gate + ship v0.1.0 public release
 - Audited the flagged `s02` granite: called it a real MISS (foggy albedo, not the
