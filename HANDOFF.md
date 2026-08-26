@@ -6,30 +6,30 @@ The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**Public v0.1.0 release, perfect Phase 3 score, plus a normal-map polish pass.**
-The repo is **public** on GitHub with an MIT license, a public README (8-material
-gallery + super-alpha disclaimer), a pip-installable package (`mm-mcp` entry
-point), an `examples/` showcase (8 materials), a refreshed social-preview card
-(`docs/social-preview.png`, still needs manual upload via repo Settings → Social
-preview), and a tagged **`v0.1.0`** release. Phases 0-3 all done and verified;
-**Phase 3 authoring quality is 15/15 (100%)**. The flat-normal blocker that dogged
-several cases is **SOLVED** (`normal_map` `param4=0`), and this session applied
-that fix to the two remaining flat-normal HITs (`s02` granite, `m02` aluminum),
-so all 15 showcase-quality materials now have real relief. Working tree has
-this session's changes staged for commit (see below); `main` was level with
-`origin/main` at pickup.
+**Public v0.1.0 release, perfect Phase 3 score, normal-map polish pass, social
+preview live.** The repo is **public** on GitHub with an MIT license, a public
+README (8-material gallery + super-alpha disclaimer), a pip-installable package
+(`mm-mcp` entry point), an `examples/` showcase (8 materials), a live social
+preview card (uploaded via repo Settings → Social preview, confirmed persisting
+after reload), and a tagged **`v0.1.0`** release. Phases 0-3 all done and
+verified; **Phase 3 authoring quality is 15/15 (100%)**. The flat-normal blocker
+that dogged several cases is **SOLVED** (`normal_map` `param4=0`), applied to
+every case that had it, including the two remaining flat-normal HITs (`s02`
+granite, `m02` aluminum) this session. Working tree is clean, `main` is level
+with `origin/main` at commit `e3461c2`.
 
 ## 📌 Where we stopped
 
 Applied the `param4=0` normal-map upgrade to granite and aluminum (option B from
 the previous handoff), re-rendered and eyeballed both, restored their HIT
 verdicts in the scorecard (rendering resets `_result.json` verdicts, so these
-were manually re-patched with the original judge notes + an appended
+were manually re-patched with the original judge notes plus an appended
 normal-upgrade note), copied the fixed graphs into the public `examples/`
 showcase, and updated `docs/AUTHORING.md` + `examples/README.md`. Fast test
-suite still 80/80. **Not yet committed or pushed** — do that next unless
-Grayson wants to review the diff first. Last commit before this session was
-`4181280`.
+suite 80/80. Committed and pushed as `e3461c2`. Then uploaded
+`docs/social-preview.png` as the repo's social preview via the browser (GitHub
+has no API for this) and confirmed it persists after a page reload. No
+unfinished work in flight.
 
 ## ⭐ The flat-normal fix (the session's key discovery)
 
@@ -44,19 +44,17 @@ their input reaches normal_map via a buffered blend. Full notes in
 
 ## ▶️ Next concrete step
 
-Nothing is required — v0.1.0 is public and Phase 3 is 15/15. The one loose thread
-is the **manual social-preview upload** (repo Settings → General → Social preview,
-upload `docs/social-preview.png`). Otherwise pick from the menu below.
+Nothing is required — v0.1.0 is public, Phase 3 is 15/15, and the social preview
+is live. Pick from the menu below, or start a new thread of work entirely.
 
 ## 🧭 Next-up options (pick any; none are blocking)
 
-**A. Polish the public page (cheap, high-visibility)**
-- Upload `docs/social-preview.png` as the repo social preview (manual, GitHub has
-  no API for it).
-- Eyeball the live README render:
-  https://github.com/graysonchalmers/Tool-MaterialMaker-MCP
-- Consider a short GIF of an assistant authoring a material end to end
-  (prompt → graph → render) for the README top.
+**A. DONE this session.** Uploaded `docs/social-preview.png` as the repo social
+preview (manual, GitHub has no API for it) and confirmed it persists. Still
+open if wanted: eyeball the live README render at
+https://github.com/graysonchalmers/Tool-MaterialMaker-MCP, or consider a short
+GIF of an assistant authoring a material end to end (prompt → graph → render)
+for the README top.
 
 **B. DONE this session.** Applied the `param4=0` normal fix to the granite and
 aluminum showcase pieces — both now have real micro-relief instead of flat
@@ -137,6 +135,12 @@ the 15-case set still has an avoidable flat normal.
 ---
 
 ## 🕓 Session log
+
+### 2026-08-26 (evening, cont.) — Social preview uploaded live
+- Uploaded `docs/social-preview.png` as the repo's social preview via the
+  browser (repo Settings → General → Social preview; GitHub has no API for
+  this field). Confirmed it persists after a page reload — the last open item
+  from the previous handoff's option A is closed.
 
 ### 2026-08-26 (evening) — Normal-map polish: granite + aluminum get real relief
 - Applied the `param4=0` normal fix (option B from the last handoff) to `s02`
