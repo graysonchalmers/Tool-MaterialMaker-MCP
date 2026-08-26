@@ -67,3 +67,36 @@ def test_special_type_is_accepted():
     g["nodes"].append({"name": "c", "type": "comment", "parameters": {}})
     errs = [p for p in validate_graph(g, CATALOG) if p["severity"] == "error"]
     assert errs == []
+
+
+def test_malformed_graph_never_raises():
+    """Regression: node missing 'name' and 'type'; connection missing port keys."""
+    bad = {"type": "graph",
+           "nodes": [{"parameters": {}}],
+           "connections": [{"from": "p", "to": "p"}]}
+    problems = validate_graph(bad, CATALOG)  # must NOT raise
+    assert isinstance(problems, list)
+
+
+def test_node_with_name_no_type_referenced_by_connection():
+    """Regression: node has name but missing type, referenced in connection."""
+    bad = {"type": "graph",
+           "nodes": [{"name": "n1", "parameters": {}}],
+           "connections": [{"from": "n1", "from_port": 0, "to": "n1", "to_port": 0}]}
+    problems = validate_graph(bad, CATALOG)  # must NOT raise
+    assert isinstance(problems, list)
+    # Should have errors for unknown type and dangling connection (n1 not in catalog)
+    errs = [p for p in problems if p["severity"] == "error"]
+    assert len(errs) > 0
+
+
+def test_node_missing_required_keys():
+    """Regression: node is completely empty dict."""
+    bad = {"type": "graph",
+           "nodes": [{}],
+           "connections": []}
+    problems = validate_graph(bad, CATALOG)  # must NOT raise
+    assert isinstance(problems, list)
+    # Should report unknown type since type is missing (None)
+    errs = [p for p in problems if p["severity"] == "error"]
+    assert len(errs) > 0
