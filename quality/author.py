@@ -190,12 +190,123 @@ def build_w01_oak_planks(iter_label: str) -> list[str]:
     return paths
 
 
+def _grad(points):
+    return {"interpolation": 1, "type": "Gradient",
+            "points": [{"a": 1, "r": r, "g": g, "b": b, "pos": p}
+                       for (p, r, g, b) in points]}
+
+
+def _from_scratch_noise_material(perlin_params, albedo_points, *,
+                                 metallic=0.0, roughness=0.5, normal_amount=0.3):
+    """A minimal, valid noise->colorize->material graph:
+    perlin -> colorize(albedo) -> Material.albedo, perlin -> normal_map ->
+    Material.normal (so the normal isn't flat), with scalar metallic/roughness.
+    Node skeletons match the shapes Godot's loader expects (verified vs
+    rusted_metal / wooden_floor)."""
+    nodes = [
+        {"name": "perlin_0", "type": "perlin",
+         "node_position": {"x": 0, "y": 0}, "parameters": dict(perlin_params)},
+        {"name": "colorize_0", "type": "colorize",
+         "node_position": {"x": 300, "y": -60},
+         "parameters": {"gradient": _grad(albedo_points)}},
+        # normal_map is a COMPOUND node: its real params are param0 (buffer
+        # size 2^n), param1 (STRENGTH, default 1 — this is what drives relief),
+        # param2, param4. Earlier stray keys (amount/size/param3) were ignored,
+        # and param1=0.2 rendered a near-flat normal. Map relief -> param1.
+        {"name": "normal_map_0", "type": "normal_map",
+         "node_position": {"x": 300, "y": 160},
+         "parameters": {"param0": 10, "param1": normal_amount,
+                        "param2": 0, "param4": 1}},
+        {"name": "Material", "type": "material",
+         "node_position": {"x": 620, "y": 40},
+         "export_paths": {},
+         "parameters": {
+             "albedo_color": {"a": 1, "r": 1, "g": 1, "b": 1, "type": "Color"},
+             "ao": 1, "depth_scale": 1, "emission_energy": 1,
+             "metallic": metallic, "normal": 1, "roughness": roughness,
+             "size": 11, "sss": 0}},
+    ]
+    connections = [
+        {"from": "perlin_0", "from_port": 0, "to": "colorize_0", "to_port": 0},
+        {"from": "perlin_0", "from_port": 0, "to": "normal_map_0", "to_port": 0},
+        {"from": "colorize_0", "from_port": 0, "to": "Material", "to_port": 0},
+        {"from": "normal_map_0", "from_port": 0, "to": "Material", "to_port": 4},
+    ]
+    return {"connections": connections, "nodes": nodes}
+
+
+def build_s02_gray_granite(iter_label: str) -> list[str]:
+    """From scratch: fine multi-octave perlin speckle -> multi-tone gray ramp,
+    low roughness (polished), non-metallic, subtle normal."""
+    paths = []
+    # v1: neutral gray granite, fine speckle
+    g = _from_scratch_noise_material(
+        {"iterations": 10, "persistence": 0.6, "scale_x": 32, "scale_y": 32},
+        [(0.0, 0.28, 0.28, 0.30), (0.4, 0.46, 0.46, 0.48),
+         (0.7, 0.60, 0.60, 0.62), (1.0, 0.74, 0.74, 0.75)],
+        metallic=0.0, roughness=0.28, normal_amount=0.6)
+    paths.append(save_variant(g, iter_label, "s02_gray_granite", 1))
+    # v2: warmer speckle (feldspar tint), slightly coarser
+    g = _from_scratch_noise_material(
+        {"iterations": 9, "persistence": 0.62, "scale_x": 24, "scale_y": 24},
+        [(0.0, 0.26, 0.25, 0.26), (0.35, 0.45, 0.43, 0.42),
+         (0.7, 0.62, 0.59, 0.57), (1.0, 0.76, 0.74, 0.72)],
+        metallic=0.0, roughness=0.32, normal_amount=0.7)
+    paths.append(save_variant(g, iter_label, "s02_gray_granite", 2))
+    return paths
+
+
+def build_o01_mossy_forest_floor(iter_label: str) -> list[str]:
+    """From scratch: clumpy perlin -> ramp from dark soil (low) to moss green
+    (high), strong normal for bumpy relief, high roughness (matte)."""
+    paths = []
+    g = _from_scratch_noise_material(
+        {"iterations": 8, "persistence": 0.72, "scale_x": 8, "scale_y": 8},
+        [(0.0, 0.13, 0.09, 0.05),   # dark soil
+         (0.4, 0.22, 0.20, 0.10),   # earthy
+         (0.65, 0.20, 0.36, 0.12),  # moss
+         (1.0, 0.36, 0.55, 0.20)],  # bright moss
+        metallic=0.0, roughness=0.9, normal_amount=2.5)
+    paths.append(save_variant(g, iter_label, "o01_mossy_forest_floor", 1))
+    g = _from_scratch_noise_material(
+        {"iterations": 9, "persistence": 0.75, "scale_x": 6, "scale_y": 6},
+        [(0.0, 0.15, 0.11, 0.06), (0.45, 0.18, 0.26, 0.10),
+         (0.7, 0.24, 0.42, 0.15), (1.0, 0.42, 0.60, 0.24)],
+        metallic=0.0, roughness=0.92, normal_amount=3.0)
+    paths.append(save_variant(g, iter_label, "o01_mossy_forest_floor", 2))
+    return paths
+
+
+def build_m02_brushed_aluminum(iter_label: str) -> list[str]:
+    """From scratch: perlin stretched hard along one axis (scale_y>>scale_x) for
+    directional brush streaks -> narrow neutral-gray ramp, metallic, med-low
+    roughness, faint normal."""
+    paths = []
+    # NOTE: an extreme stretch (scale_y ~96) degenerates the noise to near-
+    # constant, so its normal_map renders FLAT (broken map). Keep a moderate
+    # stretch so streaks stay directional but the normal retains relief.
+    g = _from_scratch_noise_material(
+        {"iterations": 8, "persistence": 0.55, "scale_x": 3, "scale_y": 20},
+        [(0.0, 0.60, 0.60, 0.61), (1.0, 0.82, 0.82, 0.83)],
+        metallic=1.0, roughness=0.35, normal_amount=1.1)
+    paths.append(save_variant(g, iter_label, "m02_brushed_aluminum", 1))
+    g = _from_scratch_noise_material(
+        {"iterations": 8, "persistence": 0.5, "scale_x": 4, "scale_y": 28},
+        [(0.0, 0.64, 0.64, 0.66), (1.0, 0.86, 0.86, 0.87)],
+        metallic=1.0, roughness=0.3, normal_amount=1.0)
+    paths.append(save_variant(g, iter_label, "m02_brushed_aluminum", 2))
+    return paths
+
+
 BUILDERS = {
     "f02_brown_leather": build_f02_brown_leather,
     "w02_weathered_barn_wood": build_w02_barn_wood,
     "m01_weathered_copper": build_m01_weathered_copper,
     "s03_cracked_concrete": build_s03_cracked_concrete,
     "w01_oak_planks": build_w01_oak_planks,
+    "s02_gray_granite": build_s02_gray_granite,
+    "o01_mossy_forest_floor": build_o01_mossy_forest_floor,
+    "m02_brushed_aluminum": build_m02_brushed_aluminum,
 }
 
 

@@ -84,5 +84,15 @@ metallic down on the patches. Recolor both layers to retarget the weathering:
   normal/height/orm — unusable under the "all four maps" rule. Build the material
   outputs explicitly.
 - **Transient Godot crash**: renders intermittently die with exit `0xC0000005` /
-  `0xC0000409` mid-export (GPU, not the graph). Re-run the same case; it passes.
-  Candidate for a retry in `render.py`.
+  `0xC0000409` mid-export (GPU, not the graph). `render.py` now retries these
+  transient codes up to 3x.
+- **From-scratch normals are BLOCKED (open item)**: a hand-assembled
+  `perlin -> normal_map -> Material.normal` chain renders a FLAT (uniform-blue)
+  normal, even copying a working example's `normal_map` params
+  (`param0`/`param1`/`param2`/`param4`) and wiring verbatim. The same perlin
+  drives a correct albedo, so the generator is fine; the compound `normal_map`
+  is not producing relief from a raw generator the way it does inside the
+  bundled examples. Until this is solved, build from-scratch materials by
+  CLONING a working example's full generator->normal_map->material chain and
+  repointing it, rather than assembling `normal_map` by hand. This blocks
+  `s02` granite, `o01` moss, `m02` aluminum (albedo correct, normal flat).
