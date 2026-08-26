@@ -64,7 +64,10 @@ checkout:
 
 ## Requirements
 
-- **Python 3.13+**
+- **Python 3.10+** (developed and verified on 3.13; older versions declared but
+  not exercised)
+- **Windows** is the only fully verified platform. The render runner falls back
+  to the plain Godot binary on macOS/Linux, but that path is untested.
 - **Godot 4.7.x** (the standard desktop binary; the server prefers the matching
   `_console.exe` build on Windows when present, to capture render logs)
 - **A Material Maker project checkout** on disk. The server reads that checkout's
@@ -76,6 +79,18 @@ checkout:
 
 ## Install
 
+From PyPI:
+
+```bash
+pip install mm-mcp
+```
+
+That puts the `mm-mcp` command on your PATH. Configure it with `MM_*`
+environment variables (the recommended path; see the MCP client example below),
+or with a `.env` file in the directory you launch it from.
+
+To hack on the server itself, install from source instead:
+
 ```bash
 git clone https://github.com/graysonchalmers/Tool-MaterialMaker-MCP.git
 cd Tool-MaterialMaker-MCP
@@ -83,15 +98,10 @@ python -m venv .venv
 # Windows:  .\.venv\Scripts\activate
 # macOS/Linux:  source .venv/bin/activate
 pip install -e .
-```
-
-Then copy the environment template and point it at your machine:
-
-```bash
 cp .env.example .env
 ```
 
-Edit `.env`:
+Then edit `.env`:
 
 ```
 MM_GODOT_BINARY=/path/to/Godot_v4.7.x_console.exe
@@ -99,8 +109,10 @@ MM_PROJECT_PATH=/path/to/material-maker
 MM_OUTPUT_DIR=/path/to/where/rendered/maps/should/go
 ```
 
-`.env` is gitignored. Config can also be supplied via `MM_*` environment
-variables, which take precedence over `.env`.
+`.env` is gitignored and read from the current working directory (or from the
+path in `MM_DOTENV` if set). Config can also be supplied via `MM_*` environment
+variables, which take precedence over `.env`. `MM_OUTPUT_DIR` is optional and
+defaults to an `output/` folder in the working directory.
 
 ## Verify
 
@@ -126,8 +138,8 @@ pytest -q                        # everything, including a real render
 
 ## Connect it to an MCP client
 
-The server speaks MCP over stdio. After `pip install -e .` it is on your PATH as
-`mm-mcp`. Point your client at that command with the three `MM_*` variables set.
+The server speaks MCP over stdio. After installing it is on your PATH as
+`mm-mcp`. Point your client at that command with the `MM_*` variables set.
 
 Claude Desktop / Claude Code (`claude_desktop_config.json` or an equivalent MCP
 config) example:

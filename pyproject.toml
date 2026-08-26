@@ -1,11 +1,27 @@
 [project]
 name = "mm-mcp"
-version = "0.1.0"
+version = "0.2.0"
 description = "MCP server for authoring and rendering Material Maker node graphs"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [{ name = "Grayson Chalmers" }]
+keywords = ["mcp", "material-maker", "godot", "pbr", "textures", "procedural", "node-graph"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: MIT License",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    # Only Windows is verified end to end. The render runner falls back to the
+    # plain Godot binary off-Windows, but that path is untested.
+    "Operating System :: Microsoft :: Windows",
+    "Topic :: Multimedia :: Graphics :: 3D Rendering",
+    "Topic :: Software Development :: Libraries",
+]
 dependencies = [
     "mcp>=2,<3",
     "python-dotenv>=1.0.0",
@@ -13,12 +29,15 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0.0"]
+release = ["build>=1.0", "twine>=5.0"]
 
 [project.scripts]
 mm-mcp = "mm_mcp.server:main"
 
 [project.urls]
 Homepage = "https://github.com/graysonchalmers/Tool-MaterialMaker-MCP"
+Repository = "https://github.com/graysonchalmers/Tool-MaterialMaker-MCP"
+Issues = "https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/issues"
 
 [build-system]
 requires = ["setuptools>=68"]

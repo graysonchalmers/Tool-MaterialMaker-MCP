@@ -2,13 +2,25 @@ import os
 from dataclasses import dataclass
 from dotenv import dotenv_values
 
-_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
+# Config is env-var-first (an MCP client sets MM_* in its server "env" block).
+# A .env file is a dev convenience only: looked up at MM_DOTENV if set, else in
+# the current working directory. It is NOT anchored to the install location, so
+# the same code works from a source checkout and from a `pip install` into
+# site-packages. Path defaults are intentionally empty so a stranger with no
+# config gets the actionable "set MM_PROJECT_PATH" message from require_valid()
+# rather than a stale path baked in at build time.
 _DEFAULTS = {
-    "MM_GODOT_BINARY": r"C:\Users\Grayson\AppData\Local\Godot\Godot_v4.7.1-stable_win64.exe",
-    "MM_PROJECT_PATH": r"C:\Projects-local\z-Git\material-maker",
-    "MM_OUTPUT_DIR": os.path.join(_PROJECT_ROOT, "output"),
+    "MM_GODOT_BINARY": "",
+    "MM_PROJECT_PATH": "",
+    "MM_OUTPUT_DIR": "",
 }
+
+
+def _dotenv_path() -> str:
+    override = os.environ.get("MM_DOTENV")
+    if override:
+        return override
+    return os.path.join(os.getcwd(), ".env")
 
 
 @dataclass
@@ -60,17 +72,17 @@ def require_valid(cfg: "Config") -> None:
 
 def load_config(overrides: dict | None = None) -> Config:
     env = dict(_DEFAULTS)
-    dotenv_path = os.path.join(_PROJECT_ROOT, ".env")
-    env.update({k: v for k, v in dotenv_values(dotenv_path).items() if v})
+    env.update({k: v for k, v in dotenv_values(_dotenv_path()).items() if v})
     env.update({k: v for k, v in os.environ.items() if k.startswith("MM_")})
     if overrides:
         env.update(overrides)
     project_path = env["MM_PROJECT_PATH"]
+    output_dir = env["MM_OUTPUT_DIR"] or os.path.join(os.getcwd(), "output")
     return Config(
         godot_binary=env["MM_GODOT_BINARY"],
         console_binary=_resolve_console(env["MM_GODOT_BINARY"]),
         project_path=project_path,
-        output_dir=env["MM_OUTPUT_DIR"],
+        output_dir=output_dir,
         nodes_dir=os.path.join(project_path, "addons", "material_maker", "nodes"),
         examples_dir=os.path.join(project_path, "material_maker", "examples"),
     )
