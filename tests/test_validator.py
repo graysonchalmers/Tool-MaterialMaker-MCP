@@ -48,11 +48,19 @@ def test_port_out_of_range_is_error():
     assert any("port" in e["message"].lower() for e in errs)
 
 
-def test_unknown_param_is_error():
+def test_unknown_param_is_warning():
+    """Material Maker's own loader (gen_base.gd deserialize) stores any key found
+    under "parameters" unconditionally and never errors on it - stray/renamed
+    parameter names from older files are silently ignored, not rejected. Match
+    that tolerance: an unknown parameter is a warning, not a hard error, so it
+    never fails the Phase 1 examples gate on legacy example files."""
     g = _good()
     g["nodes"][0]["parameters"] = {"bogus": 1}
-    errs = [p for p in validate_graph(g, CATALOG) if p["severity"] == "error"]
-    assert any("bogus" in e["message"] for e in errs)
+    problems = validate_graph(g, CATALOG)
+    errs = [p for p in problems if p["severity"] == "error"]
+    warns = [p for p in problems if p["severity"] == "warning"]
+    assert not any("bogus" in e["message"] for e in errs)
+    assert any("bogus" in w["message"] for w in warns)
 
 
 def test_param_out_of_range_is_warning():

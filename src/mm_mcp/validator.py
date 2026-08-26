@@ -18,7 +18,12 @@ def validate_graph(ptex: dict, catalog: dict) -> list[dict]:
         declared = {p["name"]: p for p in node_def["parameters"]}
         for pname, pval in (n.get("parameters") or {}).items():
             if pname not in declared:
-                problems.append({"severity": "error", "where": n.get("name", "?"),
+                # Material Maker's own loader (gen_base.gd deserialize) sets any
+                # key found under "parameters" unconditionally, so stray/renamed
+                # parameter names from older files are silently stored and never
+                # read rather than rejected. Match that tolerance: flag as a
+                # warning, not a hard error.
+                problems.append({"severity": "warning", "where": n.get("name", "?"),
                                  "message": f"unknown parameter '{pname}' for '{t}'"})
                 continue
             spec = declared[pname]
