@@ -284,6 +284,12 @@ def build_s02_gray_granite(iter_label: str) -> list[str]:
     set_gradient(g, "colorize_1", [(0.0, 0, 0, 0), (1.0, 0, 0, 0)])   # non-metal
     set_gradient(g, "colorize_2",                                     # polished
                  [(0.0, 0.14, 0.14, 0.14), (1.0, 0.30, 0.30, 0.30)])
+    # normal chain: rock's voronoi_1 -> warp_0 -> normal_map_0 is a directly-fed
+    # analytic generator, so default param4=1 (buffered edge_detect) renders
+    # flat. param4=0 edge-detects the raw warped voronoi -> real polished-stone
+    # micro-relief. Strength kept low (subtle, not craggy) for a polished slab.
+    set_param(g, "normal_map_0", "param4", 0)
+    set_param(g, "normal_map_0", "param1", 0.3)
     paths.append(save_variant(g, iter_label, "s02_gray_granite", 1))
 
     # v2: crisp per-cell random flecks -- albedo colorize fed from voronoi port 2
@@ -300,6 +306,8 @@ def build_s02_gray_granite(iter_label: str) -> list[str]:
     set_gradient(g, "colorize_1", [(0.0, 0, 0, 0), (1.0, 0, 0, 0)])
     set_gradient(g, "colorize_2",
                  [(0.0, 0.14, 0.14, 0.14), (1.0, 0.28, 0.28, 0.28)])
+    set_param(g, "normal_map_0", "param4", 0)
+    set_param(g, "normal_map_0", "param1", 0.35)
     paths.append(save_variant(g, iter_label, "s02_gray_granite", 2))
     return paths
 
@@ -363,6 +371,12 @@ def build_m02_brushed_aluminum(iter_label: str) -> list[str]:
         set_gradient(g, "colorize_0", [          # roughness: low, brushed streaks
             (0.0, *(rough_lo,) * 3), (1.0, *(rough_hi,) * 3)])
         drop_conn(g, "Material", 1)              # uniform metallic=1 (scalar)
+        # normal chain: blend_0 was straightened to take the raw perlin_2
+        # generator directly (no warp), so it's a directly-fed analytic input
+        # -> default param4=1 (buffered edge_detect) renders flat, same as the
+        # denim/granite blocker. param4=0 edge-detects the raw streaks -> real
+        # brush-scratch relief.
+        set_param(g, "normal_map_0", "param4", 0)
         set_param(g, "normal_map_0", "param1", relief)  # shallow scratches
         return g
 

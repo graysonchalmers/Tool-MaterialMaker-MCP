@@ -1,26 +1,35 @@
 # 🧭 Session Handoff — Tool-MaterialMaker-MCP
 
-_Last updated: 2026-08-26 06:50 CT (America/Chicago)_
+_Last updated: 2026-08-26 (evening) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**Public v0.1.0 release, then improved to a perfect Phase 3 score.** The repo is
-**public** on GitHub with an MIT license, a public README (8-material gallery +
-super-alpha disclaimer), a pip-installable package (`mm-mcp` entry point), an
-`examples/` showcase (8 materials), a refreshed social-preview card
+**Public v0.1.0 release, perfect Phase 3 score, plus a normal-map polish pass.**
+The repo is **public** on GitHub with an MIT license, a public README (8-material
+gallery + super-alpha disclaimer), a pip-installable package (`mm-mcp` entry
+point), an `examples/` showcase (8 materials), a refreshed social-preview card
 (`docs/social-preview.png`, still needs manual upload via repo Settings → Social
 preview), and a tagged **`v0.1.0`** release. Phases 0-3 all done and verified;
 **Phase 3 authoring quality is 15/15 (100%)**. The flat-normal blocker that dogged
-several cases is **SOLVED** (`normal_map` `param4=0`). Working tree is clean, `main`
-is level with `origin/main`. Nothing is mid-edit.
+several cases is **SOLVED** (`normal_map` `param4=0`), and this session applied
+that fix to the two remaining flat-normal HITs (`s02` granite, `m02` aluminum),
+so all 15 showcase-quality materials now have real relief. Working tree has
+this session's changes staged for commit (see below); `main` was level with
+`origin/main` at pickup.
 
 ## 📌 Where we stopped
 
-Everything is landed, pushed, and public. Final acts: solved the flat-normal
-blocker to reach 15/15, then refreshed the gallery + social card for the perfect
-set. Last commit `9273ec5`. No unfinished work in flight.
+Applied the `param4=0` normal-map upgrade to granite and aluminum (option B from
+the previous handoff), re-rendered and eyeballed both, restored their HIT
+verdicts in the scorecard (rendering resets `_result.json` verdicts, so these
+were manually re-patched with the original judge notes + an appended
+normal-upgrade note), copied the fixed graphs into the public `examples/`
+showcase, and updated `docs/AUTHORING.md` + `examples/README.md`. Fast test
+suite still 80/80. **Not yet committed or pushed** — do that next unless
+Grayson wants to review the diff first. Last commit before this session was
+`4181280`.
 
 ## ⭐ The flat-normal fix (the session's key discovery)
 
@@ -49,9 +58,9 @@ upload `docs/social-preview.png`). Otherwise pick from the menu below.
 - Consider a short GIF of an assistant authoring a material end to end
   (prompt → graph → render) for the README top.
 
-**B. Quality is DONE at 15/15.** Optional polish: apply the `param4=0` normal fix
-to the granite and aluminum showcase pieces for real micro-relief (they render
-flat normals now, defensible but upgradeable). The frozen test set is maxed; any
+**B. DONE this session.** Applied the `param4=0` normal fix to the granite and
+aluminum showcase pieces — both now have real micro-relief instead of flat
+normals. Quality was already DONE at 15/15; the frozen test set is maxed, so any
 further work would be new cases or higher fidelity, not the gate.
 
 **C. Robustness / cross-platform (makes "verified on one machine" less scary)**
@@ -69,12 +78,10 @@ further work would be new cases or higher fidelity, not the gate.
 - **Phase 5 (live control):** drive Material Maker over its in-app socket for a
   watchable, interactive build instead of batch render.
 
-**E. The flat-normal question (quality ceiling)**
-- Both new hits (granite, aluminum) render **flat normals**, defensible for
-  polished/brushed surfaces but a real ceiling for materials that need relief.
-  Worth a focused investigation into *why* hand-built and some cloned normal
-  chains render flat, since it's blocked multiple cases. If cracked, it reopens
-  from-scratch authoring.
+**E. The flat-normal question — RESOLVED and applied everywhere it mattered.**
+Root cause (`normal_map` `param4=1` buffers a directly-fed analytic input) found
+via denim, then applied to granite and aluminum this session. No known case in
+the 15-case set still has an avoidable flat normal.
 
 ## ❓ Open questions
 
@@ -130,6 +137,27 @@ further work would be new cases or higher fidelity, not the gate.
 ---
 
 ## 🕓 Session log
+
+### 2026-08-26 (evening) — Normal-map polish: granite + aluminum get real relief
+- Applied the `param4=0` normal fix (option B from the last handoff) to `s02`
+  gray granite and `m02` brushed aluminum, both already HITs but flat-normal.
+  Granite: `voronoi_1 -> warp_0 -> normal_map_0` was a directly-fed analytic
+  chain (same shape as the denim blocker). Aluminum: `blend_0 -> normal_map_0`
+  *looked* buffered but wasn't, once `blend_0` had been straightened to take
+  `perlin_2` directly (that straightening was iter1's own fix for the streaks,
+  and it happened to also make the chain analytic-direct) — a new nuance beyond
+  the original denim writeup, now documented in `docs/AUTHORING.md`.
+- Re-rendered both, confirmed via the actual normal PNGs: granite shows subtle
+  mottled micro-relief, aluminum shows clean parallel vertical brush streaks
+  (previously flat/uniform blue for both). Albedo unchanged, so `examples/images/`
+  preview thumbnails didn't need regenerating.
+- Rendering a case resets its `_result.json` verdict to unscored — recovered the
+  original HIT verdicts + judge notes from the last committed scorecard and
+  re-applied them (with an appended note on the normal upgrade) before
+  rebuilding the scorecard, so Phase 3 stays 15/15 with the original audit trail
+  intact rather than silently wiped.
+- Copied the fixed `.ptex` graphs into the public `examples/` showcase (the v2
+  variant of each was already the one on display). Fast suite still 80/80.
 
 ### 2026-08-26 (late pm) — 15/15 via the flat-normal fix + gallery refresh
 - Went for 15/15. Landed `combo01` (paint-over-rust peel composite: flat paint

@@ -139,10 +139,18 @@ Practical guidance now:
   heightmap): keep it as-is, it works.
 - Relief from a **directly-fed analytic generator** (weave, stretched noise,
   voronoi): set `normal_map` `param4=0` and tune `param1`.
-- A smooth source is still fine when the target is genuinely near-flat (polished
-  granite `s02`); the fix is for when you *want* the generator's pattern in the
-  normal.
+- Even a chain that *looks* buffered (a `blend` node ahead of `normal_map`) can
+  still be directly-fed if the blend's real input is an un-warped, un-buffered
+  generator — the switch cares about what the buffer actually renders, not the
+  node type sitting in front of it. `m02` brushed aluminum is the example: its
+  `blend_0 -> normal_map_0` chain looked like the "working" pattern, but once
+  `blend_0` was straightened to take `perlin_2` directly (killing the warp), the
+  buffer was flat again.
 
-`m02` brushed aluminum (previously "still open — crisp directional relief") is
-covered by the same lever: its streaks read in albedo + roughness already, and
-`param4=0` would add real directional micro-relief if a sharper normal is wanted.
+`s02` gray granite and `m02` brushed aluminum both got the `param4=0` upgrade
+(2026-08-26, post-15/15 polish pass): granite's `voronoi_1 -> warp_0 ->
+normal_map_0` chain and aluminum's straightened `blend_0 -> normal_map_0` chain
+were both directly-fed analytic sources rendering flat. `param4=0` at low
+`param1` (0.3–0.45) now gives granite real polished-stone micro-relief and
+aluminum real parallel brush-scratch relief, without changing either case's
+albedo/roughness or its HIT verdict.

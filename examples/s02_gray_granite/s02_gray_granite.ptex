@@ -95,10 +95,10 @@
    "parameters": {
     "amount": 0.5,
     "param0": 11,
-    "param1": 0.99,
+    "param1": 0.35,
     "param2": 0,
     "param3": 0,
-    "param4": 1,
+    "param4": 0,
     "size": 2
    },
    "type": "normal_map"
