@@ -376,8 +376,70 @@ def build_m02_brushed_aluminum(iter_label: str) -> list[str]:
     return paths
 
 
+def build_man01_metal_grating(iter_label: str) -> list[str]:
+    """Hexagonal metal grating = regular hex cells + metallic + raised-edge /
+    recessed-hole relief. CLONE beehive (hex generator with a working normal
+    chain): beehive_2:0 is a hex distance field (high = cell face, low = edge),
+    colorize_5 = albedo, colorize_4 = roughness, uniform_greyscale.color feeds
+    metallic, normal_map gives the hex relief. Recolor to gray metal, force
+    metallic, keep the regular hex relief."""
+    paths = []
+    g = load_example("beehive")
+    set_param(g, "uniform_greyscale", "color", 1.0)          # fully metallic
+    set_gradient(g, "colorize_5", [                           # albedo: gray metal
+        (0.0, 0.20, 0.20, 0.22),   # recessed edges/holes (dark)
+        (0.88, 0.58, 0.58, 0.60)]) # raised cell faces (lighter metal)
+    set_gradient(g, "colorize_4", [                           # roughness: metal
+        (0.30, 0.30, 0.30, 0.30), (0.89, 0.48, 0.48, 0.48)])
+    paths.append(save_variant(g, iter_label, "man01_metal_grating", 1))
+    g = load_example("beehive")
+    set_param(g, "beehive_2", "sx", 16); set_param(g, "beehive_2", "sy", 16)
+    set_param(g, "uniform_greyscale", "color", 1.0)
+    set_gradient(g, "colorize_5", [
+        (0.0, 0.16, 0.16, 0.18), (0.88, 0.52, 0.52, 0.55)])
+    set_gradient(g, "colorize_4", [
+        (0.30, 0.26, 0.26, 0.26), (0.89, 0.44, 0.44, 0.44)])
+    paths.append(save_variant(g, iter_label, "man01_metal_grating", 2))
+    return paths
+
+
+def build_man02_ceramic_hex_tiles(iter_label: str) -> list[str]:
+    """White ceramic hexagon tiles = regular hex faces (white, glazed/low-rough)
+    + recessed darker/rougher grout. CLONE beehive; non-metallic; recolor faces
+    white with dark grout; roughness LOW on faces (high pattern value) and HIGH
+    in grout (low value); keep the hex relief so grout reads recessed."""
+    # The blend path mixes the hex structure (beehive:0) with a per-cell RANDOM
+    # tone (beehive:1). That random is right for a metal panel (man01) but wrong
+    # for uniform white ceramic tiles, and the default polarity put white in the
+    # grout. Fix: drive albedo + roughness straight off the clean hex field
+    # (beehive_2:0) so faces are uniform, and set faces white / grout dark. The
+    # normal still reads from blend for relief (recessed grout).
+    paths = []
+    for n, (sx, sy) in enumerate([(20, 12), (14, 14)], start=1):
+        g = load_example("beehive")
+        set_param(g, "beehive_2", "sx", sx); set_param(g, "beehive_2", "sy", sy)
+        set_param(g, "uniform_greyscale", "color", 0.0)      # non-metallic
+        rewire(g, "colorize_5", 0, "beehive_2", 0)           # albedo <- clean hex
+        rewire(g, "colorize_4", 0, "beehive_2", 0)           # roughness <- clean hex
+        # Low white threshold so each hexagon is mostly white tile with only a
+        # THIN dark grout line (beehive:0 peaks at cell center; grout is the
+        # narrow low-value band at the edges).
+        set_gradient(g, "colorize_5", [                      # face high, grout low
+            (0.10, 0.26, 0.25, 0.23),   # grout (dark), thin
+            (0.20, 0.92, 0.92, 0.90),   # tile -> white fast
+            (1.0, 0.97, 0.97, 0.95)])   # tile face (white)
+        set_gradient(g, "colorize_4", [                      # roughness inverted
+            (0.10, 0.80, 0.80, 0.80),   # grout: rough
+            (0.20, 0.14, 0.14, 0.14),   # face: glazed
+            (1.0, 0.10, 0.10, 0.10)])
+        paths.append(save_variant(g, iter_label, "man02_ceramic_hex_tiles", n))
+    return paths
+
+
 BUILDERS = {
     "f02_brown_leather": build_f02_brown_leather,
+    "man01_metal_grating": build_man01_metal_grating,
+    "man02_ceramic_hex_tiles": build_man02_ceramic_hex_tiles,
     "w02_weathered_barn_wood": build_w02_barn_wood,
     "m01_weathered_copper": build_m01_weathered_copper,
     "s03_cracked_concrete": build_s03_cracked_concrete,
