@@ -436,8 +436,93 @@ def build_man02_ceramic_hex_tiles(iter_label: str) -> list[str]:
     return paths
 
 
+def retype(graph: dict, node_name: str, new_type: str, params: dict) -> None:
+    """Swap a node's type and replace its parameters. Connections that
+    reference it keep working as long as the new type's output port 0 is
+    compatible with what the old one fed."""
+    nd = node(graph, node_name)
+    nd["type"] = new_type
+    nd["parameters"] = dict(params)
+
+
+def build_f01_woven_denim(iter_label: str) -> list[str]:
+    """Blue denim = diagonal twill weave in the normal + indigo base + matte
+    cloth. No bundled example uses the weave nodes, so GRAFT diagonal_weave into
+    crocodile_skin's working generator->colorize->normal_map chain: swap its
+    voronoi_0 for diagonal_weave so the woven diagonal pattern drives albedo,
+    the normal (twill relief), and roughness. Recolor to indigo, force matte,
+    non-metallic (uniform_0 is already black = metallic 0)."""
+    paths = []
+    for n, (size, lo, hi) in enumerate(
+            [(24, (0.10, 0.13, 0.30), (0.26, 0.34, 0.55)),
+             (18, (0.08, 0.11, 0.26), (0.30, 0.38, 0.60))], start=1):
+        g = load_example("crocodile_skin")
+        retype(g, "voronoi_0", "diagonal_weave", {"size": size})
+        set_gradient(g, "colorize_1", [(0.0, *lo), (1.0, *hi)])   # indigo threads
+        set_gradient(g, "colorize_3",                             # matte, high
+                     [(0.0, 0.80, 0.80, 0.80), (1.0, 0.93, 0.93, 0.93)])
+        # colorize_0 feeds the NORMAL height. crocodile's ramp was tuned for
+        # voronoi's distribution and clips the weave to flat; make it linear so
+        # the full diagonal weave drives real relief.
+        set_gradient(g, "colorize_0", [(0.0, 0, 0, 0), (1.0, 1, 1, 1)])
+        set_param(g, "normal_map_0", "param1", 1.3)               # twill relief
+        paths.append(save_variant(g, iter_label, "f01_woven_denim", n))
+    return paths
+
+
+def add_node(graph: dict, name: str, ntype: str, params: dict) -> None:
+    graph["nodes"].append({"name": name, "type": ntype,
+                           "node_position": {"x": 0, "y": 0},
+                           "parameters": dict(params)})
+
+
+def build_combo01_rusted_painted_steel(iter_label: str) -> list[str]:
+    """Rusted painted steel, paint peeling to bare metal. CLONE rusted_metal
+    (rust albedo = blend_0:0, rust roughness = blend_1:0) and composite a flat
+    paint coat OVER the rust through an irregular peel mask:
+      - peel mask: a perlin thresholded by a colorize (hard-ish irregular edge);
+      - paint: a flat color + flat low roughness (a colorize with both stops the
+        same, fed by the mask perlin so it's a valid constant source);
+      - blend paint over rust for both albedo and roughness, opacity = mask.
+    Where the mask is high, paint shows (smooth); where low, rust/bare metal
+    shows (rough) -> roughness contrast + irregular peel edges."""
+    paths = []
+    palette = [((0.18, 0.42, 0.40), (0.20, 0.46, 0.44)),   # faded teal-green
+               ((0.42, 0.16, 0.14), (0.46, 0.18, 0.16))]   # faded oxide red
+    for n, (plo, phi) in enumerate(palette, start=1):
+        g = load_example("rusted_metal")
+        add_node(g, "perlin_pm", "perlin",
+                 {"scale_x": 6, "scale_y": 6, "iterations": 5})
+        add_node(g, "colorize_pm", "colorize",
+                 {"gradient": _grad([(0.42, 0, 0, 0), (0.52, 1, 1, 1)])})
+        add_node(g, "paint_alb", "colorize",
+                 {"gradient": _grad([(0.0, *plo), (1.0, *phi)])})
+        add_node(g, "paint_rgh", "colorize",
+                 {"gradient": _grad([(0.0, 0.28, 0.28, 0.28),
+                                     (1.0, 0.30, 0.30, 0.30)])})
+        add_node(g, "blend_alb", "blend", {"blend_type": 0, "amount": 1})
+        add_node(g, "blend_rgh", "blend", {"blend_type": 0, "amount": 1})
+        g["connections"] += [
+            {"from": "perlin_pm", "from_port": 0, "to": "colorize_pm", "to_port": 0},
+            {"from": "perlin_pm", "from_port": 0, "to": "paint_alb", "to_port": 0},
+            {"from": "perlin_pm", "from_port": 0, "to": "paint_rgh", "to_port": 0},
+            {"from": "blend_0", "from_port": 0, "to": "blend_alb", "to_port": 0},
+            {"from": "paint_alb", "from_port": 0, "to": "blend_alb", "to_port": 1},
+            {"from": "colorize_pm", "from_port": 0, "to": "blend_alb", "to_port": 2},
+            {"from": "blend_1", "from_port": 0, "to": "blend_rgh", "to_port": 0},
+            {"from": "paint_rgh", "from_port": 0, "to": "blend_rgh", "to_port": 1},
+            {"from": "colorize_pm", "from_port": 0, "to": "blend_rgh", "to_port": 2},
+        ]
+        rewire(g, "Material", 0, "blend_alb", 0)   # albedo <- paint-over-rust
+        rewire(g, "Material", 2, "blend_rgh", 0)   # roughness <- paint-over-rust
+        paths.append(save_variant(g, iter_label, "combo01_rusted_painted_steel", n))
+    return paths
+
+
 BUILDERS = {
     "f02_brown_leather": build_f02_brown_leather,
+    "f01_woven_denim": build_f01_woven_denim,
+    "combo01_rusted_painted_steel": build_combo01_rusted_painted_steel,
     "man01_metal_grating": build_man01_metal_grating,
     "man02_ceramic_hex_tiles": build_man02_ceramic_hex_tiles,
     "w02_weathered_barn_wood": build_w02_barn_wood,
