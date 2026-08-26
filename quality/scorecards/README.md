@@ -18,4 +18,6 @@ thing being measured.
 
 ## Freeze log
 
-- _(unfrozen — awaiting Grayson's 3A review)_
+- **2026-08-26** — FROZEN. Grayson reviewed the 15 cases; `m02_brushed_aluminum`
+  anisotropy criterion softened to "directional streaking (aligned along one
+  axis), not isotropic noise" before locking. `_meta.frozen = true`.

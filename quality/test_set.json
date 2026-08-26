@@ -1,7 +1,9 @@
 {
   "_meta": {
     "version": 1,
-    "frozen": false,
+    "frozen": true,
+    "frozen_date": "2026-08-26",
+    "frozen_note": "Reviewed by Grayson 2026-08-26; m02 anisotropy criterion softened to directional streaking before freeze. Cases + rubric are now locked for Phase 3 tuning.",
     "case_count": 15,
     "note": "JSON has no comments; rubric lives in _rubric below. Do NOT edit cases or the rubric during Phase 3 tuning (3C). Freeze at the end of 3A after Grayson's review by setting frozen=true. Adding cases later is a NEW scorecard, not an edit to this set."
   },
@@ -36,7 +38,7 @@
       "must_have": [
         "neutral light-gray metallic tone",
         "fine directional brush streaks visible in normal or roughness",
-        "anisotropic-looking directional variation, not isotropic noise"
+        "the streaking is directional (aligned along one axis), not isotropic noise"
       ],
       "must_not": ["colored tint (gold/copper/blue)", "heavy rust or corrosion"]
     },
