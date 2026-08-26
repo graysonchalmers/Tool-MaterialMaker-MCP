@@ -1,5 +1,9 @@
 """Phase 2 smoke: load a bundled example through the MCP layer and render it."""
 import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+
 from mm_mcp import server
 
 
