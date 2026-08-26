@@ -1,0 +1,21 @@
+; Engine configuration file.
+; Bundled headless preview scene for mm_mcp's render_preview tool. Not a
+; Material Maker checkout — a standalone project shipped with this package.
+
+config_version=5
+
+[application]
+
+config/name="mm_mcp_preview"
+run/main_scene="res://preview.tscn"
+config/features=PackedStringArray("4.7", "Forward Plus")
+
+[display]
+
+window/size/viewport_width=1024
+window/size/viewport_height=512
+window/stretch/mode="viewport"
+
+[rendering]
+
+renderer/rendering_method="forward_plus"

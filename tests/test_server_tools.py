@@ -36,3 +36,13 @@ def test_save_graph_writes_file(tmp_path):
     assert os.path.exists(out)
     with open(out, encoding="utf-8") as fh:
         assert json.load(fh)["type"] == "graph"
+
+
+def test_render_preview_missing_map_returns_error_as_data(tmp_path):
+    albedo = tmp_path / "albedo.png"
+    albedo.write_text("x")
+    result = server.render_preview(str(albedo), str(tmp_path / "nope_normal.png"),
+                                    str(tmp_path / "nope_orm.png"))
+    assert result["ok"] is False
+    assert result["image"] is None
+    assert "normal" in result["error"]

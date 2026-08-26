@@ -8,6 +8,7 @@ from mm_mcp.config import load_config, require_valid
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.validator import validate_graph
 from mm_mcp.render import render
+from mm_mcp.preview import render_preview as _render_preview
 from mm_mcp.doctor import run_check
 
 # Startup is lazy: importing this module must NOT validate config or build the
@@ -74,6 +75,22 @@ def render_graph(ptex: dict, size: int = 512, basename: str = "material") -> dic
             "error": result.error, "log_tail": result.log_tail}
 
 
+def render_preview(albedo_path: str, normal_path: str, orm_path: str,
+                    basename: str = "preview") -> dict:
+    """Composite a material's already-rendered maps onto a lit sphere + cube.
+
+    Call render_graph first and pass its albedo/normal/orm output paths here;
+    this does not render a graph itself, only visualizes maps that already
+    exist, so a normal map's relief is visible under real lighting instead of
+    read as a flat swatch.
+    """
+    cfg, _ = _ensure_ready()
+    result = _render_preview(albedo_path, normal_path, orm_path,
+                              basename=basename, cfg=cfg)
+    return {"ok": result.ok, "image": result.image,
+            "error": result.error, "log_tail": result.log_tail}
+
+
 def save_graph(ptex: dict, path: str) -> str:
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
     with open(path, "w", encoding="utf-8") as fh:
@@ -99,6 +116,7 @@ mcp.tool()(list_node_types)
 mcp.tool()(describe_node)
 mcp.tool()(validate)
 mcp.tool()(render_graph)
+mcp.tool()(render_preview)
 mcp.tool()(save_graph)
 mcp.tool()(list_examples)
 mcp.tool()(load_example)
