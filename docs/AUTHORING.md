@@ -270,3 +270,69 @@ iteration needed — every one reused an already-proven lever.
   mask (`rusted_metal` ships with no normal chain at all) so lichen patches
   read as faintly raised rather than a pure flat-color swap — a nice-to-have
   the donor's own verified `m01`/`m03` cases don't bother with.
+
+## Sci-fi panels cookbook (cookbook growth, informal, 2026-08-26)
+
+A category with no frozen-set precedent at all -- nearest bundled examples
+(`metal_pattern_2`/`3`) are undocumented anywhere else in this project.
+Builders: `quality/cookbook_scifi.py`. Introduces the **`pattern`** node
+family (independent x/y wave generators -- Sine/Triangle/Square/Sawtooth/
+Constant/Bounce -- combined via a mix mode) as a new lever alongside weave/
+voronoi/perlin/fbm. 3/4 HIT; the 4th is an honest partial with an unresolved
+bug, documented rather than papered over.
+
+**Not worth wiring:** Material's `emission_tex` port (port 3). The render
+pipeline's export target ("Godot/Godot 4 Standard") only produces albedo/
+normal/heightmap/orm -- an emission-only "glowing panel" material would be
+invisible in the actual 4-map product output. Ruled out a glowing-tech-panel
+idea for this reason before building anything; swapped in the vent grille
+instead.
+
+| Preview | Material | Verdict |
+|---|---|---|
+| ![](images/cookbook-scifi/sf01_hull_plating.png) | Diamond-plate hull panel | HIT |
+| ![](images/cookbook-scifi/sf02_hazard_stripe_panel.png) | Hazard stripe panel | HIT |
+| ![](images/cookbook-scifi/sf03_circuit_board.png) | Circuit board | Partial -- see bug below |
+| ![](images/cookbook-scifi/sf04_vent_grille_panel.png) | Vent grille panel | HIT |
+
+- **Hull plating:** clone `metal_pattern_2` (a bundled example with a
+  working grid-line normal chain, but NO albedo texture at all -- it relies
+  entirely on Material's flat scalar `albedo_color`). Graft the SAME grid
+  pattern (`blend_0`'s output) into new `colorize` nodes feeding both
+  albedo AND roughness, so panel seams read as visibly darker/duller, not
+  just normal-lit. Proactive `param4=0` -- `blend_0`'s inputs are pattern
+  generators (analytic), the same directly-fed shape as every other
+  flat-normal blocker.
+- **Hazard stripe panel:** built fresh (no donor has diagonal stripes).
+  `pattern` node with `x_wave=Square` for alternating bars, `y_wave=
+  Constant` so bars run along Y before rotation. Wiring order matters:
+  `pattern`(f) -> `colorize`(converts to rgba, hard yellow/black threshold)
+  -> `transform`(rotate 45). Feeding `transform` directly from `pattern`'s
+  'f' output is a port-type mismatch (`transform`'s input is `rgba`) --
+  matches `metal_pattern_2`'s own wiring order, which was the tell.
+- **Vent grille panel:** ONE `pattern` node with BOTH `x_wave` and `y_wave`
+  set to Square and `mix=Min` gives a grid of small square holes in a
+  single node (Min of two square waves = their intersection). Distinct
+  from `man01`'s hexagonal grating (beehive-based) -- a square punch
+  pattern instead.
+- **Circuit board (partial, unresolved bug):** dark PCB base + fine bright
+  traces (`pattern` Square wave, hard-thresholded, reused as its own mask)
+  worked cleanly on its own. Adding scattered "chip" blocks on top did not:
+  - v1 used a SECOND `pattern` node with `mix=Xor` of two Square waves for
+    the chip mask -- rendered as pure stripes, chip layer completely
+    invisible at every threshold tried (checked the normal map: only the
+    trace lines show). `pattern`'s mix modes aren't documented beyond the
+    enum names, and Xor's actual numeric behavior for continuous wave
+    values isn't obvious. Not worth reverse-engineering for a one-off.
+  - v2 swapped to the PROVEN granite-speckle lever (voronoi port 2, flat
+    per-cell random) instead -- predictable 0..1 range, no guessing. This
+    got chip blocks appearing, but at scale 6 they were huge, amorphous,
+    camo-pattern blobs covering ~40% of the surface, not small ICs.
+  - v3 raised voronoi scale to 18 for small, sparse, genuinely chip-sized
+    blocks. Better size/distribution, but a real bug remains: the
+    underlying trace stripes faintly bleed through the chip shapes even
+    where the mask should be fully opaque (`blend_type=0` "Normal" at
+    `amount=1`). Root cause not identified -- possibly the per-cell mask
+    value isn't as flat/saturated as assumed inside a cell. Kept as a
+    documented partial ("camo-patched circuit board" is still a usable
+    sci-fi texture) rather than sunk into a 4th iteration.
