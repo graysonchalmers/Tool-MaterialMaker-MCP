@@ -1,0 +1,5 @@
+# Keep the sdist to the installable package + its metadata. The test suite
+# imports quality/author.py (not shipped), so bundling tests would give sdist
+# installers an import error for no benefit.
+prune tests
+global-exclude __pycache__ *.pyc *.pyo
