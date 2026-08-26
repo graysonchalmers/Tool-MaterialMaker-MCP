@@ -75,5 +75,14 @@ def catalog_resource() -> str:
     return json.dumps(_CATALOG, indent=1)
 
 
-if __name__ == "__main__":
+def main() -> None:
+    """Console entry point (`mm-mcp`): run the MCP server over stdio.
+
+    Config is validated at import time (see `require_valid` above), so a missing
+    or wrong MM_GODOT_BINARY / MM_PROJECT_PATH fails fast before this is reached.
+    """
     mcp.run()
+
+
+if __name__ == "__main__":
+    main()

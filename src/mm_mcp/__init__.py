@@ -1,9 +1,13 @@
 """Material Maker MCP server package.
 
-Phase 1 units (see docs/PLAN.md) will live here:
-  catalog_builder.py, graph.py, render.py, server.py
-
-Nothing implemented yet; scaffold only.
+Lets an MCP client author Material Maker node graphs, validate them against a
+catalog built from the app's own node definitions, and render them headlessly
+to PBR texture maps. Units:
+  catalog_builder.py  build catalog.json from the .mmg node definitions
+  graph.py            build/validate .ptex graph JSON
+  validator.py        validate a graph against the catalog
+  render.py           headless Godot render runner
+  server.py           the MCP server (seven tools + catalog resource)
 """
 
-__version__ = "0.0.0"
+__version__ = "0.1.0"

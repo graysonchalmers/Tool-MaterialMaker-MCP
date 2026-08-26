@@ -235,30 +235,71 @@ def _from_scratch_noise_material(perlin_params, albedo_points, *,
     return {"connections": connections, "nodes": nodes}
 
 
+def rewire(graph: dict, to_node: str, to_port: int, from_node: str,
+           from_port: int) -> None:
+    """Repoint the connection feeding (to_node, to_port) to a new source."""
+    for c in graph["connections"]:
+        if c["to"] == to_node and c["to_port"] == to_port:
+            c["from"] = from_node
+            c["from_port"] = from_port
+            return
+    graph["connections"].append(
+        {"from": from_node, "from_port": from_port,
+         "to": to_node, "to_port": to_port})
+
+
 def build_s02_gray_granite(iter_label: str) -> list[str]:
-    """From scratch: fine multi-octave perlin speckle -> multi-tone gray ramp,
-    low roughness (polished), non-metallic, subtle normal."""
+    """Polished gray granite = FINE multi-tone mineral flecks, low roughness,
+    non-metallic, subtle relief.
+
+    Root-cause fix (iter1 was foggy): iter1 cloned rock but only shrank the
+    perlin, leaving rock's albedo voronoi at scale 4 (four giant blobs) blended
+    with smooth fbm = low-frequency gray fog, no flecks. rock's albedo path is
+    voronoi_0 -> blend_0 -> colorize_0. Granite's signature is a peppery spread
+    of light/dark mineral flecks, so the cell density has to be high.
+
+    v1: keep rock's chain, raise the ALBEDO voronoi (voronoi_0) to a fine fleck
+        scale and add fine perlin grain; multi-tone gray ramp; low roughness.
+        Leave the NORMAL voronoi (voronoi_1) coarse so relief stays subtle.
+    v2: crisper flecks -- feed the albedo colorize directly from voronoi_0's
+        per-cell random output (port 2 = rand3 per cell), bypassing the smooth
+        blend, so each fine cell is a flat random gray.
+    """
     paths = []
-    # CLONE rock (working normal chain); repoint albedo/metallic/roughness and
-    # finer perlin. rock: colorize_0=albedo, colorize_1=metallic, colorize_2=
-    # roughness, normal_map_0 works.
+
+    # v1: fine-voronoi rock clone (safe: only param + gradient edits)
     g = load_example("rock")
-    set_gradient(g, "colorize_0", [
-        (0.0, 0.30, 0.30, 0.32), (0.35, 0.48, 0.48, 0.50),
-        (0.65, 0.62, 0.62, 0.63), (0.95, 0.40, 0.40, 0.42)])
+    set_param(g, "voronoi_0", "scale_x", 40)   # albedo cell density: fine flecks
+    set_param(g, "voronoi_0", "scale_y", 40)
+    set_param(g, "voronoi_0", "randomness", 1)
+    set_param(g, "perlin_0", "scale_x", 48)     # fine grain in the blend/rough
+    set_param(g, "perlin_0", "scale_y", 48)
+    set_param(g, "perlin_0", "iterations", 6)
+    set_gradient(g, "colorize_0", [             # multi-tone gray fleck spread
+        (0.0, 0.22, 0.22, 0.24),   # dark biotite/mica flecks
+        (0.35, 0.46, 0.46, 0.48),  # mid feldspar gray
+        (0.60, 0.66, 0.65, 0.66),  # light quartz
+        (0.80, 0.52, 0.51, 0.50),  # warm feldspar
+        (1.0, 0.34, 0.34, 0.36)])  # back to dark
     set_gradient(g, "colorize_1", [(0.0, 0, 0, 0), (1.0, 0, 0, 0)])   # non-metal
-    set_gradient(g, "colorize_2", [(0.0, 0.2, 0.2, 0.2), (1.0, 0.4, 0.4, 0.4)])
-    for pn in ("perlin_0", "perlin_1"):
-        set_param(g, pn, "scale_x", 24); set_param(g, pn, "scale_y", 24)
+    set_gradient(g, "colorize_2",                                     # polished
+                 [(0.0, 0.14, 0.14, 0.14), (1.0, 0.30, 0.30, 0.30)])
     paths.append(save_variant(g, iter_label, "s02_gray_granite", 1))
+
+    # v2: crisp per-cell random flecks -- albedo colorize fed from voronoi port 2
     g = load_example("rock")
+    set_param(g, "voronoi_0", "scale_x", 44)
+    set_param(g, "voronoi_0", "scale_y", 44)
+    set_param(g, "voronoi_0", "randomness", 1)
+    rewire(g, "colorize_0", 0, "voronoi_0", 2)  # random per-cell rgb -> albedo
     set_gradient(g, "colorize_0", [
-        (0.0, 0.28, 0.27, 0.28), (0.35, 0.47, 0.45, 0.44),
-        (0.65, 0.63, 0.60, 0.58), (0.95, 0.38, 0.37, 0.36)])
+        (0.0, 0.20, 0.20, 0.22),
+        (0.40, 0.44, 0.44, 0.45),
+        (0.70, 0.64, 0.63, 0.63),
+        (1.0, 0.30, 0.30, 0.31)])
     set_gradient(g, "colorize_1", [(0.0, 0, 0, 0), (1.0, 0, 0, 0)])
-    set_gradient(g, "colorize_2", [(0.0, 0.22, 0.22, 0.22), (1.0, 0.45, 0.45, 0.45)])
-    for pn in ("perlin_0", "perlin_1"):
-        set_param(g, pn, "scale_x", 18); set_param(g, pn, "scale_y", 18)
+    set_gradient(g, "colorize_2",
+                 [(0.0, 0.14, 0.14, 0.14), (1.0, 0.28, 0.28, 0.28)])
     paths.append(save_variant(g, iter_label, "s02_gray_granite", 2))
     return paths
 
@@ -281,25 +322,56 @@ def build_o01_mossy_forest_floor(iter_label: str) -> list[str]:
     return paths
 
 
+def drop_conn(graph: dict, to_node: str, to_port: int) -> None:
+    """Remove the connection feeding (to_node, to_port), if any."""
+    graph["connections"] = [
+        c for c in graph["connections"]
+        if not (c["to"] == to_node and c["to_port"] == to_port)]
+
+
 def build_m02_brushed_aluminum(iter_label: str) -> list[str]:
-    """CLONE rock (working normal chain, metallic-capable); recolor to neutral
-    gray, force metallic (colorize_1 -> white), low roughness, and STRETCH the
-    perlin (scale_x<<scale_y) so rock's grain becomes directional brush streaks
-    with real normal relief."""
+    """Brushed aluminum = neutral light-gray metal + fine PARALLEL directional
+    brush streaks with real (shallow) normal relief.
+
+    iter1 miss cloned rock and stretched its perlin, but rock's normal chain is
+    isotropic, so the streaks were soft and the normal rendered flat. Structural
+    insight: brushed metal is directional-streak-with-relief, which is exactly
+    what WOOD GRAIN is. wood's perlin_2 (scale_x 32, scale_y 4) is a directional
+    generator already feeding a WORKING normal chain (blend_0 -> normal_map_0),
+    plus roughness/metallic/albedo. So clone wood and:
+      - straighten the grain: feed blend_0's second input from the straight
+        perlin_2 instead of the warped warp_1, killing wood's knotty waviness so
+        the streaks run parallel like a brushed finish;
+      - finer/longer streaks (raise scale_x, drop scale_y);
+      - neutralize albedo to aluminum gray (no wood tint);
+      - force uniform full metallic (drop the grain-driven metallic map so the
+        Material's metallic=1 scalar applies);
+      - map roughness to a low brushed range with streak-driven anisotropy;
+      - soften the normal to shallow brush scratches (param1 0.99 -> ~0.35).
+    """
     paths = []
-    g = load_example("rock")
-    set_gradient(g, "colorize_0", [(0.0, 0.62, 0.62, 0.63), (1.0, 0.82, 0.82, 0.83)])
-    set_gradient(g, "colorize_1", [(0.0, 1, 1, 1), (1.0, 1, 1, 1)])   # metallic
-    set_gradient(g, "colorize_2", [(0.0, 0.3, 0.3, 0.3), (1.0, 0.42, 0.42, 0.42)])
-    for pn in ("perlin_0", "perlin_1"):
-        set_param(g, pn, "scale_x", 2); set_param(g, pn, "scale_y", 32)
+
+    def brushed(scale_x, scale_y, alb_lo, alb_hi, rough_lo, rough_hi, relief):
+        g = load_example("wood")
+        rewire(g, "blend_0", 1, "perlin_2", 0)   # straighten: no knot warp
+        set_param(g, "perlin_2", "scale_x", scale_x)
+        set_param(g, "perlin_2", "scale_y", scale_y)
+        set_param(g, "perlin_2", "iterations", 8)
+        set_gradient(g, "colorize_2", [          # albedo: neutral aluminum gray
+            (0.0, *(alb_lo,) * 3), (0.5, *((alb_lo + alb_hi) / 2,) * 3),
+            (1.0, *(alb_hi,) * 3)])
+        set_gradient(g, "colorize_0", [          # roughness: low, brushed streaks
+            (0.0, *(rough_lo,) * 3), (1.0, *(rough_hi,) * 3)])
+        drop_conn(g, "Material", 1)              # uniform metallic=1 (scalar)
+        set_param(g, "normal_map_0", "param1", relief)  # shallow scratches
+        return g
+
+    # v1: fine parallel streaks, light aluminum, subtle relief
+    g = brushed(32, 3, 0.60, 0.82, 0.24, 0.44, 0.35)
     paths.append(save_variant(g, iter_label, "m02_brushed_aluminum", 1))
-    g = load_example("rock")
-    set_gradient(g, "colorize_0", [(0.0, 0.66, 0.66, 0.68), (1.0, 0.86, 0.86, 0.87)])
-    set_gradient(g, "colorize_1", [(0.0, 1, 1, 1), (1.0, 1, 1, 1)])
-    set_gradient(g, "colorize_2", [(0.0, 0.26, 0.26, 0.26), (1.0, 0.38, 0.38, 0.38)])
-    for pn in ("perlin_0", "perlin_1"):
-        set_param(g, pn, "scale_x", 3); set_param(g, pn, "scale_y", 40)
+    # v2: denser/finer streaks, slightly darker, a touch more relief
+    g = brushed(32, 2, 0.56, 0.78, 0.20, 0.40, 0.45)
+    set_param(g, "perlin_2", "scale_x", 40)      # finer lines (cosmetic warning)
     paths.append(save_variant(g, iter_label, "m02_brushed_aluminum", 2))
     return paths
 
