@@ -2,12 +2,13 @@ import glob
 import json
 import os
 from mcp.server.mcpserver import MCPServer
-from mm_mcp.config import load_config
+from mm_mcp.config import load_config, require_valid
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.validator import validate_graph
 from mm_mcp.render import render
 
 _cfg = load_config()
+require_valid(_cfg)
 _CATALOG = build_catalog(_cfg.nodes_dir)
 
 mcp = MCPServer("material-maker")

@@ -29,6 +29,35 @@ def _resolve_console(godot_binary: str) -> str:
     return godot_binary
 
 
+def require_valid(cfg: "Config") -> None:
+    """Fail fast with an actionable message if required config paths are
+    missing or wrong. Called at MCP server startup (not from load_config()),
+    per the design spec's Error handling section: "Missing config
+    (MM_GODOT_BINARY / MM_PROJECT_PATH absent or wrong) fails fast at server
+    start with an actionable message."
+    """
+    if not os.path.isdir(cfg.project_path):
+        raise FileNotFoundError(
+            f"MM_PROJECT_PATH does not exist: '{cfg.project_path}'. "
+            "Set the MM_PROJECT_PATH environment variable (or .env entry) "
+            "to a valid Material Maker project checkout."
+        )
+    if not os.path.isdir(cfg.nodes_dir):
+        raise FileNotFoundError(
+            f"Node catalog directory does not exist: '{cfg.nodes_dir}'. "
+            "This is derived from MM_PROJECT_PATH "
+            f"('{cfg.project_path}') + addons/material_maker/nodes; "
+            "check that MM_PROJECT_PATH points at a valid Material Maker checkout."
+        )
+    binary = cfg.console_binary if os.path.exists(cfg.console_binary) else cfg.godot_binary
+    if not os.path.isfile(binary):
+        raise FileNotFoundError(
+            f"Godot binary does not exist: '{binary}'. "
+            "Set the MM_GODOT_BINARY environment variable (or .env entry) "
+            "to a valid Godot executable path."
+        )
+
+
 def load_config(overrides: dict | None = None) -> Config:
     env = dict(_DEFAULTS)
     dotenv_path = os.path.join(_PROJECT_ROOT, ".env")

@@ -77,7 +77,7 @@ def parse_node(mmg_path: str) -> dict | None:
         entry = {"name": i.get("name"), "type": i.get("type"),
                  "desc": i.get("shortdesc") or i.get("longdesc") or ""}
         reps = generic_size if "#" in (i.get("name") or "") else 1
-        inputs.extend([entry] * reps)
+        inputs.extend(dict(entry) for _ in range(reps))
     outputs = [{"type": o.get("type")} for o in sm.get("outputs", [])]
     parameters = [_parse_param(p) for p in sm.get("parameters", [])]
     return {"type": type_name, "inputs": inputs,
