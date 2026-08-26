@@ -160,11 +160,42 @@ def build_s03_cracked_concrete(iter_label: str) -> list[str]:
     return paths
 
 
+def build_w01_oak_planks(iter_label: str) -> list[str]:
+    """wooden_floor already has plank divisions (bricks node) + directional
+    grain (perlin scale_y>>scale_x); its albedo ramp (colorize_0) clips
+    everything >0.15 to flat brown, killing the grain. Spread the ramp into an
+    oak gradient and raise perlin persistence so the grain reads."""
+    paths = []
+    # v1: warm oak, spread grain ramp
+    g = load_example("wooden_floor")
+    set_gradient(g, "colorize_0", [
+        (0.0, 0.30, 0.17, 0.07),   # dark grain line
+        (0.4, 0.55, 0.36, 0.19),
+        (0.7, 0.68, 0.47, 0.27),
+        (1.0, 0.80, 0.58, 0.35),   # light oak
+    ])
+    set_param(g, "perlin_0", "persistence", 0.85)
+    paths.append(save_variant(g, iter_label, "w01_oak_planks", 1))
+    # v2: paler oak, even more grain contrast
+    g = load_example("wooden_floor")
+    set_gradient(g, "colorize_0", [
+        (0.0, 0.34, 0.21, 0.10),
+        (0.35, 0.60, 0.42, 0.24),
+        (0.7, 0.74, 0.55, 0.34),
+        (1.0, 0.85, 0.66, 0.44),
+    ])
+    set_param(g, "perlin_0", "persistence", 0.9)
+    set_param(g, "perlin_0", "scale_y", 24)
+    paths.append(save_variant(g, iter_label, "w01_oak_planks", 2))
+    return paths
+
+
 BUILDERS = {
     "f02_brown_leather": build_f02_brown_leather,
     "w02_weathered_barn_wood": build_w02_barn_wood,
     "m01_weathered_copper": build_m01_weathered_copper,
     "s03_cracked_concrete": build_s03_cracked_concrete,
+    "w01_oak_planks": build_w01_oak_planks,
 }
 
 
