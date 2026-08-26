@@ -1,0 +1,23 @@
+# Secrets / config
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Render output / working files
+catalog/catalog.json
+output/
+*.tmp.ptex
+run.log
+
+# OS junk
+Thumbs.db
+Desktop.ini
+.DS_Store
