@@ -25,8 +25,14 @@ Wire catalog + validator + render runner behind the MCP server.
 
 ## Phase 3 — Authoring quality
 Prompt-to-graph on a small material test set; tune catalog descriptions and
-authoring guidance. This is the hard phase.
-- **Gate:** agreed usable-hit-rate on the test set (target TBD with Grayson).
+authoring guidance. This is the hard phase. Detailed plan:
+[2026-08-26-material-maker-mcp-phase3.md](superpowers/plans/2026-08-26-material-maker-mcp-phase3.md).
+Multi-variant (2-3 versions per prompt) ships in this phase; a case hits if any
+variant is usable.
+- **Gate:** ≥ 70% usable-hit-rate (≥ 11/15) on the frozen 15-case test set,
+  Grayson-audited scorecard recorded in STATUS.md. (Decided 2026-08-26.)
+- Sub-gates: 3A harness + frozen test set → 3B baseline scorecard → 3C tuning
+  loop to ≥ 70%.
 
 ## Phase 4 — Public packaging (later, sketched)
 Config-driven paths, cross-platform, binary auto-detect, install docs.
