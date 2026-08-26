@@ -218,3 +218,55 @@ git since they're documentation, not renders.
     skin), reach for `perlin`/`fbm` first, not `voronoi` — voronoi's cell
     boundaries are inherently hard-edged even when blurred at the color
     level; perlin has no edges to begin with.
+
+## Organics cookbook (cookbook growth, informal — 2026-08-26)
+
+Same informal convention, widening organism SURFACES beyond the frozen set's
+GROUND organics (`o01` moss, `o02` dry mud). Builders:
+`quality/cookbook_organics.py`. All 4 were HITs on the first pass, no
+iteration needed — every one reused an already-proven lever.
+
+| Preview | Material | Verdict |
+|---|---|---|
+| ![](images/cookbook-organics/o03_tree_bark.png) | Tree bark | HIT |
+| ![](images/cookbook-organics/o04_snake_scales.png) | Snake scales | HIT |
+| ![](images/cookbook-organics/o05_coral.png) | Coral | HIT |
+| ![](images/cookbook-organics/o06_lichen_crusted_rock.png) | Lichen-crusted rock | HIT |
+
+- **Tree bark:** clone `wood` UNMODIFIED structurally — unlike `m02` aluminum
+  (which straightens the grain to kill wood's knots), bark WANTS the knotty
+  waviness, so leave `wood`'s knot-overlay chain alone. Just the recolor
+  lever (weathered gray-brown, multi-stop for tonal variation) + push
+  roughness high. `wood`'s own normal chain already works unmodified (`w01`/
+  `w02` are proof), so no `param4` fix needed.
+- **Snake scales:** `crocodile_skin`'s own default voronoi cellular pattern
+  IS already a reptile-scale layout — that's what it was built to look like.
+  No retype, pure recolor lever (olive-to-khaki, lower roughness than
+  leather for a scale sheen). Proactively applied the `param4=0` fix even
+  though `f02` leather's HIT never depended on it: `crocodile_skin`'s normal
+  chain (`voronoi_0 -> colorize_0 -> normal_map_0`) is directly-fed with no
+  buffer, the same shape as the denim blocker, so it renders flat by
+  default. The faceted per-cell relief this produces is a better tell for
+  "scales" than the albedo, which stays fairly soft/blurred by the donor's
+  own design (same as leather's albedo) — for THIS material, that's fine:
+  the read comes through the normal.
+- **Coral:** retype the generator to `fbm` with `noise=2` (Cellular) instead
+  of `voronoi` — same "distinct cells" family, but fbm's cellular noise
+  gives a porous, irregularly-pitted surface rather than voronoi's flat-
+  faceted cells, a better match for coral's texture. Coral pink/orange,
+  matte, pronounced `param4=0` relief for the pitted bumps.
+  General note: `fbm`'s `noise` enum (Value/Perlin/Cellular×6) is a whole
+  family of generator shapes worth remembering as an alternative to
+  `voronoi` for cell-like patterns.
+- **Lichen-crusted rock:** clone `rusted_metal`'s two-layer masked-blend
+  structure (the same one `m01` weathered copper already proved) but
+  recolor to stone+lichen instead of metal+patina — base (`colorize_2`) to
+  gray stone, patch (`colorize_1`) to lichen green-gray, widen the mask
+  (`colorize_3` threshold) for more coverage. One real gotcha:
+  `rusted_metal` wires the Material's metallic input straight off the mask
+  (`colorize_3`) — correct for a metal donor, wrong once recolored to
+  stone, so `drop_conn` that connection and force the Material's own
+  `metallic` scalar to 0. Also grafted a light `normal_map` fed from the
+  mask (`rusted_metal` ships with no normal chain at all) so lichen patches
+  read as faintly raised rather than a pure flat-color swap — a nice-to-have
+  the donor's own verified `m01`/`m03` cases don't bother with.
