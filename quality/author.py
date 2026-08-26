@@ -139,10 +139,32 @@ def build_m01_weathered_copper(iter_label: str) -> list[str]:
     return paths
 
 
+def build_s03_cracked_concrete(iter_label: str) -> list[str]:
+    """dry_earth cracked-plate pattern recolored earth->gray concrete. The crack
+    network (voronoi) is organic, not a grid, so it stays clear of must_not."""
+    paths = []
+    # v1: light gray concrete
+    g = load_example("dry_earth")
+    set_gradient(g, "colorize_0", [
+        (0.25, 0.63, 0.63, 0.63),   # light concrete
+        (0.65, 0.34, 0.34, 0.34),   # dark stain/crack floor
+    ])
+    paths.append(save_variant(g, iter_label, "s03_cracked_concrete", 1))
+    # v2: cooler, slightly bluish gray + subtle stain
+    g = load_example("dry_earth")
+    set_gradient(g, "colorize_0", [
+        (0.25, 0.58, 0.59, 0.60),
+        (0.65, 0.30, 0.31, 0.33),
+    ])
+    paths.append(save_variant(g, iter_label, "s03_cracked_concrete", 2))
+    return paths
+
+
 BUILDERS = {
     "f02_brown_leather": build_f02_brown_leather,
     "w02_weathered_barn_wood": build_w02_barn_wood,
     "m01_weathered_copper": build_m01_weathered_copper,
+    "s03_cracked_concrete": build_s03_cracked_concrete,
 }
 
 
