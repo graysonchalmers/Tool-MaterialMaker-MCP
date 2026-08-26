@@ -154,3 +154,67 @@ were both directly-fed analytic sources rendering flat. `param4=0` at low
 `param1` (0.3–0.45) now gives granite real polished-stone micro-relief and
 aluminum real parallel brush-scratch relief, without changing either case's
 albedo/roughness or its HIT verdict.
+
+## Fabric cookbook (cookbook growth, informal — 2026-08-26)
+
+Grown beyond the frozen 15-case test set (`f01` denim, `f02` leather) to widen
+category coverage. **Not scored against the Phase 3 rubric** — 1 variant per
+material, self-judged by eye, no scorecard/gate. Builders:
+`quality/cookbook_fabrics.py`; render harness: `quality/render_cookbook.py`
+(mirrors `run_case.py`'s validate+render but skips the frozen `test_set.json`
+lookup, so it doesn't touch scored infra). Outputs under
+`quality/authored/cookbook-fabrics/` and `quality/cookbook/cookbook-fabrics/`
+(both gitignored, regenerable). Downscaled albedo previews below are made by
+`quality/_make_previews.py` (same one-off Pillow technique as
+`examples/images/`) and live in `docs/images/cookbook-fabrics/`, tracked in
+git since they're documentation, not renders.
+
+| Preview | Material | Verdict |
+|---|---|---|
+| ![](images/cookbook-fabrics/f03_canvas_burlap.png) | Canvas/burlap | HIT |
+| ![](images/cookbook-fabrics/f04_wool_knit.png) | Wool/chunky knit | Partial (basket-weave, not true loops) |
+| ![](images/cookbook-fabrics/f05_silk_satin.png) | Silk/satin | HIT |
+| ![](images/cookbook-fabrics/f06_velvet.png) | Velvet | HIT |
+
+- **Canvas/burlap (HIT):** retype the generator to `weave` (plain over/under,
+  one output) at a coarse scale (`columns`/`rows` ~10) with `width` ~0.6 so
+  gaps show between thick threads. Natural tan, high roughness, `param4=0`
+  normal fix at moderate strength for pronounced coarse-thread relief.
+- **Wool/chunky knit (PARTIAL — be honest about this one):** tried `weave2`'s
+  `stitch` param first, expecting loop softness — it just renders a crisp
+  herringbone/basket diagonal, structurally the same hard-crossing weave as
+  `weave`. **This catalog has no true loop-knit generator.** The workable
+  stand-in: `weave` at a COARSE scale with near-max `width` (few, wide,
+  almost-touching ribs) reads as chunky blocky yarn rows, not fine thread —
+  closer to a basket/chunky-weave textile than true knit loops, but a
+  reasonable substitute. Don't oversell it as "knit" in user-facing copy.
+- **Silk/satin (HIT):** retype to `diagonal_weave` at a FINE scale (~48, vs
+  denim's ~20) so the weave is nearly invisible — the differentiator from
+  denim/canvas isn't visible thread texture, it's LOW roughness (glossy) +
+  saturated low-contrast jewel-tone albedo. Normal strength very low
+  (~0.08) — just enough faint sheen-line variation to read as woven, not
+  flat plastic.
+- **Velvet (HIT, but took two tries):** a soft fibrous pile has NO grid
+  pattern, so this isn't a weave graft at all.
+  - First attempt reused the granite speckle lever (voronoi **port 2** =
+    `rand3`, flat per-cell random) at voronoi's max scale (32). Looked
+    mottled/faceted like crystal or stone, not soft fabric — voronoi cells
+    are still ~60px wide on a 2048px render, and a flat per-cell random
+    value creates hard, high-contrast patch edges no matter how narrow the
+    color gradient is (the per-cell value still spans the full gradient
+    range).
+  - Tried grafting a `fast_blur_shader` node between the voronoi and the
+    colorize feeds to soften those edges — hit a Godot "invalid shader"
+    render failure (its input port is `rgba`; voronoi port 2 is `rgb`).
+    Not worth chasing for a one-off; noted here so nobody re-tries it blind.
+  - **What actually worked:** retype the generator to `perlin` instead of
+    voronoi. Perlin is continuous (no cell edges) and `iterations` (octaves,
+    up to 10) layers in fine high-frequency detail on top of the base noise
+    — genuinely reads as soft fiber grain. Deep saturated wine albedo, high
+    roughness, and a very low `normal_map` `param1` (~0.12, still `param4=0`
+    since perlin is a directly-fed analytic generator) for soft nap relief
+    instead of hard relief.
+  - **General lesson:** for a SOFT/continuous material (velvet, felt, fog,
+    skin), reach for `perlin`/`fbm` first, not `voronoi` — voronoi's cell
+    boundaries are inherently hard-edged even when blurred at the color
+    level; perlin has no edges to begin with.

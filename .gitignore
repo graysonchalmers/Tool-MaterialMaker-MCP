@@ -22,6 +22,10 @@ run.log
 quality/runs/
 quality/authored/
 
+# Cookbook growth (informal, non-frozen extensions like the fabric cases):
+# same story, cookbook_fabrics.py regenerates the .ptex variants.
+quality/cookbook/
+
 # OS junk
 Thumbs.db
 Desktop.ini

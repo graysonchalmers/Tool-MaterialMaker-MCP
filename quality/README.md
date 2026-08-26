@@ -30,3 +30,15 @@ Measures whether prompt-to-graph authoring produces usable materials.
 
 The **gate** is a scorecard showing >= 70% (>= 11/15) any-variant hit-rate,
 Grayson-audited, recorded in `STATUS.md`.
+
+## Cookbook growth (informal, beyond the frozen 15)
+
+`test_set.json`'s 15 cases are frozen (see its `_meta`/freeze note) and stay
+that way. To grow the recipe library into new material categories WITHOUT
+touching frozen infra, use the `cookbook_fabrics.py` pattern instead of
+`author.py`/`run_case.py`: a small `quality/cookbook_<category>.py` (same
+graph-surgery helpers, imported from `author.py`) writes variants to
+`quality/authored/cookbook-<category>/`, and `render_cookbook.py <label>`
+validates + renders them to `quality/cookbook/<label>/` for eyeballing — no
+`test_set.json` entry, no scorecard, no gate. Recipes that pan out get written
+up in `docs/AUTHORING.md`; both output dirs are gitignored (regenerable).
