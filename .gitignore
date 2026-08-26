@@ -17,6 +17,9 @@ output/
 *.tmp.ptex
 run.log
 
+# Phase 3 quality: keep test_set + scorecards; ignore the heavy per-run renders.
+quality/runs/
+
 # OS junk
 Thumbs.db
 Desktop.ini
