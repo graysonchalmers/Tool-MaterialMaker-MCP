@@ -336,3 +336,56 @@ instead.
     value isn't as flat/saturated as assumed inside a cell. Kept as a
     documented partial ("camo-patched circuit board" is still a usable
     sci-fi texture) rather than sunk into a 4th iteration.
+
+## Terrain cookbook (cookbook growth, informal, 2026-08-26)
+
+Ground/landscape materials beyond `o01` moss / `o02` mud (organic-growth
+focused). Builders: `quality/cookbook_terrain.py`. 4/4 HIT, one after a
+one-shot empirical fix.
+
+| Preview | Material | Verdict |
+|---|---|---|
+| ![](images/cookbook-terrain/t01_sand_dunes.png) | Sand dunes | HIT |
+| ![](images/cookbook-terrain/t02_fresh_snow.png) | Fresh snow | HIT |
+| ![](images/cookbook-terrain/t03_gravel.png) | Gravel | HIT |
+| ![](images/cookbook-terrain/t04_grass_field.png) | Grass field | HIT (after 1 fix) |
+
+- **Sand dunes:** clone `wood` UNMODIFIED structurally (like `o03` bark) --
+  dune ripples are organic and wavy, so KEEP the knot-warp chain rather
+  than straightening it like `m02` aluminum. Widened `perlin_2`'s scale for
+  broad, slow-rolling ripples instead of tight wood grain. Warm sand tan,
+  high roughness, no normal fix needed (`wood`'s own chain already works
+  unmodified).
+- **Fresh snow:** clone `rock` and KEEP its smooth blobby structure -- per
+  AUTHORING.md's own rule, a smooth source is fine when the target is
+  genuinely near-flat, and snow drifts are exactly that case (same
+  reasoning `s02` granite used for reusing `rock`). Near-white albedo with
+  a faint cold blue-gray in the low points, forced near-zero metallic
+  (`perlin_0` feeds it directly by default in this donor, wrong for snow).
+  Proactive `param4=0` at LOW strength (~0.18) -- soft drifts, not
+  stone-scale relief.
+- **Gravel:** clone `rock`, reuse `s02` granite's v2 lever (voronoi port 2,
+  flat per-cell random, bypassing the smooth blend) but at PEBBLE scale
+  (14, vs granite's fine-fleck 44) and a wider earthy gray/tan/brown
+  palette instead of granite's grayscale. Stronger `param4=0` relief than
+  granite -- loose gravel is bumpier than a polished slab.
+- **Grass field (one real fix needed):** clone `rusted_metal`'s two-layer
+  masked-blend structure (the same template `o06` lichen-on-rock proved
+  twice) and recolor to soil+grass. Unlike lichen (sparse patches on a
+  dominant base), grass should be the DOMINANT layer with dirt only
+  showing through in patches.
+  - v1 moved the mask threshold DOWN (0.22), reasoning by analogy with how
+    `o06`/`m01` "widen" their patch layer by lowering the threshold --
+    rendered almost the opposite of intended: near-total soil with only
+    tiny green flecks. Checked the normal map too: nearly flat, confirming
+    the mask was saturated one way across ~all of the image, not a gradual
+    shift.
+  - Reasoning abstractly about `blend_type`'s exact mix formula and
+    `colorize`'s duplicate-point step extrapolation didn't resolve which
+    direction was correct for this specific base/patch/threshold
+    combination -- rather than debug the formula, just flipped the
+    threshold UP instead (0.65) and re-rendered.
+  - That flip alone produced the intended dominant-grass-with-dirt-patches
+    look on the first try. **Lesson: don't trust mask-threshold direction
+    by analogy across different cases -- render and look, the direction
+    isn't reliably predictable from another recipe's stated behavior.**
