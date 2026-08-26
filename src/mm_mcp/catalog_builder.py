@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 import glob
 
 
@@ -49,7 +50,8 @@ def build_catalog(nodes_dir: str) -> dict:
     for path in glob.glob(os.path.join(nodes_dir, "*.mmg")):
         try:
             node = parse_node(path)
-        except (ValueError, KeyError):
+        except (ValueError, KeyError) as e:
+            print(f"WARNING: skipping {os.path.basename(path)}: {e}", file=sys.stderr)
             node = None
         if node:
             catalog[node["type"]] = node
