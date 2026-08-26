@@ -86,13 +86,16 @@ metallic down on the patches. Recolor both layers to retarget the weathering:
 - **Transient Godot crash**: renders intermittently die with exit `0xC0000005` /
   `0xC0000409` mid-export (GPU, not the graph). `render.py` now retries these
   transient codes up to 3x.
-- **From-scratch normals are BLOCKED (open item)**: a hand-assembled
-  `perlin -> normal_map -> Material.normal` chain renders a FLAT (uniform-blue)
-  normal, even copying a working example's `normal_map` params
-  (`param0`/`param1`/`param2`/`param4`) and wiring verbatim. The same perlin
-  drives a correct albedo, so the generator is fine; the compound `normal_map`
-  is not producing relief from a raw generator the way it does inside the
-  bundled examples. Until this is solved, build from-scratch materials by
-  CLONING a working example's full generator->normal_map->material chain and
-  repointing it, rather than assembling `normal_map` by hand. This blocks
-  `s02` granite, `o01` moss, `m02` aluminum (albedo correct, normal flat).
+- **Normals need a SHARP-EDGED source (resolved)**: a hand-assembled
+  `perlin -> normal_map -> Material.normal` chain renders a FLAT normal, and so
+  does cloning a *smooth* example (`rock`). The fix that works: CLONE a working
+  example whose generator has **sharp edges** — `dry_earth` (voronoi cracks)
+  gives the `normal_map` real gradients to work from, so recoloring it to green
+  produced a moss with rich ground relief (`o01`). Rule of thumb: for a material
+  that needs surface relief, start from a sharp-edged example (cracks, bricks,
+  cells), not a smooth blobby one. A smooth source (`rock`) is fine only when
+  the target is genuinely near-flat, e.g. polished granite (`s02`).
+- **Still open — crisp directional relief** (`m02` brushed aluminum): needs a
+  sharp *directional* generator feeding a working normal_map. Stretching a
+  smooth perlin/`rock` gives soft streaks + a flat normal. Candidate: a
+  stretched sharp pattern, or a directional `warp` of a sharp noise.

@@ -239,61 +239,67 @@ def build_s02_gray_granite(iter_label: str) -> list[str]:
     """From scratch: fine multi-octave perlin speckle -> multi-tone gray ramp,
     low roughness (polished), non-metallic, subtle normal."""
     paths = []
-    # v1: neutral gray granite, fine speckle
-    g = _from_scratch_noise_material(
-        {"iterations": 10, "persistence": 0.6, "scale_x": 32, "scale_y": 32},
-        [(0.0, 0.28, 0.28, 0.30), (0.4, 0.46, 0.46, 0.48),
-         (0.7, 0.60, 0.60, 0.62), (1.0, 0.74, 0.74, 0.75)],
-        metallic=0.0, roughness=0.28, normal_amount=0.6)
+    # CLONE rock (working normal chain); repoint albedo/metallic/roughness and
+    # finer perlin. rock: colorize_0=albedo, colorize_1=metallic, colorize_2=
+    # roughness, normal_map_0 works.
+    g = load_example("rock")
+    set_gradient(g, "colorize_0", [
+        (0.0, 0.30, 0.30, 0.32), (0.35, 0.48, 0.48, 0.50),
+        (0.65, 0.62, 0.62, 0.63), (0.95, 0.40, 0.40, 0.42)])
+    set_gradient(g, "colorize_1", [(0.0, 0, 0, 0), (1.0, 0, 0, 0)])   # non-metal
+    set_gradient(g, "colorize_2", [(0.0, 0.2, 0.2, 0.2), (1.0, 0.4, 0.4, 0.4)])
+    for pn in ("perlin_0", "perlin_1"):
+        set_param(g, pn, "scale_x", 24); set_param(g, pn, "scale_y", 24)
     paths.append(save_variant(g, iter_label, "s02_gray_granite", 1))
-    # v2: warmer speckle (feldspar tint), slightly coarser
-    g = _from_scratch_noise_material(
-        {"iterations": 9, "persistence": 0.62, "scale_x": 24, "scale_y": 24},
-        [(0.0, 0.26, 0.25, 0.26), (0.35, 0.45, 0.43, 0.42),
-         (0.7, 0.62, 0.59, 0.57), (1.0, 0.76, 0.74, 0.72)],
-        metallic=0.0, roughness=0.32, normal_amount=0.7)
+    g = load_example("rock")
+    set_gradient(g, "colorize_0", [
+        (0.0, 0.28, 0.27, 0.28), (0.35, 0.47, 0.45, 0.44),
+        (0.65, 0.63, 0.60, 0.58), (0.95, 0.38, 0.37, 0.36)])
+    set_gradient(g, "colorize_1", [(0.0, 0, 0, 0), (1.0, 0, 0, 0)])
+    set_gradient(g, "colorize_2", [(0.0, 0.22, 0.22, 0.22), (1.0, 0.45, 0.45, 0.45)])
+    for pn in ("perlin_0", "perlin_1"):
+        set_param(g, pn, "scale_x", 18); set_param(g, pn, "scale_y", 18)
     paths.append(save_variant(g, iter_label, "s02_gray_granite", 2))
     return paths
 
 
 def build_o01_mossy_forest_floor(iter_label: str) -> list[str]:
-    """From scratch: clumpy perlin -> ramp from dark soil (low) to moss green
-    (high), strong normal for bumpy relief, high roughness (matte)."""
+    """CLONE dry_earth (working normal = crack/ground relief); recolor its earth
+    albedo ramp (colorize_0) to dark soil -> green moss so the cracked ground
+    reads as a mossy forest floor."""
     paths = []
-    g = _from_scratch_noise_material(
-        {"iterations": 8, "persistence": 0.72, "scale_x": 8, "scale_y": 8},
-        [(0.0, 0.13, 0.09, 0.05),   # dark soil
-         (0.4, 0.22, 0.20, 0.10),   # earthy
-         (0.65, 0.20, 0.36, 0.12),  # moss
-         (1.0, 0.36, 0.55, 0.20)],  # bright moss
-        metallic=0.0, roughness=0.9, normal_amount=2.5)
+    g = load_example("dry_earth")
+    set_gradient(g, "colorize_0", [
+        (0.25, 0.34, 0.44, 0.16),   # moss green (plate tops)
+        (0.65, 0.14, 0.10, 0.05)])  # dark soil (crack floors)
     paths.append(save_variant(g, iter_label, "o01_mossy_forest_floor", 1))
-    g = _from_scratch_noise_material(
-        {"iterations": 9, "persistence": 0.75, "scale_x": 6, "scale_y": 6},
-        [(0.0, 0.15, 0.11, 0.06), (0.45, 0.18, 0.26, 0.10),
-         (0.7, 0.24, 0.42, 0.15), (1.0, 0.42, 0.60, 0.24)],
-        metallic=0.0, roughness=0.92, normal_amount=3.0)
+    g = load_example("dry_earth")
+    set_gradient(g, "colorize_0", [
+        (0.25, 0.28, 0.40, 0.14), (0.55, 0.22, 0.28, 0.11),
+        (0.7, 0.13, 0.09, 0.05)])
     paths.append(save_variant(g, iter_label, "o01_mossy_forest_floor", 2))
     return paths
 
 
 def build_m02_brushed_aluminum(iter_label: str) -> list[str]:
-    """From scratch: perlin stretched hard along one axis (scale_y>>scale_x) for
-    directional brush streaks -> narrow neutral-gray ramp, metallic, med-low
-    roughness, faint normal."""
+    """CLONE rock (working normal chain, metallic-capable); recolor to neutral
+    gray, force metallic (colorize_1 -> white), low roughness, and STRETCH the
+    perlin (scale_x<<scale_y) so rock's grain becomes directional brush streaks
+    with real normal relief."""
     paths = []
-    # NOTE: an extreme stretch (scale_y ~96) degenerates the noise to near-
-    # constant, so its normal_map renders FLAT (broken map). Keep a moderate
-    # stretch so streaks stay directional but the normal retains relief.
-    g = _from_scratch_noise_material(
-        {"iterations": 8, "persistence": 0.55, "scale_x": 3, "scale_y": 20},
-        [(0.0, 0.60, 0.60, 0.61), (1.0, 0.82, 0.82, 0.83)],
-        metallic=1.0, roughness=0.35, normal_amount=1.1)
+    g = load_example("rock")
+    set_gradient(g, "colorize_0", [(0.0, 0.62, 0.62, 0.63), (1.0, 0.82, 0.82, 0.83)])
+    set_gradient(g, "colorize_1", [(0.0, 1, 1, 1), (1.0, 1, 1, 1)])   # metallic
+    set_gradient(g, "colorize_2", [(0.0, 0.3, 0.3, 0.3), (1.0, 0.42, 0.42, 0.42)])
+    for pn in ("perlin_0", "perlin_1"):
+        set_param(g, pn, "scale_x", 2); set_param(g, pn, "scale_y", 32)
     paths.append(save_variant(g, iter_label, "m02_brushed_aluminum", 1))
-    g = _from_scratch_noise_material(
-        {"iterations": 8, "persistence": 0.5, "scale_x": 4, "scale_y": 28},
-        [(0.0, 0.64, 0.64, 0.66), (1.0, 0.86, 0.86, 0.87)],
-        metallic=1.0, roughness=0.3, normal_amount=1.0)
+    g = load_example("rock")
+    set_gradient(g, "colorize_0", [(0.0, 0.66, 0.66, 0.68), (1.0, 0.86, 0.86, 0.87)])
+    set_gradient(g, "colorize_1", [(0.0, 1, 1, 1), (1.0, 1, 1, 1)])
+    set_gradient(g, "colorize_2", [(0.0, 0.26, 0.26, 0.26), (1.0, 0.38, 0.38, 0.38)])
+    for pn in ("perlin_0", "perlin_1"):
+        set_param(g, pn, "scale_x", 3); set_param(g, pn, "scale_y", 40)
     paths.append(save_variant(g, iter_label, "m02_brushed_aluminum", 2))
     return paths
 
