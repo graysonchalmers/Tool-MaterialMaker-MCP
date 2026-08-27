@@ -1,141 +1,91 @@
 # 🧭 Session Handoff — Tool-MaterialMaker-MCP
 
-_Last updated: 2026-08-27 (early AM) CT (America/Chicago)_
+_Last updated: 2026-08-27 (midday) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**Phase 5 build step 1 (`overlay.py`) shipped: built, reviewed, fixed, merged,
-pushed.** Continuing straight from this session's own de-risking spike (below),
-Grayson said "continue" and the session ran the full `superpowers` pipeline
-end to end: `writing-plans` → an isolated git worktree →
+**Phase 5 build step 2 (`addons/mm_live/live_server.gd` + `src/mm_mcp/live.py`)
+shipped: built, reviewed, fixed, merged, pushed.** Picked up via `pickup`,
+Grayson chose "start on Phase 5 step 2 via writing-plans." Ran the full
+`superpowers` pipeline again, same shape as step 1: `writing-plans` ->
+consent for an isolated git worktree (native `EnterWorktree`) ->
 `subagent-driven-development` (5 tasks, fresh implementer + fresh reviewer per
-task, haiku for mechanical tasks, sonnet for integration/review) →
-`requesting-code-review`-style final whole-branch review on opus →
-`finishing-a-development-branch` (merged locally, pushed).
+task, haiku for mechanical/transcription tasks, sonnet for integration-heavy
+tasks and reviews) -> whole-branch review on opus -> `finishing-a-development-branch`
+(merged locally, then pushed).
 
-`ensure_overlay(mm_project_path, addon_path, overlay_dir) -> overlay_path` now
-exists in `src/mm_mcp/overlay.py`, 134 tests (up from 109), all green. It's
-pure filesystem work (no Godot import, no Config dependency): builds/refreshes
-a disposable copy of a Material Maker checkout with the future live-control
-addon layered in and registered as a Godot `[autoload]` entry, using a
-content-hash-of-addon + checkout-path marker to decide no-op vs. rebuild.
+The real live-control addon exists now, not scratchpad code: `live_server.gd`
+is a thin GDScript autoload registered via `overlay.py`'s `[autoload]`
+injection, opens a `TCPServer` on a fixed port (8765), and answers `ping`/
+`get_graph` over a line-delimited JSON protocol -- deliberately read-only,
+no mutating commands, no validation logic (mutations arrive pre-validated
+from Python in a later step). `src/mm_mcp/live.py` is the Python side: a
+low-level one-shot protocol client (`LiveResult`, `_send_command`, `ping`,
+`get_graph`), tested against a hand-rolled fake TCP server, plus a
+`connect_or_launch()` orchestration layer (`LiveSession`) that probes the
+fixed port, launches Material Maker via `overlay.py`'s `ensure_overlay` if
+nothing's listening, polls `ping()` until the addon reports `main_window` is
+actually wired (never just "socket is open"), and manages the launched
+process's lifecycle so it's never leaked, including on an unexpected
+exception mid-poll (a review-found gap, fixed in one round). `Config` gained
+a `live_overlay_dir` field mirroring `output_dir`'s existing env-override
+pattern.
 
-**Five real bugs found and fixed by the review loop, none of them
-implementer error** — all were defects in this session's own plan-authored
-reference code, each ruled on and fixed the same task, then re-reviewed clean
-before moving on:
-1. `_append_autoload` blindly appended to end-of-file instead of into the
-   `[autoload]` section — verified against the real
-   `z-Git\material-maker\project.godot` (10 sections follow `[autoload]`
-   there); an end-of-file append would have attached the line to `[steam]`,
-   silently defeating the whole addon-loading mechanism. **Critical.**
-2. `_read_marker` didn't guard against valid-but-non-dict JSON (a garbled
-   marker), crashing instead of degrading to "stale."
-3. Task 4's integration test proved the autoload line's *presence*, not its
-   *position* — a regression of bug #1 wouldn't have been caught end-to-end.
-4. (final review) `ensure_overlay` ran destructive `rmtree`/`copytree`
-   *before* validating any input — reviewer reproduced `overlay_dir ==
-   mm_project_path` actually deleting a real test checkout. Fixed with an
-   input-validation guard at the top of the function (addon_path must be a
-   dir, mm_project_path must contain `project.godot`, overlay_dir can't
-   equal or contain either input, case-insensitive).
-5. (final review) `STATUS.md`'s gate ledger was never updated for this work,
-   violating this project's own CLAUDE.md rule. Fixed.
+**Real bugs found by the review loop, same disciplined pattern as step 1:**
+1. (Task 4 review) `connect_or_launch` had no `try`/`finally` around the
+   launch-and-poll span -- an unexpected exception mid-poll would leak the
+   just-launched, real, visible Godot process. Currently inert only because
+   `_send_command` happens to catch every exception type it can raise, which
+   is an accident of its current implementation, not a structural guarantee.
+   Fixed same round: `try`/`except BaseException` terminates and re-raises.
+2. (final whole-branch review, opus) Three merge-blocking findings, all
+   fixed in one consolidated wave:
+   - `mm_live_overlay/` (the disposable overlay's default location, a ~266MB
+     full copy of the Material Maker checkout) was missing from `.gitignore`
+     -- would have entered the nightly `V:` backup sweep and confused
+     `git add -A` on first real use. **Caught before it ever happened, not
+     after.**
+   - `connect_or_launch` never checked whether the launched process had
+     already died -- a bad overlay or a GDScript parse error in a future
+     addon edit would spin the *full* 60-90s timeout before returning a
+     generic "timed out" message, with the real diagnosis sitting unread in
+     `mm_live.log`. Fixed: `process.poll()` check inside the loop, returns
+     immediately with the exit code and the log path.
+   - The integration test isolated its overlay directory but not the fixed
+     port -- it could have silently passed by attaching to a stray
+     already-running Material Maker instance instead of proving the freshly
+     built overlay + committed addon actually work. Fixed: an explicit
+     assertion that the session owns a launched process, not an attached one.
 
-Full detail — every ruling, every finding, every fix-round diff — lived in
-the SDD ledger inside the (now-deleted) worktree; the git history on `main`
-is the durable record now (9 commits, `53527bf`..`67a028a`, landed via a
-clean fast-forward merge, individually visible in `git log`).
-
-**Phase 5 both feasibility risks retired via spike, earlier this session.**
-After the seam fix (below), Grayson picked "start Phase 5" (the live-control
-addon). Started it the spike-first way the spec mandates and closed BOTH
-"known risks" the spec flagged:
-- **Risk #1 (autoload TCP socket in a running, non-editor Godot project):
-  PROVEN.** Throwaway standalone project, one `[autoload]` line opened a
-  `TCPServer`, Python connected and exchanged JSON. Confirmed again inside the
-  real MM overlay.
-- **Risk #2 (in-process graph-mutation surface): RETIRED.** MM exposes a
-  GUI-grade API mirroring the batch `.ptex` shape
-  (`get_current_graph_edit()` → `create_nodes`/`do_connect_node`/
-  `set_node_parameters`/`generator.serialize()`). The read path
-  (`get_graph` via `serialize()`) was proven end-to-end: a real MM overlay
-  launched, addon reached the active tab, returned the default new-material
-  graph, clean socket quit, exit 0.
-
-Full evidence + the implementation constraints discovered (await-based
-`create_nodes`, lazy `main_window` resolution, overlay must carry
-`steam_appid.txt`, don't PIPE Godot stdout) are recorded in the spec's new
-"Feasibility verified" section:
-`docs/superpowers/specs/2026-08-26-live-control-addon-design.md`. Spike code
-was throwaway in scratchpad, not committed.
-
-**Horizon seam in `render_preview` fixed and pushed** (earlier in this
-session). Picked up option B from the prior handoff (the ground-plane horizon
-seam) and closed it. The finite 60×60 plane's far edge sat ~30 units out, where fog only
-reaches ~88%, leaving the ground's hard edge faintly visible against `BG_COLOR`
-as a seam. Fixed by extending the plane to 400×400 so its edge sits ~200 units
-out where fog is effectively 100% (ground fully dissolves into the background
-before its edge), while scaling the ground UV repeat with plane size so the
-near-camera tile density is unchanged from the tuned look. Verified with real
-before/after renders. Committed as `9e52340` and **pushed**; `main` and
-`origin/main` are in sync.
-
-Also corrected a stale note: the prior handoff claimed 3 unpushed commits, but
-`origin/main` was already at `0675ca1` before this session — that work
-(`render_preview`, North Star, scene overhaul) was already on GitHub. Nothing
-is unpushed now.
-
-Prior context (still true):
-**`render_preview` MCP tool built, tuned, and landed.** Grayson asked (via
-`pickup`) whether anywhere in the pipeline could show a material applied to
-a 3D object under real lighting, not just flat map swatches. Answer was no,
-so this session built it: a new eighth MCP tool that takes `render_graph`'s
-albedo/normal/orm output paths and composites them onto a sphere, a cube
-(turned 45°), and a cutaway ball (a CSG sphere with a wedge cut out,
-revealing an inner core), all resting on a tiled ground plane, under raking
-key + rim lighting with shadows, a touch of depth of field, exponential fog,
-and 8x MSAA + FXAA. Rendered via a small bundled Godot project
-(`src/mm_mcp/preview_project/`), fully separate from the `z-Git\material-maker`
-checkout, no fork.
-
-Built via `superpowers:brainstorming` (spike to prove feasibility, then a
-bounded design once Grayson confirmed he wanted it as a real MCP tool) and
-`superpowers:test-driven-development` for the implementation. Then a long
-visual-iteration round with Grayson, rendering, showing him the actual PNG,
-adjusting, repeat, rather than guessing blind: ground plane + tiling knob,
-the cutaway ball (two full rotation-angle sweeps to find 240° on the Y-axis
-as the one orientation that keeps the cut face-on to the camera), fixing a
-white untextured cut face (missing material on the CSG cutter) and a
-noise-like inner core (wrong UV tile scale for its radius), DOF via
-`CameraAttributesPractical` (not direct `Camera3D` properties, first attempt
-errored), camera reframing, and finally dialing fog/DOF strength down.
-
-Also added `docs/NORTH_STAR.md`: Grayson's framing that this project's real
-point is lowering the barrier to learning Material Maker (he's learning it
-himself by watching/editing what gets authored for him), not one-shot
-texture generation. Linked from README and CLAUDE.md.
+Prior sessions' detail (overlay builder, feasibility spike, seam fix,
+render_preview) is preserved in the Session log below rather than repeated
+here.
 
 ## 📌 Where we stopped
 
-Clean stop. `main` and `origin/main` both at `67a028a`, in sync (`0 0`).
-Working tree clean, 134/134 fast tests pass on the pushed tip. No worktree,
-no branch, no lingering Godot processes.
+Clean stop. Merged to `main` locally (`81b433c`), then pushed; `main` and
+`origin/main` in sync. Working tree clean, 148/148 fast tests pass on the
+pushed tip. No worktree, no branch, no lingering Godot processes.
 
 ## ▶️ Next concrete step
 
-**Phase 5 build step 2: the real addon skeleton.** Step 1 (overlay builder)
-is done. Step 2 per the spec's sub-plan: socket server + `ping`/`get_graph`
-only, committed for real as `addons/mm_live/live_server.gd` inside this repo
-(not scratchpad this time — `overlay.py`'s `ensure_overlay` now exists to
-copy it into a real overlay on demand). Gate: Python connects, launches
-Material Maker via the overlay, gets a real graph back for a bundled example.
-The GDScript from tonight's earlier 1b spike (scratchpad, deleted) is a
-working reference — same shape, same constraints (await-based `create_nodes`
-comes in step 3, not step 2; lazy `main_window` resolution already proven).
-Use `writing-plans` again for this step, same pattern as step 1.
+**Phase 5 build step 3: mutating commands.** Steps 1 (overlay builder) and 2
+(addon skeleton: `ping`/`get_graph`) are done. Step 3 per the spec's
+sub-plan: `add_node`/`connect_nodes`/`set_param`/`render` on both the
+GDScript addon side and `live.py`'s client side. Gate: "a scripted sequence
+of live ops visibly builds a simple graph in a real running window and
+renders it." Known constraints from the earlier feasibility spike that step
+3 must respect (see the spec's "Feasibility verified" section): `create_nodes`
+is `await`-based in Godot -- the addon's command loop must be a coroutine
+that awaits the result before writing the socket response, or it replies
+with a coroutine-state object instead of real data (this wasn't exercised
+by step 2's read-only `ping`/`get_graph`, which are synchronous). The
+"render" handler is still unverified against source -- confirm it actually
+invokes Material Maker's own existing preview/export code path before
+building on that assumption. Use `writing-plans` again for this step, same
+pattern as steps 1 and 2.
 
 Alternatives, all carried over unchanged:
 - **A. More cookbook categories** (extend the authoring recipe library).
@@ -143,20 +93,30 @@ Alternatives, all carried over unchanged:
 - **D. PyPI publish** (on hold; GitHub-clone is the current route).
 - **E. Document `render_preview`** in `docs/AUTHORING.md` / README, or leave it
   as just an MCP tool.
-- **F. Two parked polish items from the final overlay-builder review** (both
-  cosmetic, see Heads-up): `STATUS.md` prose wording, and a pre-existing
-  "seven tools" vs. "eight tools" count mismatch between `__init__.py` and
-  `STATUS.md` unrelated to this branch.
+- **F. Parked polish items from step 1's and step 2's final reviews** (see
+  Heads-up): `STATUS.md` prose wording; a pre-existing "seven tools" vs.
+  "eight tools" count mismatch; step 2's parked Minor findings (GDScript
+  `peer.put_data()` discarded return, `log_file` fd leak in `_launch_overlay`,
+  no fast-suite guard on `_ADDON_PATH` resolution).
 
 ## ❓ Open questions
 
 - Should `render_preview` get documented in `docs/AUTHORING.md` / README, or
   is it enough that it exists as an MCP tool? Not yet decided, not done.
-- Two parked-not-fixed findings from the overlay-builder's final review
-  (deliberately deferred, not forgotten): the staleness marker doesn't detect
-  an already-built overlay being damaged from outside (e.g. hand-editing
-  `project.godot` in the Godot editor while debugging steps 2-3) — whoever
-  builds step 2/3 should reconsider this; `_append_autoload`'s
+- Step 2's own open questions, carried forward for whoever builds step 3: a
+  two-instance launch race in `connect_or_launch` (two concurrent calls could
+  both see "not listening" and both launch, one wins the port); a foreign
+  process squatting on port 8765 causes a full-timeout dead end with no way
+  to detect "this isn't actually Material Maker"; the channel is
+  unauthenticated to other local processes, fine for read-only `get_graph`
+  but worth reconsidering once step 3 makes it a write channel. All three
+  flagged by the final review as "worth a line in step 3/4's plan, not a fix
+  in step 2."
+- Two parked-not-fixed findings from the overlay-builder's (step 1) final
+  review (deliberately deferred, not forgotten): the staleness marker
+  doesn't detect an already-built overlay being damaged from outside (e.g.
+  hand-editing `project.godot` in the Godot editor while debugging steps
+  3-4) -- whoever builds step 3 should reconsider this; `_append_autoload`'s
   `content.find("[autoload]")` matches the first occurrence anywhere in the
   file including inside a comment (verified inert against the real file, so
   low priority).
@@ -166,7 +126,29 @@ Alternatives, all carried over unchanged:
   cross-platform (macOS/Linux) verification, still untested, no machine
   available.
 
-## 🗂️ Changed this session (Phase 5 overlay builder + seam fix)
+## 🗂️ Changed this session (Phase 5 addon skeleton)
+
+- Branch: `main`. Landed as 6 commits via a feature branch merged locally
+  then pushed: `33dad4e` Task 1 (addon skeleton, GDScript), `846f310` Task 2
+  (`Config.live_overlay_dir`), `9ff21ec` Task 3 (`live.py` protocol client),
+  `b1242b5`/`5614ea0` Task 4 (`connect_or_launch` + fix round), `23d5fe0`
+  Task 5 (real integration test), `25675d3` final-review fix wave. Plus a
+  separate `d8cda95` committing the plan doc itself (was never committed
+  during planning) and the `81b433c` merge commit.
+- Decisions (+ why): the addon lives at top-level `addons/mm_live/`, a
+  sibling of `src/`, not inside `src/mm_mcp/` -- unlike `preview_project/`
+  (which ships in the wheel via package-data), this addon will NOT ship in a
+  built wheel; accepted as a known gap under Phase 4's current GitHub-clone
+  distribution decision (PyPI on hold), not silently "fixed" by moving it.
+  `LIVE_PORT = 8765` is a hardcoded literal on both the GDScript and Python
+  sides with a cross-reference comment, not a shared-constant mechanism --
+  explicit YAGNI call for a single fixed local addon. `connect_or_launch`
+  only owns the lifecycle of a process it actually launched itself
+  (`LiveSession.close()` no-ops when attaching to an already-running
+  instance), matching the spec's "attach to an already-open instance"
+  scope decision.
+
+## 🗂️ Changed the prior session (Phase 5 overlay builder + seam fix)
 
 - Branch: `main`. Overlay builder landed as 9 commits (`53527bf`..`67a028a`,
   via a feature branch merged locally then pushed):
@@ -178,72 +160,66 @@ Alternatives, all carried over unchanged:
 - Decisions (+ why): every plan-mandated bug got fixed in the same task's
   fix round rather than deferred, since each was load-bearing for later
   tasks (Task 3/4/5 all call `_is_stale`; Task 4/5 all call
-  `_append_autoload`) — see "Current state" above for the bug list.
-  `overlay_dir` stayed a caller-supplied parameter rather than derived from
-  `Config`, keeping the module's only dependencies stdlib (`hashlib`, `json`,
-  `os`, `shutil`) — a future `live.py` (step 3) will own choosing where the
-  overlay actually lives.
-
-## 🗂️ Changed the prior session (seam fix)
-
-- Branch: `main`. One commit, pushed: `9e52340` — `fix(preview)`: ground plane
-  60×60 → 400×400 with density-preserving UV scale, removing the horizon seam.
-  Single file: `src/mm_mcp/preview_project/preview.gd`.
-- Decision (+ why): "bigger plane" over "real procedural sky" because the sky
-  would change the deliberately-dark studio background Grayson tuned; enlarging
-  the plane removes the seam while keeping that look exactly.
-
-## 🗂️ Changed the prior session (render_preview)
-
-- Branch: `main`. Three commits (already pushed before this session):
-  - `41bd60b` — `render_preview` MCP tool (TDD: `src/mm_mcp/preview.py`,
-    bundled `src/mm_mcp/preview_project/` Godot scene, 5 new tests,
-    `pyproject.toml` package-data fix verified by an actual wheel build).
-  - `8fc8e33` — `docs/NORTH_STAR.md`, linked from README + CLAUDE.md.
-  - `aefd7af` — scene overhaul: ground plane, cutaway ball, DOF/fog/AA,
-    camera reframing, `tile` UV-scale knob wired through the real Python API
-    and MCP tool signature (previously only reachable via a raw Godot
-    cmdline arg during manual testing).
-- Decisions (+ why): `render_preview` takes already-rendered map paths, not
-  a `.ptex` graph, so `render_graph` stays the only place graph-rendering
-  logic lives (Grayson's call, to keep the two tools single-purpose). The
-  cutaway ball's rotation is locked at 240° on the Y-axis, the only
-  orientation across two full angle sweeps that kept the cut face
-  camera-facing rather than hidden against the ground or the far side.
+  `_append_autoload`) -- see the session log for the bug list. `overlay_dir`
+  stayed a caller-supplied parameter rather than derived from `Config`,
+  keeping the module's only dependencies stdlib (`hashlib`, `json`, `os`,
+  `shutil`) -- `live.py` (step 2) ended up owning where the overlay actually
+  lives, as anticipated.
 
 ## ⚠️ Heads-up for the next agent
 
-- **New module: `src/mm_mcp/overlay.py`.** Public entry point
-  `ensure_overlay(mm_project_path, addon_path, overlay_dir) -> overlay_path`
-  — builds/refreshes a disposable Material Maker overlay with an addon
-  layered in. Pure filesystem, zero Godot/Config dependency, so it's
-  unit-testable without launching anything (`tests/test_overlay.py`, 25
-  tests). Nothing calls this yet — `live.py` (step 3 of the spec's sub-plan)
-  is the next thing that will. Read the module docstring first; it explains
-  why `overlay_dir` is caller-supplied and the "a rebuild wipes it wholesale"
-  gotcha (don't put a log file inside `overlay_dir` expecting it to survive).
+- **New addon: `addons/mm_live/live_server.gd`.** Thin GDScript autoload,
+  `TCPServer` on port 8765, `ping`/`get_graph` only. Lazy `main_window`
+  resolution -- never cache it, resolve fresh inside every command handler
+  (autoloads start before the main scene, so it's null at `_ready()`). If
+  you're ever tempted to add validation logic here, don't -- everything
+  mutating (step 3) arrives pre-validated from the Python side by design.
+- **New module: `src/mm_mcp/live.py`.** `ping()`/`get_graph()` are one-shot
+  connect/send/recv/close calls (`_send_command`), no persistent session
+  state on either side. `connect_or_launch(cfg=None, host=LIVE_HOST,
+  port=LIVE_PORT, launch_timeout=60.0) -> LiveSession` is the orchestration
+  entry point: probes the port, launches via `overlay.py`'s `ensure_overlay`
+  if nothing's listening, polls until ready, guards against leaking the
+  process it launched on any exit path (success, timeout, or an unexpected
+  exception). `LiveSession.close()` is a safe no-op when `process is None`
+  (attached, didn't launch).
+- **`overlay.py`'s `ensure_overlay` is now actually consumed** (by
+  `live.py`'s `_launch_overlay`), no longer just unit-tested in isolation.
+  `_ADDON_PATH` resolves to `<repo-root>/addons/mm_live` via 3 `os.path.dirname`
+  calls from `src/mm_mcp/live.py` -- this assumes an editable/source-checkout
+  install, verified correct for that case, not for a real wheel install (see
+  the top-level-`addons/` decision above).
+- **`mm_live_overlay/` (the disposable overlay's default build location) is
+  gitignored.** It's a ~266MB full copy of the Material Maker checkout,
+  rebuilt on every addon change -- don't be surprised it's large, and don't
+  remove the gitignore entry.
+- **`mm_live.log`** (in `cfg.output_dir`, default `./output/mm_live.log`) has
+  the launched Godot process's captured stdout+stderr. Check it first if a
+  live-mode launch fails -- `connect_or_launch` now names this path directly
+  in its error message when the launched process dies before becoming ready.
 - **`_append_autoload` inserts at the end of the `[autoload]` section
-  specifically, not blindly at end-of-file** — this was a real bug found and
-  fixed this session (see Current state). If you're ever tempted to
-  "simplify" this function back to a plain append, don't; the real Material
-  Maker `project.godot` has ~10 sections after `[autoload]`, verified.
+  specifically, not blindly at end-of-file** -- a real bug found and fixed in
+  step 1. If you're ever tempted to "simplify" this function back to a plain
+  append, don't; the real Material Maker `project.godot` has ~10 sections
+  after `[autoload]`, verified.
 - **`ensure_overlay` validates before mutating anything.** It raises
   `ValueError` if `addon_path` isn't a directory, `mm_project_path` has no
   `project.godot`, or `overlay_dir` equals/contains either input path
-  (case-insensitive) — this guards against actually deleting the real
+  (case-insensitive) -- guards against actually deleting the real
   `z-Git\material-maker` checkout if `live.py` ever misconfigures
-  `overlay_dir`. Also a bug found and fixed this session, reproduced by the
-  reviewer before the fix landed.
-- **New MCP tool:** `render_preview(albedo_path, normal_path, orm_path,
-  basename="preview", tile=1.0) -> dict`. Call `render_graph` first and feed
-  its output paths in. Renders through `src/mm_mcp/preview_project/`, a
-  small standalone Godot project bundled in this repo, not the
-  `z-Git\material-maker` checkout.
+  `overlay_dir`.
+- **New MCP tool (from an earlier session):** `render_preview(albedo_path,
+  normal_path, orm_path, basename="preview", tile=1.0) -> dict`. Call
+  `render_graph` first and feed its output paths in. Renders through
+  `src/mm_mcp/preview_project/`, a small standalone Godot project bundled in
+  this repo, not the `z-Git\material-maker` checkout.
 - **Run tests with `.venv\Scripts\python.exe`** (or activate the venv).
-  Fast suite: `pytest -q -m "not integration"` (134 passed); `pytest -q`
-  adds the Godot-launching integration renders (137 total).
-- **Godot property-name traps hit this session** (both caused a script
-  error + hung process, had to `taskkill`): depth of field lives on a
+  Fast suite: `pytest -q -m "not integration"` (148 passed, 4 deselected);
+  `pytest -q` adds the Godot-launching integration tests, including the new
+  real-live-mode one from this session (which opens a visible GUI window
+  briefly, unlike the other, headless integration tests).
+- **Godot property-name traps hit in an earlier session** (both caused a
+  script error + hung process, had to `taskkill`): depth of field lives on a
   `CameraAttributesPractical` resource assigned to `Camera3D.attributes`,
   not direct `Camera3D` properties; `smooth_faces` exists on `CSGSphere3D`
   but not `CSGBox3D`. If a Godot script error leaves the console binary
@@ -251,30 +227,31 @@ Alternatives, all carried over unchanged:
   it (Bash tool, not PowerShell).
 - **Known, honestly-flagged limitations, not bugs:** CSG boolean subtraction
   cuts sharp edges, no true bevel without a modeled mesh asset. The ground
-  plane's horizon seam (see Open questions) is a similar "real fix needs
-  more than a parameter tweak" case.
+  plane's horizon seam issue from an earlier session was a similar "real fix
+  needs more than a parameter tweak" case (already fixed, see session log).
 - **Testable command-building pattern:** `preview.py`'s `_build_command()`
-  is a pure function returning the Godot argv list, tested directly without
-  launching Godot, mirroring `render.py`'s `_collect_fresh_images()`.
+  and `live.py`'s `_launch_command()` are both pure functions returning a
+  Godot argv list, tested directly without launching Godot, mirroring
+  `render.py`'s `_collect_fresh_images()`.
 - **Server startup is lazy.** Importing `mm_mcp.server` does NOT validate
   config or build the catalog; `_ensure_ready()` does that on first tool use
   (or at `mcp.run()`). A test calling a tool under bad config needs
   `server._reset()` in setup AND teardown.
 - **`mm-mcp --check`** is the setup doctor (green/red preflight); `--version`,
   `--help` also work. Build/release tooling lives in the `release` extra
-  (`pip install -e .[release]` → build, twine). `dist/` and `build/` are
+  (`pip install -e .[release]` -> build, twine). `dist/` and `build/` are
   build-artifact scratch, safe to `rm -rf`, not tracked.
 - **Pillow is installed in `.venv` but deliberately NOT in `pyproject.toml`**,
   a one-time tool for downscaling `examples/images/` previews. Don't add it
   as a dependency.
 - All Phase 1-2 render gotchas still hold (see CLAUDE.md): `--export-material`,
   `_console.exe`, no `--headless`, `steam_appid.txt`.
-- **Minor, non-blocking, carried over:** `.gitignore` has no `dist` entry
+- **Minor, non-blocking, carried over:** `.gitignore` had no `dist` entry
   even though CLAUDE.md and this doc call `dist/` gitignored, worth a
   one-line fix next time packaging is touched.
 - `normal_map` is a compound node; real params `param0` (size), `param1`
   (strength), `param2`, `param4` (0 = real relief for analytic generators,
-  1 = flat) — NOT `amount`/`size`. Voronoi **output port 2** = `rand3`
+  1 = flat) -- NOT `amount`/`size`. Voronoi **output port 2** = `rand3`
   random-per-cell (the fleck/speckle source); ports 0/1 are distance fields.
 - **Cookbook growth pattern** (`quality/cookbook_<category>.py` +
   `render_cookbook.py` + `_make_previews.py`) is separate from the frozen
@@ -286,6 +263,74 @@ Alternatives, all carried over unchanged:
 ---
 
 ## 🕓 Session log
+
+### 2026-08-27 (midday) — Phase 5 build step 2: addon skeleton, full SDD pipeline
+- Picked up via `pickup`, Grayson chose "start on Phase 5 step 2 via
+  writing-plans."
+- **`writing-plans`:** read the design spec, `overlay.py`, `preview.py`,
+  `render.py`, and the real Material Maker source (`console.gd`, `globals.gd`,
+  `main_window.gd`, `graph_edit.gd`) to ground the GDScript API calls in
+  verified reality rather than guessing. Designed a 5-task TDD plan (addon
+  skeleton -> Config field -> low-level protocol client -> connect_or_launch
+  orchestration -> real integration test), following established codebase
+  patterns (dataclass-result style matching `preview.py`/`render.py`, pytest
+  + `tmp_path`, a hand-rolled fake TCP server for protocol tests). Caught and
+  fixed 3 count errors during self-review before dispatch. Saved to
+  `docs/superpowers/plans/2026-08-27-phase5-addon-skeleton.md`.
+- **`using-git-worktrees`:** asked Grayson for consent (was on `main`
+  directly), created an isolated worktree via the native `EnterWorktree` tool.
+  Fresh `.venv`, copied the gitignored `.env` over, baseline 134 tests green
+  before starting. The plan doc itself was uncommitted on `main` at pickup
+  time, so it had to be copied into the worktree by hand rather than
+  inherited via branch history -- flagged by the final review as a
+  housekeeping gap and fixed by committing it to `main` before merging.
+- **`subagent-driven-development`:** pre-flight conflict scan across all 5
+  tasks (clean -- no contradictions found; path arithmetic and port-literal
+  consistency checked by hand and recorded in the ledger table). Then 5
+  tasks, each a fresh haiku or sonnet implementer + a fresh sonnet reviewer
+  (haiku for pure-transcription tasks, sonnet for tasks needing real
+  judgment: process-lifecycle correctness, real Godot API verification).
+  **1 real bug found in the loop** (Task 4's `connect_or_launch` had no
+  exception-safety guard around the launch-and-poll span -- see Current
+  state), ruled Important, fixed in one round, verified by a scoped
+  re-review. The Task 1 reviewer went further than reading the diff: wrote a
+  standalone headless Godot script to actually execute the GDScript
+  buffering/slicing logic under scrutiny rather than reasoning about Godot 4
+  API semantics from memory, confirming a suspected `PackedByteArray`
+  value-type mutation risk was NOT a bug.
+- **Final whole-branch review** (opus): found the protocol genuinely agrees
+  across the GDScript/Python language boundary when read as one system (port,
+  host, command names, framing, response shape all checked cross-file), and
+  that the Task 4 exception-safety fix held up under whole-diff scrutiny, not
+  just its own small patch. Also found 3 new, real, merge-blocking issues no
+  task-scoped review could see (see Current state): the missing `.gitignore`
+  entry for the 266MB overlay, the silent-timeout/no-log-pointer gap in
+  `connect_or_launch`, and the integration test's stray-instance gap. One
+  consolidated fix subagent closed all three plus added a regression test
+  for the dead-process-detection path; a scoped re-review confirmed all
+  addressed, no new breakage, 148/148 independently re-confirmed by the
+  controller directly (not trusting subagent-reported counts, which had
+  drifted inconsistently across a few tasks' own self-reports for reasons
+  never root-caused -- ground truth taken from a direct `pytest` run
+  instead). 6 further Minor findings parked with rulings (GDScript
+  `put_data()` discarded return, `log_file` fd leak, `Popen.kill()` being a
+  no-op alias of `terminate()` on Windows, a fast-suite gap on `_ADDON_PATH`
+  resolution, a two-instance launch race, an unauthenticated local channel)
+  -- all explicitly deferred to step 3/4's own plans per the reviewer's own
+  triage, not silently dropped.
+- **`finishing-a-development-branch`:** presented the 3-option menu, Grayson
+  chose merge-locally. Committed the previously-uncommitted plan doc to
+  `main` first (`d8cda95`), then merged (`81b433c`, real merge commit since
+  `main` had moved), verified 148/148 on the merged result with the
+  project's own venv (not the system Python used for the initial
+  `pip install`, which surfaced an unrelated pre-existing `huggingface-hub`
+  version conflict warning from global site-packages -- harmless, not this
+  project's dependency tree), removed the worktree (needed `--force` after
+  showing Grayson what was at stake: a single untracked file that was
+  already a duplicate of what had just been committed to `main`), deleted
+  the branch.
+- Grayson then asked to update STATUS.md + HANDOFF.md, wrap up, and push --
+  all three done this pass.
 
 ### 2026-08-27 (early AM) — Phase 5 build step 1: overlay.py, full SDD pipeline
 - Continued straight from this session's own Phase 5 de-risking spike.
