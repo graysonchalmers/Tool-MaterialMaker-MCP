@@ -155,6 +155,147 @@ from mm_mcp.config import load_config
 cfg = load_config()
 
 
+_FAKE_CATALOG = {
+    "perlin": {"type": "perlin", "inputs": [], "outputs": [{"type": "f"}],
+               "parameters": [{"name": "scale_x", "type": "float",
+                               "min": 1, "max": 32, "default": 4}]},
+    "warp": {"type": "warp", "inputs": [{"name": "in"}, {"name": "deform"}],
+             "outputs": [{"type": "f"}], "parameters": []},
+}
+
+
+def test_add_node_sends_command_when_type_is_valid(monkeypatch):
+    monkeypatch.setattr(live, "_ensure_catalog", lambda cfg: _FAKE_CATALOG)
+    received = {}
+
+    def responder(cmd):
+        received.update(cmd)
+        return {"ok": True, "name": "perlin_1"}
+
+    server = _FakeLiveServer(responder)
+    try:
+        result = live.add_node("perlin", {"scale_x": 8}, x=10, y=20,
+                                cfg=cfg, host="127.0.0.1", port=server.port)
+        assert result.ok
+        assert result.data["name"] == "perlin_1"
+        assert received == {"cmd": "add_node", "type": "perlin",
+                             "parameters": {"scale_x": 8}, "x": 10, "y": 20}
+    finally:
+        server.stop()
+
+
+def test_add_node_rejects_unknown_type_without_contacting_server(monkeypatch):
+    monkeypatch.setattr(live, "_ensure_catalog", lambda cfg: _FAKE_CATALOG)
+    contacted = {"called": False}
+
+    def responder(cmd):
+        contacted["called"] = True
+        return {"ok": True}
+
+    server = _FakeLiveServer(responder)
+    try:
+        result = live.add_node("totally_bogus_type", {}, cfg=cfg,
+                                host="127.0.0.1", port=server.port)
+        assert not result.ok
+        assert result.error == "validation failed"
+        assert result.data["problems"]
+        assert contacted["called"] is False
+    finally:
+        server.stop()
+
+
+def test_connect_nodes_sends_command_when_ports_are_compatible(monkeypatch):
+    monkeypatch.setattr(live, "_ensure_catalog", lambda cfg: _FAKE_CATALOG)
+    fake_graph = {"nodes": [
+        {"name": "perlin_1", "type": "perlin", "node_position": {"x": 0, "y": 0}, "parameters": {}},
+        {"name": "warp_1", "type": "warp", "node_position": {"x": 0, "y": 0}, "parameters": {}},
+    ], "connections": []}
+    received = {}
+
+    def responder(cmd):
+        if cmd["cmd"] == "get_graph":
+            return {"ok": True, "graph": fake_graph}
+        received.update(cmd)
+        return {"ok": True}
+
+    server = _FakeLiveServer(responder)
+    try:
+        result = live.connect_nodes("perlin_1", 0, "warp_1", 0,
+                                     cfg=cfg, host="127.0.0.1", port=server.port)
+        assert result.ok
+        assert received == {"cmd": "connect_nodes", "from": "perlin_1", "from_port": 0,
+                             "to": "warp_1", "to_port": 0}
+    finally:
+        server.stop()
+
+
+def test_connect_nodes_rejects_out_of_range_port_without_contacting_server(monkeypatch):
+    monkeypatch.setattr(live, "_ensure_catalog", lambda cfg: _FAKE_CATALOG)
+    fake_graph = {"nodes": [
+        {"name": "perlin_1", "type": "perlin", "node_position": {"x": 0, "y": 0}, "parameters": {}},
+        {"name": "warp_1", "type": "warp", "node_position": {"x": 0, "y": 0}, "parameters": {}},
+    ], "connections": []}
+    calls = []
+
+    def responder(cmd):
+        calls.append(cmd["cmd"])
+        return {"ok": True, "graph": fake_graph}
+
+    server = _FakeLiveServer(responder)
+    try:
+        result = live.connect_nodes("perlin_1", 0, "warp_1", 5,  # warp only has 2 inputs
+                                     cfg=cfg, host="127.0.0.1", port=server.port)
+        assert not result.ok
+        assert result.error == "validation failed"
+        assert calls == ["get_graph"]  # connect_nodes was never sent
+    finally:
+        server.stop()
+
+
+def test_set_param_sends_command_for_existing_node(monkeypatch):
+    monkeypatch.setattr(live, "_ensure_catalog", lambda cfg: _FAKE_CATALOG)
+    fake_graph = {"nodes": [
+        {"name": "perlin_1", "type": "perlin", "node_position": {"x": 0, "y": 0},
+         "parameters": {"scale_x": 4}},
+    ], "connections": []}
+    received = {}
+
+    def responder(cmd):
+        if cmd["cmd"] == "get_graph":
+            return {"ok": True, "graph": fake_graph}
+        received.update(cmd)
+        return {"ok": True}
+
+    server = _FakeLiveServer(responder)
+    try:
+        result = live.set_param("perlin_1", {"scale_x": 16},
+                                 cfg=cfg, host="127.0.0.1", port=server.port)
+        assert result.ok
+        assert received == {"cmd": "set_param", "name": "perlin_1", "parameters": {"scale_x": 16}}
+    finally:
+        server.stop()
+
+
+def test_set_param_reports_missing_node_without_contacting_server(monkeypatch):
+    monkeypatch.setattr(live, "_ensure_catalog", lambda cfg: _FAKE_CATALOG)
+    fake_graph = {"nodes": [], "connections": []}
+    calls = []
+
+    def responder(cmd):
+        calls.append(cmd["cmd"])
+        return {"ok": True, "graph": fake_graph}
+
+    server = _FakeLiveServer(responder)
+    try:
+        result = live.set_param("does_not_exist", {"scale_x": 16},
+                                 cfg=cfg, host="127.0.0.1", port=server.port)
+        assert not result.ok
+        assert "does_not_exist" in result.error
+        assert calls == ["get_graph"]
+    finally:
+        server.stop()
+
+
 class _FakeProcess:
     def __init__(self):
         self.terminated = False

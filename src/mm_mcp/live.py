@@ -6,8 +6,10 @@ import subprocess
 import time
 from dataclasses import dataclass
 
+from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.config import Config, load_config
 from mm_mcp.overlay import ensure_overlay
+from mm_mcp.validator import validate_graph
 
 # Must match addons/mm_live/live_server.gd's LIVE_PORT -- no shared-constant
 # mechanism exists across GDScript and Python, so keep both literals in sync
@@ -76,6 +78,89 @@ def ping(host: str = LIVE_HOST, port: int = LIVE_PORT, timeout: float = 5.0) -> 
 
 def get_graph(host: str = LIVE_HOST, port: int = LIVE_PORT, timeout: float = 5.0) -> LiveResult:
     return _send_command({"cmd": "get_graph"}, host, port, timeout)
+
+
+_catalog_cache: dict[str, dict] = {}
+
+
+def _ensure_catalog(cfg: Config) -> dict:
+    catalog = _catalog_cache.get(cfg.nodes_dir)
+    if catalog is None:
+        catalog = build_catalog(cfg.nodes_dir)
+        _catalog_cache[cfg.nodes_dir] = catalog
+    return catalog
+
+
+def _validation_errors(ptex: dict, cfg: Config) -> list[dict]:
+    problems = validate_graph(ptex, _ensure_catalog(cfg))
+    return [p for p in problems if p["severity"] == "error"]
+
+
+def add_node(node_type: str, parameters: dict | None = None, x: float = 0.0, y: float = 0.0,
+             cfg: Config | None = None, host: str = LIVE_HOST, port: int = LIVE_PORT,
+             timeout: float = 5.0) -> LiveResult:
+    """Validate node_type/parameters against the catalog in isolation (a
+    brand-new, unconnected node has no effect on the rest of the live
+    graph), then send add_node if valid. On success, LiveResult.data["name"]
+    is the node's real post-creation name -- Material Maker may rename it
+    on a collision, so never assume it matches node_type."""
+    cfg = cfg or load_config()
+    parameters = parameters or {}
+    proposed = {"nodes": [{"name": "_new", "type": node_type,
+                            "node_position": {"x": x, "y": y}, "parameters": parameters}],
+                "connections": []}
+    errors = _validation_errors(proposed, cfg)
+    if errors:
+        return LiveResult(ok=False, error="validation failed", data={"problems": errors})
+    return _send_command({"cmd": "add_node", "type": node_type, "parameters": parameters,
+                           "x": x, "y": y}, host, port, timeout)
+
+
+def connect_nodes(from_name: str, from_port: int, to_name: str, to_port: int,
+                   cfg: Config | None = None, host: str = LIVE_HOST, port: int = LIVE_PORT,
+                   timeout: float = 5.0) -> LiveResult:
+    """Fetch the current live graph, validate the proposed connection
+    against it, and only send connect_nodes if that validation is clean."""
+    cfg = cfg or load_config()
+    current = get_graph(host, port, timeout)
+    if not current.ok:
+        return current
+    graph = current.data["graph"]
+    proposed = {"nodes": graph.get("nodes", []),
+                "connections": graph.get("connections", []) +
+                               [{"from": from_name, "from_port": from_port,
+                                 "to": to_name, "to_port": to_port}]}
+    errors = _validation_errors(proposed, cfg)
+    if errors:
+        return LiveResult(ok=False, error="validation failed", data={"problems": errors})
+    return _send_command({"cmd": "connect_nodes", "from": from_name, "from_port": from_port,
+                           "to": to_name, "to_port": to_port}, host, port, timeout)
+
+
+def set_param(name: str, parameters: dict, cfg: Config | None = None, host: str = LIVE_HOST,
+              port: int = LIVE_PORT, timeout: float = 5.0) -> LiveResult:
+    """Fetch the current live graph, confirm the target node exists, merge
+    the proposed parameters into a copy of its current ones, validate that,
+    and only send set_param if clean."""
+    cfg = cfg or load_config()
+    current = get_graph(host, port, timeout)
+    if not current.ok:
+        return current
+    graph = current.data["graph"]
+    nodes = graph.get("nodes", [])
+    target = next((n for n in nodes if n.get("name") == name), None)
+    if target is None:
+        return LiveResult(ok=False, error=f"no node named '{name}' in the current live graph")
+    merged_nodes = [
+        {**n, "parameters": {**n.get("parameters", {}), **parameters}} if n is target else n
+        for n in nodes
+    ]
+    proposed = {"nodes": merged_nodes, "connections": graph.get("connections", [])}
+    errors = _validation_errors(proposed, cfg)
+    if errors:
+        return LiveResult(ok=False, error="validation failed", data={"problems": errors})
+    return _send_command({"cmd": "set_param", "name": name, "parameters": parameters},
+                          host, port, timeout)
 
 
 @dataclass
