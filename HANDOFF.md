@@ -1,14 +1,37 @@
 # 🧭 Session Handoff — Tool-MaterialMaker-MCP
 
-_Last updated: 2026-08-26 (late night, cont. 2) CT (America/Chicago)_
+_Last updated: 2026-08-26 (late night, cont. 3) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**Horizon seam in `render_preview` fixed and pushed.** Short focused session:
-picked up option B from the prior handoff (the ground-plane horizon seam) and
-closed it. The finite 60×60 plane's far edge sat ~30 units out, where fog only
+**Phase 5 both feasibility risks retired via spike; ready for gated build.**
+After the seam fix (below), Grayson picked "start Phase 5" (the live-control
+addon). Started it the spike-first way the spec mandates and closed BOTH
+"known risks" the spec flagged:
+- **Risk #1 (autoload TCP socket in a running, non-editor Godot project):
+  PROVEN.** Throwaway standalone project, one `[autoload]` line opened a
+  `TCPServer`, Python connected and exchanged JSON. Confirmed again inside the
+  real MM overlay.
+- **Risk #2 (in-process graph-mutation surface): RETIRED.** MM exposes a
+  GUI-grade API mirroring the batch `.ptex` shape
+  (`get_current_graph_edit()` → `create_nodes`/`do_connect_node`/
+  `set_node_parameters`/`generator.serialize()`). The read path
+  (`get_graph` via `serialize()`) was proven end-to-end: a real MM overlay
+  launched, addon reached the active tab, returned the default new-material
+  graph, clean socket quit, exit 0.
+
+Full evidence + the implementation constraints discovered (await-based
+`create_nodes`, lazy `main_window` resolution, overlay must carry
+`steam_appid.txt`, don't PIPE Godot stdout) are recorded in the spec's new
+"Feasibility verified" section:
+`docs/superpowers/specs/2026-08-26-live-control-addon-design.md`. Spike code
+was throwaway in scratchpad, not committed.
+
+**Horizon seam in `render_preview` fixed and pushed** (earlier in this
+session). Picked up option B from the prior handoff (the ground-plane horizon
+seam) and closed it. The finite 60×60 plane's far edge sat ~30 units out, where fog only
 reaches ~88%, leaving the ground's hard edge faintly visible against `BG_COLOR`
 as a seam. Fixed by extending the plane to 400×400 so its edge sits ~200 units
 out where fog is effectively 100% (ground fully dissolves into the background
@@ -54,28 +77,28 @@ texture generation. Linked from README and CLAUDE.md.
 
 ## 📌 Where we stopped
 
-Clean stop. Horizon seam fixed, `9e52340` committed and pushed, `main` level
-with `origin/main`, working tree clean. Fast suite 109 passed; the seam fix
-was verified live through the real `render_preview()` API.
+Clean stop. Phase 5 fully de-risked (both spec risks retired by spike), spec
+updated with the "Feasibility verified" section + implementation constraints,
+handoff updated. Seam fix `9e52340` + these doc updates on `main`. Nothing left
+running (overlay MM shut down cleanly, exit 0). Spike artifacts are in
+scratchpad only, repo clean apart from the doc commit.
 
 ## ▶️ Next concrete step
 
-Nothing required. The seam (prior option B) is closed. Remaining open options,
-all carried over unchanged:
+**Phase 5 build step 1: `overlay.py` via TDD.** The design is proven; start the
+gated implementation at step 1 of the spec's sub-plan: `ensure_overlay(mm_path,
+addon_path) -> overlay_path` (pure filesystem, unit-testable, no Godot). The
+hand-built scratchpad overlay from tonight's 1b spike is the executable
+reference for what it must produce (checkout + `addons/mm_live/` + the autoload
+line + `steam_appid.txt`, `.godot` cache preserved for fast launch). Use
+`writing-plans` to break the 4-step sub-plan into real gated steps first.
 
-**A. More cookbook categories** — extend the authoring recipe library into
-new material families (see cookbook growth pattern in Heads-up).
-
-**B. The two honest partials** — wool's loop-knit approximation and the
-circuit-board mask-bleed bug (no lead after 3 tries).
-
-**C. Phase 5 implementation** — live-control addon, speced not built, no
-target date by design.
-
-**D. PyPI publish** — on hold; GitHub-clone is the current route.
-
-**E. Document `render_preview`** — decide whether it needs an entry in
-`docs/AUTHORING.md` / README, or is fine as just an MCP tool.
+Alternatives, all carried over unchanged:
+- **A. More cookbook categories** (extend the authoring recipe library).
+- **B. The two honest partials** (wool loop-knit, circuit-board mask-bleed).
+- **D. PyPI publish** (on hold; GitHub-clone is the current route).
+- **E. Document `render_preview`** in `docs/AUTHORING.md` / README, or leave it
+  as just an MCP tool.
 
 ## ❓ Open questions
 
@@ -170,6 +193,34 @@ target date by design.
 ---
 
 ## 🕓 Session log
+
+### 2026-08-26 (late night, cont. 3) — Phase 5 feasibility spike (both risks retired)
+- After the seam fix, Grayson picked "start Phase 5" (live-control addon).
+  Started it spike-first per the spec's own instruction to check its two risks
+  before building.
+- Read MM source to retire **risk #2** before touching Godot: found the
+  GUI-grade mutation API (`get_current_graph_edit()` →
+  `create_nodes`/`do_connect_node`/`set_node_parameters`/`generator.serialize()`),
+  reachable via the `mm_globals` autoload at `/root/mm_globals`. Confirmed the
+  `[autoload]` line format and that `mm_globals` is a `*`-singleton.
+- Consulted the advisor, which split the spike into 1a (pure-Godot autoload
+  socket, no MM copy) and 1b (real MM overlay), and flagged four constraints
+  (await-based `create_nodes`, null `main_window` at `_ready()`, overlay needs
+  `steam_appid.txt`, don't PIPE Godot stdout). All folded into the plan.
+- **1a PASS:** throwaway `scratchpad/autoload_spike/` project, one autoload
+  opened a `TCPServer`, Python did `ping`/`quit` over it. One GDScript
+  type-inference fix (`get_string` needs an explicit `String` type). The
+  drained-pipe gotcha showed up here (PIPE-without-drain faked a connect
+  failure; file redirect fixed it).
+- **1b PASS:** robocopied the 266M MM checkout into
+  `scratchpad/mm_overlay/` (kept `.godot` cache for fast launch), dropped the
+  addon at `addons/mm_live/live_server.gd`, appended the autoload line. Launched
+  real MM, polled `ping` until `main_window` wired, then `get_graph` returned a
+  genuine `generator.serialize()` (default new-material graph, 1 node type
+  `material`, 0 connections). Clean socket `quit`, exit 0.
+- Recorded the verdict + constraints in the spec's new "Feasibility verified"
+  section and marked its Status ready-for-implementation. Spike code left in
+  scratchpad (throwaway), not committed.
 
 ### 2026-08-26 (late night, cont. 2) — horizon seam fix
 - Picked up via `pickup` with the seam fix as the appended task. Clean pickup,

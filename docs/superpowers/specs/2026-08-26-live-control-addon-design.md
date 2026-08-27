@@ -1,7 +1,8 @@
 # Live-Control Addon — Design Spec (Phase 5)
 
 - **Date:** 2026-08-26
-- **Status:** Approved in brainstorming, pending spec review
+- **Status:** Approved; both feasibility risks retired via spike (2026-08-26,
+  see "Known risks" below). Ready for gated implementation (step 1 = `overlay.py`).
 - **Author:** Claude (Sonnet 5) with Grayson Chalmers
 - **Classification:** Architectural (new subsystem)
 - **Relationship to prior spec:** extends
@@ -196,19 +197,58 @@ phase is picked up for implementation:
    `live_render` into `server.py`. *Gate: Claude can hold an actual live
    session against a real open Material Maker window.*
 
-## Known risks / open questions
+## Feasibility verified (spike, 2026-08-26)
 
-- **Exact Godot autoload wiring is unverified.** This spec assumes a
-  `project.godot` `[autoload]` entry is sufficient to start the addon's
-  socket server when the project runs (not just in the editor). This needs a
-  short feasibility check at the start of implementation, before committing
-  to step 2 above.
-- **Live-scene mutation API surface inside Material Maker is unexplored.**
-  The addon's handlers assume there's a reasonable in-process way to add a
-  node / wire a connection / set a parameter on the currently-open graph
-  programmatically, mirroring what the GUI's own node-editor code does
-  internally. This hasn't been verified against Material Maker's actual
-  source yet and may turn out harder than the batch `.ptex`-JSON path was.
+Both risks below were retired by a two-part spike before any implementation.
+Throwaway spike code lived in the session scratchpad, not committed; the real
+addon/overlay get built via the gated plan above. The verdicts and the
+constraints they surfaced:
+
+- **Risk #1 (autoload socket) — PROVEN.** A standalone Godot project with a
+  one-line `[autoload]` entry opened a `TCPServer` on project run (not editor),
+  and an external Python client connected and exchanged JSON line commands
+  (`ping`/`get_graph`/`quit`). Confirmed a second time inside the real MM
+  overlay below.
+- **Risk #2 (in-process mutation surface) — RETIRED.** Material Maker exposes a
+  GUI-grade API that mirrors the batch `.ptex` shape, reached from the addon
+  via the `mm_globals` autoload:
+  - `mm_globals.main_window.get_current_graph_edit()` — active tab's
+    `MMGraphEdit` (the singleton node is at `/root/mm_globals`; `console.gd:63`
+    uses this exact path at runtime).
+  - `graph_edit.create_nodes({nodes, connections}, pos)` — add (takes the
+    `.ptex` node-dict shape directly; also accepts a single `{type, parameters}`).
+  - `graph_edit.do_connect_node(from, from_slot, to, to_slot)` — wire.
+  - `graph_edit.set_node_parameters(node, params)` — set params.
+  - `graph_edit.generator.serialize()` — read the active graph back out as
+    `.ptex`-shaped JSON (the `get_graph` handler; verified end-to-end returning
+    the default new-material graph from a live window).
+- **Constraints these surfaced (bake into the build):**
+  - `create_nodes`/`do_create_nodes` are `await`-based (`await
+    mm_loader.add_to_gen_graph(...)`). The addon's command loop must be a
+    coroutine that awaits the result before writing the socket response, or it
+    replies with a coroutine-state object instead of the array. (`get_graph` via
+    `serialize()` is synchronous; the write handlers are not.)
+  - `mm_globals.main_window` is **null at autoload `_ready()`** (autoloads start
+    before the main scene). Resolve it lazily per command, never cache at boot.
+    The session manager's readiness probe should poll `ping` until
+    `main_window` is wired before issuing graph commands.
+  - The overlay **must** carry `steam_appid.txt` (`4110830`) or MM
+    self-relaunches and exits (the CLAUDE.md gotcha). `overlay.py` copies it.
+  - Autoload line `overlay.py` appends to the `[autoload]` section:
+    `mm_live="*res://addons/mm_live/live_server.gd"`.
+  - `live.py` must **not** `PIPE` the launched Godot's stdout without draining
+    it; redirect to a file or DEVNULL. An undrained pipe fills and blocks the
+    child (this faked a failure during the spike until spotted).
+
+## Still-open / deferred risks
+
+- **The `render` handler is unverified.** "Invoke Material Maker's own existing
+  preview/export code path" (not a new render impl) is still an assumption, a
+  step-3 concern, not yet checked against source.
+- **Live-scene mutation proven to exist, not yet exercised live.** The write
+  API above is confirmed present in source; the spike only exercised the read
+  path (`get_graph`) end-to-end. Actually adding/wiring/param-setting a node in
+  a running window is build step 3's gate.
 - **Windows-only, like the rest of this project** (see STATUS.md Phase 4).
   No new cross-platform risk introduced here beyond what already exists.
 - **Deferred, not scheduled.** Per Grayson's call in brainstorming, this
