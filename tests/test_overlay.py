@@ -203,3 +203,51 @@ def test_ensure_overlay_first_build(tmp_path, fake_checkout, fake_addon):
     # self-relaunches and exits (see CLAUDE.md).
     assert (tmp_path / "overlay" / "steam_appid.txt").read_text(encoding="utf-8") == "4110830"
     assert (tmp_path / "overlay" / "material_maker" / "globals.gd").exists()
+
+
+def test_ensure_overlay_is_noop_when_nothing_changed(tmp_path, fake_checkout, fake_addon):
+    overlay_dir = str(tmp_path / "overlay")
+    ensure_overlay(str(fake_checkout), str(fake_addon), overlay_dir)
+
+    canary = tmp_path / "overlay" / "CANARY"
+    canary.write_text("still here?", encoding="utf-8")
+
+    ensure_overlay(str(fake_checkout), str(fake_addon), overlay_dir)
+
+    assert canary.exists()
+
+
+def test_ensure_overlay_rebuilds_on_addon_change(tmp_path, fake_checkout, fake_addon):
+    overlay_dir = str(tmp_path / "overlay")
+    ensure_overlay(str(fake_checkout), str(fake_addon), overlay_dir)
+
+    canary = tmp_path / "overlay" / "CANARY"
+    canary.write_text("still here?", encoding="utf-8")
+    _write(str(fake_addon), "live_server.gd", "extends Node\n# v2, changed")
+
+    ensure_overlay(str(fake_checkout), str(fake_addon), overlay_dir)
+
+    assert not canary.exists()
+    rebuilt = (tmp_path / "overlay" / "addons" / "mm_live" / "live_server.gd").read_text(
+        encoding="utf-8")
+    assert rebuilt == "extends Node\n# v2, changed"
+
+
+def test_ensure_overlay_rebuilds_on_checkout_path_change(tmp_path, fake_checkout, fake_addon):
+    overlay_dir = str(tmp_path / "overlay")
+    ensure_overlay(str(fake_checkout), str(fake_addon), overlay_dir)
+
+    canary = tmp_path / "overlay" / "CANARY"
+    canary.write_text("still here?", encoding="utf-8")
+
+    other_checkout = tmp_path / "other_mm_checkout"
+    other_checkout.mkdir()
+    _write(str(other_checkout), "project.godot", _FAKE_PROJECT_GODOT)
+    _write(str(other_checkout), "steam_appid.txt", "4110830")
+    _write(str(other_checkout), "material_maker/globals.gd", "# different checkout")
+
+    ensure_overlay(str(other_checkout), str(fake_addon), overlay_dir)
+
+    assert not canary.exists()
+    assert (tmp_path / "overlay" / "material_maker" / "globals.gd").read_text(
+        encoding="utf-8") == "# different checkout"
