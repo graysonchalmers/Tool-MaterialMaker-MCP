@@ -188,7 +188,15 @@ def test_ensure_overlay_first_build(tmp_path, fake_checkout, fake_addon):
 
     assert result == overlay_dir
     project_godot = (tmp_path / "overlay" / "project.godot").read_text(encoding="utf-8")
-    assert 'mm_live="*res://addons/mm_live/live_server.gd"' in project_godot
+    # Assert position, not just presence: a regression to appending blindly
+    # at end-of-file (Task 2's original bug) would still leave this
+    # substring in the file -- just after [display] instead of inside
+    # [autoload] -- and a substring-only check would miss it.
+    mm_live_pos = project_godot.find('mm_live="*res://addons/mm_live/live_server.gd"')
+    display_pos = project_godot.find("[display]")
+    assert mm_live_pos != -1, "mm_live autoload line not found"
+    assert display_pos != -1, "[display] section not found"
+    assert mm_live_pos < display_pos, "mm_live line should land inside [autoload], before [display]"
     assert (tmp_path / "overlay" / "addons" / "mm_live" / "live_server.gd").read_text(
         encoding="utf-8") == "extends Node\n# v1"
     # steam_appid.txt gotcha: must survive the whole-checkout copy or MM
