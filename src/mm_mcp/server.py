@@ -76,17 +76,21 @@ def render_graph(ptex: dict, size: int = 512, basename: str = "material") -> dic
 
 
 def render_preview(albedo_path: str, normal_path: str, orm_path: str,
-                    basename: str = "preview") -> dict:
-    """Composite a material's already-rendered maps onto a lit sphere + cube.
+                    basename: str = "preview", tile: float = 1.0) -> dict:
+    """Composite a material's already-rendered maps onto a sphere, a cube,
+    and a cutaway ball revealing an inner core, on a tiled ground plane.
 
     Call render_graph first and pass its albedo/normal/orm output paths here;
     this does not render a graph itself, only visualizes maps that already
     exist, so a normal map's relief is visible under real lighting instead of
-    read as a flat swatch.
+    read as a flat swatch. tile controls the UV repeat count on the objects
+    (the ground always tiles finer than that, so its own repeat is visible
+    regardless of the chosen value) — raise it to check how a material reads
+    at a smaller physical scale, e.g. tiled across a large surface.
     """
     cfg, _ = _ensure_ready()
     result = _render_preview(albedo_path, normal_path, orm_path,
-                              basename=basename, cfg=cfg)
+                              basename=basename, tile=tile, cfg=cfg)
     return {"ok": result.ok, "image": result.image,
             "error": result.error, "log_tail": result.log_tail}
 

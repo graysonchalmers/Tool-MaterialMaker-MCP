@@ -18,14 +18,25 @@ class PreviewResult:
     error: str | None = None
 
 
+def _build_command(cfg: Config, albedo_path: str, normal_path: str, orm_path: str,
+                    out_path: str, tile: float) -> list[str]:
+    return [
+        cfg.console_binary, "--path", _PREVIEW_PROJECT, "--",
+        f"--albedo={albedo_path}", f"--normal={normal_path}",
+        f"--orm={orm_path}", f"--out={out_path}", f"--tile={tile}",
+    ]
+
+
 def render_preview(albedo_path: str, normal_path: str, orm_path: str,
                     outdir: str | None = None, basename: str = "preview",
-                    cfg: Config | None = None) -> PreviewResult:
+                    tile: float = 1.0, cfg: Config | None = None) -> PreviewResult:
     """Composite a material's already-rendered maps onto a lit sphere + cube.
 
     Takes paths from a prior render_graph call (albedo/normal/orm), not a
     .ptex graph — rendering the flat maps is render.py's job, this only
-    visualizes maps that already exist.
+    visualizes maps that already exist. tile controls the UV repeat count on
+    the sphere/cube/cutaway ball; the ground plane always tiles finer than
+    that so its own repeat is visible regardless of the chosen value.
     """
     for label, path in (("albedo", albedo_path), ("normal", normal_path),
                          ("orm", orm_path)):
@@ -48,11 +59,7 @@ def render_preview(albedo_path: str, normal_path: str, orm_path: str,
     if os.path.exists(out_path):
         os.remove(out_path)
 
-    cmd = [
-        cfg.console_binary, "--path", _PREVIEW_PROJECT, "--",
-        f"--albedo={albedo_path}", f"--normal={normal_path}",
-        f"--orm={orm_path}", f"--out={out_path}",
-    ]
+    cmd = _build_command(cfg, albedo_path, normal_path, orm_path, out_path, tile)
 
     proc = None
     for _ in range(3):
