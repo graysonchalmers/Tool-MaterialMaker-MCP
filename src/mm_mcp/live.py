@@ -158,6 +158,18 @@ def connect_or_launch(cfg: Config | None = None, host: str = LIVE_HOST,
                 return LiveSession(ok=True, process=process)
             if not result.ok:
                 last_error = result.error
+            if process is not None and process.poll() is not None:
+                # The process we launched has already exited -- no point
+                # waiting out the rest of launch_timeout. Point at the log
+                # file _launch_overlay redirected stdout/stderr into, since
+                # that's where the real diagnosis (GPU/driver failure, a
+                # GDScript parse error, etc.) will be.
+                return LiveSession(
+                    ok=False,
+                    error=f"Material Maker exited with code {process.returncode} before the "
+                          f"live server became ready; see "
+                          f"{os.path.join(cfg.output_dir, 'mm_live.log')}",
+                )
             time.sleep(0.5)
     except BaseException:
         if process is not None:

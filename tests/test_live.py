@@ -159,6 +159,13 @@ class _FakeProcess:
     def __init__(self):
         self.terminated = False
         self.killed = False
+        # None == still running, matching subprocess.Popen.poll()/returncode
+        # semantics. Tests that want to simulate an early exit set this
+        # directly before handing the fake to connect_or_launch.
+        self.returncode = None
+
+    def poll(self):
+        return self.returncode
 
     def terminate(self):
         self.terminated = True
@@ -232,6 +239,23 @@ def test_connect_or_launch_terminates_process_on_timeout(monkeypatch):
     assert fake_process.terminated
 
 
+def test_connect_or_launch_returns_immediately_when_process_exits_early(monkeypatch):
+    picked_port = _free_port()  # nothing ever listens here
+    fake_process = _FakeProcess()
+    fake_process.returncode = 7  # already dead by the time the first poll() runs
+    monkeypatch.setattr(live, "_launch_overlay", lambda passed_cfg: fake_process)
+
+    started = time.monotonic()
+    session = live.connect_or_launch(cfg=cfg, host="127.0.0.1", port=picked_port,
+                                      launch_timeout=30.0)
+    elapsed = time.monotonic() - started
+
+    assert not session.ok
+    assert elapsed < 5.0, "should bail out as soon as the dead process is detected, not wait out launch_timeout"
+    assert "exited with code 7" in session.error
+    assert "mm_live.log" in session.error
+
+
 @pytest.mark.integration
 def test_connect_or_launch_gets_real_graph_from_default_new_material(tmp_path):
     # Isolated overlay dir so this test never collides with (or clobbers) an
@@ -241,6 +265,10 @@ def test_connect_or_launch_gets_real_graph_from_default_new_material(tmp_path):
     session = live.connect_or_launch(cfg=isolated_cfg, launch_timeout=90.0)
     try:
         assert session.ok, session.error
+        assert session.process is not None, (
+            "attached to a pre-existing instance on port 8765 -- close it and rerun; "
+            "this test must launch its own overlay to prove the committed addon works"
+        )
 
         result = live.get_graph()
         assert result.ok, result.error

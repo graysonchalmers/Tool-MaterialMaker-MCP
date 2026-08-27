@@ -17,6 +17,10 @@ output/
 *.tmp.ptex
 run.log
 
+# Disposable live-control overlay: ensure_overlay() copies the full Material
+# Maker checkout (~266 MB, incl. a nested .git) here on first live-control use.
+mm_live_overlay/
+
 # Phase 3 quality: keep test_set + scorecards; ignore heavy renders and the
 # authored .ptex variants (author.py regenerates them deterministically).
 quality/runs/
