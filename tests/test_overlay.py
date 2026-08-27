@@ -1,5 +1,7 @@
 import os
+import pytest
 from mm_mcp.overlay import _hash_dir, _append_autoload, _write_marker, _is_stale
+from mm_mcp.overlay import ensure_overlay
 
 
 def _write(path, rel, content):
@@ -159,3 +161,37 @@ def test_is_stale_true_when_marker_is_list_json(tmp_path):
     # Write a valid JSON list instead of dict
     marker_file.write_text('[1, 2]', encoding="utf-8")
     assert _is_stale(str(overlay), "hash1", "/mm/project") is True
+
+
+@pytest.fixture
+def fake_checkout(tmp_path):
+    checkout = tmp_path / "mm_checkout"
+    checkout.mkdir()
+    _write(str(checkout), "project.godot", _FAKE_PROJECT_GODOT)
+    _write(str(checkout), "steam_appid.txt", "4110830")
+    _write(str(checkout), "material_maker/globals.gd", "# real MM file")
+    return checkout
+
+
+@pytest.fixture
+def fake_addon(tmp_path):
+    addon = tmp_path / "mm_live"
+    addon.mkdir()
+    _write(str(addon), "live_server.gd", "extends Node\n# v1")
+    return addon
+
+
+def test_ensure_overlay_first_build(tmp_path, fake_checkout, fake_addon):
+    overlay_dir = str(tmp_path / "overlay")
+
+    result = ensure_overlay(str(fake_checkout), str(fake_addon), overlay_dir)
+
+    assert result == overlay_dir
+    project_godot = (tmp_path / "overlay" / "project.godot").read_text(encoding="utf-8")
+    assert 'mm_live="*res://addons/mm_live/live_server.gd"' in project_godot
+    assert (tmp_path / "overlay" / "addons" / "mm_live" / "live_server.gd").read_text(
+        encoding="utf-8") == "extends Node\n# v1"
+    # steam_appid.txt gotcha: must survive the whole-checkout copy or MM
+    # self-relaunches and exits (see CLAUDE.md).
+    assert (tmp_path / "overlay" / "steam_appid.txt").read_text(encoding="utf-8") == "4110830"
+    assert (tmp_path / "overlay" / "material_maker" / "globals.gd").exists()

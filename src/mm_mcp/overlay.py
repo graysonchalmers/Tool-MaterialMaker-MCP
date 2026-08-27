@@ -1,6 +1,7 @@
 import hashlib
 import json
 import os
+import shutil
 
 
 def _hash_dir(path: str) -> str:
@@ -84,3 +85,31 @@ def _is_stale(overlay_dir: str, addon_hash: str, mm_project_path: str) -> bool:
         return True
     return (marker.get("addon_hash") != addon_hash
             or marker.get("mm_project_path") != mm_project_path)
+
+
+def ensure_overlay(mm_project_path: str, addon_path: str, overlay_dir: str) -> str:
+    """Build or refresh a disposable working copy of a Material Maker project
+    checkout with the live-control addon layered in and registered as a
+    Godot autoload. Pure filesystem work; never launches Godot.
+
+    Rebuilds when overlay_dir doesn't exist yet, when addon_path's contents
+    changed since the last build, or when mm_project_path differs from what
+    this overlay_dir was last built from. Otherwise a fast no-op returning
+    the existing overlay_dir unchanged (see Task 5).
+    """
+    mm_project_path = os.path.abspath(mm_project_path)
+    addon_path = os.path.abspath(addon_path)
+    addon_hash = _hash_dir(addon_path)
+
+    if os.path.isdir(overlay_dir) and not _is_stale(overlay_dir, addon_hash, mm_project_path):
+        return overlay_dir
+
+    if os.path.isdir(overlay_dir):
+        shutil.rmtree(overlay_dir)
+    shutil.copytree(mm_project_path, overlay_dir)
+
+    addon_name = os.path.basename(os.path.normpath(addon_path))
+    shutil.copytree(addon_path, os.path.join(overlay_dir, "addons", addon_name))
+    _append_autoload(os.path.join(overlay_dir, "project.godot"), addon_name)
+    _write_marker(overlay_dir, addon_hash, mm_project_path)
+    return overlay_dir
