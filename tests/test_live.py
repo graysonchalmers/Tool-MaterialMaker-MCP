@@ -1,5 +1,6 @@
 # tests/test_live.py
 import json
+import os
 import socket
 import threading
 import time
@@ -461,5 +462,64 @@ def test_connect_or_launch_gets_real_graph_from_default_new_material(tmp_path):
         assert "nodes" in graph
         assert len(graph["nodes"]) >= 1
         assert any(n.get("type") == "material" for n in graph["nodes"])
+    finally:
+        session.close()
+
+
+@pytest.mark.integration
+def test_live_ops_build_and_render_a_simple_graph(tmp_path):
+    # Isolated overlay + output dirs so this test never collides with (or
+    # clobbers) a manual session's overlay or output files.
+    isolated_cfg = replace(cfg, live_overlay_dir=str(tmp_path / "mm_live_overlay"),
+                            output_dir=str(tmp_path / "output"))
+    session = live.connect_or_launch(cfg=isolated_cfg, launch_timeout=90.0)
+    try:
+        assert session.ok, session.error
+        assert session.process is not None, (
+            "attached to a pre-existing instance on port 8765 -- close it and rerun; "
+            "this test must launch its own overlay to prove the committed addon works"
+        )
+
+        added_source = live.add_node("perlin", {}, x=0, y=0, cfg=isolated_cfg)
+        assert added_source.ok, added_source.error
+        source_name = added_source.data["name"]
+
+        added_sink = live.add_node("colorize", {}, x=200, y=0, cfg=isolated_cfg)
+        assert added_sink.ok, added_sink.error
+        sink_name = added_sink.data["name"]
+
+        connected = live.connect_nodes(source_name, 0, sink_name, 0, cfg=isolated_cfg)
+        assert connected.ok, connected.error
+
+        # Wire the chain into the default new-material graph's pre-existing
+        # "Material" node (its literal name, per graph_edit.gd:714's
+        # new_material() default) so the export profile's per-file
+        # `conditions: "$(connected:albedo_tex)"` gate (material.mmg,
+        # gen_material.gd:667-676) actually evaluates true -- an unconnected
+        # chain produces zero PNGs no matter how correct render() is.
+        # albedo_tex is input port 0 on "material" (material.mmg's
+        # shader_model.inputs[0]).
+        wired = live.connect_nodes(sink_name, 0, "Material", 0, cfg=isolated_cfg)
+        assert wired.ok, wired.error
+
+        param_result = live.set_param(source_name, {"scale_x": 16}, cfg=isolated_cfg)
+        assert param_result.ok, param_result.error
+
+        graph_after = live.get_graph()
+        assert graph_after.ok, graph_after.error
+        node_names = {n["name"] for n in graph_after.data["graph"]["nodes"]}
+        assert {source_name, sink_name} <= node_names, (
+            f"expected {source_name!r} and {sink_name!r} in {node_names}"
+        )
+        connections = graph_after.data["graph"]["connections"]
+        assert any(c["from"] == source_name and c["to"] == sink_name for c in connections), (
+            f"expected a connection {source_name}->{sink_name}, got {connections}"
+        )
+
+        rendered = live.render(basename="live_test", cfg=isolated_cfg)
+        assert rendered.ok, rendered.error
+        assert rendered.images, "render reported ok but produced no image paths"
+        for path in rendered.images:
+            assert os.path.getsize(path) > 0
     finally:
         session.close()
