@@ -29,7 +29,25 @@ def _append_autoload(project_godot_path: str, addon_name: str) -> None:
         content = fh.read()
     if line in content:
         return
-    if not content.endswith("\n"):
-        content += "\n"
+
+    marker = "[autoload]"
+    section_start = content.find(marker)
+    if section_start == -1:
+        raise ValueError(f"no [autoload] section found in {project_godot_path}")
+
+    # Insert at the end of the [autoload] section (just before the next
+    # [section] header, or at end-of-file if [autoload] is the last
+    # section) -- never blindly at end-of-file. A real Godot project.godot
+    # has many sections after [autoload] (confirmed against the real
+    # Material Maker checkout), so an unconditional end-of-file append
+    # would silently attach the line to whatever the last section happens
+    # to be instead of [autoload], and Godot would never load it.
+    search_from = section_start + len(marker)
+    next_section = content.find("\n[", search_from)
+    insert_at = next_section if next_section != -1 else len(content)
+
+    prefix = content[:insert_at].rstrip("\n")
+    suffix = content[insert_at:]
+    new_content = prefix + "\n" + line + "\n" + suffix
     with open(project_godot_path, "w", encoding="utf-8") as fh:
-        fh.write(content + line + "\n")
+        fh.write(new_content)
