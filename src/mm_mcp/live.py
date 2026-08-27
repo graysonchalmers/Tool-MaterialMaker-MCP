@@ -141,15 +141,28 @@ def connect_or_launch(cfg: Config | None = None, host: str = LIVE_HOST,
     if not _is_listening(host, port):
         process = _launch_overlay(cfg)
 
-    deadline = time.monotonic() + launch_timeout
-    last_error = "timed out waiting for the live server to become ready"
-    while time.monotonic() < deadline:
-        result = ping(host, port)
-        if result.ok and result.data.get("ready"):
-            return LiveSession(ok=True, process=process)
-        if not result.ok:
-            last_error = result.error
-        time.sleep(0.5)
+    # The launch-and-poll span below is wrapped so that if anything raises
+    # while we're waiting (not just the plain timeout, which is handled
+    # after the loop), the process we just launched still gets terminated
+    # instead of leaking as an orphaned, visible Godot window. Today
+    # nothing in the loop actually raises (ping()/_send_command() catch
+    # every exception type they can produce), but that's an implementation
+    # detail of _send_command, not a guarantee -- this is a structural
+    # safety net, not a response to an observed failure.
+    try:
+        deadline = time.monotonic() + launch_timeout
+        last_error = "timed out waiting for the live server to become ready"
+        while time.monotonic() < deadline:
+            result = ping(host, port)
+            if result.ok and result.data.get("ready"):
+                return LiveSession(ok=True, process=process)
+            if not result.ok:
+                last_error = result.error
+            time.sleep(0.5)
+    except BaseException:
+        if process is not None:
+            _terminate(process)
+        raise
 
     if process is not None:
         _terminate(process)
