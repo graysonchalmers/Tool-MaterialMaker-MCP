@@ -1,3 +1,17 @@
+"""Build and refresh the live-control overlay: a disposable working copy of a
+Material Maker project checkout with the live-control addon layered in and
+registered as a Godot autoload.
+
+`overlay_dir` is always a caller-supplied parameter, never derived from
+project Config, so this module stays free of any Config/Godot dependency and
+is independently unit-testable. A future `live.py` step owns choosing where
+the overlay actually lives.
+
+A rebuild wipes `overlay_dir` wholesale (`shutil.rmtree` then
+`shutil.copytree`), so nothing that must survive a rebuild -- e.g. a log
+file -- should ever be written inside it.
+"""
+
 import hashlib
 import json
 import os
@@ -22,10 +36,12 @@ def _hash_dir(path: str) -> str:
 
 
 def _autoload_line(addon_name: str) -> str:
+    """The project.godot [autoload] line that registers the addon's live_server.gd."""
     return f'{addon_name}="*res://addons/{addon_name}/live_server.gd"'
 
 
 def _append_autoload(project_godot_path: str, addon_name: str) -> None:
+    """Insert the addon's autoload line into project.godot's [autoload] section, idempotently."""
     line = _autoload_line(addon_name)
     with open(project_godot_path, encoding="utf-8") as fh:
         content = fh.read()
@@ -59,32 +75,36 @@ _MARKER_NAME = ".mm_overlay_marker.json"
 
 
 def _marker_path(overlay_dir: str) -> str:
+    """Path to the marker file this module uses to detect a stale overlay."""
     return os.path.join(overlay_dir, _MARKER_NAME)
 
 
 def _read_marker(overlay_dir: str) -> dict | None:
+    """Load the marker file, or None if it's missing, unreadable, or not a JSON object."""
     path = _marker_path(overlay_dir)
     if not os.path.isfile(path):
         return None
     try:
         with open(path, encoding="utf-8") as fh:
             data = json.load(fh)
-    except (json.JSONDecodeError, OSError):
+    except (ValueError, OSError):
         return None
     return data if isinstance(data, dict) else None
 
 
 def _write_marker(overlay_dir: str, addon_hash: str, mm_project_path: str) -> None:
+    """Record the addon hash and checkout path this overlay_dir was built from."""
     with open(_marker_path(overlay_dir), "w", encoding="utf-8") as fh:
         json.dump({"addon_hash": addon_hash, "mm_project_path": mm_project_path}, fh)
 
 
 def _is_stale(overlay_dir: str, addon_hash: str, mm_project_path: str) -> bool:
+    """True if overlay_dir has no marker, or its marker doesn't match the current inputs."""
     marker = _read_marker(overlay_dir)
     if marker is None:
         return True
     return (marker.get("addon_hash") != addon_hash
-            or marker.get("mm_project_path") != mm_project_path)
+            or os.path.normcase(marker.get("mm_project_path", "")) != os.path.normcase(mm_project_path))
 
 
 def ensure_overlay(mm_project_path: str, addon_path: str, overlay_dir: str) -> str:
@@ -95,10 +115,22 @@ def ensure_overlay(mm_project_path: str, addon_path: str, overlay_dir: str) -> s
     Rebuilds when overlay_dir doesn't exist yet, when addon_path's contents
     changed since the last build, or when mm_project_path differs from what
     this overlay_dir was last built from. Otherwise a fast no-op returning
-    the existing overlay_dir unchanged (see Task 5).
+    the existing overlay_dir unchanged.
     """
+    if not os.path.isdir(addon_path):
+        raise ValueError(f"addon_path is not a directory: {addon_path}")
+    if not os.path.isfile(os.path.join(mm_project_path, "project.godot")):
+        raise ValueError(f"not a Godot project (no project.godot): {mm_project_path}")
+
     mm_project_path = os.path.abspath(mm_project_path)
     addon_path = os.path.abspath(addon_path)
+
+    overlay_dir_abs = os.path.abspath(overlay_dir)
+    for name, p_abs in (("mm_project_path", mm_project_path), ("addon_path", addon_path)):
+        if os.path.normcase(overlay_dir_abs) == os.path.normcase(p_abs) or \
+           os.path.normcase(p_abs).startswith(os.path.normcase(overlay_dir_abs) + os.sep):
+            raise ValueError(f"overlay_dir would delete {name}: {overlay_dir}")
+
     addon_hash = _hash_dir(addon_path)
 
     if os.path.isdir(overlay_dir) and not _is_stale(overlay_dir, addon_hash, mm_project_path):

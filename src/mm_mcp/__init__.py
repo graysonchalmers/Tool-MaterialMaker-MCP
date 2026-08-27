@@ -7,6 +7,7 @@ to PBR texture maps. Units:
   graph.py            build/validate .ptex graph JSON
   validator.py        validate a graph against the catalog
   render.py           headless Godot render runner
+  overlay.py          build/refresh the live-control addon overlay (disposable working copy)
   server.py           the MCP server (seven tools + catalog resource)
 """
 

@@ -1,7 +1,8 @@
+import json
 import os
 import pytest
 from mm_mcp.overlay import _hash_dir, _append_autoload, _write_marker, _is_stale
-from mm_mcp.overlay import ensure_overlay
+from mm_mcp.overlay import ensure_overlay, _marker_path
 
 
 def _write(path, rel, content):
@@ -163,6 +164,25 @@ def test_is_stale_true_when_marker_is_list_json(tmp_path):
     assert _is_stale(str(overlay), "hash1", "/mm/project") is True
 
 
+def test_is_stale_true_when_marker_is_not_valid_utf8(tmp_path):
+    """Regression test: a garbled/truncated marker file (invalid UTF-8 bytes)
+    should be treated as stale, not raise UnicodeDecodeError."""
+    overlay = tmp_path / "overlay"
+    overlay.mkdir()
+    marker_file = overlay / ".mm_overlay_marker.json"
+    marker_file.write_bytes(b"\xff\xfe")
+    assert _is_stale(str(overlay), "hash1", "/mm/project") is True
+
+
+def test_is_stale_false_when_mm_project_path_differs_only_by_case(tmp_path):
+    """Windows paths that differ only in case refer to the same directory;
+    _is_stale must not treat that as a change."""
+    overlay = tmp_path / "overlay"
+    overlay.mkdir()
+    _write_marker(str(overlay), "hash1", r"C:\Users\someone\tmp")
+    assert _is_stale(str(overlay), "hash1", r"C:\USERS\someone\TMP") is False
+
+
 @pytest.fixture
 def fake_checkout(tmp_path):
     checkout = tmp_path / "mm_checkout"
@@ -251,3 +271,92 @@ def test_ensure_overlay_rebuilds_on_checkout_path_change(tmp_path, fake_checkout
     assert not canary.exists()
     assert (tmp_path / "overlay" / "material_maker" / "globals.gd").read_text(
         encoding="utf-8") == "# different checkout"
+
+
+def test_ensure_overlay_raises_when_addon_path_missing(tmp_path, fake_checkout, fake_addon):
+    """A typo'd addon_path must raise before any destructive filesystem work
+    happens -- and must not touch a pre-existing overlay_dir."""
+    overlay_dir = str(tmp_path / "overlay")
+    ensure_overlay(str(fake_checkout), str(fake_addon), overlay_dir)
+
+    canary = tmp_path / "overlay" / "CANARY"
+    canary.write_text("still here?", encoding="utf-8")
+
+    missing_addon = str(tmp_path / "does_not_exist_addon")
+    with pytest.raises(ValueError, match="addon_path"):
+        ensure_overlay(str(fake_checkout), missing_addon, overlay_dir)
+
+    # No rmtree/copytree should have happened: canary survives.
+    assert canary.exists()
+
+
+def test_ensure_overlay_raises_when_mm_project_path_not_godot_project(tmp_path, fake_addon):
+    """mm_project_path missing project.godot must raise, not proceed to
+    delete/copy a directory that isn't actually a Godot project."""
+    overlay_dir = str(tmp_path / "overlay")
+    not_a_project = tmp_path / "not_a_project"
+    not_a_project.mkdir()
+    _write(str(not_a_project), "some_file.txt", "hi")
+
+    with pytest.raises(ValueError, match="project.godot"):
+        ensure_overlay(str(not_a_project), str(fake_addon), overlay_dir)
+
+    assert not os.path.isdir(overlay_dir)
+
+
+def test_ensure_overlay_raises_when_overlay_dir_equals_mm_project_path(tmp_path, fake_checkout, fake_addon):
+    """overlay_dir pointed at the real Material Maker checkout must raise
+    instead of rmtree-ing the pristine upstream checkout."""
+    with pytest.raises(ValueError, match="overlay_dir would delete"):
+        ensure_overlay(str(fake_checkout), str(fake_addon), str(fake_checkout))
+
+    # The checkout must survive completely untouched.
+    assert fake_checkout.is_dir()
+    assert (fake_checkout / "project.godot").exists()
+    assert (fake_checkout / "material_maker" / "globals.gd").exists()
+
+
+def test_ensure_overlay_raises_when_overlay_dir_is_parent_of_addon_path(tmp_path, fake_checkout):
+    """overlay_dir pointed at (or above) addon_path must raise instead of
+    rmtree-ing the addon source."""
+    addon_parent = tmp_path / "addon_parent"
+    addon_parent.mkdir()
+    addon = addon_parent / "mm_live"
+    addon.mkdir()
+    _write(str(addon), "live_server.gd", "extends Node\n# v1")
+
+    with pytest.raises(ValueError, match="overlay_dir would delete"):
+        ensure_overlay(str(fake_checkout), str(addon), str(addon_parent))
+
+    assert addon_parent.is_dir()
+    assert (addon / "live_server.gd").exists()
+
+
+def test_ensure_overlay_is_noop_when_mm_project_path_differs_only_by_case(
+        tmp_path, fake_checkout, fake_addon):
+    """A rebuild triggered purely by Windows path-casing differences would be
+    wasted I/O; mm_project_path comparison must be case-insensitive."""
+    overlay_dir = str(tmp_path / "overlay")
+    ensure_overlay(str(fake_checkout), str(fake_addon), overlay_dir)
+
+    canary = tmp_path / "overlay" / "CANARY"
+    canary.write_text("still here?", encoding="utf-8")
+
+    checkout_str = str(fake_checkout)
+    differently_cased = checkout_str.swapcase()
+    assert differently_cased != checkout_str, "test fixture path has no letters to case-swap"
+
+    ensure_overlay(differently_cased, str(fake_addon), overlay_dir)
+
+    assert canary.exists()
+
+
+def test_ensure_overlay_marker_contents(tmp_path, fake_checkout, fake_addon):
+    overlay_dir = str(tmp_path / "overlay")
+    ensure_overlay(str(fake_checkout), str(fake_addon), overlay_dir)
+
+    with open(_marker_path(overlay_dir), encoding="utf-8") as fh:
+        marker = json.load(fh)
+
+    assert marker["addon_hash"] == _hash_dir(str(fake_addon))
+    assert marker["mm_project_path"] == os.path.abspath(str(fake_checkout))
