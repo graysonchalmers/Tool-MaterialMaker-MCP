@@ -1,11 +1,28 @@
 # 🧭 Session Handoff — Tool-MaterialMaker-MCP
 
-_Last updated: 2026-08-26 (late night, cont.) CT (America/Chicago)_
+_Last updated: 2026-08-26 (late night, cont. 2) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
+**Horizon seam in `render_preview` fixed and pushed.** Short focused session:
+picked up option B from the prior handoff (the ground-plane horizon seam) and
+closed it. The finite 60×60 plane's far edge sat ~30 units out, where fog only
+reaches ~88%, leaving the ground's hard edge faintly visible against `BG_COLOR`
+as a seam. Fixed by extending the plane to 400×400 so its edge sits ~200 units
+out where fog is effectively 100% (ground fully dissolves into the background
+before its edge), while scaling the ground UV repeat with plane size so the
+near-camera tile density is unchanged from the tuned look. Verified with real
+before/after renders. Committed as `9e52340` and **pushed**; `main` and
+`origin/main` are in sync.
+
+Also corrected a stale note: the prior handoff claimed 3 unpushed commits, but
+`origin/main` was already at `0675ca1` before this session — that work
+(`render_preview`, North Star, scene overhaul) was already on GitHub. Nothing
+is unpushed now.
+
+Prior context (still true):
 **`render_preview` MCP tool built, tuned, and landed.** Grayson asked (via
 `pickup`) whether anywhere in the pipeline could show a material applied to
 a 3D object under real lighting, not just flat map swatches. Answer was no,
@@ -37,37 +54,33 @@ texture generation. Linked from README and CLAUDE.md.
 
 ## 📌 Where we stopped
 
-Clean stop. Full suite 112 passed (109 fast + 3 integration, one of them a
-live call through the real `render_preview()` Python API, not just the test
-harness). Three commits on `main`, not pushed. Working tree clean.
+Clean stop. Horizon seam fixed, `9e52340` committed and pushed, `main` level
+with `origin/main`, working tree clean. Fast suite 109 passed; the seam fix
+was verified live through the real `render_preview()` API.
 
 ## ▶️ Next concrete step
 
-Nothing required, this is a complete, tested, committed feature. Options:
+Nothing required. The seam (prior option B) is closed. Remaining open options,
+all carried over unchanged:
 
-**A. Push to GitHub.** Nothing's been pushed since `524b9a2` (several
-sessions ago now — cookbook growth, packaging, Phase 5 spec, and this
-session's `render_preview` work all sitting local-only on `main`). Use
-`github-push` if picked up from a cloud session, a plain `git push` if
-local.
+**A. More cookbook categories** — extend the authoring recipe library into
+new material families (see cookbook growth pattern in Heads-up).
 
-**B. The horizon seam.** The ground plane is finite (60×60); fog can gray
-out the ground pixels approaching its edge but can't smooth the edge itself,
-so there's still a visible hard line where it meets the flat background.
-Real fixes: a much bigger plane, or an actual sky background instead of flat
-`BG_COLOR`. Flagged to Grayson as a known loose end, not fixed.
+**B. The two honest partials** — wool's loop-knit approximation and the
+circuit-board mask-bleed bug (no lead after 3 tries).
 
-**C-F.** All the pre-existing next-up options are still open and unchanged
-by this session: more cookbook categories, the wool/circuit-board partials,
-Phase 5 implementation, PyPI publish. See the "Heads-up" section below for
-the ones still relevant, or the session log for full detail.
+**C. Phase 5 implementation** — live-control addon, speced not built, no
+target date by design.
+
+**D. PyPI publish** — on hold; GitHub-clone is the current route.
+
+**E. Document `render_preview`** — decide whether it needs an entry in
+`docs/AUTHORING.md` / README, or is fine as just an MCP tool.
 
 ## ❓ Open questions
 
 - Should `render_preview` get documented in `docs/AUTHORING.md` / README, or
   is it enough that it exists as an MCP tool? Not yet decided, not done.
-- The horizon-seam fix (bigger plane vs. real sky) — which approach, if
-  either is worth doing at all.
 - Carried over, unchanged: Phase 5 implementation timing (no target date by
   design); the two Phase 5 feasibility risks (Godot autoload wiring for a
   running project, Material Maker's in-process graph-mutation surface);
@@ -76,9 +89,18 @@ the ones still relevant, or the session log for full detail.
   cross-platform (macOS/Linux) verification, still untested, no machine
   available.
 
-## 🗂️ Changed this session
+## 🗂️ Changed this session (seam fix)
 
-- Branch: `main`. Three commits, not pushed:
+- Branch: `main`. One commit, pushed: `9e52340` — `fix(preview)`: ground plane
+  60×60 → 400×400 with density-preserving UV scale, removing the horizon seam.
+  Single file: `src/mm_mcp/preview_project/preview.gd`.
+- Decision (+ why): "bigger plane" over "real procedural sky" because the sky
+  would change the deliberately-dark studio background Grayson tuned; enlarging
+  the plane removes the seam while keeping that look exactly.
+
+## 🗂️ Changed the prior session (render_preview)
+
+- Branch: `main`. Three commits (already pushed before this session):
   - `41bd60b` — `render_preview` MCP tool (TDD: `src/mm_mcp/preview.py`,
     bundled `src/mm_mcp/preview_project/` Godot scene, 5 new tests,
     `pyproject.toml` package-data fix verified by an actual wheel build).
@@ -148,6 +170,22 @@ the ones still relevant, or the session log for full detail.
 ---
 
 ## 🕓 Session log
+
+### 2026-08-26 (late night, cont. 2) — horizon seam fix
+- Picked up via `pickup` with the seam fix as the appended task. Clean pickup,
+  no drift (repo matched the baton).
+- Diagnosed the seam as fog math, not geometry: the 60×60 plane's far edge sat
+  ~30 units out, where exponential fog (density 0.07) only reaches ~88%, so the
+  ground's hard edge stayed ~12% visible against `BG_COLOR`.
+- Fixed by extending the plane to 400×400 (edge ~200 units out, fog effectively
+  100%) with a density-preserving UV scale (`GROUND_SIZE / GROUND_SIZE_REFERENCE`)
+  so near-camera tiling is unchanged. Chose bigger-plane over procedural-sky to
+  preserve the tuned dark background.
+- Verified with real before/after renders (seam gone, gradient horizon), 109
+  fast tests, and a live `render_preview()` call. Committed `9e52340`, pushed.
+- Found and corrected a stale baton claim: the "3 unpushed commits" note was
+  wrong; `origin/main` was already at `0675ca1`, so that work was already on
+  GitHub. Only the seam fix needed pushing.
 
 ### 2026-08-26 (late night, cont.) — render_preview MCP tool + North Star doc
 - Picked up via `pickup`, Grayson asked whether the pipeline could show a
