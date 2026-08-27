@@ -1,211 +1,209 @@
 # 🧭 Session Handoff — Tool-MaterialMaker-MCP
 
-_Last updated: 2026-08-26 (late night) CT (America/Chicago)_
+_Last updated: 2026-08-26 (late night, cont.) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**Phase 5 (live-control) is now speced, not implemented.** Brainstormed the
-"D" option from the prior handoff's next-up menu: a Godot addon (explicitly
-*not* a source fork of Material Maker) bridged to the Python MCP server over
-a local socket, so Claude can see and edit whatever's open in the live GUI
-and Grayson can watch it happen. Spec committed at
-`docs/superpowers/specs/2026-08-26-live-control-addon-design.md`
-(`311e502`). Deferred, no implementation started, no target date. Also ran a
-live, from-scratch verification that the existing batch MVP (Phases 0-3)
-actually delivers end to end through the real public tool functions, not
-just the test harness, see below.
+**`render_preview` MCP tool built, tuned, and landed.** Grayson asked (via
+`pickup`) whether anywhere in the pipeline could show a material applied to
+a 3D object under real lighting, not just flat map swatches. Answer was no,
+so this session built it: a new eighth MCP tool that takes `render_graph`'s
+albedo/normal/orm output paths and composites them onto a sphere, a cube
+(turned 45°), and a cutaway ball (a CSG sphere with a wedge cut out,
+revealing an inner core), all resting on a tiled ground plane, under raking
+key + rim lighting with shadows, a touch of depth of field, exponential fog,
+and 8x MSAA + FXAA. Rendered via a small bundled Godot project
+(`src/mm_mcp/preview_project/`), fully separate from the `z-Git\material-maker`
+checkout, no fork.
 
-Prior session's cookbook growth (fabrics/organics/sci-fi/terrain, 16 new
-materials) and packaging/doctor (v0.2.0/v0.3.0) are untouched and still
-current, see the session log below for that history.
+Built via `superpowers:brainstorming` (spike to prove feasibility, then a
+bounded design once Grayson confirmed he wanted it as a real MCP tool) and
+`superpowers:test-driven-development` for the implementation. Then a long
+visual-iteration round with Grayson, rendering, showing him the actual PNG,
+adjusting, repeat, rather than guessing blind: ground plane + tiling knob,
+the cutaway ball (two full rotation-angle sweeps to find 240° on the Y-axis
+as the one orientation that keeps the cut face-on to the camera), fixing a
+white untextured cut face (missing material on the CSG cutter) and a
+noise-like inner core (wrong UV tile scale for its radius), DOF via
+`CameraAttributesPractical` (not direct `Camera3D` properties, first attempt
+errored), camera reframing, and finally dialing fog/DOF strength down.
 
-Per-category results:
-- **Fabrics** (`a714faf`): canvas/burlap HIT, silk/satin HIT, velvet HIT
-  (2 tries — voronoi speckle read as faceted crystal, `perlin` fixed it),
-  wool/chunky-knit PARTIAL (no true loop-knit generator in this catalog).
-- **Organics** (`bec23b5`): bark, snake scales, coral, lichen-crusted rock —
-  4/4 HIT on the first pass, each reused an already-proven lever.
-- **Sci-fi panels** (`61c83bd`): hull plating, hazard stripe panel, vent
-  grille — 3/4 HIT. Circuit board is a documented PARTIAL: chip blocks bleed
-  trace-stripe color through them for an unresolved reason after 3 tries.
-- **Terrain** (`afb3290`): sand dunes, fresh snow, gravel HIT immediately;
-  grass field HIT after one empirical fix (mask threshold direction was
-  backwards from what analogy with `o06`/`m01` predicted).
-
-New pattern for future categories: `quality/cookbook_<category>.py` (graph
-builders, reusing `author.py`'s helpers) + `quality/render_cookbook.py
-<label>` (validate+render, no `test_set.json` dependency) +
-`quality/_make_previews.py <label>` (downscaled preview thumbnails into
-`docs/images/cookbook-<label>/`). None of this touches the frozen 15 or its
-scorecard machinery. `quality/README.md` documents the convention.
+Also added `docs/NORTH_STAR.md`: Grayson's framing that this project's real
+point is lowering the barrier to learning Material Maker (he's learning it
+himself by watching/editing what gets authored for him), not one-shot
+texture generation. Linked from README and CLAUDE.md.
 
 ## 📌 Where we stopped
 
-Spec written, reviewed in chat, and committed. Batch MVP verification ran
-clean (see below). Working tree is clean (only the pre-existing gitignored
-`dist/` untracked). No work in flight, no implementation started on Phase 5.
-This is a clean stopping point, not a partial one.
-
-## 🔌 Phase 5 design: no fork, an addon + disposable overlay
-
-Grayson's key pushback during brainstorming: the original Phase 5 sketch said
-"a forked Material Maker," and he doesn't want to maintain a diverging copy
-of someone else's codebase. Resolution: the live-control code is a Godot
-**addon** (the same additive mechanism Material Maker's own
-`addons/material_maker` uses), versioned inside *this* repo, never inside
-`z-Git\material-maker`. A build step layers the addon onto a disposable
-working copy of the pristine checkout (plus one autoload line in
-`project.godot`) whenever it's stale, so nothing is ever hand-copied, not by
-Grayson, not by a future contributor cloning the repo. Full design, including
-the two open feasibility risks (Godot autoload wiring for a running project,
-and Material Maker's actual in-process graph-mutation surface), is in
-`docs/superpowers/specs/2026-08-26-live-control-addon-design.md`.
-
-Also clarified during brainstorming: the "watch it build live" use case and
-the "headless agent makes me a texture" use case are separate. The second one
-already works today (see verification below) and Phase 5 only adds the
-first, as a second interaction mode, not a replacement.
-
-## ✅ Batch MVP verification (2026-08-26 late night)
-
-Ran a fresh, live round trip through `mm_mcp.server`'s actual public tool
-functions (not `pytest`, not the cookbook harness) to prove the
-request-to-delivery loop Grayson described: `list_examples` →
-`load_example("bricks")` → recolored the brick gradient warmer/redder (the
-same lever documented in `docs/AUTHORING.md`) → `validate` (0 errors) →
-`render_graph` (4 non-empty PBR maps) → `save_graph`. Delivered the albedo,
-normal map, and `.ptex` back to Grayson via file share. Confirms the Phase
-0-3 MVP is real and consumer-usable as-is, independent of whether Phase 5
-ever gets built. Verification script + output live in a local scratch dir,
-nothing added to the repo (output/ is gitignored anyway).
-
-## ⭐ The flat-normal fix (the session's key discovery)
-
-`normal_map` is a compound node: `input → buffer(2^param0) → switch(param4) →
-edge_detect(param1)`. Default **`param4=1`** edge-detects a pre-rendered BUFFER of
-the input, which comes back FLAT for a directly-fed analytic generator (voronoi,
-weave, perlin-through-colorize) — the cause of every flat normal. Set **`param4=0`**
-to edge-detect the raw input → real relief; `param1` tunes strength (0.2-0.4
-subtle). Cloned working chains (dry_earth/bricks/beehive) already worked because
-their input reaches normal_map via a buffered blend. Full notes in
-`docs/AUTHORING.md`; it's a general lever (granite/aluminum can get real normals too).
+Clean stop. Full suite 112 passed (109 fast + 3 integration, one of them a
+live call through the real `render_preview()` Python API, not just the test
+harness). Three commits on `main`, not pushed. Working tree clean.
 
 ## ▶️ Next concrete step
 
-Nothing is required — Phase 5 is deliberately deferred with no target date.
-Pick from the menu below, or start a new thread of work entirely.
+Nothing required, this is a complete, tested, committed feature. Options:
 
-## 🧭 Next-up options (pick any; none are blocking)
+**A. Push to GitHub.** Nothing's been pushed since `524b9a2` (several
+sessions ago now — cookbook growth, packaging, Phase 5 spec, and this
+session's `render_preview` work all sitting local-only on `main`). Use
+`github-push` if picked up from a cloud session, a plain `git push` if
+local.
 
-**A. More cookbook categories.** The 4 originally planned are done; could keep
-going (e.g. liquids/glass, food, more sci-fi variety) using the same
-`cookbook_<category>.py` pattern. Cheap to extend, same recipe-library payoff.
+**B. The horizon seam.** The ground plane is finite (60×60); fog can gray
+out the ground pixels approaching its edge but can't smooth the edge itself,
+so there's still a visible hard line where it meets the flat background.
+Real fixes: a much bigger plane, or an actual sky background instead of flat
+`BG_COLOR`. Flagged to Grayson as a known loose end, not fixed.
 
-**B. Revisit the 2 partials.** Wool/chunky-knit (no loop-knit generator; could
-try a hand-built bump approach instead of a weave-family node) and circuit
-board (chip-bleed bug never root-caused). Neither is blocking, both are
-loose threads if perfection matters more than coverage.
-
-**C. Front-door polish.** A prompt-to-render quickstart and a short demo GIF
-(assistant authoring a material end to end) for the README top. Now has 16
-more example materials to potentially draw from for a refreshed gallery, plus
-a real request-to-delivery example from tonight's verification.
-
-**D. Phase 5 — live control (SPECED, not started).** Design is done and
-committed (`docs/superpowers/specs/2026-08-26-live-control-addon-design.md`):
-a Godot addon, no source fork, layered onto a disposable auto-rebuilt overlay,
-TCP bridge, turn-based collaborative editing. Two feasibility risks flagged in
-the spec need a quick check before real implementation starts (Godot autoload
-wiring for a running project; Material Maker's in-process graph-mutation
-surface). Next step if picked up: `writing-plans` off that spec.
-
-**E. PyPI publish (ON HOLD).** The v0.3.0 `dist/` is still built and
-`twine`-clean from the prior session; GitHub-clone remains the chosen
-distribution route. Revive only if that reverses.
-
-**F. Cross-platform test (still open).** The package declares 3.10+ but is
-only Windows-verified; `_console.exe` fallback on macOS/Linux is untested. No
-Mac/Linux machine available.
+**C-F.** All the pre-existing next-up options are still open and unchanged
+by this session: more cookbook categories, the wool/circuit-board partials,
+Phase 5 implementation, PyPI publish. See the "Heads-up" section below for
+the ones still relevant, or the session log for full detail.
 
 ## ❓ Open questions
 
-- When (if ever) to pick up Phase 5 implementation. No target date by design;
-  the spec exists so it's ready whenever.
-- The two feasibility risks in the Phase 5 spec are unverified: does a
-  `project.godot` autoload entry actually start a socket server for a
-  *running* (not editor) project, and does Material Maker expose a sane
-  in-process way to mutate a live graph? Worth a short spike before
-  `writing-plans` if Phase 5 gets picked up.
-- Worth root-causing the circuit-board mask-opacity bug, or is the documented
-  partial good enough? (No lead on the cause after 3 iterations.)
-- Is there a better loop-knit approximation for wool than coarse `weave`, or
-  is "chunky basket-weave" an acceptable stand-in permanently?
-- PyPI publish, or stay GitHub-clone only? (Carried over from prior sessions,
-  still unresolved, currently leaning GitHub-only.)
-- Worth building a Dockerfile / cross-platform CI, or is Windows-only fine for
-  the alpha audience? (Also carried over, still open.)
+- Should `render_preview` get documented in `docs/AUTHORING.md` / README, or
+  is it enough that it exists as an MCP tool? Not yet decided, not done.
+- The horizon-seam fix (bigger plane vs. real sky) — which approach, if
+  either is worth doing at all.
+- Carried over, unchanged: Phase 5 implementation timing (no target date by
+  design); the two Phase 5 feasibility risks (Godot autoload wiring for a
+  running project, Material Maker's in-process graph-mutation surface);
+  circuit-board mask-bleed bug (no lead after 3 tries); wool's loop-knit
+  approximation; PyPI vs. GitHub-clone-only (leaning GitHub-only);
+  cross-platform (macOS/Linux) verification, still untested, no machine
+  available.
 
-## 🗂️ Changed this session (Phase 5 design + batch MVP verification)
+## 🗂️ Changed this session
 
-- Branch: `main` throughout. One commit this session: `311e502` (the
-  live-control addon design spec). The verification pass wrote only to a
-  gitignored `output/` dir and a local scratch script, nothing tracked.
-- **Design decision (the session's main output):** Phase 5's original
-  "forked Material Maker" sketch is replaced with an addon-plus-disposable-
-  overlay approach after Grayson rejected maintaining a real fork. Full
-  rationale and architecture in
-  `docs/superpowers/specs/2026-08-26-live-control-addon-design.md`.
-- **Verification (not new engineering):** confirmed the Phases 0-3 batch
-  pipeline is a real, working request-to-delivery MVP by running it live
-  through `mm_mcp.server`'s actual public functions on a fresh request
-  ("brick, warmer/redder"), not just replaying existing tests. Delivered the
-  output to Grayson to close the loop for real.
-- Prior sessions' changes (cookbook growth, packaging, doctor) are unchanged
-  this session; full detail is in the session log below.
+- Branch: `main`. Three commits, not pushed:
+  - `41bd60b` — `render_preview` MCP tool (TDD: `src/mm_mcp/preview.py`,
+    bundled `src/mm_mcp/preview_project/` Godot scene, 5 new tests,
+    `pyproject.toml` package-data fix verified by an actual wheel build).
+  - `8fc8e33` — `docs/NORTH_STAR.md`, linked from README + CLAUDE.md.
+  - `aefd7af` — scene overhaul: ground plane, cutaway ball, DOF/fog/AA,
+    camera reframing, `tile` UV-scale knob wired through the real Python API
+    and MCP tool signature (previously only reachable via a raw Godot
+    cmdline arg during manual testing).
+- Decisions (+ why): `render_preview` takes already-rendered map paths, not
+  a `.ptex` graph, so `render_graph` stays the only place graph-rendering
+  logic lives (Grayson's call, to keep the two tools single-purpose). The
+  cutaway ball's rotation is locked at 240° on the Y-axis, the only
+  orientation across two full angle sweeps that kept the cut face
+  camera-facing rather than hidden against the ground or the far side.
 
 ## ⚠️ Heads-up for the next agent
 
-- **Run tests with `.venv\Scripts\python.exe`** (or activate the venv). The
-  package is `pip install -e .`, so `import mm_mcp` works from anywhere.
-  Fast suite: `pytest -q -m "not integration"` (103 passed); `pytest -q` adds the
-  Godot-launching integration render.
-- **Server startup is lazy now.** Importing `mm_mcp.server` does NOT validate
-  config or build the catalog; `_ensure_ready()` does that on first tool use (or
-  at `mcp.run()`). If you write a test that calls a tool under bad config, call
-  `server._reset()` in setup AND teardown so you don't cache state across tests.
+- **New MCP tool:** `render_preview(albedo_path, normal_path, orm_path,
+  basename="preview", tile=1.0) -> dict`. Call `render_graph` first and feed
+  its output paths in. Renders through `src/mm_mcp/preview_project/`, a
+  small standalone Godot project bundled in this repo, not the
+  `z-Git\material-maker` checkout.
+- **Run tests with `.venv\Scripts\python.exe`** (or activate the venv).
+  Fast suite: `pytest -q -m "not integration"` (109 passed); `pytest -q`
+  adds the Godot-launching integration renders (112 total).
+- **Godot property-name traps hit this session** (both caused a script
+  error + hung process, had to `taskkill`): depth of field lives on a
+  `CameraAttributesPractical` resource assigned to `Camera3D.attributes`,
+  not direct `Camera3D` properties; `smooth_faces` exists on `CSGSphere3D`
+  but not `CSGBox3D`. If a Godot script error leaves the console binary
+  hanging, `taskkill //F //IM Godot_v4.7.1-stable_win64_console.exe` clears
+  it (Bash tool, not PowerShell).
+- **Known, honestly-flagged limitations, not bugs:** CSG boolean subtraction
+  cuts sharp edges, no true bevel without a modeled mesh asset. The ground
+  plane's horizon seam (see Open questions) is a similar "real fix needs
+  more than a parameter tweak" case.
+- **Testable command-building pattern:** `preview.py`'s `_build_command()`
+  is a pure function returning the Godot argv list, tested directly without
+  launching Godot, mirroring `render.py`'s `_collect_fresh_images()`.
+- **Server startup is lazy.** Importing `mm_mcp.server` does NOT validate
+  config or build the catalog; `_ensure_ready()` does that on first tool use
+  (or at `mcp.run()`). A test calling a tool under bad config needs
+  `server._reset()` in setup AND teardown.
 - **`mm-mcp --check`** is the setup doctor (green/red preflight); `--version`,
   `--help` also work. Build/release tooling lives in the `release` extra
-  (`pip install -e .[release]` → build, twine). `dist/` is gitignored.
-- **Pillow is installed in `.venv` but deliberately NOT in `pyproject.toml`** — it
-  was a one-time tool to downscale the `examples/images/` previews. Don't add it
+  (`pip install -e .[release]` → build, twine). `dist/` and `build/` are
+  build-artifact scratch, safe to `rm -rf`, not tracked.
+- **Pillow is installed in `.venv` but deliberately NOT in `pyproject.toml`**,
+  a one-time tool for downscaling `examples/images/` previews. Don't add it
   as a dependency.
-- `quality/runs/` and `quality/authored/` are gitignored (heavy PNGs / regen'd);
-  scorecards + test_set are the committed evidence, `author.py` reproduces renders.
 - All Phase 1-2 render gotchas still hold (see CLAUDE.md): `--export-material`,
   `_console.exe`, no `--headless`, `steam_appid.txt`.
-- **Minor, non-blocking:** `.gitignore` has no `dist` entry even though
-  CLAUDE.md and this doc call `dist/` gitignored; that's just why
-  `git status` shows it untracked instead of ignored. Doesn't affect
-  anything, worth a one-line `.gitignore` fix next time packaging is touched.
+- **Minor, non-blocking, carried over:** `.gitignore` has no `dist` entry
+  even though CLAUDE.md and this doc call `dist/` gitignored, worth a
+  one-line fix next time packaging is touched.
 - `normal_map` is a compound node; real params `param0` (size), `param1`
-  (strength), `param2`, `param4` — NOT `amount`/`size`.
-- Voronoi **output port 2** = `rand3` random-per-cell (the fleck/speckle source);
-  ports 0/1 are distance fields. Reusable for any granular material.
+  (strength), `param2`, `param4` (0 = real relief for analytic generators,
+  1 = flat) — NOT `amount`/`size`. Voronoi **output port 2** = `rand3`
+  random-per-cell (the fleck/speckle source); ports 0/1 are distance fields.
 - **Cookbook growth pattern** (`quality/cookbook_<category>.py` +
   `render_cookbook.py` + `_make_previews.py`) is separate from the frozen
-  Phase 3 test set on purpose — copy it for the next category rather than
+  Phase 3 test set on purpose, copy it for the next category rather than
   touching `test_set.json`/`run_case.py`/`author.py`'s `BUILDERS` dict. See
   `quality/README.md` for the short version and `docs/AUTHORING.md` for every
   recipe + the levers that didn't pan out.
-- `quality/cookbook/` and `docs/images/cookbook-*/` are the render output and
-  the tracked preview thumbnails respectively (the former gitignored, the
-  latter committed as documentation assets — see `.gitignore`'s comment).
 
 ---
 
 ## 🕓 Session log
+
+### 2026-08-26 (late night, cont.) — render_preview MCP tool + North Star doc
+- Picked up via `pickup`, Grayson asked whether the pipeline could show a
+  material on a 3D object (spheres/cubes, nice side lighting for the normal
+  map) rather than flat map swatches. Checked `src/mm_mcp/render.py` and the
+  design docs: no, only `--export-material` flat PNGs existed anywhere.
+- **Spike first** (`superpowers:brainstorming`, spike path): a throwaway
+  standalone Godot project proved a headless lit sphere+cube render was
+  feasible in about 20 minutes, one bug (`look_at()` before `add_child()`),
+  no `steam_appid.txt` needed since it's not the Material Maker checkout.
+- **Bounded design, then TDD implementation** (`41bd60b`): a new
+  `render_preview` MCP tool, takes `render_graph`'s
+  albedo/normal/orm paths (not a `.ptex` graph, keeps `render_graph`
+  single-purpose), returns the same error-as-data shape as the other tools.
+  Bundled the promoted spike assets as `src/mm_mcp/preview_project/`. Caught
+  and fixed a real gap: the bundled Godot project wasn't in
+  `pyproject.toml`'s package data, so a pip install would've silently
+  shipped without it, verified the fix by actually building a wheel and
+  checking its file list. 5 new tests, 110 passed at that point.
+- **North Star doc** (`8fc8e33`): Grayson's framing, mid-session, that this
+  project's real point is lowering the barrier to learning Material Maker
+  (he's learning it himself by watching/editing what gets authored for him),
+  not one-shot texture generation, wasn't written down anywhere. Added
+  `docs/NORTH_STAR.md`, linked from README and CLAUDE.md so future sessions
+  read it before proposing new scope.
+- **Visual iteration round** (`aefd7af`), rendering and showing Grayson the
+  actual PNG at every step rather than guessing blind:
+  - Ground plane the objects rest on, tiling 8x finer than them, `--tile`
+    knob to scale UV repeat (this had only ever been a manual Godot cmdline
+    arg during testing; wired it through `render_preview`'s real Python API
+    and the MCP tool signature as part of locking the scene in).
+  - Third object: a cutaway ball (CSG sphere minus a wedge box, revealing an
+    inner core), an honest approximation of a studio material-test ball,
+    not a true beveled asset (Godot's CSG booleans cut sharp edges, a real
+    bevel needs a modeled mesh, told Grayson this plainly rather than
+    pretending otherwise).
+  - Two full rotation-angle sweeps (6 renders each, composited into labeled
+    contact sheets) to find where the cutaway ball's cut stayed visible.
+    Z-axis rotation only ever swung it between "barely visible" and "hidden
+    against the ground/shadow." Y-axis (Grayson's correction: "look down on
+    top of it and turn it") is what worked, 240° locked in.
+  - Fixed the cut face rendering plain white (the CSG wedge cutter had no
+    material, gave it the shell's own) and the inner core reading as noise
+    (it was using the ground's much-finer tile scale on a far smaller
+    sphere, scaled its tile count to its own radius fraction instead).
+  - Shadow-casting light, depth of field (`CameraAttributesPractical`
+    assigned to `Camera3D.attributes`, not direct properties, first attempt
+    errored and hung the Godot process, `taskkill` cleared it), exponential
+    fog, MSAA 4x → 8x + FXAA (project setting and explicit viewport
+    override), camera pushed closer + narrower FOV, cube turned 45°,
+    look-at target raised to center it, then fog/DOF strength tuned down
+    once the base look was approved.
+  - Cleaned up the now-locked `cutaway_rot` debug arg into a named constant.
+- Ran the full suite (112 passed, 109 fast + 3 integration) and one live
+  call through the real `render_preview()` API as a final check before
+  committing. Three commits on `main`, not pushed.
 
 ### 2026-08-26 (late night) — Phase 5 design spec + batch MVP verification
 - Picked up option D from the prior handoff's menu (Phase 5 live control).

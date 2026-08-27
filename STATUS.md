@@ -6,7 +6,7 @@
 
 Gate ledger. Three states only: ✅ verified · 🔌 wired · ⬜ not started.
 
-_Last updated: 2026-08-26 (Phase 5 design spec)_
+_Last updated: 2026-08-26 (render_preview MCP tool)_
 
 ## Phases
 
@@ -33,6 +33,7 @@ _Last updated: 2026-08-26 (Phase 5 design spec)_
 | catalog_builder.py | ✅ | Builds `catalog.json` from `.mmg` files; all 43 bundled examples validate against it |
 | graph.py (build + validate) | ✅ | `Graph.to_ptex`/`from_ptex` + `validate_graph`; covered by `tests/test_graph.py`, `tests/test_validator.py` |
 | render.py (runner) | ✅ | Headless Godot render runner; `tests/test_render.py` incl. the integration test that renders `bricks.ptex` for real |
-| server.py (MCP) | ✅ | All seven tools + `catalog://nodes` resource; exercised end to end by `smoke/smoke_mcp.py`. Lazy startup (`_ensure_ready`); `main(argv)` handles `--check`/`--version`/`--help` |
+| server.py (MCP) | ✅ | All eight tools + `catalog://nodes` resource; exercised end to end by `smoke/smoke_mcp.py`. Lazy startup (`_ensure_ready`); `main(argv)` handles `--check`/`--version`/`--help` |
 | doctor.py (setup preflight) | ✅ | `mm-mcp --check` green/red checklist; `tests/test_doctor.py` (11 tests) |
 | Packaging (pip/wheel/sdist) | 🔌 | Installable, `twine`-clean, clean-venv verified; PyPI upload on hold, macOS/Linux untested |
+| preview.py + preview_project/ (3D preview) | ✅ | `render_preview` MCP tool: composites rendered maps onto a sphere/cube/cutaway-ball scene via a bundled headless Godot project; `tests/test_preview.py` (7 tests incl. 2 integration); ships in the wheel (`tool.setuptools.package-data`, verified by an actual build) |
