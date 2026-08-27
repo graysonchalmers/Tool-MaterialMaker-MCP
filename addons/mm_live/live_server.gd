@@ -71,6 +71,8 @@ func _dispatch(peer: StreamPeerTCP, line: String) -> void:
 				response = _cmd_connect_nodes(parsed)
 			"set_param":
 				response = _cmd_set_param(parsed)
+			"render":
+				response = await _cmd_render(parsed)
 			_:
 				response = {"ok": false, "error": "unknown command: %s" % str(parsed["cmd"])}
 	peer.put_data((JSON.stringify(response) + "\n").to_utf8_buffer())
@@ -147,4 +149,24 @@ func _cmd_set_param(cmd: Dictionary) -> Dictionary:
 		return {"ok": false, "error": "no node named '%s' in the live graph" % node_name}
 	var target = graph_edit.generator.get_node(node_path)
 	graph_edit.set_node_parameters(target, cmd.get("parameters", {}))
+	return {"ok": true}
+
+
+func _cmd_render(cmd: Dictionary) -> Dictionary:
+	if mm_globals.main_window == null:
+		return {"ok": false, "error": "main_window not ready"}
+	var graph_edit: MMGraphEdit = mm_globals.main_window.get_current_graph_edit()
+	if graph_edit == null or graph_edit.generator == null:
+		return {"ok": false, "error": "no active graph"}
+	var prefix := str(cmd.get("prefix", ""))
+	var profile := str(cmd.get("profile", "Godot/Godot 4 Standard"))
+	if prefix.is_empty():
+		return {"ok": false, "error": "render requires a non-empty 'prefix'"}
+	# main_window.export_material awaits graph_edit.export_material internally
+	# (main_window.gd:517 -> graph_edit.gd:921), which itself awaits the
+	# material node's own export_material (gen_material.gd:650) -- awaiting
+	# here is required, or this handler replies before Godot finishes
+	# writing the PNGs. export_material has no failure return value; Python
+	# verifies success by checking for fresh files on disk.
+	await mm_globals.main_window.export_material(prefix, profile)
 	return {"ok": true}
