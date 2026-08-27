@@ -9,6 +9,11 @@ render them headlessly, and return editable `.ptex` files. Read
 [docs/superpowers/specs/2026-08-25-material-maker-mcp-design.md](docs/superpowers/specs/2026-08-25-material-maker-mcp-design.md)
 for the full design before making changes.
 
+Read [docs/NORTH_STAR.md](docs/NORTH_STAR.md) before proposing new scope —
+this is a round-trip learning tool (assistant drafts, human tweaks the real
+graph in Material Maker), not a one-shot texture generator. If a change
+doesn't serve that loop, check with Grayson before building it.
+
 ## The baton
 
 - [HANDOFF.md](HANDOFF.md) is the session baton. Read it at pickup, write it at wrap-up.

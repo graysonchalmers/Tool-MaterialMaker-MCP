@@ -10,6 +10,9 @@ the server validates it against Material Maker's own node catalog and renders it
 with Godot, and you get back the maps plus an editable graph. The assistant gets
 you most of the way there; you tweak the rest in Material Maker.
 
+Why this project exists and what it's actually optimizing for is in
+[docs/NORTH_STAR.md](docs/NORTH_STAR.md).
+
 > ## ⚠️ Super, super, super alpha. Read this first.
 >
 > I am an artist and animator in the game industry, not a software engineer. I do
