@@ -3,6 +3,8 @@ import json
 import socket
 import threading
 import time
+from dataclasses import replace
+import pytest
 from mm_mcp import live
 
 
@@ -228,3 +230,23 @@ def test_connect_or_launch_terminates_process_on_timeout(monkeypatch):
     assert not session.ok
     assert session.error
     assert fake_process.terminated
+
+
+@pytest.mark.integration
+def test_connect_or_launch_gets_real_graph_from_default_new_material(tmp_path):
+    # Isolated overlay dir so this test never collides with (or clobbers) an
+    # overlay a manual session might already have running.
+    isolated_cfg = replace(cfg, live_overlay_dir=str(tmp_path / "mm_live_overlay"))
+
+    session = live.connect_or_launch(cfg=isolated_cfg, launch_timeout=90.0)
+    try:
+        assert session.ok, session.error
+
+        result = live.get_graph()
+        assert result.ok, result.error
+        graph = result.data["graph"]
+        assert "nodes" in graph
+        assert len(graph["nodes"]) >= 1
+        assert any(n.get("type") == "material" for n in graph["nodes"])
+    finally:
+        session.close()
