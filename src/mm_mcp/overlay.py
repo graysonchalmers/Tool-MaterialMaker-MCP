@@ -17,3 +17,19 @@ def _hash_dir(path: str) -> str:
             with open(full, "rb") as fh:
                 h.update(fh.read())
     return h.hexdigest()
+
+
+def _autoload_line(addon_name: str) -> str:
+    return f'{addon_name}="*res://addons/{addon_name}/live_server.gd"'
+
+
+def _append_autoload(project_godot_path: str, addon_name: str) -> None:
+    line = _autoload_line(addon_name)
+    with open(project_godot_path, encoding="utf-8") as fh:
+        content = fh.read()
+    if line in content:
+        return
+    if not content.endswith("\n"):
+        content += "\n"
+    with open(project_godot_path, "w", encoding="utf-8") as fh:
+        fh.write(content + line + "\n")

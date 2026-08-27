@@ -1,5 +1,5 @@
 import os
-from mm_mcp.overlay import _hash_dir
+from mm_mcp.overlay import _hash_dir, _append_autoload
 
 
 def _write(path, rel, content):
@@ -40,3 +40,37 @@ def test_hash_dir_changes_when_file_added(tmp_path):
     after = _hash_dir(str(a))
 
     assert before != after
+
+
+_FAKE_PROJECT_GODOT = """; fake project.godot, mirrors real MM's shape
+
+[application]
+
+config/name="fake"
+
+[autoload]
+
+mm_globals="*res://material_maker/globals.tscn"
+Html5="*res://material_maker/html5.gd"
+"""
+
+
+def test_append_autoload_adds_the_line(tmp_path):
+    pg = tmp_path / "project.godot"
+    pg.write_text(_FAKE_PROJECT_GODOT, encoding="utf-8")
+
+    _append_autoload(str(pg), "mm_live")
+
+    content = pg.read_text(encoding="utf-8")
+    assert 'mm_live="*res://addons/mm_live/live_server.gd"' in content
+
+
+def test_append_autoload_is_idempotent(tmp_path):
+    pg = tmp_path / "project.godot"
+    pg.write_text(_FAKE_PROJECT_GODOT, encoding="utf-8")
+
+    _append_autoload(str(pg), "mm_live")
+    _append_autoload(str(pg), "mm_live")
+
+    content = pg.read_text(encoding="utf-8")
+    assert content.count('mm_live="*res://addons/mm_live/live_server.gd"') == 1
