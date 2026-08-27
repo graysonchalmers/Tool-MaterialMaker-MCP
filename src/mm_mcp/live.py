@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.config import Config, load_config
 from mm_mcp.overlay import ensure_overlay
+from mm_mcp.render import RenderResult, _collect_fresh_images
 from mm_mcp.validator import validate_graph
 
 # Must match addons/mm_live/live_server.gd's LIVE_PORT -- no shared-constant
@@ -161,6 +162,35 @@ def set_param(name: str, parameters: dict, cfg: Config | None = None, host: str 
         return LiveResult(ok=False, error="validation failed", data={"problems": errors})
     return _send_command({"cmd": "set_param", "name": name, "parameters": parameters},
                           host, port, timeout)
+
+
+def render(basename: str = "material", profile: str = "Godot/Godot 4 Standard",
+           cfg: Config | None = None, host: str = LIVE_HOST, port: int = LIVE_PORT,
+           timeout: float = 60.0) -> RenderResult:
+    """Trigger a live-window export via the addon's render command, then
+    verify success the same way render.py's batch path does: by checking
+    for fresh <basename>_*.png files on disk, since export_material has no
+    failure signal of its own to report over the socket."""
+    cfg = cfg or load_config()
+    outdir = cfg.output_dir
+    os.makedirs(outdir, exist_ok=True)
+    before = {}
+    for fn in os.listdir(outdir):
+        if fn.startswith(basename + "_") and fn.lower().endswith(".png"):
+            full = os.path.join(outdir, fn)
+            try:
+                before[fn] = os.path.getmtime(full)
+            except (OSError, FileNotFoundError):
+                pass
+    prefix = os.path.join(outdir, basename)
+    result = _send_command({"cmd": "render", "prefix": prefix, "profile": profile},
+                            host, port, timeout)
+    if not result.ok:
+        return RenderResult(ok=False, error=result.error)
+    images = _collect_fresh_images(outdir, basename, before)
+    if not images:
+        return RenderResult(ok=False, error="no PNG output produced by live render")
+    return RenderResult(ok=True, images=images)
 
 
 @dataclass

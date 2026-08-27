@@ -296,6 +296,50 @@ def test_set_param_reports_missing_node_without_contacting_server(monkeypatch):
         server.stop()
 
 
+def test_render_returns_fresh_images_on_success(tmp_path):
+    isolated_cfg = replace(cfg, output_dir=str(tmp_path))
+
+    def responder(cmd):
+        assert cmd["cmd"] == "render"
+        # Simulate Godot writing the exported PNGs before the addon replies.
+        (tmp_path / "material_albedo.png").write_bytes(b"fake png bytes")
+        (tmp_path / "material_normal.png").write_bytes(b"fake png bytes")
+        return {"ok": True}
+
+    server = _FakeLiveServer(responder)
+    try:
+        result = live.render(basename="material", cfg=isolated_cfg,
+                              host="127.0.0.1", port=server.port)
+        assert result.ok
+        assert len(result.images) == 2
+    finally:
+        server.stop()
+
+
+def test_render_reports_no_output_when_no_files_appear(tmp_path):
+    isolated_cfg = replace(cfg, output_dir=str(tmp_path))
+    server = _FakeLiveServer(lambda cmd: {"ok": True})
+    try:
+        result = live.render(basename="material", cfg=isolated_cfg,
+                              host="127.0.0.1", port=server.port)
+        assert not result.ok
+        assert "no png" in result.error.lower()
+    finally:
+        server.stop()
+
+
+def test_render_propagates_server_side_failure(tmp_path):
+    isolated_cfg = replace(cfg, output_dir=str(tmp_path))
+    server = _FakeLiveServer(lambda cmd: {"ok": False, "error": "main_window not ready"})
+    try:
+        result = live.render(basename="material", cfg=isolated_cfg,
+                              host="127.0.0.1", port=server.port)
+        assert not result.ok
+        assert result.error == "main_window not ready"
+    finally:
+        server.stop()
+
+
 class _FakeProcess:
     def __init__(self):
         self.terminated = False
