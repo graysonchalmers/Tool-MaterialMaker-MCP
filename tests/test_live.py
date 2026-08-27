@@ -146,3 +146,85 @@ def test_send_command_handles_timeout():
         assert "timed out" in result.error.lower()
     finally:
         server.stop()
+
+
+from mm_mcp.config import load_config
+
+cfg = load_config()
+
+
+class _FakeProcess:
+    def __init__(self):
+        self.terminated = False
+        self.killed = False
+
+    def terminate(self):
+        self.terminated = True
+
+    def kill(self):
+        self.killed = True
+
+    def wait(self, timeout=None):
+        return 0
+
+
+def test_launch_command_uses_console_binary_and_overlay_path():
+    cmd = live._launch_command(cfg, r"C:\somewhere\overlay")
+    assert cmd == [cfg.console_binary, "--path", r"C:\somewhere\overlay"]
+
+
+def test_connect_or_launch_attaches_when_already_listening(monkeypatch):
+    server = _FakeLiveServer(lambda cmd: {"ok": True, "ready": True})
+    launched = {"called": False}
+
+    def _no_launch(passed_cfg):
+        launched["called"] = True
+        return _FakeProcess()
+
+    monkeypatch.setattr(live, "_launch_overlay", _no_launch)
+    try:
+        session = live.connect_or_launch(cfg=cfg, host="127.0.0.1", port=server.port,
+                                          launch_timeout=2.0)
+        assert session.ok
+        assert session.process is None
+        assert launched["called"] is False
+        session.close()  # no-op: we didn't launch anything
+    finally:
+        server.stop()
+
+
+def test_connect_or_launch_launches_when_not_listening(monkeypatch):
+    picked_port = _free_port()
+    fake_process = _FakeProcess()
+    started_server = {"server": None}
+
+    def _fake_launch(passed_cfg):
+        def _start_late():
+            time.sleep(0.3)  # simulate Godot booting before the addon listens
+            started_server["server"] = _FakeLiveServer(
+                lambda cmd: {"ok": True, "ready": True}, port=picked_port)
+        threading.Thread(target=_start_late, daemon=True).start()
+        return fake_process
+
+    monkeypatch.setattr(live, "_launch_overlay", _fake_launch)
+    try:
+        session = live.connect_or_launch(cfg=cfg, host="127.0.0.1", port=picked_port,
+                                          launch_timeout=5.0)
+        assert session.ok
+        assert session.process is fake_process
+    finally:
+        if started_server["server"] is not None:
+            started_server["server"].stop()
+
+
+def test_connect_or_launch_terminates_process_on_timeout(monkeypatch):
+    picked_port = _free_port()  # nothing ever listens here
+    fake_process = _FakeProcess()
+    monkeypatch.setattr(live, "_launch_overlay", lambda passed_cfg: fake_process)
+
+    session = live.connect_or_launch(cfg=cfg, host="127.0.0.1", port=picked_port,
+                                      launch_timeout=1.0)
+
+    assert not session.ok
+    assert session.error
+    assert fake_process.terminated
