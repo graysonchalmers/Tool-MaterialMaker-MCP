@@ -1,12 +1,55 @@
 # 🧭 Session Handoff — Tool-MaterialMaker-MCP
 
-_Last updated: 2026-08-26 (late night, cont. 3) CT (America/Chicago)_
+_Last updated: 2026-08-27 (early AM) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**Phase 5 both feasibility risks retired via spike; ready for gated build.**
+**Phase 5 build step 1 (`overlay.py`) shipped: built, reviewed, fixed, merged,
+pushed.** Continuing straight from this session's own de-risking spike (below),
+Grayson said "continue" and the session ran the full `superpowers` pipeline
+end to end: `writing-plans` → an isolated git worktree →
+`subagent-driven-development` (5 tasks, fresh implementer + fresh reviewer per
+task, haiku for mechanical tasks, sonnet for integration/review) →
+`requesting-code-review`-style final whole-branch review on opus →
+`finishing-a-development-branch` (merged locally, pushed).
+
+`ensure_overlay(mm_project_path, addon_path, overlay_dir) -> overlay_path` now
+exists in `src/mm_mcp/overlay.py`, 134 tests (up from 109), all green. It's
+pure filesystem work (no Godot import, no Config dependency): builds/refreshes
+a disposable copy of a Material Maker checkout with the future live-control
+addon layered in and registered as a Godot `[autoload]` entry, using a
+content-hash-of-addon + checkout-path marker to decide no-op vs. rebuild.
+
+**Five real bugs found and fixed by the review loop, none of them
+implementer error** — all were defects in this session's own plan-authored
+reference code, each ruled on and fixed the same task, then re-reviewed clean
+before moving on:
+1. `_append_autoload` blindly appended to end-of-file instead of into the
+   `[autoload]` section — verified against the real
+   `z-Git\material-maker\project.godot` (10 sections follow `[autoload]`
+   there); an end-of-file append would have attached the line to `[steam]`,
+   silently defeating the whole addon-loading mechanism. **Critical.**
+2. `_read_marker` didn't guard against valid-but-non-dict JSON (a garbled
+   marker), crashing instead of degrading to "stale."
+3. Task 4's integration test proved the autoload line's *presence*, not its
+   *position* — a regression of bug #1 wouldn't have been caught end-to-end.
+4. (final review) `ensure_overlay` ran destructive `rmtree`/`copytree`
+   *before* validating any input — reviewer reproduced `overlay_dir ==
+   mm_project_path` actually deleting a real test checkout. Fixed with an
+   input-validation guard at the top of the function (addon_path must be a
+   dir, mm_project_path must contain `project.godot`, overlay_dir can't
+   equal or contain either input, case-insensitive).
+5. (final review) `STATUS.md`'s gate ledger was never updated for this work,
+   violating this project's own CLAUDE.md rule. Fixed.
+
+Full detail — every ruling, every finding, every fix-round diff — lived in
+the SDD ledger inside the (now-deleted) worktree; the git history on `main`
+is the durable record now (9 commits, `53527bf`..`67a028a`, landed via a
+clean fast-forward merge, individually visible in `git log`).
+
+**Phase 5 both feasibility risks retired via spike, earlier this session.**
 After the seam fix (below), Grayson picked "start Phase 5" (the live-control
 addon). Started it the spike-first way the spec mandates and closed BOTH
 "known risks" the spec flagged:
@@ -77,21 +120,22 @@ texture generation. Linked from README and CLAUDE.md.
 
 ## 📌 Where we stopped
 
-Clean stop. Phase 5 fully de-risked (both spec risks retired by spike), spec
-updated with the "Feasibility verified" section + implementation constraints,
-handoff updated. Seam fix `9e52340` + these doc updates on `main`. Nothing left
-running (overlay MM shut down cleanly, exit 0). Spike artifacts are in
-scratchpad only, repo clean apart from the doc commit.
+Clean stop. `main` and `origin/main` both at `67a028a`, in sync (`0 0`).
+Working tree clean, 134/134 fast tests pass on the pushed tip. No worktree,
+no branch, no lingering Godot processes.
 
 ## ▶️ Next concrete step
 
-**Phase 5 build step 1: `overlay.py` via TDD.** The design is proven; start the
-gated implementation at step 1 of the spec's sub-plan: `ensure_overlay(mm_path,
-addon_path) -> overlay_path` (pure filesystem, unit-testable, no Godot). The
-hand-built scratchpad overlay from tonight's 1b spike is the executable
-reference for what it must produce (checkout + `addons/mm_live/` + the autoload
-line + `steam_appid.txt`, `.godot` cache preserved for fast launch). Use
-`writing-plans` to break the 4-step sub-plan into real gated steps first.
+**Phase 5 build step 2: the real addon skeleton.** Step 1 (overlay builder)
+is done. Step 2 per the spec's sub-plan: socket server + `ping`/`get_graph`
+only, committed for real as `addons/mm_live/live_server.gd` inside this repo
+(not scratchpad this time — `overlay.py`'s `ensure_overlay` now exists to
+copy it into a real overlay on demand). Gate: Python connects, launches
+Material Maker via the overlay, gets a real graph back for a bundled example.
+The GDScript from tonight's earlier 1b spike (scratchpad, deleted) is a
+working reference — same shape, same constraints (await-based `create_nodes`
+comes in step 3, not step 2; lazy `main_window` resolution already proven).
+Use `writing-plans` again for this step, same pattern as step 1.
 
 Alternatives, all carried over unchanged:
 - **A. More cookbook categories** (extend the authoring recipe library).
@@ -99,20 +143,48 @@ Alternatives, all carried over unchanged:
 - **D. PyPI publish** (on hold; GitHub-clone is the current route).
 - **E. Document `render_preview`** in `docs/AUTHORING.md` / README, or leave it
   as just an MCP tool.
+- **F. Two parked polish items from the final overlay-builder review** (both
+  cosmetic, see Heads-up): `STATUS.md` prose wording, and a pre-existing
+  "seven tools" vs. "eight tools" count mismatch between `__init__.py` and
+  `STATUS.md` unrelated to this branch.
 
 ## ❓ Open questions
 
 - Should `render_preview` get documented in `docs/AUTHORING.md` / README, or
   is it enough that it exists as an MCP tool? Not yet decided, not done.
+- Two parked-not-fixed findings from the overlay-builder's final review
+  (deliberately deferred, not forgotten): the staleness marker doesn't detect
+  an already-built overlay being damaged from outside (e.g. hand-editing
+  `project.godot` in the Godot editor while debugging steps 2-3) — whoever
+  builds step 2/3 should reconsider this; `_append_autoload`'s
+  `content.find("[autoload]")` matches the first occurrence anywhere in the
+  file including inside a comment (verified inert against the real file, so
+  low priority).
 - Carried over, unchanged: Phase 5 implementation timing (no target date by
-  design); the two Phase 5 feasibility risks (Godot autoload wiring for a
-  running project, Material Maker's in-process graph-mutation surface);
-  circuit-board mask-bleed bug (no lead after 3 tries); wool's loop-knit
-  approximation; PyPI vs. GitHub-clone-only (leaning GitHub-only);
+  design); circuit-board mask-bleed bug (no lead after 3 tries); wool's
+  loop-knit approximation; PyPI vs. GitHub-clone-only (leaning GitHub-only);
   cross-platform (macOS/Linux) verification, still untested, no machine
   available.
 
-## 🗂️ Changed this session (seam fix)
+## 🗂️ Changed this session (Phase 5 overlay builder + seam fix)
+
+- Branch: `main`. Overlay builder landed as 9 commits (`53527bf`..`67a028a`,
+  via a feature branch merged locally then pushed):
+  `53527bf` plan doc, `ecabb38`/`82644fa`/`040c5bd` Task 1-2 (+ fix),
+  `a7a3b15`/`7e88a10` Task 3 (+ fix), `93858ba`/`ef8f51d` Task 4 (+ fix),
+  `e5ebac9` Task 5, `67a028a` final-review fix wave (input validation,
+  STATUS.md, UnicodeDecodeError guard, case-insensitive path compare,
+  docstrings, marker-contents test).
+- Decisions (+ why): every plan-mandated bug got fixed in the same task's
+  fix round rather than deferred, since each was load-bearing for later
+  tasks (Task 3/4/5 all call `_is_stale`; Task 4/5 all call
+  `_append_autoload`) — see "Current state" above for the bug list.
+  `overlay_dir` stayed a caller-supplied parameter rather than derived from
+  `Config`, keeping the module's only dependencies stdlib (`hashlib`, `json`,
+  `os`, `shutil`) — a future `live.py` (step 3) will own choosing where the
+  overlay actually lives.
+
+## 🗂️ Changed the prior session (seam fix)
 
 - Branch: `main`. One commit, pushed: `9e52340` — `fix(preview)`: ground plane
   60×60 → 400×400 with density-preserving UV scale, removing the horizon seam.
@@ -141,14 +213,35 @@ Alternatives, all carried over unchanged:
 
 ## ⚠️ Heads-up for the next agent
 
+- **New module: `src/mm_mcp/overlay.py`.** Public entry point
+  `ensure_overlay(mm_project_path, addon_path, overlay_dir) -> overlay_path`
+  — builds/refreshes a disposable Material Maker overlay with an addon
+  layered in. Pure filesystem, zero Godot/Config dependency, so it's
+  unit-testable without launching anything (`tests/test_overlay.py`, 25
+  tests). Nothing calls this yet — `live.py` (step 3 of the spec's sub-plan)
+  is the next thing that will. Read the module docstring first; it explains
+  why `overlay_dir` is caller-supplied and the "a rebuild wipes it wholesale"
+  gotcha (don't put a log file inside `overlay_dir` expecting it to survive).
+- **`_append_autoload` inserts at the end of the `[autoload]` section
+  specifically, not blindly at end-of-file** — this was a real bug found and
+  fixed this session (see Current state). If you're ever tempted to
+  "simplify" this function back to a plain append, don't; the real Material
+  Maker `project.godot` has ~10 sections after `[autoload]`, verified.
+- **`ensure_overlay` validates before mutating anything.** It raises
+  `ValueError` if `addon_path` isn't a directory, `mm_project_path` has no
+  `project.godot`, or `overlay_dir` equals/contains either input path
+  (case-insensitive) — this guards against actually deleting the real
+  `z-Git\material-maker` checkout if `live.py` ever misconfigures
+  `overlay_dir`. Also a bug found and fixed this session, reproduced by the
+  reviewer before the fix landed.
 - **New MCP tool:** `render_preview(albedo_path, normal_path, orm_path,
   basename="preview", tile=1.0) -> dict`. Call `render_graph` first and feed
   its output paths in. Renders through `src/mm_mcp/preview_project/`, a
   small standalone Godot project bundled in this repo, not the
   `z-Git\material-maker` checkout.
 - **Run tests with `.venv\Scripts\python.exe`** (or activate the venv).
-  Fast suite: `pytest -q -m "not integration"` (109 passed); `pytest -q`
-  adds the Godot-launching integration renders (112 total).
+  Fast suite: `pytest -q -m "not integration"` (134 passed); `pytest -q`
+  adds the Godot-launching integration renders (137 total).
 - **Godot property-name traps hit this session** (both caused a script
   error + hung process, had to `taskkill`): depth of field lives on a
   `CameraAttributesPractical` resource assigned to `Camera3D.attributes`,
@@ -193,6 +286,52 @@ Alternatives, all carried over unchanged:
 ---
 
 ## 🕓 Session log
+
+### 2026-08-27 (early AM) — Phase 5 build step 1: overlay.py, full SDD pipeline
+- Continued straight from this session's own Phase 5 de-risking spike.
+  Grayson said "let's keep going" / "continue" through each stage rather than
+  stopping between skills.
+- **`writing-plans`:** designed `ensure_overlay` as a 5-task TDD plan (hash
+  helper → autoload injection → staleness marker → first-build → no-op/rebuild
+  tests), following the established codebase patterns (dataclass-free
+  functional style matching `preview.py`, pytest + `tmp_path`). Saved to
+  `docs/superpowers/plans/2026-08-26-phase5-overlay-builder.md`.
+- **`using-git-worktrees`:** asked Grayson for consent (was on `main`
+  directly), created an isolated worktree via the native `EnterWorktree` tool
+  rather than a manual `git worktree add`. Fresh `.venv`, copied the
+  gitignored `.env` over (not git-tracked, worktrees don't inherit it),
+  baseline 109 tests green before starting.
+- **`subagent-driven-development`:** pre-flight conflict scan across all 5
+  tasks (found one real gap: Task 4/5's briefs didn't declare their
+  dependency on Task 1/2's test helpers, carried forward via dispatch
+  messages rather than editing the plan). Then 5 tasks, each a fresh haiku
+  or sonnet implementer + a fresh sonnet reviewer, with model tier chosen by
+  task complexity (haiku for mechanical/transcription tasks, sonnet for
+  Task 4's multi-file integration). **3 real bugs found across the loop, all
+  in this session's own plan-authored reference code** (see Current state for
+  detail) — each ruled plan-mandated-not-implementer-error, fixed in the same
+  task's fix round, verified by a scoped re-review before moving on. Every
+  ruling recorded in the SDD ledger with a cost-if-wrong assessment.
+- **Final whole-branch review** (opus, per Model Selection's "architecture
+  and design tasks use the most capable model"): found 2 more real,
+  empirically-reproduced findings — `ensure_overlay` ran destructive
+  filesystem ops before validating input (reviewer actually deleted a test
+  checkout by passing `overlay_dir == mm_project_path` to prove it), and
+  `STATUS.md`'s gate ledger was never updated (a real CLAUDE.md rule this
+  branch violated). One consolidated fix subagent (not one-fixer-per-finding,
+  per the skill's guidance) closed both plus 4 folded-in Minor findings
+  (UnicodeDecodeError guard, case-insensitive path comparison on Windows,
+  missing docstrings, no test of the marker file's own JSON contents). Scoped
+  re-review confirmed all 7 addressed, 134/134 tests green. Two cosmetic
+  findings parked with rulings (STATUS.md prose wording; a pre-existing,
+  unrelated "seven tools"/"eight tools" count mismatch).
+- **`finishing-a-development-branch`:** presented the 3-option menu, Grayson
+  chose merge-locally. Fast-forward merge (`128fa31`..`67a028a`, 9 commits),
+  verified 134/134 on the merged result, worktree removed, branch deleted.
+  Grayson then asked to push + wrap; pushed (`origin/main` synced, `0 0`).
+- No target date was set for step 2 (the real addon script) — this session
+  only committed to de-risking + building step 1, matching Phase 5's
+  standing "deferred, no target date" status.
 
 ### 2026-08-26 (late night, cont. 3) — Phase 5 feasibility spike (both risks retired)
 - After the seam fix, Grayson picked "start Phase 5" (live-control addon).
