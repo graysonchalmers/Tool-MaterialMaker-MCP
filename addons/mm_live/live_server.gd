@@ -162,11 +162,16 @@ func _cmd_render(cmd: Dictionary) -> Dictionary:
 	var profile := str(cmd.get("profile", "Godot/Godot 4 Standard"))
 	if prefix.is_empty():
 		return {"ok": false, "error": "render requires a non-empty 'prefix'"}
-	# main_window.export_material awaits graph_edit.export_material internally
-	# (main_window.gd:517 -> graph_edit.gd:921), which itself awaits the
-	# material node's own export_material (gen_material.gd:650) -- awaiting
-	# here is required, or this handler replies before Godot finishes
-	# writing the PNGs. export_material has no failure return value; Python
-	# verifies success by checking for fresh files on disk.
-	await mm_globals.main_window.export_material(prefix, profile)
+	var material_node = graph_edit.get_material_node()
+	if material_node == null:
+		return {"ok": false, "error": "no material node in the active graph"}
+	# Call the material node's own export_material directly (gen_material.gd:650)
+	# rather than main_window.export_material, which forwards to
+	# graph_edit.export_material WITHOUT awaiting it -- so awaiting THAT call
+	# resolves same-frame while the real file-writing coroutine keeps running
+	# in the background, unobserved (confirmed empirically). command_line=true
+	# (gen_material.gd's 4th param) skips the interactive overwrite dialog,
+	# which would otherwise await user input forever inside this socket-driven
+	# command -- the same flag the proven --export-material CLI path uses.
+	await material_node.export_material(prefix, profile, 0, true)
 	return {"ok": true}
