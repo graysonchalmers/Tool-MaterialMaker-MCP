@@ -1,5 +1,5 @@
 import os
-from mm_mcp.overlay import _hash_dir, _append_autoload
+from mm_mcp.overlay import _hash_dir, _append_autoload, _write_marker, _is_stale
 
 
 def _write(path, rel, content):
@@ -110,3 +110,30 @@ config/name="fake"
         assert False, "Should have raised ValueError"
     except ValueError as e:
         assert "no [autoload] section found" in str(e)
+
+
+def test_is_stale_true_when_no_marker(tmp_path):
+    overlay = tmp_path / "overlay"
+    overlay.mkdir()
+    assert _is_stale(str(overlay), "hash1", "/mm/project") is True
+
+
+def test_is_stale_false_when_marker_matches(tmp_path):
+    overlay = tmp_path / "overlay"
+    overlay.mkdir()
+    _write_marker(str(overlay), "hash1", "/mm/project")
+    assert _is_stale(str(overlay), "hash1", "/mm/project") is False
+
+
+def test_is_stale_true_when_addon_hash_differs(tmp_path):
+    overlay = tmp_path / "overlay"
+    overlay.mkdir()
+    _write_marker(str(overlay), "hash1", "/mm/project")
+    assert _is_stale(str(overlay), "hash2", "/mm/project") is True
+
+
+def test_is_stale_true_when_mm_project_path_differs(tmp_path):
+    overlay = tmp_path / "overlay"
+    overlay.mkdir()
+    _write_marker(str(overlay), "hash1", "/mm/project")
+    assert _is_stale(str(overlay), "hash1", "/mm/other_project") is True

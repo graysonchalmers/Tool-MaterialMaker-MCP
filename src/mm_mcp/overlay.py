@@ -1,4 +1,5 @@
 import hashlib
+import json
 import os
 
 
@@ -51,3 +52,34 @@ def _append_autoload(project_godot_path: str, addon_name: str) -> None:
     new_content = prefix + "\n" + line + "\n" + suffix
     with open(project_godot_path, "w", encoding="utf-8") as fh:
         fh.write(new_content)
+
+
+_MARKER_NAME = ".mm_overlay_marker.json"
+
+
+def _marker_path(overlay_dir: str) -> str:
+    return os.path.join(overlay_dir, _MARKER_NAME)
+
+
+def _read_marker(overlay_dir: str) -> dict | None:
+    path = _marker_path(overlay_dir)
+    if not os.path.isfile(path):
+        return None
+    try:
+        with open(path, encoding="utf-8") as fh:
+            return json.load(fh)
+    except (json.JSONDecodeError, OSError):
+        return None
+
+
+def _write_marker(overlay_dir: str, addon_hash: str, mm_project_path: str) -> None:
+    with open(_marker_path(overlay_dir), "w", encoding="utf-8") as fh:
+        json.dump({"addon_hash": addon_hash, "mm_project_path": mm_project_path}, fh)
+
+
+def _is_stale(overlay_dir: str, addon_hash: str, mm_project_path: str) -> bool:
+    marker = _read_marker(overlay_dir)
+    if marker is None:
+        return True
+    return (marker.get("addon_hash") != addon_hash
+            or marker.get("mm_project_path") != mm_project_path)
