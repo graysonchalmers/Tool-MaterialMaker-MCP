@@ -67,9 +67,10 @@ def _read_marker(overlay_dir: str) -> dict | None:
         return None
     try:
         with open(path, encoding="utf-8") as fh:
-            return json.load(fh)
+            data = json.load(fh)
     except (json.JSONDecodeError, OSError):
         return None
+    return data if isinstance(data, dict) else None
 
 
 def _write_marker(overlay_dir: str, addon_hash: str, mm_project_path: str) -> None:

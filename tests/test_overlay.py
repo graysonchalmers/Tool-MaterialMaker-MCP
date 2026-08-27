@@ -137,3 +137,25 @@ def test_is_stale_true_when_mm_project_path_differs(tmp_path):
     overlay.mkdir()
     _write_marker(str(overlay), "hash1", "/mm/project")
     assert _is_stale(str(overlay), "hash1", "/mm/other_project") is True
+
+
+def test_is_stale_true_when_marker_is_non_dict_json(tmp_path):
+    """Regression test: marker file with valid JSON that's not a dict should
+    be treated as stale, not raise AttributeError."""
+    overlay = tmp_path / "overlay"
+    overlay.mkdir()
+    marker_file = overlay / ".mm_overlay_marker.json"
+    # Write a valid JSON value that's not a dict
+    marker_file.write_text('"not-a-dict"', encoding="utf-8")
+    # Should return True (stale), not raise AttributeError
+    assert _is_stale(str(overlay), "hash1", "/mm/project") is True
+
+
+def test_is_stale_true_when_marker_is_list_json(tmp_path):
+    """Regression test: marker file with valid JSON list should be treated as stale."""
+    overlay = tmp_path / "overlay"
+    overlay.mkdir()
+    marker_file = overlay / ".mm_overlay_marker.json"
+    # Write a valid JSON list instead of dict
+    marker_file.write_text('[1, 2]', encoding="utf-8")
+    assert _is_stale(str(overlay), "hash1", "/mm/project") is True
