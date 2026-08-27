@@ -60,3 +60,13 @@ def test_require_valid_raises_on_bogus_godot_binary(tmp_path):
     msg = str(exc_info.value)
     assert bogus_binary in msg
     assert "MM_GODOT_BINARY" in msg
+
+
+def test_live_overlay_dir_defaults_to_cwd_subfolder():
+    cfg = load_config()
+    assert cfg.live_overlay_dir == os.path.join(os.getcwd(), "mm_live_overlay")
+
+
+def test_live_overlay_dir_respects_override():
+    cfg = load_config(overrides={"MM_LIVE_OVERLAY_DIR": r"C:\somewhere\overlay"})
+    assert cfg.live_overlay_dir == r"C:\somewhere\overlay"

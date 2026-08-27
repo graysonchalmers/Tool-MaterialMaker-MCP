@@ -13,6 +13,7 @@ _DEFAULTS = {
     "MM_GODOT_BINARY": "",
     "MM_PROJECT_PATH": "",
     "MM_OUTPUT_DIR": "",
+    "MM_LIVE_OVERLAY_DIR": "",
 }
 
 
@@ -31,6 +32,7 @@ class Config:
     output_dir: str
     nodes_dir: str
     examples_dir: str
+    live_overlay_dir: str
 
 
 def _resolve_console(godot_binary: str) -> str:
@@ -78,6 +80,7 @@ def load_config(overrides: dict | None = None) -> Config:
         env.update(overrides)
     project_path = env["MM_PROJECT_PATH"]
     output_dir = env["MM_OUTPUT_DIR"] or os.path.join(os.getcwd(), "output")
+    live_overlay_dir = env["MM_LIVE_OVERLAY_DIR"] or os.path.join(os.getcwd(), "mm_live_overlay")
     return Config(
         godot_binary=env["MM_GODOT_BINARY"],
         console_binary=_resolve_console(env["MM_GODOT_BINARY"]),
@@ -85,4 +88,5 @@ def load_config(overrides: dict | None = None) -> Config:
         output_dir=output_dir,
         nodes_dir=os.path.join(project_path, "addons", "material_maker", "nodes"),
         examples_dir=os.path.join(project_path, "material_maker", "examples"),
+        live_overlay_dir=live_overlay_dir,
     )
