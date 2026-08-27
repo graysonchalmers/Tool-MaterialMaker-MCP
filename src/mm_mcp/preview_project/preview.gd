@@ -13,6 +13,15 @@ extends Node3D
 
 const OBJECT_RADIUS := 0.85  # half-height of the cube / sphere radius, for ground placement
 const GROUND_TILE_MULTIPLIER := 8.0
+# Ground plane extent. The old 60x60 plane's far edge sat only ~30 units from
+# the camera, where exponential fog (density 0.07) reaches just ~88% -- so the
+# ground's hard geometric edge stayed faintly visible against the background as
+# a horizon seam. At 400 units the edge is ~200 units out, where fog is
+# effectively 100%: the ground has fully dissolved into BG_COLOR before its edge
+# is ever reached, so there is no seam left to see. Reference size for keeping
+# the tile density constant regardless of this value.
+const GROUND_SIZE := 400.0
+const GROUND_SIZE_REFERENCE := 60.0
 const CORE_RADIUS_FRACTION := 0.55  # cutaway ball's inner core, relative to OBJECT_RADIUS
 # 240 (top-down/Y-axis spin) is the locked-in cutaway-ball orientation after
 # visual review comparing multiple rotation angles.
@@ -43,14 +52,18 @@ func _ready() -> void:
 		return
 
 	var mat := _make_material(albedo_tex, normal_tex, orm_tex, tile)
-	var ground_mat := _make_material(albedo_tex, normal_tex, orm_tex, tile * GROUND_TILE_MULTIPLIER)
+	# Scale the UV repeat with the plane so a bigger plane keeps the same
+	# physical tile size near the camera -- otherwise enlarging the plane would
+	# stretch each tile and change the tuned look.
+	var ground_tile := tile * GROUND_TILE_MULTIPLIER * (GROUND_SIZE / GROUND_SIZE_REFERENCE)
+	var ground_mat := _make_material(albedo_tex, normal_tex, orm_tex, ground_tile)
 	# Same physical brick size as the outer shell, not the same repeat count:
 	# a smaller sphere needs fewer repeats to read at a matching density.
 	var core_mat := _make_material(albedo_tex, normal_tex, orm_tex, tile * CORE_RADIUS_FRACTION)
 
 	var ground := MeshInstance3D.new()
 	ground.mesh = PlaneMesh.new()
-	ground.mesh.size = Vector2(60, 60)
+	ground.mesh.size = Vector2(GROUND_SIZE, GROUND_SIZE)
 	ground.mesh.subdivide_width = 1
 	ground.mesh.subdivide_depth = 1
 	ground.position = Vector3(0, -OBJECT_RADIUS, 0)
