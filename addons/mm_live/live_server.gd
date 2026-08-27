@@ -9,10 +9,9 @@ extends Node
 ## there is no shared-constant mechanism across GDScript/Python, so keep
 ## both literals in sync by hand if this ever changes.
 ##
-## This step only implements "ping" and "get_graph". Mutating commands
-## (add_node/connect_nodes/set_param/render) are Phase 5 build step 3.
-## Deliberately no validation here -- everything mutating arrives
-## pre-validated from the Python side (see the design spec).
+## Mutating commands (add_node/connect_nodes/set_param/render) were added in
+## Phase 5 build step 3. See docs/superpowers/plans/2026-08-27-phase5-mutating-commands.md
+## for the source citations behind each handler's Godot API calls.
 
 const LIVE_PORT := 8765
 
@@ -66,6 +65,8 @@ func _dispatch(peer: StreamPeerTCP, line: String) -> void:
 				response = _cmd_ping()
 			"get_graph":
 				response = _cmd_get_graph()
+			"add_node":
+				response = await _cmd_add_node(parsed)
 			_:
 				response = {"ok": false, "error": "unknown command: %s" % str(parsed["cmd"])}
 	peer.put_data((JSON.stringify(response) + "\n").to_utf8_buffer())
@@ -85,3 +86,24 @@ func _cmd_get_graph() -> Dictionary:
 	if graph_edit == null or graph_edit.generator == null:
 		return {"ok": false, "error": "no active graph"}
 	return {"ok": true, "graph": graph_edit.generator.serialize()}
+
+
+func _cmd_add_node(cmd: Dictionary) -> Dictionary:
+	if mm_globals.main_window == null:
+		return {"ok": false, "error": "main_window not ready"}
+	var graph_edit: MMGraphEdit = mm_globals.main_window.get_current_graph_edit()
+	if graph_edit == null or graph_edit.generator == null:
+		return {"ok": false, "error": "no active graph"}
+	var node_type = cmd.get("type")
+	if typeof(node_type) != TYPE_STRING or node_type.is_empty():
+		return {"ok": false, "error": "add_node requires a non-empty 'type' string"}
+	var position := Vector2(float(cmd.get("x", 0)), float(cmd.get("y", 0)))
+	var data := {"type": node_type, "parameters": cmd.get("parameters", {})}
+	var created: Array = await graph_edit.create_nodes(data, position)
+	if created.is_empty():
+		return {"ok": false, "error": "Material Maker rejected node type '%s'" % node_type}
+	# create_nodes may rename the node on a collision (see gen_graph.gd's
+	# add_generator -- it uniquifies the name), so the authoritative name is
+	# read back off the created node's generator, never assumed to match
+	# the caller's request (there usually isn't a requested name at all).
+	return {"ok": true, "name": created[0].generator.name}
