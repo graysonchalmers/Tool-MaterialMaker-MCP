@@ -67,6 +67,10 @@ func _dispatch(peer: StreamPeerTCP, line: String) -> void:
 				response = _cmd_get_graph()
 			"add_node":
 				response = await _cmd_add_node(parsed)
+			"connect_nodes":
+				response = _cmd_connect_nodes(parsed)
+			"set_param":
+				response = _cmd_set_param(parsed)
 			_:
 				response = {"ok": false, "error": "unknown command: %s" % str(parsed["cmd"])}
 	peer.put_data((JSON.stringify(response) + "\n").to_utf8_buffer())
@@ -107,3 +111,40 @@ func _cmd_add_node(cmd: Dictionary) -> Dictionary:
 	# read back off the created node's generator, never assumed to match
 	# the caller's request (there usually isn't a requested name at all).
 	return {"ok": true, "name": created[0].generator.name}
+
+
+func _cmd_connect_nodes(cmd: Dictionary) -> Dictionary:
+	if mm_globals.main_window == null:
+		return {"ok": false, "error": "main_window not ready"}
+	var graph_edit: MMGraphEdit = mm_globals.main_window.get_current_graph_edit()
+	if graph_edit == null or graph_edit.generator == null:
+		return {"ok": false, "error": "no active graph"}
+	var from_name = str(cmd.get("from"))
+	var to_name = str(cmd.get("to"))
+	var from_node_name := "node_" + from_name
+	var to_node_name := "node_" + to_name
+	if not graph_edit.has_node(from_node_name):
+		return {"ok": false, "error": "no node named '%s' in the live graph" % from_name}
+	if not graph_edit.has_node(to_node_name):
+		return {"ok": false, "error": "no node named '%s' in the live graph" % to_name}
+	var connected: bool = graph_edit.do_connect_node(
+			from_node_name, int(cmd.get("from_port", 0)),
+			to_node_name, int(cmd.get("to_port", 0)))
+	if not connected:
+		return {"ok": false, "error": "Material Maker refused the connection (incompatible ports?)"}
+	return {"ok": true}
+
+
+func _cmd_set_param(cmd: Dictionary) -> Dictionary:
+	if mm_globals.main_window == null:
+		return {"ok": false, "error": "main_window not ready"}
+	var graph_edit: MMGraphEdit = mm_globals.main_window.get_current_graph_edit()
+	if graph_edit == null or graph_edit.generator == null:
+		return {"ok": false, "error": "no active graph"}
+	var node_name := str(cmd.get("name"))
+	var node_path := NodePath(node_name)
+	if not graph_edit.generator.has_node(node_path):
+		return {"ok": false, "error": "no node named '%s' in the live graph" % node_name}
+	var target = graph_edit.generator.get_node(node_path)
+	graph_edit.set_node_parameters(target, cmd.get("parameters", {}))
+	return {"ok": true}
