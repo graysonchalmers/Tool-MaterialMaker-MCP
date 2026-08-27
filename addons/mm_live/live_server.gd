@@ -121,8 +121,8 @@ func _cmd_connect_nodes(cmd: Dictionary) -> Dictionary:
 	var graph_edit: MMGraphEdit = mm_globals.main_window.get_current_graph_edit()
 	if graph_edit == null or graph_edit.generator == null:
 		return {"ok": false, "error": "no active graph"}
-	var from_name = str(cmd.get("from"))
-	var to_name = str(cmd.get("to"))
+	var from_name := str(cmd.get("from"))
+	var to_name := str(cmd.get("to"))
 	var from_node_name := "node_" + from_name
 	var to_node_name := "node_" + to_name
 	if not graph_edit.has_node(from_node_name):
