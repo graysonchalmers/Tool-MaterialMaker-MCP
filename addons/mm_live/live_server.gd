@@ -82,7 +82,19 @@ func _cmd_ping() -> Dictionary:
 	# mm_globals.main_window is null until the main scene finishes loading --
 	# resolved fresh on every call, never cached, so a probe issued right
 	# after launch correctly reports "not ready yet" instead of a stale null.
-	return {"ok": true, "ready": mm_globals.main_window != null}
+	# main_window resolving does NOT mean a graph tab exists yet -- the two
+	# happen in separate boot steps, so has_graph is reported as its own
+	# field rather than folded into `ready`; connect_or_launch on the Python
+	# side is what decides how to combine them (both are required there).
+	return {"ok": true, "ready": mm_globals.main_window != null,
+			"has_graph": _has_active_graph()}
+
+
+func _has_active_graph() -> bool:
+	if mm_globals.main_window == null:
+		return false
+	var graph_edit: MMGraphEdit = mm_globals.main_window.get_current_graph_edit()
+	return graph_edit != null and graph_edit.generator != null
 
 
 func _cmd_get_graph() -> Dictionary:
