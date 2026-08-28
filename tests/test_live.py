@@ -466,6 +466,62 @@ def test_connect_or_launch_returns_immediately_when_process_exits_early(monkeypa
     assert "mm_live.log" in session.error
 
 
+def test_connect_or_launch_fails_fast_when_port_is_occupied_by_an_unresponsive_process(monkeypatch):
+    monkeypatch.setattr(live, "_SQUATTED_PORT_GRACE", 1.0)
+    server = _FakeLiveServer(lambda cmd: {"ok": True, "ready": False})  # never becomes ready
+    launched = {"called": False}
+
+    def _no_launch(passed_cfg):
+        launched["called"] = True
+        return _FakeProcess()
+
+    monkeypatch.setattr(live, "_launch_overlay", _no_launch)
+    try:
+        started = time.monotonic()
+        session = live.connect_or_launch(cfg=cfg, host="127.0.0.1", port=server.port,
+                                          launch_timeout=30.0)
+        elapsed = time.monotonic() - started
+        assert not session.ok
+        assert elapsed < 10.0, "should fail fast on the grace period, not wait out launch_timeout"
+        assert "occupied" in session.error.lower()
+        assert launched["called"] is False
+    finally:
+        server.stop()
+
+
+def test_connect_or_launch_relaunches_when_a_squatting_process_stops_listening_during_grace(monkeypatch):
+    monkeypatch.setattr(live, "_SQUATTED_PORT_GRACE", 2.0)
+    picked_port = _free_port()
+    stale_server = _FakeLiveServer(lambda cmd: {"ok": True, "ready": False}, port=picked_port)
+
+    def _stop_stale_soon():
+        time.sleep(0.3)
+        stale_server.stop()
+
+    threading.Thread(target=_stop_stale_soon, daemon=True).start()
+
+    fake_process = _FakeProcess()
+    started_server = {"server": None}
+
+    def _fake_launch(passed_cfg):
+        def _start_late():
+            time.sleep(0.3)  # simulate Godot booting before the addon listens
+            started_server["server"] = _FakeLiveServer(
+                lambda cmd: {"ok": True, "ready": True}, port=picked_port)
+        threading.Thread(target=_start_late, daemon=True).start()
+        return fake_process
+
+    monkeypatch.setattr(live, "_launch_overlay", _fake_launch)
+    try:
+        session = live.connect_or_launch(cfg=cfg, host="127.0.0.1", port=picked_port,
+                                          launch_timeout=5.0)
+        assert session.ok, session.error
+        assert session.process is fake_process
+    finally:
+        if started_server["server"] is not None:
+            started_server["server"].stop()
+
+
 @pytest.mark.integration
 def test_connect_or_launch_gets_real_graph_from_default_new_material(tmp_path):
     # Isolated overlay dir so this test never collides with (or clobbers) an

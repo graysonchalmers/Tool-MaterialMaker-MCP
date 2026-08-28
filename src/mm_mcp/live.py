@@ -18,6 +18,12 @@ from mm_mcp.validator import validate_graph
 LIVE_HOST = "127.0.0.1"
 LIVE_PORT = 8765
 
+# How long connect_or_launch will wait for an already-listening port to
+# either become ready or stop listening, before deciding it's occupied by an
+# unresponsive process rather than one that's still booting. Much shorter
+# than launch_timeout on purpose -- see connect_or_launch's docstring.
+_SQUATTED_PORT_GRACE = 5.0
+
 # addons/mm_live/ is a top-level sibling of src/, not bundled inside
 # src/mm_mcp/ -- unlike preview_project/, it does NOT ship in a built wheel.
 # Acceptable under Phase 4's current GitHub-clone distribution decision
@@ -79,6 +85,21 @@ def ping(host: str = LIVE_HOST, port: int = LIVE_PORT, timeout: float = 5.0) -> 
 
 def get_graph(host: str = LIVE_HOST, port: int = LIVE_PORT, timeout: float = 5.0) -> LiveResult:
     return _send_command({"cmd": "get_graph"}, host, port, timeout)
+
+
+def _wait_for_ready_or_give_up(host: str, port: int, deadline: float) -> tuple[bool, str]:
+    """Poll ping() until it reports ready, or `deadline` (a time.monotonic()
+    value) passes. Returns (ready, last_error) -- last_error is always a
+    string, even on success (harmless: callers only read it on failure)."""
+    last_error = "timed out waiting for a response"
+    while time.monotonic() < deadline:
+        result = ping(host, port)
+        if result.ok and result.data.get("ready"):
+            return True, last_error
+        if not result.ok:
+            last_error = result.error
+        time.sleep(0.5)
+    return False, last_error
 
 
 _catalog_cache: dict[str, dict] = {}
@@ -261,13 +282,46 @@ def connect_or_launch(cfg: Config | None = None, host: str = LIVE_HOST,
     ping means the GUI has finished loading (see the spec's "lazy
     main_window resolution" constraint) -- or give up after launch_timeout.
 
+    A port that's already listening gets a short grace period
+    (_SQUATTED_PORT_GRACE, much shorter than launch_timeout) to either
+    become ready or stop listening, before this function commits to
+    attaching. This is what lets a genuinely-booting instance attach
+    normally while also recovering from a dying instance (e.g. a previous
+    test's Material Maker process that's still closing its socket) instead
+    of burning the entire launch_timeout on a corpse that will never
+    answer. If the port is still listening and still unresponsive after the
+    grace period, that's treated as a squatted port: connect_or_launch fails
+    fast with a diagnostic error rather than continuing to wait, since it
+    can't safely bind its own listener there anyway.
+
     Attaching to an already-running instance never launches a process, so
     the returned session's close() is a no-op for that case: we only own the
     lifecycle of a process we started ourselves.
     """
     cfg = cfg or load_config()
     process = None
-    if not _is_listening(host, port):
+    still_listening = _is_listening(host, port)
+
+    if still_listening:
+        grace_deadline = time.monotonic() + min(_SQUATTED_PORT_GRACE, launch_timeout)
+        ready, grace_error = _wait_for_ready_or_give_up(host, port, grace_deadline)
+        if ready:
+            return LiveSession(ok=True, process=None)
+        still_listening = _is_listening(host, port)
+        if still_listening:
+            return LiveSession(
+                ok=False,
+                error=(
+                    f"port {port} is occupied by a process that never answered as the live "
+                    f"server after waiting {_SQUATTED_PORT_GRACE:.0f}s ({grace_error}). If a "
+                    "previous Material Maker/Godot process is stuck on this port, close it "
+                    "(or taskkill the Godot console binary) and retry."
+                ),
+            )
+        # The occupant stopped listening during the grace period -- the port
+        # is free now, so fall through and launch normally.
+
+    if not still_listening:
         process = _launch_overlay(cfg)
 
     # The launch-and-poll span below is wrapped so that if anything raises
