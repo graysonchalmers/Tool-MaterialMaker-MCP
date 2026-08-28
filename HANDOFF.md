@@ -1,91 +1,89 @@
 # 🧭 Session Handoff — Tool-MaterialMaker-MCP
 
-_Last updated: 2026-08-27 (midday) CT (America/Chicago)_
+_Last updated: 2026-08-27 (evening) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**Phase 5 build step 2 (`addons/mm_live/live_server.gd` + `src/mm_mcp/live.py`)
-shipped: built, reviewed, fixed, merged, pushed.** Picked up via `pickup`,
-Grayson chose "start on Phase 5 step 2 via writing-plans." Ran the full
-`superpowers` pipeline again, same shape as step 1: `writing-plans` ->
-consent for an isolated git worktree (native `EnterWorktree`) ->
-`subagent-driven-development` (5 tasks, fresh implementer + fresh reviewer per
-task, haiku for mechanical/transcription tasks, sonnet for integration-heavy
-tasks and reviews) -> whole-branch review on opus -> `finishing-a-development-branch`
-(merged locally, then pushed).
+**Phase 5 build step 3 (mutating commands: `add_node`/`connect_nodes`/
+`set_param`/`render`) shipped: built, reviewed, fixed, merged, pushed.**
+Picked up via `pickup`, Grayson chose "start on Phase 5 step 3 via
+writing-plans." Same full pipeline as steps 1-2: `writing-plans` -> consent
+for an isolated worktree (native `EnterWorktree`) -> `subagent-driven-development`
+(6 tasks: 3 GDScript, 2 Python client, 1 real integration test) -> whole-branch
+review on opus -> `finishing-a-development-branch` (merged locally, then
+pushed). New standing preference recorded this session: Grayson always wants
+subagent-driven execution over inline `executing-plans` (saved to memory).
 
-The real live-control addon exists now, not scratchpad code: `live_server.gd`
-is a thin GDScript autoload registered via `overlay.py`'s `[autoload]`
-injection, opens a `TCPServer` on a fixed port (8765), and answers `ping`/
-`get_graph` over a line-delimited JSON protocol -- deliberately read-only,
-no mutating commands, no validation logic (mutations arrive pre-validated
-from Python in a later step). `src/mm_mcp/live.py` is the Python side: a
-low-level one-shot protocol client (`LiveResult`, `_send_command`, `ping`,
-`get_graph`), tested against a hand-rolled fake TCP server, plus a
-`connect_or_launch()` orchestration layer (`LiveSession`) that probes the
-fixed port, launches Material Maker via `overlay.py`'s `ensure_overlay` if
-nothing's listening, polls `ping()` until the addon reports `main_window` is
-actually wired (never just "socket is open"), and manages the launched
-process's lifecycle so it's never leaked, including on an unexpected
-exception mid-poll (a review-found gap, fixed in one round). `Config` gained
-a `live_overlay_dir` field mirroring `output_dir`'s existing env-override
-pattern.
+All four mutating commands now exist on both sides: `addons/mm_live/live_server.gd`
+answers `add_node`/`connect_nodes`/`set_param`/`render` (in addition to the
+existing `ping`/`get_graph`), deliberately still thin -- no validation, just
+"do what you're told" against the live scene tree. `src/mm_mcp/live.py`
+gained matching client functions; `add_node`/`connect_nodes`/`set_param` each
+validate the proposed mutation against the real catalog via `graph.py`'s
+`validate_graph` **before** anything reaches the socket, and `render` reuses
+`render.py`'s own `RenderResult`/`_collect_fresh_images` rather than
+reimplementing freshness detection. A real integration test
+(`test_live_ops_build_and_render_a_simple_graph`) launches Material Maker for
+real, builds a `perlin` -> `colorize` chain, wires it into the default
+graph's `"Material"` node, sets a parameter, renders, and asserts real,
+non-empty PNGs on disk -- the plan's own gate, met.
 
-**Real bugs found by the review loop, same disciplined pattern as step 1:**
-1. (Task 4 review) `connect_or_launch` had no `try`/`finally` around the
-   launch-and-poll span -- an unexpected exception mid-poll would leak the
-   just-launched, real, visible Godot process. Currently inert only because
-   `_send_command` happens to catch every exception type it can raise, which
-   is an accident of its current implementation, not a structural guarantee.
-   Fixed same round: `try`/`except BaseException` terminates and re-raises.
-2. (final whole-branch review, opus) Three merge-blocking findings, all
-   fixed in one consolidated wave:
-   - `mm_live_overlay/` (the disposable overlay's default location, a ~266MB
-     full copy of the Material Maker checkout) was missing from `.gitignore`
-     -- would have entered the nightly `V:` backup sweep and confused
-     `git add -A` on first real use. **Caught before it ever happened, not
-     after.**
-   - `connect_or_launch` never checked whether the launched process had
-     already died -- a bad overlay or a GDScript parse error in a future
-     addon edit would spin the *full* 60-90s timeout before returning a
-     generic "timed out" message, with the real diagnosis sitting unread in
-     `mm_live.log`. Fixed: `process.poll()` check inside the loop, returns
-     immediately with the exit code and the log path.
-   - The integration test isolated its overlay directory but not the fixed
-     port -- it could have silently passed by attaching to a stray
-     already-running Material Maker instance instead of proving the freshly
-     built overlay + committed addon actually work. Fixed: an explicit
-     assertion that the session owns a launched process, not an attached one.
+**Two real bugs found via that integration test, not caught by clean
+per-task reviews (no automated GDScript harness exists in this repo, so
+neither reviewer could actually execute the script):**
+1. `_cmd_connect_nodes` declared `from_name`/`to_name` with plain `=`
+   instead of `:=`, which left them statically untyped and broke Godot's
+   type inference on the very next line -- a **parse** error that failed
+   the entire addon script, so nothing (not just `connect_nodes`) ever
+   started listening. Fixed: `:=`, matching the working pattern already
+   used in `_cmd_set_param`/`_cmd_render`.
+2. `_cmd_render` awaited `main_window.export_material(...)`, but that
+   function's own body has no `await` in it at all -- it fire-and-forgets
+   the real file-writing coroutine, so the handler reported success before
+   any file existed. Confirmed empirically with a discriminator probe
+   (render, sleep 10s, re-list the output dir -- the PNG appeared ~10s
+   *after* the reported failure). Fixed: call `graph_edit.get_material_node()`
+   then `material_node.export_material(prefix, profile, 0, true)` directly
+   -- that one is a genuine coroutine, and `command_line=true` skips an
+   interactive overwrite dialog that would otherwise hang the socket
+   handler forever.
 
-Prior sessions' detail (overlay builder, feasibility spike, seam fix,
-render_preview) is preserved in the Session log below rather than repeated
-here.
+Both fixes were dispatched back to their original task's implementer as
+fix rounds, independently re-reviewed clean, and folded into the branch.
+The plan doc itself got a mid-execution correction (the "render handler
+verified" citation was wrong as originally written) that had to be
+committed and two more stale spots cleaned up in the final review's fix
+wave, along with a hardening fix to `set_param` (it was letting an
+unrecognized parameter name through Python-side validation, since
+`validate_graph` treats that as a warning, not an error -- now blocked).
+
+Prior sessions' detail (overlay builder, addon skeleton, feasibility spike,
+seam fix, render_preview) is preserved in the Session log below.
 
 ## 📌 Where we stopped
 
-Clean stop. Merged to `main` locally (`81b433c`), then pushed; `main` and
-`origin/main` in sync. Working tree clean, 148/148 fast tests pass on the
-pushed tip. No worktree, no branch, no lingering Godot processes.
+Clean stop. Merged to `main` locally (fast-forward to `071dbb6`), fast suite
+158/158 green on the merged tip, both live-control integration tests verified
+passing individually. Push is the very next action (standing approval given
+this session) -- confirm `origin/main` sync after. No worktree, no branch, no
+lingering Godot processes.
 
 ## ▶️ Next concrete step
 
-**Phase 5 build step 3: mutating commands.** Steps 1 (overlay builder) and 2
-(addon skeleton: `ping`/`get_graph`) are done. Step 3 per the spec's
-sub-plan: `add_node`/`connect_nodes`/`set_param`/`render` on both the
-GDScript addon side and `live.py`'s client side. Gate: "a scripted sequence
-of live ops visibly builds a simple graph in a real running window and
-renders it." Known constraints from the earlier feasibility spike that step
-3 must respect (see the spec's "Feasibility verified" section): `create_nodes`
-is `await`-based in Godot -- the addon's command loop must be a coroutine
-that awaits the result before writing the socket response, or it replies
-with a coroutine-state object instead of real data (this wasn't exercised
-by step 2's read-only `ping`/`get_graph`, which are synchronous). The
-"render" handler is still unverified against source -- confirm it actually
-invokes Material Maker's own existing preview/export code path before
-building on that assumption. Use `writing-plans` again for this step, same
-pattern as steps 1 and 2.
+**Phase 5 build step 4: MCP tool surface.** Steps 1-3 (overlay builder,
+addon skeleton, mutating commands) are done. Step 4 per the spec's sub-plan:
+wire `live_start`/`live_get_graph`/`live_apply`/`live_render` into
+`server.py`, exposing everything `live.py` already does as real MCP tools.
+Gate: "Claude can hold an actual live session against a real open Material
+Maker window." Use `writing-plans` again, same pattern as steps 1-3.
+
+**Before or alongside step 4, seriously consider the backlog item below**
+(the `connect_or_launch` port-race hardening) -- it just went from
+theoretical to reproduced-twice-deterministically this session, and step 4
+is exactly where overlapping/rapid live calls become realistic for the
+first time.
 
 Alternatives, all carried over unchanged:
 - **A. More cookbook categories** (extend the authoring recipe library).
@@ -93,40 +91,82 @@ Alternatives, all carried over unchanged:
 - **D. PyPI publish** (on hold; GitHub-clone is the current route).
 - **E. Document `render_preview`** in `docs/AUTHORING.md` / README, or leave it
   as just an MCP tool.
-- **F. Parked polish items from step 1's and step 2's final reviews** (see
-  Heads-up): `STATUS.md` prose wording; a pre-existing "seven tools" vs.
-  "eight tools" count mismatch; step 2's parked Minor findings (GDScript
-  `peer.put_data()` discarded return, `log_file` fd leak in `_launch_overlay`,
-  no fast-suite guard on `_ADDON_PATH` resolution).
+- **F. Parked polish items** from steps 1-3's final reviews (see Heads-up
+  below for the step-3 additions): `STATUS.md` prose wording; a pre-existing
+  "seven tools" vs. "eight tools" count mismatch; assorted Minor GDScript/
+  Python findings, none load-bearing.
 
 ## ❓ Open questions
 
+- **🔴 Backlog: harden `connect_or_launch` against a squatted/dying port
+  8765.** This session's own integration test demonstrated it directly,
+  twice: running both live-control integration tests in one `pytest -q`
+  process can produce a deterministic `connection refused` failure, because
+  `connect_or_launch` has no way to tell "a foreign/dying process is
+  listening" from "Material Maker is genuinely ready," and burns the full
+  60-90s timeout either way. This was flagged as a risk (not yet reproduced)
+  in step 2's final review and deferred to "step 3/4" -- it's now
+  reproduced and deterministic, and the final whole-branch review agreed
+  it's the top-priority next hardening item, alongside the already-known
+  two-instance launch race and the unauthenticated-channel question.
+  Workaround until fixed: run the two live-control integration tests
+  individually (`pytest tests/test_live.py -k build_and_render`,
+  `-k default_new_material`), not together.
+- A cheap, partial mitigation for the *other* class of bug found this
+  session (the GDScript parse error): the final review confirmed Godot
+  4.7.1 supports `--headless --check-only --script <path>` against the
+  built overlay as a real parse-only smoke check. Would have caught the
+  `:=`/`=` bug for near-zero cost; would NOT have caught the await bug
+  (runtime semantics, not parseable). Worth adding in a future hardening
+  pass alongside the port-race fix; not a substitute for the integration
+  test.
 - Should `render_preview` get documented in `docs/AUTHORING.md` / README, or
   is it enough that it exists as an MCP tool? Not yet decided, not done.
-- Step 2's own open questions, carried forward for whoever builds step 3: a
-  two-instance launch race in `connect_or_launch` (two concurrent calls could
-  both see "not listening" and both launch, one wins the port); a foreign
-  process squatting on port 8765 causes a full-timeout dead end with no way
-  to detect "this isn't actually Material Maker"; the channel is
-  unauthenticated to other local processes, fine for read-only `get_graph`
-  but worth reconsidering once step 3 makes it a write channel. All three
-  flagged by the final review as "worth a line in step 3/4's plan, not a fix
-  in step 2."
 - Two parked-not-fixed findings from the overlay-builder's (step 1) final
   review (deliberately deferred, not forgotten): the staleness marker
-  doesn't detect an already-built overlay being damaged from outside (e.g.
-  hand-editing `project.godot` in the Godot editor while debugging steps
-  3-4) -- whoever builds step 3 should reconsider this; `_append_autoload`'s
-  `content.find("[autoload]")` matches the first occurrence anywhere in the
-  file including inside a comment (verified inert against the real file, so
-  low priority).
+  doesn't detect an already-built overlay being damaged from outside;
+  `_append_autoload`'s `content.find("[autoload]")` matches the first
+  occurrence anywhere in the file including inside a comment (verified
+  inert against the real file, so low priority).
 - Carried over, unchanged: Phase 5 implementation timing (no target date by
   design); circuit-board mask-bleed bug (no lead after 3 tries); wool's
   loop-knit approximation; PyPI vs. GitHub-clone-only (leaning GitHub-only);
   cross-platform (macOS/Linux) verification, still untested, no machine
   available.
 
-## 🗂️ Changed this session (Phase 5 addon skeleton)
+## 🗂️ Changed this session (Phase 5 mutating commands)
+
+- Branch: `main`. Landed as 9 commits via a feature branch (`worktree-phase5-mutating-commands`)
+  merged locally (fast-forward) then pushed: `af25848` plan doc, `3711fea`
+  Task 1 (`add_node` GDScript), `1c8bd92` Task 2 (`connect_nodes`/`set_param`
+  GDScript), `ce6961a` Task 3 (`render` GDScript), `b0032da` Task 4
+  (`add_node`/`connect_nodes`/`set_param` Python client), `efd6334` Task 5
+  (`render` Python client), `0bc5f92` Task 2 fix round (`:=` type-inference
+  bug), `17a98d3` Task 3 fix round (un-awaited `export_material` bug),
+  `e597367` Task 6 (real integration test), then the final-review fix wave:
+  `7037f46` (`set_param` unknown-parameter hardening + its test), `356665a`
+  (plan doc corrections), `071dbb6` (STATUS.md gate update).
+- Decisions (+ why): the addon stays deliberately thin -- no validation
+  logic added to any of the three new GDScript handlers, matching step 2's
+  precedent; all mutation validation lives in `live.py` via `graph.py`'s
+  existing `validate_graph`. `add_node`'s Python-side validation checks the
+  new node in isolation rather than merged into the fetched live graph,
+  since a brand-new unconnected node has nothing `validate_graph` checks
+  against the rest of the graph -- explicit scope call, not an oversight.
+  `render()` reuses `render.py`'s `RenderResult`/`_collect_fresh_images`
+  rather than reimplementing freshness detection, matching this codebase's
+  established DRY convention (`tests/test_render.py` already imports the
+  same private helper). Both real bugs found via the integration test were
+  ruled plan-mandated or task-implementation gaps (not the test's fault) and
+  fixed as scoped fix rounds against their original task, each independently
+  re-reviewed clean, rather than patched inline by the test's own
+  implementer -- kept the "who owns this fix" line clean across the loop.
+  The full-suite port race (both live-control integration tests sharing
+  `LIVE_PORT = 8765` with no isolation) was ruled a pre-existing,
+  already-flagged `connect_or_launch` gap and explicitly kept out of this
+  plan's scope rather than chased under time pressure -- see Open questions.
+
+## 🗂️ Changed the prior session (Phase 5 addon skeleton)
 
 - Branch: `main`. Landed as 6 commits via a feature branch merged locally
   then pushed: `33dad4e` Task 1 (addon skeleton, GDScript), `846f310` Task 2
@@ -148,35 +188,57 @@ Alternatives, all carried over unchanged:
   instance), matching the spec's "attach to an already-open instance"
   scope decision.
 
-## 🗂️ Changed the prior session (Phase 5 overlay builder + seam fix)
-
-- Branch: `main`. Overlay builder landed as 9 commits (`53527bf`..`67a028a`,
-  via a feature branch merged locally then pushed):
-  `53527bf` plan doc, `ecabb38`/`82644fa`/`040c5bd` Task 1-2 (+ fix),
-  `a7a3b15`/`7e88a10` Task 3 (+ fix), `93858ba`/`ef8f51d` Task 4 (+ fix),
-  `e5ebac9` Task 5, `67a028a` final-review fix wave (input validation,
-  STATUS.md, UnicodeDecodeError guard, case-insensitive path compare,
-  docstrings, marker-contents test).
-- Decisions (+ why): every plan-mandated bug got fixed in the same task's
-  fix round rather than deferred, since each was load-bearing for later
-  tasks (Task 3/4/5 all call `_is_stale`; Task 4/5 all call
-  `_append_autoload`) -- see the session log for the bug list. `overlay_dir`
-  stayed a caller-supplied parameter rather than derived from `Config`,
-  keeping the module's only dependencies stdlib (`hashlib`, `json`, `os`,
-  `shutil`) -- `live.py` (step 2) ended up owning where the overlay actually
-  lives, as anticipated.
+(Older "Changed" write-ups -- overlay builder, seam fix, feasibility spike,
+render_preview -- have rolled into the Session log below; that's where their
+full detail lives now.)
 
 ## ⚠️ Heads-up for the next agent
 
-- **New addon: `addons/mm_live/live_server.gd`.** Thin GDScript autoload,
-  `TCPServer` on port 8765, `ping`/`get_graph` only. Lazy `main_window`
-  resolution -- never cache it, resolve fresh inside every command handler
-  (autoloads start before the main scene, so it's null at `_ready()`). If
-  you're ever tempted to add validation logic here, don't -- everything
-  mutating (step 3) arrives pre-validated from the Python side by design.
+- **`addons/mm_live/live_server.gd` now answers all five commands:**
+  `ping`/`get_graph` (read-only, from step 2) plus `add_node`/`connect_nodes`/
+  `set_param`/`render` (mutating, from this session). Still deliberately
+  thin -- no validation logic anywhere in this file; everything mutating
+  arrives pre-validated from the Python side by design. Lazy `main_window`
+  resolution -- never cache it, resolve fresh inside every command handler.
+  **Two node-addressing conventions coexist and must not be confused:**
+  `do_connect_node` (used by `connect_nodes`) addresses the GraphEdit's own
+  scene tree, where node names are `"node_" + generator_name` -- the handler
+  prefixes this internally. `set_node_parameters` (used by `set_param`)
+  takes a **generator**, not a GraphNode, resolved via
+  `graph_edit.generator.get_node(NodePath(name))` with the **plain** name,
+  no prefix. The wire protocol only ever exposes plain names either way.
+- **`render`'s handler calls `graph_edit.get_material_node()` then
+  `material_node.export_material(prefix, profile, 0, true)` directly --
+  NOT `main_window.export_material(...)`.** That was the original approach
+  and it shipped, passed review, and was wrong: `main_window.export_material`
+  has no `await` in its own body, so awaiting it resolves same-frame while
+  the real file-writing coroutine keeps running in the background,
+  unobserved. If you're ever touching this handler again, don't revert to
+  the `main_window` wrapper without re-reading the plan's "Verified against
+  Material Maker source" section (the corrected entry, not the original).
+- **No automated GDScript test harness exists in this repo.** Both real
+  bugs this session (the `:=`/`=` parse error, the un-awaited render call)
+  passed clean task-level reviews because no reviewer could actually execute
+  the script -- only the real integration test caught them. Godot 4.7.1 does
+  support `--headless --check-only --script <path>` against the built
+  overlay as a cheap parse-only smoke check (confirmed by the final review);
+  it would catch a parse error like the first bug but not runtime-semantics
+  bugs like the second. Worth adding as cheap insurance, not a substitute
+  for the integration test.
+- **`connect_or_launch` port-race is now demonstrated, not just theoretical
+  -- see HANDOFF's Open questions.** Don't run both live-control integration
+  tests in the same `pytest -q` invocation and expect it to reliably pass;
+  run them individually if you need a clean signal before that's hardened.
 - **New module: `src/mm_mcp/live.py`.** `ping()`/`get_graph()` are one-shot
   connect/send/recv/close calls (`_send_command`), no persistent session
-  state on either side. `connect_or_launch(cfg=None, host=LIVE_HOST,
+  state on either side. `add_node`/`connect_nodes`/`set_param` each validate
+  the proposed mutation against `_ensure_catalog(cfg)` (a module-level cache
+  keyed by `cfg.nodes_dir`) via `validate_graph` before calling
+  `_send_command` -- on any `"error"`-severity problem (or, for `set_param`
+  specifically, an unrecognized-parameter warning scoped to that node), the
+  socket is never touched. `render(basename, profile, cfg, ...) -> RenderResult`
+  reuses `render.py`'s own `RenderResult`/`_collect_fresh_images` rather than
+  reimplementing freshness detection. `connect_or_launch(cfg=None, host=LIVE_HOST,
   port=LIVE_PORT, launch_timeout=60.0) -> LiveSession` is the orchestration
   entry point: probes the port, launches via `overlay.py`'s `ensure_overlay`
   if nothing's listening, polls until ready, guards against leaking the
@@ -214,10 +276,11 @@ Alternatives, all carried over unchanged:
   `src/mm_mcp/preview_project/`, a small standalone Godot project bundled in
   this repo, not the `z-Git\material-maker` checkout.
 - **Run tests with `.venv\Scripts\python.exe`** (or activate the venv).
-  Fast suite: `pytest -q -m "not integration"` (148 passed, 4 deselected);
-  `pytest -q` adds the Godot-launching integration tests, including the new
-  real-live-mode one from this session (which opens a visible GUI window
-  briefly, unlike the other, headless integration tests).
+  Fast suite: `pytest -q -m "not integration"` (158 passed, 5 deselected).
+  `pytest -q` adds the Godot-launching integration tests -- but running both
+  `test_live.py` integration tests together in one process is currently
+  flaky (see the port-race heads-up above); prefer running them individually
+  (`-k build_and_render`, `-k default_new_material`) for a reliable signal.
 - **Godot property-name traps hit in an earlier session** (both caused a
   script error + hung process, had to `taskkill`): depth of field lives on a
   `CameraAttributesPractical` resource assigned to `Camera3D.attributes`,
@@ -263,6 +326,79 @@ Alternatives, all carried over unchanged:
 ---
 
 ## 🕓 Session log
+
+### 2026-08-27 (evening) — Phase 5 build step 3: mutating commands, full SDD pipeline
+- Picked up via `pickup`, Grayson chose "start on Phase 5 step 3 via
+  writing-plans." Confirmed a new standing preference mid-session: Grayson
+  always wants subagent-driven execution over inline `executing-plans` when
+  offered the choice -- saved to memory (`feedback-execution-mode.md`).
+- **`writing-plans`:** read the design spec plus the real Material Maker
+  source (`graph_edit.gd`, `loader.gd`, `gen_graph.gd`, `gen_base.gd`,
+  `main_window.gd`, `gen_material.gd`, `material.mmg`, `warp.mmg`) to ground
+  every GDScript API call in verified reality. Found and documented, before
+  any code was written: `create_nodes` can silently rename a node on a
+  collision (`add_generator`'s uniquify loop); `do_connect_node` and
+  `set_node_parameters` address two different node trees with two different
+  naming conventions; `main_window.export_material` *looked* like the right
+  render entry point from source alone (this turned out to be wrong -- see
+  below). Designed a 6-task plan (3 GDScript handlers, 2 Python client
+  functions, 1 real integration test). Saved to
+  `docs/superpowers/plans/2026-08-27-phase5-mutating-commands.md`.
+- **`using-git-worktrees`:** consent given, isolated worktree via native
+  `EnterWorktree`. The plan doc was uncommitted on `main` at pickup time
+  (same gap flagged in step 2's own handoff) -- copied into the worktree by
+  hand and committed there first.
+- **`subagent-driven-development`:** pre-flight conflict scan across all 6
+  tasks, clean. Tasks 1-3 (GDScript, haiku, pure transcription) and Tasks
+  4-6 (Python + integration test, sonnet, judgment-heavy) all passed their
+  first task-level review clean. **Real bugs surfaced only once Task 6's
+  real integration test ran** -- two genuine, load-bearing bugs in
+  already-approved prior tasks that no per-task review could have caught
+  (no automated GDScript harness exists in this repo):
+  1. Task 2's `_cmd_connect_nodes` declared `from_name`/`to_name` with `=`
+     instead of `:=` -- a genuine parse-time type-inference failure that
+     broke the *entire* addon script, confirmed via the real Godot launch
+     log. Ruled plan-mandated (the plan's own given code had this bug), not
+     an implementer error. Fixed by resuming Task 2's original implementer;
+     independently re-reviewed clean.
+  2. Task 6's own test then hit a genuine topology gap (its own scripted
+     graph was never wired into the live graph's default `"Material"`
+     node, so no render condition could ever be true) -- fixed by the
+     controller, ruled a plan defect. That fix exposed a second symptom
+     (more connections producing *fewer* files, not more), which two
+     node-type-mismatch hypotheses (checked and ruled out via source and
+     via a repeat with type-corrected nodes) failed to explain. Consulted
+     the advisor, which correctly diagnosed Task 3's `_cmd_render`:
+     `main_window.export_material` fire-and-forgets the real file-writing
+     coroutine instead of awaiting it. Confirmed with a direct discriminator
+     probe (render, sleep 10s, re-list output dir -- the PNG appeared ~10s
+     after the reported failure) before committing to the fix. Fixed by
+     resuming Task 3's original implementer with the corrected API
+     (`graph_edit.get_material_node()` -> `material_node.export_material(
+     prefix, profile, 0, true)`); independently re-reviewed clean.
+  Both fix rounds were dispatched to their *original* task's implementer
+  (not Task 6's), keeping fix ownership aligned with the code that was
+  actually wrong, and both got their own scoped re-review before Task 6
+  was retried.
+- **Final whole-branch review** (opus): "ready to merge, with fixes." 3
+  Important findings (all fixed in one consolidated wave): `set_param` let
+  an unrecognized parameter name through Python validation since
+  `validate_graph` treats that as a warning, not an error, now blocked; the
+  plan doc's mid-execution correction was uncommitted plus two more stale
+  spots taught the same wrong claim, fixed; `STATUS.md`'s gate ledger still
+  said this step hadn't started, updated. Reviewer explicitly recommended
+  fixing only 1 of 6 Minor findings (a `set_param`-effect assertion added
+  to the integration test) and leaving the rest as documented risk --
+  followed that triage rather than gold-plating. Independently verified the
+  Godot binary's `--headless --check-only --script` flags exist and would
+  catch the parse-error class of bug (not the await-bug class) for a future
+  hardening pass. Flagged the port-race finding as no longer theoretical.
+- **`finishing-a-development-branch`:** fast-forward merge to `main`
+  (`071dbb6`), 158/158 fast tests + both integration tests individually
+  verified green on the merged tip, worktree and branch cleaned up. Grayson
+  asked to add the port-race issue to a backlog (this project has no
+  dedicated backlog file -- landed it prominently in this doc's Open
+  questions instead, plus a wrap-up memory update), then wrap up and push.
 
 ### 2026-08-27 (midday) — Phase 5 build step 2: addon skeleton, full SDD pipeline
 - Picked up via `pickup`, Grayson chose "start on Phase 5 step 2 via
