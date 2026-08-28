@@ -1,13 +1,51 @@
 # 🧭 Session Handoff — Tool-MaterialMaker-MCP
 
-_Last updated: 2026-08-28 (later still) CT (America/Chicago)_
+_Last updated: 2026-08-28 (yet later still) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**Phase 5's own literal "Done" criterion was finally met hands-on this
-session, and it now has a `clear_graph` reset tool it didn't have before.**
+**A real, previously-undiscovered bug in `overlay.py` was found and fixed
+this session, while trying to demo the just-added `live_clear` tool live in
+chat.** Picked up via `pickup`; Grayson chose to try `live_clear` live
+(build something, render, clear, watch the on-screen notice) rather than
+just trust last session's integration test. `live_start` failed immediately
+with a bare MCP error. Root-caused via `systematic-debugging` (reproduced
+directly against the real `.venv` Python rather than guessing from the
+opaque MCP error): `ensure_overlay`'s rebuild path does `shutil.rmtree`
+then `shutil.copytree` on the disposable overlay, and the overlay is a full
+copy of the real git checkout at `z-Git\material-maker` — git marks its
+`.git/objects/pack/*.idx` files read-only, and `shutil.rmtree` can't delete
+a read-only file on Windows without help. This was the *first* rebuild
+since the overlay was created (rebuilds only trigger when `addons/mm_live`
+changes, which this session's own `live_clear` addition from last session
+did), so it had never been hit before — and the test suite's fake-checkout
+fixtures never included a read-only file, so no test caught it either.
+**This would have broken every future `live_start`/`connect_or_launch` call
+after any addon change, permanently, not a one-off flake.**
+
+Fixed via `test-driven-development`, directly on `main`, no plan or
+worktree (small, well-scoped, same precedent as the GUI-child-process-leak
+and `live_clear` fixes): a new regression test
+(`test_ensure_overlay_rebuilds_when_overlay_contains_read_only_files`)
+reproduces the exact `PermissionError` against a real read-only file, then
+a `_clear_readonly()` helper (walks the tree, clears the read-only bit on
+every file) runs right before `rmtree`. Verified against the *real* overlay
+on this machine, not just the test: a direct Python call successfully
+rebuilt the overlay and launched a real Material Maker instance. Then the
+originally-intended demo ran clean over the MCP tools: `live_start`
+attached, `live_get_graph` showed the graph restored from last session's
+verification (voronoi → Material — Material Maker apparently reopens its
+last-edited graph on launch), `live_render` rendered it, `live_clear` reset
+it, and `live_get_graph` confirmed exactly one default `Material` node with
+zero connections. Full fast suite: 183 passed (up from 182). **Not yet
+committed** — Grayson invoked `/wrap-up` before confirming he saw the
+on-screen notice or before giving push approval; both are open (see below).
+
+**Before this bug, Phase 5's own literal "Done" criterion was finally met
+hands-on the prior session, and it now has a `clear_graph` reset tool it
+didn't have before.**
 Picked up via `pickup`; the prior session's blocker (this Claude Code
 session had zero MCP wiring to `mm-mcp`) was already fixed by that
 session's `.mcp.json`, and this session's tool list confirmed
@@ -86,20 +124,23 @@ preserved in the Session log below.
 
 ## 📌 Where we stopped
 
-Everything committed (`b414763`) and pushed, working tree clean, in sync
-with `origin/main`. `live_clear` will not appear as a callable tool in an
-already-running Claude Code session until it's restarted (same MCP-reload
-requirement as the `.mcp.json` fix itself) -- it's proven by the automated
-integration test, not demonstrated live in-chat this session.
+`src/mm_mcp/overlay.py` and `tests/test_overlay.py` are modified on disk but
+**not yet committed** -- Grayson invoked `/wrap-up` before answering two
+questions asked in-chat: (1) whether he actually saw the "Claude cleared
+the graph" on-screen notice during the live demo, (2) whether to commit and
+push this fix. Since no push approval was given this session, this wrap-up
+commits locally and leaves push as an explicit choice for next session (or
+this one, if Grayson answers). The demo itself (live_start -> live_get_graph
+-> live_render -> live_clear -> live_get_graph confirming the reset) all
+passed via the real MCP tools, over a real launched Material Maker window
+that should still be open on this machine.
 
 ## ▶️ Next concrete step
 
-**No mandatory next step -- Phase 5 is genuinely done, both the build
-sub-plan and the spec's own hands-on "Done" criterion.** Optional first
-move: restart Claude Code, then try `live_clear` live in chat (build
-something, watch it render, clear it, watch the notice appear) just to see
-it rather than take the integration test's word for it -- low priority,
-purely a nice-to-have since the automated proof already stands.
+**Confirm the notice was seen, then commit + push this session's fix** (or
+just push -- the commit will already exist locally after this wrap-up).
+This is a real, previously-undiscovered bug that would have broken every
+future overlay rebuild going forward, not a nice-to-have.
 
 Otherwise, pick from the standing backlog, all carried over unchanged:
 - **A. More cookbook categories** (extend the authoring recipe library).
@@ -112,7 +153,15 @@ Otherwise, pick from the standing backlog, all carried over unchanged:
 
 ## ❓ Open questions
 
-- **New this session:** should "construct graphs in an easy-to-human-edit
+- **New this session:** did Grayson actually see the on-screen "Claude
+  cleared the graph" notice during the live `live_clear` demo? Asked
+  in-chat, not yet answered -- he invoked `/wrap-up` first. Not a blocker
+  for the fix itself (proven by the graph state before/after), but the
+  notice UI has never been visually confirmed end-to-end.
+- **New this session:** commit `src/mm_mcp/overlay.py` +
+  `tests/test_overlay.py` exists locally after this wrap-up; push needs an
+  explicit go-ahead (not given this session before `/wrap-up` was invoked).
+- **Still open from a prior session:** should "construct graphs in an easy-to-human-edit
   way" (simple node chains, legible naming/layout) become an explicit
   written constraint (in `docs/AUTHORING.md` or the live-control design
   spec)? Grayson raised this while describing the intended round-trip
@@ -156,7 +205,26 @@ Otherwise, pick from the standing backlog, all carried over unchanged:
   cross-platform (macOS/Linux) verification, still untested, no machine
   available.
 
-## 🗂️ Changed this session (Phase 5 hands-on verification + live_clear)
+## 🗂️ Changed this session (overlay read-only rmtree fix)
+
+- Branch: `main`. Modified, not yet committed at time of this wrap-up:
+  `src/mm_mcp/overlay.py` (new `_clear_readonly()` helper, called before
+  `shutil.rmtree` in `ensure_overlay`), `tests/test_overlay.py` (new
+  regression test). No plan doc, no worktree -- small, well-scoped, same
+  precedent as the GUI-child-process-leak and `live_clear` fixes.
+- Decisions (+ why): fixed by clearing the read-only attribute on every
+  file under the overlay directory before `rmtree`, rather than passing an
+  `onerror`/`onexc` handler to `shutil.rmtree` itself -- the `onexc`
+  parameter's signature changed between Python versions (added 3.12), and
+  this project's `pyproject.toml` declares `requires-python>=3.10`, so a
+  version-independent pre-clear pass was preferred over a version-gated
+  handler. Root-caused via `systematic-debugging` by reproducing directly
+  against the real `.venv` Python (`live.connect_or_launch()`) rather than
+  trusting the MCP tool's bare "Error executing tool live_start" -- the MCP
+  wrapper swallows exception detail on a raise, so the real traceback only
+  showed up outside it.
+
+## 🗂️ Changed a prior session (Phase 5 hands-on verification + live_clear)
 
 - Branch: `main`. Committed directly (`b414763`, pushed): `STATUS.md`
   (Phase 5 phase row + live-control component row, both 🔌 → ✅),
@@ -269,6 +337,21 @@ that's where their full detail lives now.)
 
 ## ⚠️ Heads-up for the next agent
 
+- **`ensure_overlay`'s rebuild path now clears read-only file attributes
+  before `rmtree` -- fixed this session, real and load-bearing, not
+  theoretical.** The overlay is a full copy of the real git checkout at
+  `z-Git\material-maker`; git marks `.git/objects/pack/*.idx` read-only,
+  and `shutil.rmtree` can't delete a read-only file on Windows without
+  help. Every rebuild (any `addons/mm_live` change) would have hit this.
+  Fixed via a new `_clear_readonly()` helper in `overlay.py`, called right
+  before `rmtree`. If you're ever tempted to remove it thinking it's
+  unnecessary, don't -- it only reproduces against a *real* git checkout,
+  not the synthetic fixtures most tests use, so its absence is easy to miss
+  until the next real rebuild. If `live_start`/`connect_or_launch` ever
+  fails again with a bare, detail-free MCP error, reproduce directly via
+  `.venv\Scripts\python.exe -c "from mm_mcp import live; live.connect_or_launch()"`
+  rather than trusting the MCP tool's error message -- it swallows
+  exception detail on a raise; the real traceback only shows up outside it.
 - **`ping`'s response now has a `has_graph` field alongside `ready`, and
   they mean different things -- don't conflate them.** `ready` is still
   purely "main_window resolved." `has_graph` (new this session) is "a graph
@@ -491,6 +574,49 @@ that's where their full detail lives now.)
 ---
 
 ## 🕓 Session log
+
+### 2026-08-28 (yet later still) — overlay read-only rmtree bug, found and fixed
+- Picked up via `pickup`; no drift between the handoff and the repo. Grayson
+  chose to try `live_clear` live in chat (build something, render, clear,
+  watch the notice) instead of just trusting last session's integration
+  test.
+- `live_start` failed immediately with a bare "Error executing tool
+  live_start". **`systematic-debugging`:** read the error carefully (no
+  detail), checked `output/mm_live.log`'s timestamp (34 minutes stale --
+  the failure happened before Godot was even launched), then reproduced
+  directly against the real `.venv` Python (`live.connect_or_launch()`) to
+  get an actual traceback rather than guessing from the MCP wrapper's
+  swallowed exception. Root cause: `ensure_overlay`'s rebuild path
+  (`shutil.rmtree` then `shutil.copytree`) can't delete the read-only
+  `.git/objects/pack/*.idx` files that a real git checkout (the overlay's
+  source, `z-Git\material-maker`) has, on Windows. This was the *first*
+  overlay rebuild since it was created (rebuilds only trigger on an
+  `addons/mm_live` content change, which last session's `live_clear`
+  addition caused) -- confirmed via a minimal standalone repro
+  (`shutil.rmtree` on a directory with one chmod'd-read-only file) before
+  touching any project code.
+- **`test-driven-development`:** wrote
+  `test_ensure_overlay_rebuilds_when_overlay_contains_read_only_files`
+  first, watched it fail with the exact `PermissionError`, then added
+  `_clear_readonly()` (walks the tree, clears the read-only bit on every
+  file) called right before `rmtree` in `ensure_overlay`. `tests/test_overlay.py`:
+  26 passed (up from 25). Full fast suite: 183 passed (up from 182).
+- Verified against the real overlay on this machine, not just the test: a
+  direct Python call rebuilt it and launched a real Material Maker
+  instance successfully. Then ran the originally-intended demo over the
+  real MCP tools: `live_start` attached to that instance, `live_get_graph`
+  showed the graph restored from last session's verification (voronoi →
+  Material -- Material Maker apparently reopens its last-edited graph on
+  launch), `live_render` rendered it (`before_clear_albedo.png`),
+  `live_clear` reset it, and a final `live_get_graph` confirmed exactly one
+  default `Material` node with zero connections.
+- Asked Grayson in-chat whether he saw the on-screen notice and whether to
+  commit/push; he invoked `/wrap-up` before answering either. This wrap-up
+  commits locally per the skill's guardrail (no push approval standing this
+  session) and leaves both open (see Open questions).
+- Wrote the required `_agent-commons\log\` entry
+  (`2026-08-28-claude-code-overlay-readonly-rmtree-fix.md`) before this
+  wrap-up, per `C:\Projects-local\CLAUDE.md`'s standing rule.
 
 ### 2026-08-28 (later still) — Phase 5 hands-on verification, then a live_clear tool
 - Picked up via `pickup`. The prior session's blocker (no MCP wiring to

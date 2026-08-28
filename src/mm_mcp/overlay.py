@@ -16,6 +16,7 @@ import hashlib
 import json
 import os
 import shutil
+import stat
 
 
 def _hash_dir(path: str) -> str:
@@ -72,6 +73,17 @@ def _append_autoload(project_godot_path: str, addon_name: str) -> None:
 
 
 _MARKER_NAME = ".mm_overlay_marker.json"
+
+
+def _clear_readonly(path: str) -> None:
+    """Clear the read-only attribute on every file under path. A real
+    Material Maker checkout is a git clone, and git marks its
+    .git/objects/pack/*.idx files read-only; copytree preserves that
+    attribute into overlay_dir, and shutil.rmtree can't unlink a read-only
+    file on Windows without this first."""
+    for root, _dirs, files in os.walk(path):
+        for name in files:
+            os.chmod(os.path.join(root, name), stat.S_IWRITE)
 
 
 def _marker_path(overlay_dir: str) -> str:
@@ -137,6 +149,7 @@ def ensure_overlay(mm_project_path: str, addon_path: str, overlay_dir: str) -> s
         return overlay_dir
 
     if os.path.isdir(overlay_dir):
+        _clear_readonly(overlay_dir)
         shutil.rmtree(overlay_dir)
     shutil.copytree(mm_project_path, overlay_dir)
 

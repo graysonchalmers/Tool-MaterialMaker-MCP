@@ -273,6 +273,31 @@ def test_ensure_overlay_rebuilds_on_checkout_path_change(tmp_path, fake_checkout
         encoding="utf-8") == "# different checkout"
 
 
+def test_ensure_overlay_rebuilds_when_overlay_contains_read_only_files(tmp_path, fake_checkout, fake_addon):
+    """A real Material Maker checkout is a git clone, and git marks its
+    .git/objects/pack/*.idx files read-only. copytree preserves that
+    attribute into overlay_dir, so any later rebuild (triggered by an addon
+    change, which happens routinely) must still be able to rmtree it on
+    Windows -- shutil.rmtree's default behavior can't delete a read-only
+    file there and raises PermissionError."""
+    import stat
+
+    overlay_dir = str(tmp_path / "overlay")
+    ensure_overlay(str(fake_checkout), str(fake_addon), overlay_dir)
+
+    read_only_file = tmp_path / "overlay" / "material_maker" / "globals.gd"
+    os.chmod(str(read_only_file), stat.S_IREAD)
+
+    _write(str(fake_addon), "live_server.gd", "extends Node\n# v2, changed")
+
+    # Must not raise PermissionError.
+    ensure_overlay(str(fake_checkout), str(fake_addon), overlay_dir)
+
+    rebuilt = (tmp_path / "overlay" / "addons" / "mm_live" / "live_server.gd").read_text(
+        encoding="utf-8")
+    assert rebuilt == "extends Node\n# v2, changed"
+
+
 def test_ensure_overlay_raises_when_addon_path_missing(tmp_path, fake_checkout, fake_addon):
     """A typo'd addon_path must raise before any destructive filesystem work
     happens -- and must not touch a pre-existing overlay_dir."""
