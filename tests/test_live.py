@@ -427,7 +427,7 @@ def test_terminate_swallows_taskkill_failure_and_still_falls_back(monkeypatch):
 
 
 def test_connect_or_launch_attaches_when_already_listening(monkeypatch):
-    server = _FakeLiveServer(lambda cmd: {"ok": True, "ready": True})
+    server = _FakeLiveServer(lambda cmd: {"ok": True, "ready": True, "has_graph": True})
     launched = {"called": False}
 
     def _no_launch(passed_cfg):
@@ -455,7 +455,7 @@ def test_connect_or_launch_launches_when_not_listening(monkeypatch):
         def _start_late():
             time.sleep(0.3)  # simulate Godot booting before the addon listens
             started_server["server"] = _FakeLiveServer(
-                lambda cmd: {"ok": True, "ready": True}, port=picked_port)
+                lambda cmd: {"ok": True, "ready": True, "has_graph": True}, port=picked_port)
         threading.Thread(target=_start_late, daemon=True).start()
         return fake_process
 
@@ -541,7 +541,7 @@ def test_connect_or_launch_relaunches_when_a_squatting_process_stops_listening_d
         def _start_late():
             time.sleep(0.3)  # simulate Godot booting before the addon listens
             started_server["server"] = _FakeLiveServer(
-                lambda cmd: {"ok": True, "ready": True}, port=picked_port)
+                lambda cmd: {"ok": True, "ready": True, "has_graph": True}, port=picked_port)
         threading.Thread(target=_start_late, daemon=True).start()
         return fake_process
 
@@ -559,7 +559,7 @@ def test_connect_or_launch_relaunches_when_a_squatting_process_stops_listening_d
 def test_connect_or_launch_waits_past_grace_for_a_slow_booting_real_instance(monkeypatch):
     monkeypatch.setattr(live, "_SQUATTED_PORT_GRACE", 1.0)
     state = {"ready": False}
-    server = _FakeLiveServer(lambda cmd: {"ok": True, "ready": state["ready"]})
+    server = _FakeLiveServer(lambda cmd: {"ok": True, "ready": state["ready"], "has_graph": True})
     launched = {"called": False}
 
     def _no_launch(passed_cfg):
@@ -581,6 +581,40 @@ def test_connect_or_launch_waits_past_grace_for_a_slow_booting_real_instance(mon
         assert launched["called"] is False, (
             "a slow-booting real instance must not be misclassified as squatted and relaunched"
         )
+    finally:
+        server.stop()
+
+
+def test_connect_or_launch_waits_for_a_graph_tab_after_main_window_is_ready(monkeypatch):
+    monkeypatch.setattr(live, "_SQUATTED_PORT_GRACE", 1.0)
+    state = {"has_graph": False}
+    server = _FakeLiveServer(
+        lambda cmd: {"ok": True, "ready": True, "has_graph": state["has_graph"]})
+    launched = {"called": False}
+
+    def _no_launch(passed_cfg):
+        launched["called"] = True
+        return _FakeProcess()
+
+    monkeypatch.setattr(live, "_launch_overlay", _no_launch)
+
+    def _open_graph_tab_soon():
+        time.sleep(1.5)  # past the 1.0s grace period, well within launch_timeout
+        state["has_graph"] = True
+
+    threading.Thread(target=_open_graph_tab_soon, daemon=True).start()
+    try:
+        started = time.monotonic()
+        session = live.connect_or_launch(cfg=cfg, host="127.0.0.1", port=server.port,
+                                          launch_timeout=10.0)
+        elapsed = time.monotonic() - started
+        assert session.ok, session.error
+        assert elapsed >= 1.5, (
+            "connect_or_launch must not report ready before the addon reports a graph "
+            "tab, even once main_window itself is already ready"
+        )
+        assert session.process is None  # attached, never launched a new one
+        assert launched["called"] is False
     finally:
         server.stop()
 

@@ -91,6 +91,13 @@ def _wait_for_ready_or_give_up(host: str, port: int, deadline: float) -> tuple[b
     """Poll ping() until it reports ready, or `deadline` (a time.monotonic()
     value) passes. Returns (ready, ever_answered, last_error).
 
+    "Ready" here means both `ready` (main_window resolved) AND `has_graph`
+    (a graph tab exists) from ping()'s response -- main_window can resolve
+    one or more frames before the default graph tab is created, so gating
+    on `ready` alone lets a caller proceed before add_node/get_graph/etc.
+    are actually safe to call (see docs/superpowers/plans/
+    2026-08-27-connect-or-launch-readiness-race.md).
+
     ever_answered is True the moment ping() ever returns ok=True, even with
     ready=False -- a real live-addon socket answers ping almost immediately
     after binding (project startup), well before main_window resolves (see
@@ -106,7 +113,7 @@ def _wait_for_ready_or_give_up(host: str, port: int, deadline: float) -> tuple[b
         result = ping(host, port)
         if result.ok:
             ever_answered = True
-            if result.data.get("ready"):
+            if result.data.get("ready") and result.data.get("has_graph"):
                 return True, ever_answered, last_error
         else:
             last_error = result.error
@@ -380,7 +387,7 @@ def connect_or_launch(cfg: Config | None = None, host: str = LIVE_HOST,
         last_error = "timed out waiting for the live server to become ready"
         while time.monotonic() < deadline:
             result = ping(host, port)
-            if result.ok and result.data.get("ready"):
+            if result.ok and result.data.get("ready") and result.data.get("has_graph"):
                 return LiveSession(ok=True, process=process)
             if not result.ok:
                 last_error = result.error
