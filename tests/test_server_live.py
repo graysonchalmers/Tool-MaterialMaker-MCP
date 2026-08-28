@@ -1,5 +1,7 @@
 # tests/test_server_live.py
-from dataclasses import dataclass
+import os
+from dataclasses import dataclass, replace
+import pytest
 from mm_mcp import server, live
 from mm_mcp.config import load_config
 from mm_mcp.render import RenderResult
@@ -140,3 +142,61 @@ def test_live_render_reports_session_failure_without_rendering(monkeypatch):
     result = server.live_render()
     assert result == {"ok": False, "images": [], "error": "no server", "log_tail": ""}
     assert called["yes"] is False
+
+
+@pytest.mark.integration
+def test_live_tools_hold_a_real_session_against_material_maker(tmp_path, monkeypatch):
+    # Isolated overlay + output dirs so this test never collides with (or
+    # clobbers) a manual session's overlay or output files, matching the
+    # isolation pattern test_live.py's own integration tests already use.
+    isolated_cfg = replace(cfg, live_overlay_dir=str(tmp_path / "mm_live_overlay"),
+                            output_dir=str(tmp_path / "output"))
+    monkeypatch.setattr(server, "load_config", lambda *a, **kw: isolated_cfg)
+    server._reset()
+    try:
+        start = server.live_start(launch_timeout=90.0)
+        assert start["ok"], start["error"]
+        assert start["launched"] is True, (
+            "attached to a pre-existing instance on port 8765 -- close it and rerun; "
+            "this test must launch its own overlay to prove server.py's wiring works"
+        )
+        try:
+            graph = server.live_get_graph()
+            assert graph["ok"], graph["error"]
+            assert any(n.get("type") == "material" for n in graph["graph"]["nodes"])
+
+            built = server.live_apply([
+                {"op": "add_node", "node_type": "perlin", "parameters": {}, "x": 0, "y": 0},
+            ])
+            assert built["ok"], built["error"]
+            source_name = built["results"][0]["data"]["name"]
+
+            sink = server.live_apply([
+                {"op": "add_node", "node_type": "colorize", "parameters": {}, "x": 200, "y": 0},
+            ])
+            assert sink["ok"], sink["error"]
+            sink_name = sink["results"][0]["data"]["name"]
+
+            # Wire source -> sink -> the default new-material graph's
+            # "Material" node, same recipe test_live.py's own
+            # test_live_ops_build_and_render_a_simple_graph already proved
+            # renders real PNGs -- reused here so this test is checking
+            # server.py's dispatch, not discovering a new valid graph shape.
+            wired = server.live_apply([
+                {"op": "connect_nodes", "from_name": source_name, "from_port": 0,
+                 "to_name": sink_name, "to_port": 0},
+                {"op": "connect_nodes", "from_name": sink_name, "from_port": 0,
+                 "to_name": "Material", "to_port": 0},
+                {"op": "set_param", "name": source_name, "parameters": {"scale_x": 16}},
+            ])
+            assert wired["ok"], wired["error"]
+
+            rendered = server.live_render(basename="server_live_test")
+            assert rendered["ok"], rendered["error"]
+            assert rendered["images"], "render reported ok but produced no image paths"
+            for path in rendered["images"]:
+                assert os.path.getsize(path) > 0
+        finally:
+            server._live_session.close()
+    finally:
+        server._reset()
