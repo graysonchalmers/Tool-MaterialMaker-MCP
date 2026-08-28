@@ -633,6 +633,13 @@ def test_connect_or_launch_gets_real_graph_from_default_new_material(tmp_path):
             "this test must launch its own overlay to prove the committed addon works"
         )
 
+        ping_result = live.ping()
+        assert ping_result.ok, ping_result.error
+        assert ping_result.data["has_graph"] is True, (
+            "connect_or_launch reported ready, so the real addon must already be "
+            "reporting has_graph=True by this point"
+        )
+
         result = live.get_graph()
         assert result.ok, result.error
         graph = result.data["graph"]
