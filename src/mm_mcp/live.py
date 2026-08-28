@@ -157,9 +157,23 @@ def set_param(name: str, parameters: dict, cfg: Config | None = None, host: str 
         for n in nodes
     ]
     proposed = {"nodes": merged_nodes, "connections": graph.get("connections", [])}
-    errors = _validation_errors(proposed, cfg)
-    if errors:
-        return LiveResult(ok=False, error="validation failed", data={"problems": errors})
+    problems = validate_graph(proposed, _ensure_catalog(cfg))
+    errors = [p for p in problems if p["severity"] == "error"]
+    # An unrecognized parameter name is classified as a "warning" by
+    # validate_graph (Material Maker's own loader tolerates stray keys
+    # rather than rejecting them -- see validator.py), but set_param must
+    # treat it as blocking anyway: the addon has no way to safely refuse an
+    # unrecognized parameter name once it's forwarded to Material Maker's
+    # set_node_parameters, so this is the only line of defense against a
+    # partially-applied mutation or an unhandled error in the live window.
+    unknown_param_warnings = [
+        p for p in problems
+        if p["severity"] == "warning" and p["where"] == name
+        and "unknown parameter" in p["message"]
+    ]
+    blocking = errors + unknown_param_warnings
+    if blocking:
+        return LiveResult(ok=False, error="validation failed", data={"problems": blocking})
     return _send_command({"cmd": "set_param", "name": name, "parameters": parameters},
                           host, port, timeout)
 

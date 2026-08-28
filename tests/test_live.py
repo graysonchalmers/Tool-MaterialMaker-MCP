@@ -297,6 +297,30 @@ def test_set_param_reports_missing_node_without_contacting_server(monkeypatch):
         server.stop()
 
 
+def test_set_param_rejects_unknown_parameter_name_without_contacting_server(monkeypatch):
+    monkeypatch.setattr(live, "_ensure_catalog", lambda cfg: _FAKE_CATALOG)
+    fake_graph = {"nodes": [
+        {"name": "perlin_1", "type": "perlin", "node_position": {"x": 0, "y": 0},
+         "parameters": {"scale_x": 4}},
+    ], "connections": []}
+    calls = []
+
+    def responder(cmd):
+        calls.append(cmd["cmd"])
+        return {"ok": True, "graph": fake_graph}
+
+    server = _FakeLiveServer(responder)
+    try:
+        result = live.set_param("perlin_1", {"bogus_param": 1},
+                                 cfg=cfg, host="127.0.0.1", port=server.port)
+        assert not result.ok
+        assert result.error == "validation failed"
+        assert result.data["problems"]
+        assert calls == ["get_graph"]  # set_param was never sent
+    finally:
+        server.stop()
+
+
 def test_render_returns_fresh_images_on_success(tmp_path):
     isolated_cfg = replace(cfg, output_dir=str(tmp_path))
 
@@ -514,6 +538,13 @@ def test_live_ops_build_and_render_a_simple_graph(tmp_path):
         connections = graph_after.data["graph"]["connections"]
         assert any(c["from"] == source_name and c["to"] == sink_name for c in connections), (
             f"expected a connection {source_name}->{sink_name}, got {connections}"
+        )
+        source_node_after = next(
+            n for n in graph_after.data["graph"]["nodes"] if n["name"] == source_name
+        )
+        assert source_node_after["parameters"]["scale_x"] == 16, (
+            f"expected set_param to have applied scale_x=16 on {source_name!r}, "
+            f"got {source_node_after['parameters']}"
         )
 
         rendered = live.render(basename="live_test", cfg=isolated_cfg)
