@@ -21,6 +21,25 @@ A prompt-to-graph attempt is scored per `quality/test_set.json`:
   4. no obviously broken map (flat-black/white albedo, uniform-blue normal,
      uniform heightmap/orm).
 
+## Human-editability constraint (invariant, added 2026-08-28)
+
+Every authored graph must be legible to Grayson if he opens it cold in
+Material Maker, per `docs/NORTH_STAR.md`'s round-trip loop — step 3 only
+teaches him anything if the graph reads as "how would I build this," not as
+a technically-correct tangle. This is a real constraint, not just a nicety:
+a graph can pass validation and render correctly while still being a mess to
+open. Concretely:
+
+- Prefer simple, linear node chains over deeply nested or highly branched
+  graphs when a simpler equivalent produces the same result.
+- Give non-default nodes descriptive names where Material Maker's UI exposes
+  renaming (not just the default `node_2`, `node_3`, ...) when the recipe
+  calls for more than one or two of the same type.
+- Lay out `node_position` so related nodes sit near each other and
+  connections don't have to cross the whole canvas to be traced by eye.
+- When a recipe has a real simpler equivalent, prefer it — cleverness that
+  only pays off in fewer nodes but costs readability is the wrong trade here.
+
 ## Authoring workflow (invariant across phases)
 
 1. Read the prompt; pick the closest bundled example(s) with `list_examples` /
@@ -389,3 +408,141 @@ one-shot empirical fix.
     look on the first try. **Lesson: don't trust mask-threshold direction
     by analogy across different cases -- render and look, the direction
     isn't reliably predictable from another recipe's stated behavior.**
+
+## Wood cookbook (cookbook growth, informal — 2026-08-28)
+
+`quality/cookbook_wood.py`. `w01_oak_planks`/`w02_weathered_barn_wood` are
+already frozen in the Phase 3 test set — these three extend the category
+further, reusing the recolor and masked-composite levers rather than
+inventing new mechanics. `wood`'s own generator chain already renders real
+grain relief out of the box (verified by the two frozen cases), so none of
+these touch `normal_map`'s `param4` switch.
+
+| Preview | Material | Verdict |
+|---|---|---|
+| ![](images/cookbook-wood/w03_painted_wood_siding.png) | Painted plank siding, worn | HIT (after a donor swap) |
+| ![](images/cookbook-wood/w04_driftwood_gray.png) | Bleached driftwood | HIT |
+| ![](images/cookbook-wood/w05_dark_walnut.png) | Dark walnut, semi-gloss | HIT |
+
+- **Driftwood / dark walnut (HIT, first try):** pure recolor of `wood`'s
+  existing `colorize_2` (albedo) / `colorize_0` (roughness) ramps, the exact
+  lever `w02` barn wood already uses. Driftwood: pale, low-saturation gray.
+  Walnut: deep saturated brown, lower roughness for a sealed/finished look
+  vs. barn wood's raw weathered surface.
+- **Painted plank siding (HIT after a donor swap — the key lesson here):**
+  the masked paint-over-wood composite is the same lever as
+  `combo01_rusted_painted_steel`, but the DONOR choice is what actually made
+  or broke this one. Three passes cloned `wood` (pure vertical grain, no
+  board structure) and read as abstract cow-hide / paint-splatter blobs no
+  matter how the mask was tuned — **because nothing in `wood` says
+  "boards," so nothing said "siding."** (Along the way, a razor-thin mask
+  threshold + a stark white-paint-vs-dark-grain palette also produced
+  visible `blend`-edge speckle Grayson flagged as "alpha problems"; that was
+  a real, separate `blend`-opacity artifact, see the s05 note below —
+  widening the threshold band fixed the speckle but NOT the
+  doesn't-read-as-siding problem.) **The fix was the donor:** clone
+  `wooden_floor` instead (its `bricks_0` at 10 rows / 1 column gives
+  horizontal planks with seam lines, and its `blend_0` already carries plank
+  albedo + relief), then composite the paint over `blend_0`. On a planked
+  base it reads as painted siding immediately.
+  **Lesson: match the donor's underlying STRUCTURE to what the material
+  fundamentally is (planks, cells, grain, weave) before tuning color/mask —
+  no amount of surface tuning adds structure a donor doesn't have.** Also,
+  the speckle fix (widen the band) did NOT generalize to `sf03`'s unrelated
+  trace-bleed-through bug — treat each `blend` artifact on its own.
+  **Two more rounds after the donor swap, both from Grayson's direct
+  review** ("the white feels weird"): (1) the paint gradient topped out at
+  only 0.88 brightness with a warm yellow-brown cast — it read as a dirty
+  stain, not paint. Brightened to 0.84–0.94 and neutralized the cast.
+  (2) the wide 0.20–0.50 mask band (needed to kill the earlier speckle) also
+  made wood the MAJORITY and paint the minority — backwards for siding that
+  should read as mostly painted with worn patches. Fixed by moving the band
+  to 0.55–0.72 (same width, shifted position) so wood is the sparse minority
+  showing through, not the dominant surface — band position controls
+  majority/minority balance independent of the width that controls edge
+  softness, so this didn't reintroduce the speckle.
+
+## Stone/masonry cookbook (cookbook growth, informal — 2026-08-28)
+
+`quality/cookbook_stone.py`. `s01_red_brick_wall`/`s02_gray_granite`/
+`s03_cracked_concrete` are already frozen in the Phase 3 test set — these
+three extend the category, at Grayson's specific request for something
+"natural and organic" and deliberately less patterned than the frozen set's
+brick coursing or crack network.
+
+| Preview | Material | Verdict |
+|---|---|---|
+| ![](images/cookbook-stone/s04_scattered_river_stones.png) | Scattered river stones in sand | HIT (after fixing an inverted mask) |
+| ![](images/cookbook-stone/s05_hex_stone_tile.png) | Hex stone tile / mosaic | Partial (not true cobblestone) |
+| ![](images/cookbook-stone/s06_river_pebbles.png) | Natural river pebbles | HIT (judge in 3D, not the albedo) |
+
+- **Scattered river stones in sand (HIT, after fixing a genuinely inverted
+  mask):** originally this slot was a raw-poured-concrete recipe (CLONE
+  `rock`, crush `voronoi_0` to scale 2 for soft unpatterned staining, low
+  relief) — a clean HIT on Grayson's first "natural and organic" ask. He
+  later asked to replace it with something "softer, like river stone, maybe
+  even pebbles," distinct from `s06`'s tightly-packed mosaic. (If a poured
+  concrete recipe is wanted again, the exact params are in this file's git
+  history / the session log — the mechanism was proven, just swapped out
+  here.)
+
+  New approach: CLONE `rock` again, but instead of blending fields for a
+  flat look (concrete) or filling the whole frame with cells (`s06`),
+  THRESHOLD `voronoi_0`'s own distance field (port 0) directly into a
+  stone-vs-sand mask, so stones sit in a connected sand matrix with visible
+  gaps — the "softer, scattered" look, vs. `s06`'s edge-to-edge packing.
+  **First attempt had the mask backwards:** assumed port 0 (F1, distance to
+  the nearest voronoi seed) was HIGH at cell centers: it's actually LOW at
+  centers and rises toward the inter-cell network. Thresholding on that
+  wrong assumption painted tiny sand-colored DOTS at the cell centers with
+  stone filling everywhere else — the exact inverse of "rounded stones in
+  sand." **Fixed by flipping the gradient direction** (low F1 → mask 1 /
+  stone, high F1 → mask 0 / sand) and widening the stone zone so each
+  becomes a real rounded pebble, not a pinprick. Confirmed via
+  `render_preview` (this is relief-driven, same rule as `s06` below) —
+  rounded stone bumps genuinely sit in a sand bed under real lighting.
+- **Hex stone tile (PARTIAL — be honest about this one):** reused beehive's
+  hex relief chain (same lever as `man01`/`man02`), keeping the DEFAULT
+  per-cell-random blend so each tile reads as a genuinely different natural
+  stone tone, not a flat repeat. First attempt at the default hex scale
+  (`sx`20/`sy`12) plus a wide dark-mortar band rendered as a busy dark
+  digital-camo grid, not stone — fixed by shrinking to `sx`7/`sy`5 (big
+  cobbles, not a fine grid) and narrowing the dark band to a thin edge
+  (0.0–0.08, matching `man01`'s actual ratio) so stone dominates coverage.
+  **This produces a good-looking natural-toned stone mosaic, but beehive's
+  hex grid is perfectly regular.** Real cobblestone/crazy-paving has
+  irregular, variously-sized stones, which this doesn't have — don't oversell
+  it as "cobblestone" in user-facing copy. A voronoi-plate approach (like
+  `dry_earth`'s cracked-plate network, recolored to stone tones with
+  per-plate variation) would likely get genuine irregularity; untried here,
+  open item for whoever wants true cobblestone next.
+  **Detail pass:** Grayson judged the first version too flat, wanted
+  "another level of detail." Each hex face was one uniform color; added a
+  fine perlin (`scale` 48, `iterations` 5) multiplied over both albedo and
+  roughness through a new `blend_type=2` (Multiply) node with NO mask
+  connected — the "a"/opacity port's own unconnected default is a uniform
+  1.0, so there's no threshold and none of `w03`'s mask-edge speckle risk
+  applies. **Caveat that cost real time to notice:** the tracked 512px
+  preview thumbnail (`_make_previews.py`'s downscale) hid this fine grain
+  almost completely — it only became visible cropping the real 2048px
+  render. Any future "does this look detailed enough" judgment on a fine
+  high-frequency effect should check the full-res render under
+  `quality/cookbook/<label>/<case>/`, not just the docs preview.
+- **Natural river pebbles (HIT — but you MUST judge this one in 3D):**
+  the organic counterpart to s05's regular hex tile. CLONE `rock` (same
+  donor as `s02` granite), but tune for BIG rounded cells instead of
+  granite's fine flecks: drop both voronoi scales to ~7 (pebble-sized
+  cells), feed albedo from `voronoi_0` PORT 2 (per-cell random) through a
+  multi-tone natural-stone gradient so each pebble is a different tone, and
+  raise the normal strength (`param1` ~0.6, `param4=0`) so each cell bulges
+  into a rounded stone. Plus the same fine-perlin-grain multiply as s05 for
+  per-stone surface texture. **The albedo map alone looks like flat angular
+  polygons — the rounding lives entirely in the NORMAL map, so the flat
+  swatch badly undersells it.** Confirmed correct only by running
+  `render_preview` (the sphere/cube/ground 3D composite): under real
+  lighting the cells read as tightly-packed rounded natural stones. Rule
+  this reinforces: for any relief-driven material (pebbles, cobbles, plating,
+  anything where the shape is in the normal not the albedo), judge it with
+  `render_preview`, not the albedo thumbnail. It's closer to a packed
+  gravel/fieldstone bed than perfectly smooth individual river stones (the
+  cells are still voronoi-angular), but reads clearly as natural stone.

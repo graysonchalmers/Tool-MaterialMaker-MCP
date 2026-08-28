@@ -42,6 +42,30 @@ same loop rather than replacing it: watching nodes appear in the live app as
 the assistant builds them, instead of via file hand-off, is the same
 "watch and learn the graph" idea in real time.
 
+## Cross-engine portability
+
+Exported maps should be usable in whichever engine Grayson is actually
+working in that day, not just Godot. Material Maker already ships export
+profiles for Unity and Unreal (UE4 and UE5), and generates the normal map in
+the correct convention per target automatically — this project's render path
+just needs to expose that choice instead of hardcoding Godot's profile.
+Unity's export produces a ready `.mat` file directly into a project's asset
+folder; Unreal's UE5 path generates PNGs plus a Python script that builds
+the material for you, about as close to push-button as Unreal gets; UE4's
+path is PNGs plus a `.mm2ue` file requiring manual assembly in-editor, a
+lesser tier of support, not the target to build toward.
+
+Checked with a survey of Grayson's other projects before committing to this:
+`Tool-UnityQA` already scoped the same problem (texture channel-packing and
+sRGB/color-space checks across engines) and deliberately deferred it,
+pending the ability to read importer settings — nobody in the portfolio has
+actually solved cross-engine texture validation yet. This is new ground for
+this project to break, not something to copy from a sibling. One convention
+worth adopting for consistency: `Tool-UnityQA`'s engine probes enforce a
+`T_<Name>` texture-naming prefix (alongside `SM_`/`SK_` for meshes) across
+every asset type it validates — worth matching if/when this project starts
+naming exported files for a specific target engine.
+
 ## Who this is for
 
 Primarily Grayson, right now — this is a "me-first" tool per the project's

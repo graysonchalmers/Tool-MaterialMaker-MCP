@@ -1,213 +1,231 @@
 # 🧭 Session Handoff — Tool-MaterialMaker-MCP
 
-_Last updated: 2026-08-28 (yet later still) CT (America/Chicago)_
+_Last updated: 2026-08-28 (evening) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**A real, previously-undiscovered bug in `overlay.py` was found and fixed
-this session, while trying to demo the just-added `live_clear` tool live in
-chat.** Picked up via `pickup`; Grayson chose to try `live_clear` live
-(build something, render, clear, watch the on-screen notice) rather than
-just trust last session's integration test. `live_start` failed immediately
-with a bare MCP error. Root-caused via `systematic-debugging` (reproduced
-directly against the real `.venv` Python rather than guessing from the
-opaque MCP error): `ensure_overlay`'s rebuild path does `shutil.rmtree`
-then `shutil.copytree` on the disposable overlay, and the overlay is a full
-copy of the real git checkout at `z-Git\material-maker` — git marks its
-`.git/objects/pack/*.idx` files read-only, and `shutil.rmtree` can't delete
-a read-only file on Windows without help. This was the *first* rebuild
-since the overlay was created (rebuilds only trigger when `addons/mm_live`
-changes, which this session's own `live_clear` addition from last session
-did), so it had never been hit before — and the test suite's fake-checkout
-fixtures never included a read-only file, so no test caught it either.
-**This would have broken every future `live_start`/`connect_or_launch` call
-after any addon change, permanently, not a one-off flake.**
+**No code (Python/GDScript) changed this session — pure content/docs work:
+two new cookbook categories (wood, stone), a human-editability authoring
+constraint, a cross-engine portability goal, and a real workflow fix
+(sending Grayson actual render previews instead of only looking at them
+myself).** Picked up via `pickup`; the overlay read-only-rmtree fix from
+last session turned out to already be committed and pushed (`09455c8`,
+`origin/main` in sync) — the prior handoff's "not yet committed" note was
+stale, resolved on its own between sessions.
 
-Fixed via `test-driven-development`, directly on `main`, no plan or
-worktree (small, well-scoped, same precedent as the GUI-child-process-leak
-and `live_clear` fixes): a new regression test
-(`test_ensure_overlay_rebuilds_when_overlay_contains_read_only_files`)
-reproduces the exact `PermissionError` against a real read-only file, then
-a `_clear_readonly()` helper (walks the tree, clears the read-only bit on
-every file) runs right before `rmtree`. Verified against the *real* overlay
-on this machine, not just the test: a direct Python call successfully
-rebuilt the overlay and launched a real Material Maker instance. Then the
-originally-intended demo ran clean over the MCP tools: `live_start`
-attached, `live_get_graph` showed the graph restored from last session's
-verification (voronoi → Material — Material Maker apparently reopens its
-last-edited graph on launch), `live_render` rendered it, `live_clear` reset
-it, and `live_get_graph` confirmed exactly one default `Material` node with
-zero connections. Full fast suite: 183 passed (up from 182). **Not yet
-committed** — Grayson invoked `/wrap-up` before confirming he saw the
-on-screen notice or before giving push approval; both are open (see below).
+**Human-editability constraint, written into `docs/AUTHORING.md`:**
+resolves a question open since a prior session (Grayson wanted "construct
+graphs in an easy-to-human-edit way" to become an explicit written
+constraint). Added a section: prefer simple linear chains, descriptive
+non-default node names, sane `node_position` layout, prefer the simpler
+equivalent when one exists — tied back to `docs/NORTH_STAR.md`'s round-trip
+loop (step 3 only teaches Grayson something if the graph is legible).
 
-**Before this bug, Phase 5's own literal "Done" criterion was finally met
-hands-on the prior session, and it now has a `clear_graph` reset tool it
-didn't have before.**
-Picked up via `pickup`; the prior session's blocker (this Claude Code
-session had zero MCP wiring to `mm-mcp`) was already fixed by that
-session's `.mcp.json`, and this session's tool list confirmed
-`mcp__material-maker__*` tools connected, proving the fix worked after a
-restart. With the blocker cleared, ran the actual manual verification with
-Grayson: `live_start` launched a fresh Material Maker instance (`has_graph`
-correct on the first try), `live_apply` added a `voronoi` node and wired it
-into the Material's albedo, Grayson watched it appear and connect live in
-the real GUI (screenshot-confirmed), then `live_render` produced a real PNG
-matching the live preview exactly. `STATUS.md` updated: Phase 5 itself
-(not just its build sub-plan) is now ✅ verified.
+**GDScript parse-only smoke check, tested and found non-viable — a real
+finding, not just a skip.** The backlog carried an item (from a prior
+session's final review) claiming `--headless --check-only --script <path>`
+was viable hardening against GDScript parse errors. Built it, ran it for
+real against the overlay, and it fails every time: `--check-only` never
+boots the project, so it can't resolve the `mm_globals` autoload or the
+`MMGraphEdit` global `class_name`, both of which `live_server.gd` genuinely
+needs. Confirmed with a dependency-free scratch script (passes) vs. the
+real addon (fails identically with or without `--path`). Reverted rather
+than ship a permanently-failing test. No cheap parse-only substitute exists
+for this addon currently.
 
-Grayson then asked whether a live graph could be cleared remotely, with a
-warning so he's not confused watching. It couldn't -- the wire protocol had
-no clear/reset command. Classified via `brainstorming` as bounded (a new
-command on an existing protocol), grounded in Material Maker's own source
-(`graph_edit.gd:714`'s `new_material()`, the exact reset the GUI's own
-"New" menu item uses), and built via `test-driven-development` directly on
-`main` (no plan doc, no worktree, matching the precedent set by the
-GUI-child-process-leak fix): `live.py`'s `clear_graph()`, `server.py`'s
-`live_clear` MCP tool, and `live_server.gd`'s `_cmd_clear_graph` handler
-plus a small non-blocking on-screen notice ("Claude cleared the graph") so
-a person watching isn't left confused -- Grayson's own explicit call over a
-blocking confirmation dialog, since a remote/automatic clear must not hang
-on a human clicking something. Proven by a new real integration test
-(build a 2-node graph, clear it, confirm it's back to exactly one default
-Material node with zero connections) against a real launched Material
-Maker; passed first try, zero leftover Godot processes after. Full fast
-suite: 182 passed (up from 177 at session start).
+**Cross-engine portability researched and written into
+`docs/NORTH_STAR.md`.** Grayson wants exported materials usable in Unity
+and Unreal, not just Godot. Material Maker already ships export profiles
+for both (Unity → ready `.mat` file; Unreal UE5 → PNGs + a python script
+that builds the material, UE4 → PNGs + manual assembly, a lesser tier).
+Before writing anything, surveyed the rest of Grayson's local projects (via
+a dispatched Explore agent) for prior art: `Tool-UnityQA` already scoped
+the identical problem (texture channel-packing/sRGB checks across engines)
+and deliberately deferred it — nobody in the portfolio has solved this yet,
+so this is new ground, not a reuse. Borrowed one convention worth keeping:
+`Tool-UnityQA`'s `T_<Name>`/`SM_`/`SK_` asset-naming prefixes. No code
+changed — this sets the goal; `render.py`'s hardcoded
+`-t "Godot/Godot 4 Standard"` target is still unbuilt as a parameter.
 
-Both pieces are committed (`b414763`) and pushed; `origin/main` is in sync.
+**Wood and stone cookbook categories built (`quality/cookbook_wood.py`,
+`quality/cookbook_stone.py`), both went through real visual-review cycles
+with Grayson, not one-shot approvals.** Wood: `w04_driftwood_gray` /
+`w05_dark_walnut` were first-try hits (pure recolors of `wood`'s already-
+working chain). `w03_painted_wood_siding` took FOUR real passes: the first
+three cloned `wood` (no board structure) and read as abstract cow-hide
+blobs no matter how the paint mask was tuned — the fix was the DONOR
+(`wooden_floor`, which has actual plank divisions), not the mask. Then two
+more rounds fixed the paint color (was capped at 88% brightness with a
+muddy cast, read as a stain) and the mask balance (was backwards — wood
+majority, paint minority; siding should read mostly-painted). **Lesson
+written into AUTHORING.md: match a donor's underlying structure to what the
+material fundamentally is before tuning color/mask.**
 
-**That prior fix (last session's top backlog item) is fixed, merged to
-`main`, and pushed.** Picked up via `pickup`, the race was
-written up as a plan via `writing-plans`, then executed fully via
-`subagent-driven-development` for the first time truly end to end with zero
-execution-mode prompts -- Grayson asked, explicitly, that the
-Subagent-Driven default stop being asked as a question at all; the
-standing-preference wording in `C:\Users\Grayson\.claude\CLAUDE.md`'s "Plan
-execution" section was the actual blocker (it said "still present the menu,
-just frame it as confirmation," which still produced a stop-and-wait every
-time), so that file and the matching memory note were rewritten this session
-to state the execution plainly and proceed, asking only for genuine
-blockers. This is a cross-project change, not specific to this repo.
+Stone: `s05_hex_stone_tile` (honest partial — regular hex grid, not true
+irregular cobblestone, said so plainly and left an open item) and
+`s06_river_pebbles` (rounded, tightly-packed natural stones) both needed a
+second pass after Grayson's review (mask-proportion fix; a fine-grain
+detail layer). The original `s04_raw_poured_concrete` recipe (a clean HIT)
+was explicitly REPLACED, at Grayson's request, with
+`s04_scattered_river_stones` (rounded stones sitting in a connected sand
+matrix, distinct from `s06`'s edge-to-edge packing) — hit a real bug
+building it: assumed `voronoi`'s port-0 distance field was high at cell
+centers, it's actually low at centers/high at the inter-cell network,
+producing tiny sand-dots at centers instead of rounded stones until the
+gradient direction was flipped. The old concrete approach is preserved in
+AUTHORING.md's history text, not lost, just not in the active lineup.
 
-The fix itself: `ping` now reports a new `has_graph` field (a graph tab
-genuinely exists), computed by a new `_has_active_graph()` helper in the
-GDScript addon; `connect_or_launch`'s two polling call sites require both
-`ready` and `has_graph` before declaring a session usable. 4 tasks (isolated
-worktree, `EnterWorktree`), each passed its own task review clean. **The
-final whole-branch review (opus) found a real second-order bug no task-level
-review could see, fixed in one consolidated wave, re-reviewed clean:** the
-fix as speced would make an already-running Material Maker that never
-reports `has_graph` (a pre-upgrade addon that predates this branch, or a
-genuinely tab-less instance) hang for the full `launch_timeout` (60s) on
-every live tool call and report a misdiagnosed "timed out waiting for the
-live server to become ready" about a process that's actually running fine.
-Fixed by making `connect_or_launch` distinguish "never became ready at all"
-(still genuinely booting -- keep the existing patient behavior) from
-"became ready but `has_graph` never appeared" (fail fast within the
-existing grace period, with a diagnostic message naming the real cause).
-Implementing that fix made one of Task 1's own already-approved tests
-logically unsatisfiable (its exact scenario became the new fail-fast case);
-retargeted that test to the fresh-launch path instead, where its original
-protection still holds -- checked with the advisor, then independently
-re-derived and confirmed sound by the scoped re-reviewer, not just accepted.
+**Two process fixes that will change how every future pass in this project
+goes, both driven directly by Grayson's feedback:**
+1. Grayson had to say "I haven't seen it" before realizing I'd only been
+   looking at rendered previews myself (via `Read`), never actually sending
+   them. Now sends `SendUserFile` every pass; saved as a standing feedback
+   memory. He also asked for a tiled contact sheet instead of loose files —
+   built `quality/contact_sheet.py`.
+2. **The 512px tracked preview thumbnail can hide real detail.** A
+   fine-grain layer added to `s05` was invisible in the downscaled preview
+   but clearly present in the real 2048px render; `s06`'s and the new
+   `s04`'s rounded-pebble relief is invisible in the flat albedo swatch
+   entirely — it only shows under real lighting via `render_preview`. Both
+   caveats are now written into memory and AUTHORING.md: judge fine detail
+   against the full-res render, and judge any relief-driven material in 3D,
+   not the flat thumbnail.
 
-A real 4x back-to-back relaunch verification (the same technique that found
-the bug last session) confirmed **zero `"no active graph"` failures**, where
-the pre-fix code had reproduced it 3 times in 4 runs. Fast suite: 179 passed
-(up from 177), 6 deselected integration tests.
+**Grayson's backlog idea (image-to-material decomposition — attach
+reference photos, decompose them to understand the shader, author the
+graph from that) captured verbatim in a new
+`_agent-commons/ideas/Tool-MaterialMaker-MCP.md`** (this project had no
+ideas file yet). Not scoped or designed — explicitly deferred by Grayson.
 
-Prior sessions' detail (Phase 5 build steps 1-4, overlay builder, addon
-skeleton, mutating commands, feasibility spike, seam fix, render_preview) is
-preserved in the Session log below.
+Prior sessions' detail (Phase 5, the overlay bug, `connect_or_launch`'s
+readiness race, `live_clear`, build steps 1-4) is preserved in the Session
+log below.
 
 ## 📌 Where we stopped
 
-`src/mm_mcp/overlay.py` and `tests/test_overlay.py` are modified on disk but
-**not yet committed** -- Grayson invoked `/wrap-up` before answering two
-questions asked in-chat: (1) whether he actually saw the "Claude cleared
-the graph" on-screen notice during the live demo, (2) whether to commit and
-push this fix. Since no push approval was given this session, this wrap-up
-commits locally and leaves push as an explicit choice for next session (or
-this one, if Grayson answers). The demo itself (live_start -> live_get_graph
--> live_render -> live_clear -> live_get_graph confirming the reset) all
-passed via the real MCP tools, over a real launched Material Maker window
-that should still be open on this machine.
+Grayson said the wood/stone results look good and asked to wrap up. Nothing
+was left mid-fix — the last two things he flagged (w03's white/balance, and
+"number four" replaced with river stones) were both fixed, re-rendered,
+visually confirmed (including in 3D via `render_preview` for the two
+relief-driven cases), and shown back to him before he called it. All new
+files are staged nowhere yet — see the commit below.
 
 ## ▶️ Next concrete step
 
-**Confirm the notice was seen, then commit + push this session's fix** (or
-just push -- the commit will already exist locally after this wrap-up).
-This is a real, previously-undiscovered bug that would have broken every
-future overlay rebuild going forward, not a nice-to-have.
-
-Otherwise, pick from the standing backlog, all carried over unchanged:
-- **A. More cookbook categories** (extend the authoring recipe library).
-- **B. The two honest partials** (wool loop-knit, circuit-board mask-bleed).
-- **D. PyPI publish** (on hold; GitHub-clone is the current route).
-- **E. Document `render_preview`** in `docs/AUTHORING.md` / README, or leave it
-  as just an MCP tool.
-- **F. Parked polish items** from prior sessions' final reviews: assorted
-  Minor findings, none load-bearing (see Session log for detail per step).
+**Pick a direction, nothing is blocking:**
+- **A. More cookbook categories** — wood and stone are now both represented
+  (5 categories total: fabrics, organics, sci-fi, terrain, wood, stone).
+  Natural next candidates weren't discussed this session; ask Grayson or
+  pick from what's NOT covered yet (e.g. leather beyond `f02`, glass,
+  plastics, painted metal beyond `combo01`).
+- **B. `render.py` target-engine parameter** — now that
+  `docs/NORTH_STAR.md` states the cross-engine goal, the actual work
+  (making the hardcoded `-t "Godot/Godot 4 Standard"` a configurable
+  parameter, verifying against Unity's `.mat` export and Unreal UE5's
+  python-script export) is unscoped and unbuilt. Probably wants its own
+  `writing-plans` pass — touches `render.py`, `server.py`'s `render_graph`
+  tool signature, and needs real verification against at least one other
+  engine, which Grayson may need to do host-side (no Unity/Unreal project
+  set up in this repo).
+- **C. True cobblestone** — `s05_hex_stone_tile` is an honest partial
+  (regular hex grid, not irregular). A voronoi-plate approach (like
+  `dry_earth`'s cracked-plate network, recolored to stone tones with
+  per-plate variation) is untried and would likely get real irregularity.
+- **D. The two remaining honest partials** (wool loop-knit, sf03's
+  circuit-board trace-bleed-through — this session ruled OUT one hypothesis
+  for the circuit-board bug, see Open questions, but didn't find the real
+  cause).
+- **E. Image-to-material decomposition** — Grayson's own backlog idea,
+  captured in `_agent-commons/ideas/Tool-MaterialMaker-MCP.md`. Explicitly
+  deferred; likely wants its own `brainstorming` session before any design
+  work, not a cold start here.
+- **F. PyPI publish** (on hold; GitHub-clone is the current route).
+- **G. Document `render_preview`** in `docs/AUTHORING.md` / README, or leave
+  it as just an MCP tool.
 
 ## ❓ Open questions
 
-- **New this session:** did Grayson actually see the on-screen "Claude
-  cleared the graph" notice during the live `live_clear` demo? Asked
-  in-chat, not yet answered -- he invoked `/wrap-up` first. Not a blocker
-  for the fix itself (proven by the graph state before/after), but the
-  notice UI has never been visually confirmed end-to-end.
-- **New this session:** commit `src/mm_mcp/overlay.py` +
-  `tests/test_overlay.py` exists locally after this wrap-up; push needs an
-  explicit go-ahead (not given this session before `/wrap-up` was invoked).
-- **Still open from a prior session:** should "construct graphs in an easy-to-human-edit
-  way" (simple node chains, legible naming/layout) become an explicit
-  written constraint (in `docs/AUTHORING.md` or the live-control design
-  spec)? Grayson raised this while describing the intended round-trip
-  workflow; nothing stops a graph from being technically correct but a
-  mess for a human to read right now. Not decided -- conversation moved to
-  the `live_clear` question before this one was resolved.
-- **Still open from the prior session:** is `.mcp.json` the right long-term
-  wiring, or should this get folded into `project-setup`'s standard kit for
-  future projects that also need MCP-client wiring for a manual-verification
-  step? Not decided.
-- **✅ Resolved this session:** Phase 5's own literal "Done" criterion (a
-  hands-on session with Grayson watching the live GUI) -- see Current state.
-- **✅ Resolved a prior session:** `connect_or_launch`'s readiness check racing
-  ahead of the default graph tab's creation -- see Current state. `ping` now
-  reports `has_graph`; `connect_or_launch` requires both `ready` and
-  `has_graph`, and fails fast with a diagnostic message (rather than a 60s
-  hang) if it attaches to a responsive instance that never reports
-  `has_graph`. 4x back-to-back relaunch verification: zero failures.
-- **✅ Resolved a prior session:** the `connect_or_launch` squatted/dying-port
-  backlog item is fixed, and so is the GUI-child-process leak (`live.py`'s
-  `_terminate` now runs `taskkill /F /T /PID <pid>` before its existing
-  terminate()/kill() fallback). The two-instance launch race and the
-  unauthenticated-local-channel question remain separately deferred,
-  unchanged, explicitly out of scope for any of these fixes.
-- A cheap, partial mitigation for a bug class found in the *prior* session
-  (a GDScript parse error): the final review confirmed Godot 4.7.1 supports
-  `--headless --check-only --script <path>` against the built overlay as a
-  real parse-only smoke check. Worth adding in a future hardening pass; not
-  a substitute for the integration test.
-- Should `render_preview` get documented in `docs/AUTHORING.md` / README, or
-  is it enough that it exists as an MCP tool? Not yet decided, not done.
-- Two parked-not-fixed findings from the overlay-builder's (step 1) final
-  review (deliberately deferred, not forgotten): the staleness marker
-  doesn't detect an already-built overlay being damaged from outside;
-  `_append_autoload`'s `content.find("[autoload]")` matches the first
-  occurrence anywhere in the file including inside a comment (verified
-  inert against the real file, so low priority).
-- Carried over, unchanged: Phase 5 implementation timing (no target date by
-  design); circuit-board mask-bleed bug (no lead after 3 tries); wool's
-  loop-knit approximation; PyPI vs. GitHub-clone-only (leaning GitHub-only);
+- **New this session:** the cross-engine North Star wording treats UE4's
+  export path (PNGs + manual in-editor assembly) as a lesser tier, not a
+  real target — Grayson said "sounds good" generally but never explicitly
+  confirmed that specific framing. Worth a quick check before it drives
+  real `render.py` scope decisions.
+- **New this session:** `sf03_circuit_board`'s trace-bleed-through bug is
+  STILL unresolved, but one hypothesis is now ruled OUT — tested whether
+  w03's fix (widen a razor-thin mask threshold band) would also fix `sf03`'s
+  bleed-through (both had similarly narrow bands); it didn't. Whoever picks
+  this up next should look elsewhere, possibly the specific interaction
+  between `voronoi` port 2 (per-cell random) and `blend`, since `sf03`'s
+  chips use voronoi where w03's fixed case used a plain perlin mask.
+- **✅ Resolved this session:** "construct graphs in an easy-to-human-edit
+  way" is now a written constraint in `docs/AUTHORING.md` (simple chains,
+  descriptive names, sane layout, prefer the simpler equivalent).
+- **✅ Resolved this session (tested, not just assumed):** the backlog's
+  GDScript parse-only smoke check (`--headless --check-only --script`) does
+  NOT work for `live_server.gd` — it needs the project's autoloads/global
+  classes, which `--check-only` never boots. No cheap substitute exists;
+  don't re-add this without first stubbing `mm_globals`/`MMGraphEdit`, or
+  accept there isn't a parse-only check for this file.
+- **✅ Resolved (drift caught, not actually open):** the overlay
+  read-only-rmtree fix from last session's handoff said "not yet
+  committed" — it was actually already committed and pushed (`09455c8`,
+  confirmed `origin/main` in sync) by the time this session started.
+- **✅ Resolved (tentatively) this session:** did Grayson see the
+  `live_clear` on-screen notice during the demo? He said "I think
+  confirmed... I saw it clear, I think" when asked at pickup — treated as
+  sufficient, not pursued further.
+- Still open, unchanged: is `.mcp.json` the right long-term wiring, or
+  should it fold into `project-setup`'s standard kit? Not decided.
+- Still open, unchanged: should `render_preview` get documented in
+  `docs/AUTHORING.md` / README, or is it enough as just an MCP tool?
+- Still open, unchanged: true cobblestone (a voronoi-plate approach,
+  untried, vs. `s05`'s honest hex-grid partial); wool's loop-knit
+  approximation; PyPI vs. GitHub-clone-only (leaning GitHub-only);
   cross-platform (macOS/Linux) verification, still untested, no machine
-  available.
+  available; two parked-not-fixed overlay-builder findings from a much
+  earlier session (staleness marker, `_append_autoload`'s first-occurrence
+  match, both verified low-priority).
 
-## 🗂️ Changed this session (overlay read-only rmtree fix)
+## 🗂️ Changed this session (wood/stone cookbooks, editability + cross-engine docs)
 
-- Branch: `main`. Modified, not yet committed at time of this wrap-up:
+- Branch: `main`. New files: `quality/cookbook_wood.py`,
+  `quality/cookbook_stone.py`, `quality/contact_sheet.py`, plus tracked
+  preview PNGs under `docs/images/cookbook-wood/` and
+  `docs/images/cookbook-stone/`. Modified: `docs/AUTHORING.md` (human-
+  editability constraint + wood/stone cookbook writeups),
+  `docs/NORTH_STAR.md` (cross-engine portability section). No plan doc, no
+  worktree -- pure content/docs work plus two new small standalone
+  utility scripts, no existing code touched.
+- Decisions (+ why): `w03_painted_wood_siding` needed a donor swap
+  (`wood` → `wooden_floor`) because siding fundamentally needs board
+  structure that no amount of mask/color tuning can add -- written up as a
+  general lesson, not just a one-off fix. `s04`'s original concrete recipe
+  was replaced (not deleted-and-forgotten; preserved in AUTHORING.md's
+  history text) with `s04_scattered_river_stones` at Grayson's explicit
+  request. The GDScript parse-only smoke check from the backlog was tested
+  empirically and found non-viable rather than assumed working from a
+  prior review's claim -- the `--check-only` flag never boots the project's
+  autoloads/global classes. The cross-engine North Star addition was
+  researched (both Material Maker's own export docs and a portfolio-wide
+  survey via a dispatched Explore agent) before writing anything, per this
+  project's own "check before proposing new scope" rule.
+  **Process change, not just content:** Grayson had to explicitly say "I
+  haven't seen it" before this session started sending `SendUserFile`
+  previews every pass instead of only looking at them via `Read` --
+  saved as a standing feedback memory so it doesn't regress. Also learned
+  (the hard way, twice) that the 512px tracked preview thumbnail can hide
+  real detail, and that relief-driven materials (rounded pebbles) are
+  invisible in a flat albedo swatch -- both `render_preview` (3D) and the
+  full-res render under `quality/cookbook/` are now the standard judgment
+  tools, not just the docs thumbnail.
+
+## 🗂️ Changed a prior session (overlay read-only rmtree fix)
+
+- Branch: `main`. Committed and pushed (`09455c8`) since this handoff was
+  last written -- confirmed via `git log`/`origin/main` sync at this
+  session's pickup, resolving that prior "not yet committed" note as stale.
   `src/mm_mcp/overlay.py` (new `_clear_readonly()` helper, called before
   `shutil.rmtree` in `ensure_overlay`), `tests/test_overlay.py` (new
   regression test). No plan doc, no worktree -- small, well-scoped, same
@@ -574,6 +592,76 @@ that's where their full detail lives now.)
 ---
 
 ## 🕓 Session log
+
+### 2026-08-28 (evening) — wood/stone cookbook categories, editability + cross-engine docs
+- Picked up via `pickup`. Drift found and reported: the handoff said the
+  overlay read-only-rmtree fix was uncommitted; git showed `main` and
+  `origin/main` both at `09455c8` -- already landed. No other drift.
+- Grayson asked for four things at once: (1) human-editability as a written
+  constraint, (2) some cookbook categories, (3) short answer on the
+  GDScript smoke-check backlog item, (4) checking Material Maker's export
+  options and other local projects for Unreal texture QA prior art, then
+  updating NORTH_STAR.md if it made sense.
+- **(1)** Added a "Human-editability constraint" section to
+  `docs/AUTHORING.md` (simple chains, descriptive names, sane layout,
+  prefer the simpler equivalent).
+- **(3)** Built and ran the GDScript parse-only smoke check for real before
+  trusting the prior review's claim it was viable. It isn't:
+  `--headless --check-only --script` never boots the project's autoloads
+  or global `class_name`s, so it can't resolve `mm_globals`/`MMGraphEdit`.
+  Confirmed with a dependency-free scratch script (passes) vs. the real
+  addon (fails identically with/without `--path`). Reverted the test.
+- **(4)** Dispatched an Explore agent across Grayson's other local projects
+  for Unreal asset-QA prior art before writing anything. Found
+  `Tool-UnityQA` had already scoped and deferred the identical problem
+  (texture channel-packing/color-space checks across engines) -- confirmed
+  this is new ground, not a reuse. Read Material Maker's own export docs
+  (Unity `.mat`, Unreal UE4 manual/UE5 python-script). Added a "Cross-engine
+  portability" section to `docs/NORTH_STAR.md`.
+- **(2)** Built `quality/cookbook_wood.py` (3 recipes) and
+  `quality/cookbook_stone.py` (3 recipes), following the established
+  cookbook-growth pattern. Visually verified every render before writing
+  anything up -- caught and fixed a real miss along the way (`w03`'s first
+  paint-mask attempt read as cow-hide blotches, fixed by tuning the mask).
+- Grayson then pointed out he'd never actually been SHOWN any of this --
+  every review to that point was me looking at renders via `Read`, not
+  sending them. Started `SendUserFile`-ing every pass; saved as a standing
+  feedback memory (`feedback-send-render-previews.md`). He also asked for
+  a tiled contact sheet -- built `quality/contact_sheet.py`.
+- Grayson's review of the sent images found three real problems, fixed all
+  three: `w03`'s speckle (root-caused to the `blend` node's opacity math at
+  a razor-thin mask threshold -- widening the band fixed it; tested and
+  confirmed this does NOT generalize to `sf03`'s similar-looking unresolved
+  bug), `s04` concrete too light (darkened), `s05` hex tile too flat (added
+  a fine-grain multiply layer -- then discovered the 512px tracked preview
+  was hiding that detail entirely, a real caveat now in memory).
+- Grayson asked for a sixth stone (natural river stones/pebbles) and
+  flagged `w03` as still "not quite right" and asked for a softer
+  pebble-style replacement for `s04`. Built `s06_river_pebbles` (rounded
+  voronoi cells, per-cell random tone, `param4=0` relief) -- the flat
+  albedo looked like angular polygons; confirmed correct via
+  `render_preview` (3D), establishing "judge relief materials in 3D" as a
+  standing rule. Root-caused `w03` for real this time: the donor (`wood`)
+  had no board structure at all, so no mask tuning could ever make it read
+  as siding -- swapped to `wooden_floor` and it worked immediately.
+- Grayson's next review: "the white feels weird" on `w03` (two more real
+  fixes -- the paint color was capped at 88% brightness with a muddy cast,
+  and the mask balance had wood as the majority, backwards for siding) and
+  wanted `s04` replaced entirely with something softer/pebble-like.
+  Built `s04_scattered_river_stones` (stones in a sand matrix, distinct
+  from `s06`'s packed mosaic) -- hit and fixed a real bug: assumed
+  `voronoi` port 0's distance field was high at cell centers, it's actually
+  the opposite, which had to be found by rendering and looking, not derived
+  from the shader source alone.
+- Captured Grayson's backlog idea (image-to-material decomposition from
+  reference photos) verbatim in a new
+  `_agent-commons/ideas/Tool-MaterialMaker-MCP.md` -- this project had none.
+- Wrote six `_agent-commons/log/` entries across the session (one per major
+  thread) plus the ideas file, all in a single scoped commit to the Skills
+  repo (staged only this session's own files, left other agents' pending
+  work untouched).
+- Fast suite not re-run this session -- no Python/GDScript code changed,
+  only new standalone `quality/` scripts and docs.
 
 ### 2026-08-28 (yet later still) — overlay read-only rmtree bug, found and fixed
 - Picked up via `pickup`; no drift between the handoff and the repo. Grayson
