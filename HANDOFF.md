@@ -1,125 +1,127 @@
 # 🧭 Session Handoff — Tool-MaterialMaker-MCP
 
-_Last updated: 2026-08-27 (evening) CT (America/Chicago)_
+_Last updated: 2026-08-27 (night) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**Phase 5 build step 3 (mutating commands: `add_node`/`connect_nodes`/
-`set_param`/`render`) shipped: built, reviewed, fixed, merged, pushed.**
-Picked up via `pickup`, Grayson chose "start on Phase 5 step 3 via
-writing-plans." Same full pipeline as steps 1-2: `writing-plans` -> consent
-for an isolated worktree (native `EnterWorktree`) -> `subagent-driven-development`
-(6 tasks: 3 GDScript, 2 Python client, 1 real integration test) -> whole-branch
-review on opus -> `finishing-a-development-branch` (merged locally, then
-pushed). New standing preference recorded this session: Grayson always wants
-subagent-driven execution over inline `executing-plans` (saved to memory).
+**Phase 5 build step 4 (MCP tool surface) shipped: built, reviewed, fixed,
+merged, pushed. All four build steps of the Phase 5 sub-plan are now done.**
+Picked up via `pickup`, Grayson chose "start on Phase 5 step 4 via
+writing-plans" and asked to fold the `connect_or_launch` port-race hardening
+backlog item into the same plan. Same full pipeline as steps 1-3:
+`writing-plans` -> consent for an isolated worktree (native `EnterWorktree`)
+-> `subagent-driven-development` (7 tasks) -> whole-branch review on opus ->
+one consolidated fix wave -> `finishing-a-development-branch` (merged
+locally, then pushed).
 
-All four mutating commands now exist on both sides: `addons/mm_live/live_server.gd`
-answers `add_node`/`connect_nodes`/`set_param`/`render` (in addition to the
-existing `ping`/`get_graph`), deliberately still thin -- no validation, just
-"do what you're told" against the live scene tree. `src/mm_mcp/live.py`
-gained matching client functions; `add_node`/`connect_nodes`/`set_param` each
-validate the proposed mutation against the real catalog via `graph.py`'s
-`validate_graph` **before** anything reaches the socket, and `render` reuses
-`render.py`'s own `RenderResult`/`_collect_fresh_images` rather than
-reimplementing freshness detection. A real integration test
-(`test_live_ops_build_and_render_a_simple_graph`) launches Material Maker for
-real, builds a `perlin` -> `colorize` chain, wires it into the default
-graph's `"Material"` node, sets a parameter, renders, and asserts real,
-non-empty PNGs on disk -- the plan's own gate, met.
+`server.py` gained four new MCP tools: `live_start` (connect-or-launch,
+returns session status), `live_get_graph` (current active-tab graph,
+`.ptex`-shaped), `live_apply` (a batch of validated `add_node`/
+`connect_nodes`/`set_param` mutations, stopping at the first failure), and
+`live_render` (trigger a render, same result shape as `render_graph`). All
+four share `_ensure_live_session`, which calls `connect_or_launch` fresh on
+every call -- cheap when a session is already up, per the spec's "a live
+tool call launches it rather than erroring out" decision. `connect_or_launch`
+itself got the port-race hardening: a short grace period now distinguishes a
+port that's genuinely booting from one squatted by an unresponsive process.
+A real integration test drives the full tool surface end to end (`live_start`
+-> `live_get_graph` -> `live_apply` x3 -> `live_render`) against a real
+launched Material Maker and confirms real, non-empty PNGs -- the sub-plan's
+own final gate, met.
 
-**Two real bugs found via that integration test, not caught by clean
-per-task reviews (no automated GDScript harness exists in this repo, so
-neither reviewer could actually execute the script):**
-1. `_cmd_connect_nodes` declared `from_name`/`to_name` with plain `=`
-   instead of `:=`, which left them statically untyped and broke Godot's
-   type inference on the very next line -- a **parse** error that failed
-   the entire addon script, so nothing (not just `connect_nodes`) ever
-   started listening. Fixed: `:=`, matching the working pattern already
-   used in `_cmd_set_param`/`_cmd_render`.
-2. `_cmd_render` awaited `main_window.export_material(...)`, but that
-   function's own body has no `await` in it at all -- it fire-and-forgets
-   the real file-writing coroutine, so the handler reported success before
-   any file existed. Confirmed empirically with a discriminator probe
-   (render, sleep 10s, re-list the output dir -- the PNG appeared ~10s
-   *after* the reported failure). Fixed: call `graph_edit.get_material_node()`
-   then `material_node.export_material(prefix, profile, 0, true)` directly
-   -- that one is a genuine coroutine, and `command_line=true` skips an
-   interactive overwrite dialog that would otherwise hang the socket
-   handler forever.
+**The final whole-branch review (opus) caught two real regressions this
+step's own tasks introduced, verified against actual source rather than
+trusting reports, both fixed in one consolidated wave:**
+1. `_ensure_live_session` unconditionally overwrote the module-global
+   `_live_session` on every call. Since `connect_or_launch`'s attach path
+   always returns `process=None`, any live tool call after the one that
+   launched Material Maker clobbered the stored process handle --
+   `server._live_session.close()` became a permanent no-op from that point
+   on. This was very likely the actual cause of orphaned Godot processes
+   observed during the integration test. Fixed by preserving a
+   previously-launched process's handle across later attach-only calls;
+   `_reset()` now also clears `_live_session`.
+2. The grace-period hardening (built earlier in this same plan) would
+   misclassify a normally-booting Material Maker as squatted: the addon's
+   `ping` legitimately returns `ready: false` for far longer than the grace
+   period during a real GUI boot -- exactly the scenario this plan's own new
+   README section tells Grayson to use (open Material Maker himself, then
+   ask Claude to act). Ruled to fix the discriminator to "did ping ever
+   answer at all during the grace window" (proves a live, booting addon)
+   instead of "did it become ready" -- required rewriting the plan's own
+   given test for the occupied-port case plus adding a new regression test.
 
-Both fixes were dispatched back to their original task's implementer as
-fix rounds, independently re-reviewed clean, and folded into the branch.
-The plan doc itself got a mid-execution correction (the "render handler
-verified" citation was wrong as originally written) that had to be
-committed and two more stale spots cleaned up in the final review's fix
-wave, along with a hardening fix to `set_param` (it was letting an
-unrecognized parameter name through Python-side validation, since
-`validate_graph` treats that as a warning, not an error -- now blocked).
+A third Important finding (`live_apply` raised `KeyError`/`AttributeError`
+on a malformed op instead of returning it as data, losing the record of ops
+that already succeeded) was fixed in the same wave, consistent with this
+project's established "validation errors are data, not exceptions"
+convention. Full fast suite: 174 passed (up from 158 before this session).
 
-Prior sessions' detail (overlay builder, addon skeleton, feasibility spike,
-seam fix, render_preview) is preserved in the Session log below.
+Prior sessions' detail (overlay builder, addon skeleton, mutating commands,
+feasibility spike, seam fix, render_preview) is preserved in the Session log
+below.
 
 ## 📌 Where we stopped
 
-Clean stop. Merged to `main` locally (fast-forward to `071dbb6`), fast suite
-158/158 green on the merged tip, both live-control integration tests verified
-passing individually. Push is the very next action (standing approval given
-this session) -- confirm `origin/main` sync after. No worktree, no branch, no
-lingering Godot processes.
+Clean stop. Merged to `main` locally (fast-forward to `502eb4d`), fast suite
+174/174 green on the merged tip, pushed and confirmed synced with
+`origin/main`. No worktree, no branch, no lingering Godot processes (checked
+after this session's own integration test run, which did leak two -- see
+Open questions' new backlog item).
 
 ## ▶️ Next concrete step
 
-**Phase 5 build step 4: MCP tool surface.** Steps 1-3 (overlay builder,
-addon skeleton, mutating commands) are done. Step 4 per the spec's sub-plan:
-wire `live_start`/`live_get_graph`/`live_apply`/`live_render` into
-`server.py`, exposing everything `live.py` already does as real MCP tools.
-Gate: "Claude can hold an actual live session against a real open Material
-Maker window." Use `writing-plans` again, same pattern as steps 1-3.
-
-**Before or alongside step 4, seriously consider the backlog item below**
-(the `connect_or_launch` port-race hardening) -- it just went from
-theoretical to reproduced-twice-deterministically this session, and step 4
-is exactly where overlapping/rapid live calls become realistic for the
-first time.
+**Manual live-GUI verification with Grayson.** All four Phase 5 build steps
+are done and automated-tested, but the spec's own literal "Done" criterion
+("Grayson has Material Maker open, asks Claude to build or tweak a material,
+and watches nodes appear and connect in the live window as Claude works,
+then asks for a render and sees the preview update in place") has never
+actually happened -- every verification so far has been via integration
+tests, not a hands-on session with Grayson watching the GUI update live.
+That hands-on pass is what would let Phase 5 itself (not just its build
+sub-plan) move from 🔌 wired to ✅ verified in STATUS.md.
 
 Alternatives, all carried over unchanged:
 - **A. More cookbook categories** (extend the authoring recipe library).
 - **B. The two honest partials** (wool loop-knit, circuit-board mask-bleed).
+- **C. Backlog: fix the GUI-child-process leak** in `live.py`'s
+  `LiveSession.close()`/`_terminate` (see Open questions) -- a real,
+  reproduced-this-session gap, but not blocking since it only affects
+  automated test cleanup, not interactive use (Grayson closes the GUI
+  himself in the real workflow).
 - **D. PyPI publish** (on hold; GitHub-clone is the current route).
 - **E. Document `render_preview`** in `docs/AUTHORING.md` / README, or leave it
   as just an MCP tool.
-- **F. Parked polish items** from steps 1-3's final reviews (see Heads-up
-  below for the step-3 additions): `STATUS.md` prose wording; a pre-existing
-  "seven tools" vs. "eight tools" count mismatch; assorted Minor GDScript/
-  Python findings, none load-bearing.
+- **F. Parked polish items** from prior sessions' final reviews: assorted
+  Minor findings, none load-bearing (see Session log for detail per step).
 
 ## ❓ Open questions
 
-- **🔴 Backlog: harden `connect_or_launch` against a squatted/dying port
-  8765.** This session's own integration test demonstrated it directly,
-  twice: running both live-control integration tests in one `pytest -q`
-  process can produce a deterministic `connection refused` failure, because
-  `connect_or_launch` has no way to tell "a foreign/dying process is
-  listening" from "Material Maker is genuinely ready," and burns the full
-  60-90s timeout either way. This was flagged as a risk (not yet reproduced)
-  in step 2's final review and deferred to "step 3/4" -- it's now
-  reproduced and deterministic, and the final whole-branch review agreed
-  it's the top-priority next hardening item, alongside the already-known
-  two-instance launch race and the unauthenticated-channel question.
-  Workaround until fixed: run the two live-control integration tests
-  individually (`pytest tests/test_live.py -k build_and_render`,
-  `-k default_new_material`), not together.
-- A cheap, partial mitigation for the *other* class of bug found this
-  session (the GDScript parse error): the final review confirmed Godot
-  4.7.1 supports `--headless --check-only --script <path>` against the
-  built overlay as a real parse-only smoke check. Would have caught the
-  `:=`/`=` bug for near-zero cost; would NOT have caught the await bug
-  (runtime semantics, not parseable). Worth adding in a future hardening
-  pass alongside the port-race fix; not a substitute for the integration
-  test.
+- **🔴 New backlog: `live.py`'s `LiveSession.close()`/`_terminate` doesn't
+  reap the GUI child process.** Discovered (not fixed -- `live.py`'s core
+  lifecycle code predates this plan and was frozen after earlier tasks'
+  clean reviews) during this session's own real integration test run: two
+  orphaned `Godot_v4.7.1-stable_win64*.exe` processes were left running
+  after the test passed, confirmed via `tasklist`/`wmic`. `_terminate` calls
+  `process.terminate()` on the launcher's `Popen` handle, but the launcher
+  spawns a child GUI process outside that process tree, so terminating the
+  parent doesn't reap the child. Reproduces identically in the pre-existing
+  `tests/test_live.py` integration test too, not a regression from this
+  session. Fix candidate: a Job Object or process-group kill in
+  `live.py._terminate`. Workaround until fixed: `taskkill //F //IM
+  Godot_v4.7.1-stable_win64_console.exe` (Bash tool, not PowerShell) after
+  running either integration test.
+- **✅ Resolved this session:** the `connect_or_launch` squatted/dying-port
+  backlog item from the last session is fixed (see Current state). The
+  two-instance launch race and the unauthenticated-local-channel question
+  remain separately deferred, unchanged, explicitly out of this plan's scope.
+- A cheap, partial mitigation for a bug class found in the *prior* session
+  (a GDScript parse error): the final review confirmed Godot 4.7.1 supports
+  `--headless --check-only --script <path>` against the built overlay as a
+  real parse-only smoke check. Worth adding in a future hardening pass; not
+  a substitute for the integration test.
 - Should `render_preview` get documented in `docs/AUTHORING.md` / README, or
   is it enough that it exists as an MCP tool? Not yet decided, not done.
 - Two parked-not-fixed findings from the overlay-builder's (step 1) final
@@ -134,7 +136,42 @@ Alternatives, all carried over unchanged:
   cross-platform (macOS/Linux) verification, still untested, no machine
   available.
 
-## 🗂️ Changed this session (Phase 5 mutating commands)
+## 🗂️ Changed this session (Phase 5 MCP tool surface)
+
+- Branch: `main`. Landed as 9 commits via a feature branch (`worktree-phase5-mcp-tool-surface`)
+  merged locally (fast-forward) then pushed: `e48b40d` plan doc, `6a0ee8b`
+  Task 1 (`connect_or_launch` port-race hardening), `235b6b8` Task 2
+  (`live_start`), `a82e764` Task 3 (`live_get_graph`), `0862265` Task 4
+  (`live_apply`), `8ed1c9b` Task 5 (`live_render`), `52d5a6e` Task 6 (README
+  Live mode section), `9fcf6a7` Task 7 (real integration test), `502eb4d`
+  final-review fix wave (process-handle bug, grace-period discriminator,
+  `live_apply` error-as-data, README wording).
+- Decisions (+ why): every `live_*` MCP tool calls `_ensure_live_session`
+  first rather than requiring an explicit `live_start` call beforehand,
+  matching the spec's "a live tool call launches it rather than erroring
+  out" scope decision -- re-probing on every call is cheap (one ping
+  round-trip) once a session is up. `live_apply`'s op schema
+  (`{"op": "add_node"/"connect_nodes"/"set_param", ...}`) mirrors the
+  underlying `live.py` function names/kwargs directly rather than inventing
+  a new shape, and stops at the first failing op since a later op may
+  assume an earlier one already applied. The final review's two Important
+  findings were both ruled real and load-bearing (not pre-existing, not
+  out-of-scope) since both were introduced by this plan's own tasks:
+  fixing the `_ensure_live_session` clobbering bug required a small,
+  targeted preservation fix rather than a bigger redesign (no `live_stop`
+  tool exists or was needed -- Grayson closes the GUI himself in real use;
+  the bug only mattered because a test's cleanup relied on it); fixing the
+  grace-period discriminator required rewriting the plan's own given test
+  for the occupied-port case, ruled correct against the spec's own "lazy
+  main_window resolution" constraint rather than treating the plan's
+  original code as authoritative. The GUI-child-process-leak finding
+  (`LiveSession.close()`/`_terminate` not reaping the spawned GUI process)
+  was ruled genuinely pre-existing and out of this plan's scope -- `live.py`
+  was frozen after earlier tasks' clean reviews, and the leak reproduces
+  identically in a pre-existing integration test from a prior session, not
+  something this session's tasks caused.
+
+## 🗂️ Changed the prior session (Phase 5 mutating commands)
 
 - Branch: `main`. Landed as 9 commits via a feature branch (`worktree-phase5-mutating-commands`)
   merged locally (fast-forward) then pushed: `af25848` plan doc, `3711fea`
@@ -166,34 +203,52 @@ Alternatives, all carried over unchanged:
   already-flagged `connect_or_launch` gap and explicitly kept out of this
   plan's scope rather than chased under time pressure -- see Open questions.
 
-## 🗂️ Changed the prior session (Phase 5 addon skeleton)
-
-- Branch: `main`. Landed as 6 commits via a feature branch merged locally
-  then pushed: `33dad4e` Task 1 (addon skeleton, GDScript), `846f310` Task 2
-  (`Config.live_overlay_dir`), `9ff21ec` Task 3 (`live.py` protocol client),
-  `b1242b5`/`5614ea0` Task 4 (`connect_or_launch` + fix round), `23d5fe0`
-  Task 5 (real integration test), `25675d3` final-review fix wave. Plus a
-  separate `d8cda95` committing the plan doc itself (was never committed
-  during planning) and the `81b433c` merge commit.
-- Decisions (+ why): the addon lives at top-level `addons/mm_live/`, a
-  sibling of `src/`, not inside `src/mm_mcp/` -- unlike `preview_project/`
-  (which ships in the wheel via package-data), this addon will NOT ship in a
-  built wheel; accepted as a known gap under Phase 4's current GitHub-clone
-  distribution decision (PyPI on hold), not silently "fixed" by moving it.
-  `LIVE_PORT = 8765` is a hardcoded literal on both the GDScript and Python
-  sides with a cross-reference comment, not a shared-constant mechanism --
-  explicit YAGNI call for a single fixed local addon. `connect_or_launch`
-  only owns the lifecycle of a process it actually launched itself
-  (`LiveSession.close()` no-ops when attaching to an already-running
-  instance), matching the spec's "attach to an already-open instance"
-  scope decision.
-
-(Older "Changed" write-ups -- overlay builder, seam fix, feasibility spike,
-render_preview -- have rolled into the Session log below; that's where their
-full detail lives now.)
+(Older "Changed" write-ups -- addon skeleton, overlay builder, seam fix,
+feasibility spike, render_preview -- have rolled into the Session log below;
+that's where their full detail lives now.)
 
 ## ⚠️ Heads-up for the next agent
 
+- **`server.py` now has four live MCP tools consuming `live.py`:**
+  `live_start`/`live_get_graph`/`live_apply`/`live_render`, all going through
+  a shared `_ensure_live_session(cfg, launch_timeout=60.0)` helper that
+  calls `live.connect_or_launch` fresh every time. **Do not read
+  `server._live_session` directly** to check on a launched process --
+  always call `_ensure_live_session(cfg)` yourself, since the module global
+  is meant as internal bookkeeping, not a public handle. It DOES correctly
+  preserve a previously-launched process's handle across later attach-only
+  calls now (fixed this session), but that's an implementation detail, not
+  a contract to depend on from outside `server.py`.
+- **`live_apply(ops)` dispatches via `_LIVE_OP_HANDLERS`, a dict keyed by
+  `op["op"]`** (`"add_node"`/`"connect_nodes"`/`"set_param"`), stops at the
+  first failing op, and reports a malformed op (not a dict, or missing a
+  required key) as a data-shaped error rather than raising -- consistent
+  with this project's "validation errors are data" convention. If you add a
+  fourth op kind, add its handler to that dict and nowhere else.
+- **`connect_or_launch`'s squatted-port grace period discriminates on
+  whether `ping` ever answered at all during the grace window, not whether
+  it reached `ready`.** This was a real bug this session: `ping` legitimately
+  returns `ready: false` for far longer than the 5s grace period during a
+  normal Material Maker boot (the addon's socket binds at project startup,
+  well before `main_window` resolves), so gating on "ready in time" wrongly
+  told Grayson to taskkill a healthy, booting instance. If you touch this
+  logic again, re-read `_wait_for_ready_or_give_up`'s docstring in
+  `live.py` before changing the discriminator back -- `ever_answered=True`
+  (even with `ready=False`) must fall through to the patient main poll loop,
+  not fail fast. Only a port that *never* answers a single valid ping during
+  the whole grace window is treated as squatted.
+- **🔴 Known, unfixed gap: `LiveSession.close()`/`_terminate` leaks the GUI
+  child process.** `_terminate` only calls `process.terminate()` on the
+  launcher's `Popen` handle; the launcher spawns a separate GUI child
+  process that isn't in the same process tree, so terminating the parent
+  doesn't reap the child. Confirmed via `tasklist`/`wmic` after this
+  session's own integration test: two orphaned
+  `Godot_v4.7.1-stable_win64*.exe` processes remained after the test passed
+  and `close()` ran. Reproduces identically for `tests/test_live.py`'s
+  pre-existing integration test too. Not fixed this session (deliberately
+  out of scope -- `live.py`'s core lifecycle code predates this plan).
+  Workaround: `taskkill //F //IM Godot_v4.7.1-stable_win64_console.exe`
+  (Bash tool, not PowerShell) after running a live-control integration test.
 - **`addons/mm_live/live_server.gd` now answers all five commands:**
   `ping`/`get_graph` (read-only, from step 2) plus `add_node`/`connect_nodes`/
   `set_param`/`render` (mutating, from this session). Still deliberately
@@ -225,10 +280,6 @@ full detail lives now.)
   it would catch a parse error like the first bug but not runtime-semantics
   bugs like the second. Worth adding as cheap insurance, not a substitute
   for the integration test.
-- **`connect_or_launch` port-race is now demonstrated, not just theoretical
-  -- see HANDOFF's Open questions.** Don't run both live-control integration
-  tests in the same `pytest -q` invocation and expect it to reliably pass;
-  run them individually if you need a clean signal before that's hardened.
 - **New module: `src/mm_mcp/live.py`.** `ping()`/`get_graph()` are one-shot
   connect/send/recv/close calls (`_send_command`), no persistent session
   state on either side. `add_node`/`connect_nodes`/`set_param` each validate
@@ -276,11 +327,16 @@ full detail lives now.)
   `src/mm_mcp/preview_project/`, a small standalone Godot project bundled in
   this repo, not the `z-Git\material-maker` checkout.
 - **Run tests with `.venv\Scripts\python.exe`** (or activate the venv).
-  Fast suite: `pytest -q -m "not integration"` (158 passed, 5 deselected).
-  `pytest -q` adds the Godot-launching integration tests -- but running both
-  `test_live.py` integration tests together in one process is currently
-  flaky (see the port-race heads-up above); prefer running them individually
-  (`-k build_and_render`, `-k default_new_material`) for a reliable signal.
+  Fast suite: `pytest -q -m "not integration"` (174 passed, 6 deselected).
+  `pytest -q` adds the Godot-launching integration tests; the squatted-port
+  hardening fixed this session should make running multiple integration
+  tests in one process more reliable than before, but this hasn't been
+  stress-tested specifically -- if you hit a port-race-shaped flake again,
+  check the GUI-child-process-leak item above first (a leaked prior-test
+  process squatting the port is a plausible new cause), then fall back to
+  running integration tests individually (`-k build_and_render`,
+  `-k default_new_material`, `-k live_tools_hold_a_real_session`) for a
+  clean signal.
 - **Godot property-name traps hit in an earlier session** (both caused a
   script error + hung process, had to `taskkill`): depth of field lives on a
   `CameraAttributesPractical` resource assigned to `Camera3D.attributes`,
@@ -326,6 +382,74 @@ full detail lives now.)
 ---
 
 ## 🕓 Session log
+
+### 2026-08-27 (night) — Phase 5 build step 4: MCP tool surface, full SDD pipeline + final-review fix wave
+- Picked up via `pickup`, Grayson chose "start on Phase 5 step 4 via
+  writing-plans" and asked to fold the `connect_or_launch` port-race
+  hardening backlog item into the same plan. Also asked whether the
+  subagent-driven-execution preference could be made a durable default;
+  confirmed it was already saved from the step-3 session, strengthened the
+  memory note to reflect a second explicit confirmation, and added a short
+  standing line to Grayson's global `C:\Users\Grayson\.claude\CLAUDE.md` so
+  the default applies across every project, not just this one.
+- **`writing-plans`:** designed a 7-task plan -- Task 1 hardens
+  `connect_or_launch`'s port-race handling first (since the new MCP tools
+  would call it repeatedly), Tasks 2-5 wire the four `live_*` MCP tools one
+  at a time, Task 6 documents them in README, Task 7 is a real integration
+  test proving the plan's own gate. Saved to
+  `docs/superpowers/plans/2026-08-27-phase5-mcp-tool-surface.md`.
+- **`using-git-worktrees`:** consent given, isolated worktree via native
+  `EnterWorktree`. Fresh `.venv`, `.env` copied over, baseline 158 fast
+  tests green. The plan doc was uncommitted on `main` at pickup time (same
+  recurring gap as every prior Phase 5 session) -- copied into the worktree
+  by hand and committed there first.
+- **`subagent-driven-development`:** pre-flight conflict scan across all 7
+  tasks, clean (no rulings needed before Task 1). All 7 tasks passed their
+  first task-level review clean -- haiku for the mechanical/transcription
+  tasks (1-6), sonnet for Task 7's real-launch judgment work. Task 7's own
+  integration test passed on the first attempt (42.79s), and flagged
+  (DONE_WITH_CONCERNS, not a blocker) that the run left 2 orphaned Godot
+  processes -- correctly attributed at the time to a pre-existing
+  GUI-child-reaping gap in `live.py`, later found by the final review to
+  also implicate a new bug in this session's own Task 2 (see below).
+- **Final whole-branch review** (opus): "Ready to merge, with fixes." Found
+  2 Important, both real and verified against actual source rather than
+  trusting reports: (1) `_ensure_live_session` clobbered a launched
+  process's handle on every subsequent call, since `connect_or_launch`'s
+  attach path always returns `process=None` -- this was very likely the
+  *actual* cause of Task 7's orphaned processes, not solely the GUI-child
+  gap. (2) The grace-period hardening from Task 1 would misclassify a
+  normally-booting Material Maker as squatted, verified by reading the
+  addon's real GDScript (`ping` legitimately returns `ready: false` for far
+  longer than the grace period during a real boot) -- a plan-mandated
+  defect requiring a ruling, since fixing it meant rewriting Task 1's own
+  given test. Also found 1 more Important (`live_apply` raised instead of
+  returning errors as data on a malformed op) and 1 free-riding Minor
+  (README's tool-count sentence needed updating again). Triaged 5 deferred
+  Minors from task-level reviews: 2 resolved for free as part of the two
+  Important fixes, 2 parked as genuinely low-priority, and the
+  GUI-child-process leak confirmed as a real, separate, out-of-scope gap
+  worth its own future backlog item (not conflatable with the
+  `_ensure_live_session` fix -- fixing one alone doesn't fix the other).
+- **One consolidated fix wave** (sonnet, per the skill's "one fix dispatch,
+  not one fixer per finding"): fixed all 3 Important findings plus the
+  Minor. One accepted deviation from the literal fix instructions: applying
+  the process-handle fix exposed a genuine pre-existing cross-test-pollution
+  bug in `tests/test_server_live.py` (tests never reset the `_live_session`
+  module global between each other; the old unconditional-overwrite
+  behavior had been masking it) -- fixed with an `autouse` pytest fixture
+  confined to that one file. Scoped re-review (sonnet) verdicted all 4
+  findings ADDRESSED with file:line evidence, including manually tracing the
+  exact cross-test-pollution scenario the autouse fixture fixes, confirming
+  it a genuine test-isolation fix rather than a production-bug workaround.
+  No new breakage. Full fast suite: 174 passed (up from 158).
+- **`finishing-a-development-branch`:** fast-forward merge to `main`
+  (`502eb4d`), 174/174 fast tests green on the merged tip, worktree and
+  branch cleaned up (via `ExitWorktree` + `git worktree remove`/
+  `git branch -d`, since this worktree lived under the native
+  `.claude/worktrees/` location, not a superpowers-managed one). Grayson
+  asked to merge, push, and wrap up in one go -- pushed, confirmed
+  `origin/main` synced (`502eb4d` on both sides).
 
 ### 2026-08-27 (evening) — Phase 5 build step 3: mutating commands, full SDD pipeline
 - Picked up via `pickup`, Grayson chose "start on Phase 5 step 3 via
