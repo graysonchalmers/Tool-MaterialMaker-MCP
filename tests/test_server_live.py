@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 from mm_mcp import server, live
 from mm_mcp.config import load_config
+from mm_mcp.render import RenderResult
 
 cfg = load_config()
 
@@ -114,3 +115,28 @@ def test_live_apply_rejects_unrecognized_op_without_contacting_the_server(monkey
     result = server.live_apply([{"op": "delete_everything"}])
     assert result["ok"] is False
     assert "delete_everything" in result["error"]
+
+
+def test_live_render_returns_images_on_success(monkeypatch):
+    monkeypatch.setattr(server, "_ensure_ready", lambda: (cfg, {}))
+    monkeypatch.setattr(live, "connect_or_launch",
+                         lambda cfg, launch_timeout=60.0: _FakeSession(ok=True))
+    monkeypatch.setattr(live, "render",
+                         lambda basename, profile, cfg: RenderResult(ok=True, images=["a.png"]))
+    result = server.live_render(basename="material")
+    assert result == {"ok": True, "images": ["a.png"], "error": None, "log_tail": ""}
+
+
+def test_live_render_reports_session_failure_without_rendering(monkeypatch):
+    monkeypatch.setattr(server, "_ensure_ready", lambda: (cfg, {}))
+    monkeypatch.setattr(live, "connect_or_launch",
+                         lambda cfg, launch_timeout=60.0: _FakeSession(ok=False, error="no server"))
+    called = {"yes": False}
+
+    def _boom(basename, profile, cfg):
+        called["yes"] = True
+
+    monkeypatch.setattr(live, "render", _boom)
+    result = server.live_render()
+    assert result == {"ok": False, "images": [], "error": "no server", "log_tail": ""}
+    assert called["yes"] is False

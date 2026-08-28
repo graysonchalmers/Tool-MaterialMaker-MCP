@@ -195,6 +195,19 @@ def live_apply(ops: list) -> dict:
     return {"ok": True, "results": results, "error": None}
 
 
+def live_render(basename: str = "material", profile: str = "Godot/Godot 4 Standard") -> dict:
+    """Trigger a render in the live window (the same underlying export path
+    the GUI's own render button uses) and return the same {ok, images,
+    error, log_tail} shape render_graph already uses."""
+    cfg, _ = _ensure_ready()
+    session = _ensure_live_session(cfg)
+    if not session.ok:
+        return {"ok": False, "images": [], "error": session.error, "log_tail": ""}
+    result = live.render(basename=basename, profile=profile, cfg=cfg)
+    return {"ok": result.ok, "images": result.images, "error": result.error,
+            "log_tail": result.log_tail}
+
+
 # Register the plain functions as MCP tools.
 mcp.tool()(list_node_types)
 mcp.tool()(describe_node)
@@ -207,6 +220,7 @@ mcp.tool()(load_example)
 mcp.tool()(live_start)
 mcp.tool()(live_get_graph)
 mcp.tool()(live_apply)
+mcp.tool()(live_render)
 
 
 @mcp.resource("catalog://nodes")
