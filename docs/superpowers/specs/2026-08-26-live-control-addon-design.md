@@ -232,6 +232,15 @@ constraints they surfaced:
     before the main scene). Resolve it lazily per command, never cache at boot.
     The session manager's readiness probe should poll `ping` until
     `main_window` is wired before issuing graph commands.
+  - **Amendment (2026-08-27, found during Phase 5 step 4's manual
+    verification, fixed by `docs/superpowers/plans/
+    2026-08-27-connect-or-launch-readiness-race.md`):** `main_window`
+    resolving does NOT mean a graph tab exists yet -- the default
+    new-material graph tab is created in a later boot step. `ping` reports
+    this separately as `has_graph`; `connect_or_launch` must poll until
+    BOTH `ready` and `has_graph` are true, not `ready` alone, or the first
+    mutating call can race ahead of tab creation and fail with `"no active
+    graph"`.
   - The overlay **must** carry `steam_appid.txt` (`4110830`) or MM
     self-relaunches and exits (the CLAUDE.md gotcha). `overlay.py` copies it.
   - Autoload line `overlay.py` appends to the `[autoload]` section:
