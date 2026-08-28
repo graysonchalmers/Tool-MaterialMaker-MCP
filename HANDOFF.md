@@ -1,22 +1,44 @@
 # 🧭 Session Handoff — Tool-MaterialMaker-MCP
 
-_Last updated: 2026-08-28 (later same day) CT (America/Chicago)_
+_Last updated: 2026-08-28 (later still) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**This session was a short pickup that hit a blocker before the manual
-live-GUI verification could start: this Claude Code session had no MCP
-wiring to the `mm-mcp` server at all** (no `.mcp.json`, no `mcpServers`
-entry anywhere), so none of the four `live_*` tools were callable. Fixed by
-creating a project-local `.mcp.json` pointing at the project's own
-`.venv\Scripts\mm-mcp.exe`, with `MM_GODOT_BINARY`/`MM_PROJECT_PATH`/
-`MM_OUTPUT_DIR` mirrored from the existing `.env`. Added `.mcp.json` to
-`.gitignore` alongside `.env` (same reasoning: local absolute machine paths,
-not something the repo should carry). No code changed this session -- the
-prior session's `connect_or_launch` readiness-race fix (see below) is still
-the last real code change, merged and pushed.
+**Phase 5's own literal "Done" criterion was finally met hands-on this
+session, and it now has a `clear_graph` reset tool it didn't have before.**
+Picked up via `pickup`; the prior session's blocker (this Claude Code
+session had zero MCP wiring to `mm-mcp`) was already fixed by that
+session's `.mcp.json`, and this session's tool list confirmed
+`mcp__material-maker__*` tools connected, proving the fix worked after a
+restart. With the blocker cleared, ran the actual manual verification with
+Grayson: `live_start` launched a fresh Material Maker instance (`has_graph`
+correct on the first try), `live_apply` added a `voronoi` node and wired it
+into the Material's albedo, Grayson watched it appear and connect live in
+the real GUI (screenshot-confirmed), then `live_render` produced a real PNG
+matching the live preview exactly. `STATUS.md` updated: Phase 5 itself
+(not just its build sub-plan) is now ✅ verified.
+
+Grayson then asked whether a live graph could be cleared remotely, with a
+warning so he's not confused watching. It couldn't -- the wire protocol had
+no clear/reset command. Classified via `brainstorming` as bounded (a new
+command on an existing protocol), grounded in Material Maker's own source
+(`graph_edit.gd:714`'s `new_material()`, the exact reset the GUI's own
+"New" menu item uses), and built via `test-driven-development` directly on
+`main` (no plan doc, no worktree, matching the precedent set by the
+GUI-child-process-leak fix): `live.py`'s `clear_graph()`, `server.py`'s
+`live_clear` MCP tool, and `live_server.gd`'s `_cmd_clear_graph` handler
+plus a small non-blocking on-screen notice ("Claude cleared the graph") so
+a person watching isn't left confused -- Grayson's own explicit call over a
+blocking confirmation dialog, since a remote/automatic clear must not hang
+on a human clicking something. Proven by a new real integration test
+(build a 2-node graph, clear it, confirm it's back to exactly one default
+Material node with zero connections) against a real launched Material
+Maker; passed first try, zero leftover Godot processes after. Full fast
+suite: 182 passed (up from 177 at session start).
+
+Both pieces are committed (`b414763`) and pushed; `origin/main` is in sync.
 
 **That prior fix (last session's top backlog item) is fixed, merged to
 `main`, and pushed.** Picked up via `pickup`, the race was
@@ -64,34 +86,22 @@ preserved in the Session log below.
 
 ## 📌 Where we stopped
 
-`.mcp.json` created and gitignored, `.gitignore` change committed locally
-(not yet pushed -- no push approval given this session). Session ended here
-so Grayson can restart Claude Code and pick up the new `material-maker` MCP
-server; a fresh session is required, this one's tool set can't reload
-mid-conversation.
+Everything committed (`b414763`) and pushed, working tree clean, in sync
+with `origin/main`. `live_clear` will not appear as a callable tool in an
+already-running Claude Code session until it's restarted (same MCP-reload
+requirement as the `.mcp.json` fix itself) -- it's proven by the automated
+integration test, not demonstrated live in-chat this session.
 
 ## ▶️ Next concrete step
 
-**Restart Claude Code in this folder, approve the one-time trust prompt for
-the new `material-maker` MCP server, then run `pickup` again.** Once the
-`live_start`/`live_get_graph`/`live_apply`/`live_render` tools are visible,
-the actual next step is unchanged from last session: **the manual live-GUI
-verification with Grayson** -- open Material Maker, ask Claude to build or
-tweak a material, watch nodes appear and connect live, then render and see
-the preview update in place. That's Phase 5's own literal "Done" criterion,
-still never done hands-on, and what would move Phase 5 from 🔌 wired to
-✅ verified in STATUS.md.
+**No mandatory next step -- Phase 5 is genuinely done, both the build
+sub-plan and the spec's own hands-on "Done" criterion.** Optional first
+move: restart Claude Code, then try `live_clear` live in chat (build
+something, watch it render, clear it, watch the notice appear) just to see
+it rather than take the integration test's word for it -- low priority,
+purely a nice-to-have since the automated proof already stands.
 
-**⚠️ Heads-up before that session:** close any Material Maker window that's
-been open since before the `connect_or_launch` merge (`4f4240a`) landed.
-It's running the pre-upgrade addon (no `has_graph` field), and that fix
-will now make it fail fast with a "no graph tab" diagnostic on the first
-live tool call instead of the old, slower "no active graph" race -- not yet
-hit in practice, just flagged by that session's final review as the
-predictable first thing to happen. Close it and let the next live tool call
-relaunch a fresh one.
-
-Further alternatives, all carried over unchanged:
+Otherwise, pick from the standing backlog, all carried over unchanged:
 - **A. More cookbook categories** (extend the authoring recipe library).
 - **B. The two honest partials** (wool loop-knit, circuit-board mask-bleed).
 - **D. PyPI publish** (on hold; GitHub-clone is the current route).
@@ -102,11 +112,20 @@ Further alternatives, all carried over unchanged:
 
 ## ❓ Open questions
 
-- **New this session:** is `.mcp.json` the right long-term wiring, or should
-  this get folded into `project-setup`'s standard kit for future projects
-  that also need MCP-client wiring for a manual-verification step? Not
-  decided, just noticed while fixing the immediate blocker.
-- **✅ Resolved this session:** `connect_or_launch`'s readiness check racing
+- **New this session:** should "construct graphs in an easy-to-human-edit
+  way" (simple node chains, legible naming/layout) become an explicit
+  written constraint (in `docs/AUTHORING.md` or the live-control design
+  spec)? Grayson raised this while describing the intended round-trip
+  workflow; nothing stops a graph from being technically correct but a
+  mess for a human to read right now. Not decided -- conversation moved to
+  the `live_clear` question before this one was resolved.
+- **Still open from the prior session:** is `.mcp.json` the right long-term
+  wiring, or should this get folded into `project-setup`'s standard kit for
+  future projects that also need MCP-client wiring for a manual-verification
+  step? Not decided.
+- **✅ Resolved this session:** Phase 5's own literal "Done" criterion (a
+  hands-on session with Grayson watching the live GUI) -- see Current state.
+- **✅ Resolved a prior session:** `connect_or_launch`'s readiness check racing
   ahead of the default graph tab's creation -- see Current state. `ping` now
   reports `has_graph`; `connect_or_launch` requires both `ready` and
   `has_graph`, and fails fast with a diagnostic message (rather than a 60s
@@ -137,7 +156,36 @@ Further alternatives, all carried over unchanged:
   cross-platform (macOS/Linux) verification, still untested, no machine
   available.
 
-## 🗂️ Changed this session (connect_or_launch readiness race)
+## 🗂️ Changed this session (Phase 5 hands-on verification + live_clear)
+
+- Branch: `main`. Committed directly (`b414763`, pushed): `STATUS.md`
+  (Phase 5 phase row + live-control component row, both 🔌 → ✅),
+  `addons/mm_live/live_server.gd` (`_cmd_clear_graph` handler +
+  `_show_transient_notice` helper + dispatch wiring), `src/mm_mcp/live.py`
+  (`clear_graph()` client function), `src/mm_mcp/server.py` (`live_clear`
+  MCP tool, registered), `tests/test_live.py` (1 fake-server unit test + 1
+  real integration test), `tests/test_server_live.py` (2 unit tests). No
+  plan doc, no worktree -- classified `bounded` via `brainstorming`, built
+  directly via `test-driven-development` on `main`, same track as the
+  GUI-child-process-leak fix from an earlier session.
+- Decisions (+ why): the hands-on verification itself was not a special
+  demo mode -- confirmed with Grayson that `live_apply`/`live_render`
+  working end to end against a real launched Material Maker, with the
+  window staying open afterward for edits, IS the product loop described in
+  `docs/NORTH_STAR.md`, not a one-off proof. No permanent demo graph was
+  kept. `clear_graph` resets to a single default Material node (not a fully
+  empty graph) via Material Maker's own `graph_edit.gd:714` `new_material()`
+  -- Grayson's explicit choice, and it happens to be exactly what the GUI's
+  own "New" menu item already does, so no new reset logic had to be
+  invented. The "warning" Grayson asked for became a non-blocking on-screen
+  notice rather than a blocking confirmation dialog -- also his explicit
+  choice, since a remote/automatic clear call must never hang the socket
+  response on a human clicking something, and Material Maker has no
+  existing toast/notification system to reuse (only blocking
+  `AcceptDialog`s), so a minimal custom `CanvasLayer`+`Label` overlay was
+  built instead.
+
+## 🗂️ Changed a prior session (connect_or_launch readiness race)
 
 - Branch: `main`. Landed via a feature branch
   (`worktree-connect-or-launch-readiness-race`) built end to end with
@@ -443,6 +491,50 @@ that's where their full detail lives now.)
 ---
 
 ## 🕓 Session log
+
+### 2026-08-28 (later still) — Phase 5 hands-on verification, then a live_clear tool
+- Picked up via `pickup`. The prior session's blocker (no MCP wiring to
+  `mm-mcp` in this Claude Code session) was already fixed by that session's
+  `.mcp.json`; this session's tool list confirmed `mcp__material-maker__*`
+  connected, proving the restart-and-reload fix worked.
+- Ran the actual manual live-GUI verification with Grayson: no stale
+  Material Maker process was running, `live_start` launched a fresh
+  instance and reported `has_graph` correctly on the first try,
+  `live_get_graph` confirmed a clean default graph, `live_apply` added a
+  `voronoi` node wired into the Material's albedo, Grayson watched it
+  appear and connect live (screenshot-confirmed: Voronoi -> Static PBR
+  Material -> Albedo, 3D preview sphere showing the live pattern), then
+  `live_render` produced a real PNG matching the live preview exactly.
+  Updated `STATUS.md`: Phase 5 itself (not just its build sub-plan) is now
+  ✅ verified -- the spec's own literal "Done" criterion, met.
+- Grayson confirmed no permanent demo graph was needed (the just-proven
+  loop IS the product, per `docs/NORTH_STAR.md`), then asked whether a live
+  graph could be cleared remotely, with a warning so he's not confused
+  watching. It couldn't -- checked `live_server.gd`/`live.py` directly,
+  confirmed no clear/reset/delete command existed anywhere in the protocol.
+- **`brainstorming`:** classified bounded (a new command on an existing
+  protocol, not a new subsystem). Grounded the design in Material Maker's
+  real source before proposing anything: `graph_edit.gd:714`'s
+  `new_material()` is the exact reset the GUI's own "New" menu item uses.
+  Asked two clarifying questions via `AskUserQuestion` (reset to default
+  Material node vs. fully empty; non-blocking notification vs. blocking
+  confirmation) rather than assuming either. Presented the short design in
+  chat, got explicit approval.
+- **`test-driven-development`:** built directly on `main`, no plan doc, no
+  worktree (small enough, matching the GUI-child-process-leak fix's
+  precedent). RED/GREEN for `live.clear_graph()` (fake-server test) and
+  `server.live_clear()` (2 unit tests against a fake session), then the
+  GDScript handler + a small non-blocking notice overlay (no unit harness
+  possible for GDScript in this repo -- proven instead by a new real
+  integration test: build a 2-node graph, clear it, confirm it's back to
+  exactly one default Material node with zero connections). Passed on the
+  first real launch; confirmed zero leftover Godot processes after via
+  `tasklist`. Full fast suite: 182 passed (up from 177 at session start).
+- Committed (`b414763`) and pushed on Grayson's explicit go-ahead; confirmed
+  `origin/main` in sync (`git log origin/main..HEAD` empty both ways).
+- Wrote two `_agent-commons\log\` entries this session (the verification,
+  then the `live_clear` feature separately, since they were distinct pieces
+  of work even within one continuous session).
 
 ### 2026-08-28 (later same day) — MCP wiring blocker found and fixed
 - Picked up via `pickup`. Handoff and git agreed exactly (main, `0c105c2`,
