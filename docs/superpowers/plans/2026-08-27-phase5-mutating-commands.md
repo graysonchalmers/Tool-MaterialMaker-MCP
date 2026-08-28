@@ -71,16 +71,28 @@ assumptions carried over from the design spec's spike:
   the generator via `graph_edit.generator.get_node(NodePath(name))` (the
   `generator` tree is addressed by plain names, confirmed by
   `loader.gd:235`'s identical `gen_graph.get_node(NodePath(c.from))`).
-- **The render handler exists and is verified: `main_window.export_material(prefix, profile)`**
-  (`material_maker/main_window.gd:517`) is the real GUI export entry point —
-  it resolves the current project/graph_edit and calls its
-  `export_material(prefix, profile)` (`graph_edit.gd:921`), which `await`s
-  the material node's own `export_material` (`gen_material.gd:650`). This
-  retires the design spec's "still-open, unverified" render risk. Output
-  naming (`<prefix>_albedo.png` etc., confirmed via `gen_material.gd:657-659`'s
-  `$(path_prefix)`/`$(file_prefix)` substitution) matches `render.py`'s own
-  CLI export convention exactly, so `render.py`'s `_collect_fresh_images`
-  can be reused verbatim.
+- **CORRECTED during Task 6's integration test (this citation was wrong as
+  originally written; see the plan's SDD ledger for the full trail):**
+  `main_window.export_material(prefix, profile)` (`material_maker/main_window.gd:517`)
+  is NOT safely awaitable from a script. Its own body has no `await` at all,
+  it calls `project.export_material(export_prefix, profile)` (a real coroutine,
+  `graph_edit.gd:921`) WITHOUT awaiting it, so `main_window.export_material`
+  itself is not a coroutine. Awaiting it resolves same-frame while the real
+  file-writing work keeps running in the background on its own schedule,
+  confirmed empirically (a render reported failure immediately, then the
+  expected PNG appeared on disk about 10 seconds later, unobserved).
+  **The correct entry point is `graph_edit.get_material_node()`
+  (`graph_edit.gd:915-919`) then `material_node.export_material(prefix, profile,
+  0, true)`.** This is `gen_material.gd:650` directly, the function
+  `graph_edit.export_material` itself awaits first, so awaiting it ourselves is
+  a real wait. The 4th param `command_line=true` also matters: it gates an
+  interactive overwrite-confirmation dialog (`gen_material.gd:683`) that would
+  otherwise await user input forever inside a socket-driven command,
+  `command_line=true` is the same flag the already-proven `--export-material`
+  CLI path uses. Output naming (`<prefix>_albedo.png` etc., confirmed via
+  `gen_material.gd:657-659`'s `$(path_prefix)`/`$(file_prefix)` substitution)
+  matches `render.py`'s own CLI export convention exactly, so `render.py`'s
+  `_collect_fresh_images` can be reused verbatim.
 - **`export_material` has no failure signal the addon can check.** It's a
   `void`-returning coroutine with no return value and no exception on a bad
   profile/export step. The addon can only report "I awaited it, nothing
@@ -264,7 +276,7 @@ git commit -m "feat(live): add connect_nodes and set_param commands to the live-
 - Modify: `addons/mm_live/live_server.gd`
 
 **Interfaces:**
-- Consumes: `main_window.export_material(prefix: String, profile: String) -> void` (real MM API, `await`-based, verified above; no failure signal).
+- Consumes: `graph_edit.get_material_node()` (`graph_edit.gd:915-919`) then `material_node.export_material(prefix, profile, 0, true)` (`gen_material.gd:650`) — genuinely `await`-based (unlike `main_window.export_material`, see the AMENDMENT below and the corrected citation above); no failure signal.
 - Produces: wire command `{"cmd": "render", "prefix": <String>, "profile": <String>}` → `{"ok": true}` / `{"ok": false, "error": ...}`. `{"ok": true}` here means only "the export coroutine completed without a null-graph guard tripping" — Task 5's Python client is responsible for verifying files actually appeared, per the "no failure signal" finding above.
 
 - [ ] **Step 1: Add the `_cmd_render` handler**
@@ -311,6 +323,41 @@ on disk within a few seconds.
 ```bash
 git add addons/mm_live/live_server.gd
 git commit -m "feat(live): add render command to the live-control addon"
+```
+
+### AMENDMENT (found during Task 6's integration test, fixed via a Task 6 fix round)
+
+The `_cmd_render` above shipped and passed task review, but `main_window.export_material`
+turned out not to be safely awaitable (see "Verified against Material Maker
+source" above, corrected entry). It reports `{"ok": true}` before the real
+file-writing coroutine has actually run, confirmed empirically: a render
+reported failure, then the expected PNG appeared on disk about 10 seconds
+later. The fix, applied and verified against a real Godot launch:
+
+```gdscript
+func _cmd_render(cmd: Dictionary) -> Dictionary:
+	if mm_globals.main_window == null:
+		return {"ok": false, "error": "main_window not ready"}
+	var graph_edit: MMGraphEdit = mm_globals.main_window.get_current_graph_edit()
+	if graph_edit == null or graph_edit.generator == null:
+		return {"ok": false, "error": "no active graph"}
+	var prefix := str(cmd.get("prefix", ""))
+	var profile := str(cmd.get("profile", "Godot/Godot 4 Standard"))
+	if prefix.is_empty():
+		return {"ok": false, "error": "render requires a non-empty 'prefix'"}
+	var material_node = graph_edit.get_material_node()
+	if material_node == null:
+		return {"ok": false, "error": "no material node in the active graph"}
+	# Call the material node's own export_material directly (gen_material.gd:650)
+	# rather than main_window.export_material, which forwards to
+	# graph_edit.export_material WITHOUT awaiting it -- so awaiting THAT call
+	# resolves same-frame while the real file-writing coroutine keeps running
+	# in the background, unobserved (confirmed empirically). command_line=true
+	# (gen_material.gd's 4th param) skips the interactive overwrite dialog,
+	# which would otherwise await user input forever inside this socket-driven
+	# command -- the same flag the proven --export-material CLI path uses.
+	await material_node.export_material(prefix, profile, 0, true)
+	return {"ok": true}
 ```
 
 ## Task 4: `live.py` — `add_node` / `connect_nodes` / `set_param` client methods
@@ -758,12 +805,31 @@ def test_live_ops_build_and_render_a_simple_graph(tmp_path):
         assert added_source.ok, added_source.error
         source_name = added_source.data["name"]
 
-        added_sink = live.add_node("warp", {}, x=200, y=0, cfg=isolated_cfg)
+        # colorize, not warp: colorize's input port 0 (type f) matches
+        # perlin's output (type f) exactly, and its output (type rgba) is a
+        # safe, standard fit for Material's albedo_tex (type rgb). warp's
+        # input port 0 is type rgba, an f->rgba mismatch that validate_graph
+        # and Godot's connect_children() both accept (neither checks port
+        # *type* compatibility, only index range) but that silently breaks
+        # export once the edge is actually evaluated -- confirmed empirically
+        # in this same task's first fix round (see the plan's ledger).
+        added_sink = live.add_node("colorize", {}, x=200, y=0, cfg=isolated_cfg)
         assert added_sink.ok, added_sink.error
         sink_name = added_sink.data["name"]
 
         connected = live.connect_nodes(source_name, 0, sink_name, 0, cfg=isolated_cfg)
         assert connected.ok, connected.error
+
+        # Wire the chain into the default new-material graph's pre-existing
+        # "Material" node (its literal name, per graph_edit.gd:714's
+        # new_material() default) so the export profile's per-file
+        # `conditions: "$(connected:albedo_tex)"` gate (material.mmg,
+        # gen_material.gd:667-676) actually evaluates true -- an unconnected
+        # chain produces zero PNGs no matter how correct render() is.
+        # albedo_tex is input port 0 on "material" (material.mmg's
+        # shader_model.inputs[0]).
+        wired = live.connect_nodes(sink_name, 0, "Material", 0, cfg=isolated_cfg)
+        assert wired.ok, wired.error
 
         param_result = live.set_param(source_name, {"scale_x": 16}, cfg=isolated_cfg)
         assert param_result.ok, param_result.error
@@ -792,7 +858,7 @@ def test_live_ops_build_and_render_a_simple_graph(tmp_path):
 
 Run: `.venv\Scripts\python.exe -m pytest tests/test_live.py -k build_and_render -v`
 Expected: PASS. A Material Maker window will visibly open, a Perlin and a
-Warp node will appear and connect, and PNGs will appear under
+Colorize node will appear and connect, and PNGs will appear under
 `<tmp_path>/output/`. If a node type or parameter name in this test doesn't
 match the real bundled catalog exactly, this is the point where that
 surfaces — adjust the type/parameter names and rerun, same as any other
