@@ -241,6 +241,23 @@ constraints they surfaced:
     BOTH `ready` and `has_graph` are true, not `ready` alone, or the first
     mutating call can race ahead of tab creation and fail with `"no active
     graph"`.
+  - **Amendment (2026-08-27, found during the same task's whole-branch
+    final review):** requiring `has_graph` introduced its own failure mode
+    on the "attach to an already-listening instance" path -- if that
+    instance answers `ping` and even reports `ready` (main_window resolved)
+    but never reports `has_graph`, the naive fix would hang for the full
+    `launch_timeout` (60s, on every `live_*` MCP tool call) and then report
+    a misleading "timed out waiting for the live server to become ready"
+    about a process that's actually running fine. `connect_or_launch` now
+    fails fast, within the existing grace period (`_SQUATTED_PORT_GRACE`),
+    with a diagnosis that names the instance as responsive rather than
+    dead, when this happens. The two real-world triggers this guards
+    against: (1) a pre-upgrade `mm_live` addon that predates the
+    `has_graph` field entirely and so never sends it, and (2) a genuinely
+    tab-less instance (main_window up, no material/graph tab open). Both
+    point at the same recovery: close the stale/tab-less instance and let
+    `connect_or_launch` launch a fresh one carrying the current addon, or
+    open a graph tab and retry.
   - The overlay **must** carry `steam_appid.txt` (`4110830`) or MM
     self-relaunches and exits (the CLAUDE.md gotcha). `overlay.py` copies it.
   - Autoload line `overlay.py` appends to the `[autoload]` section:

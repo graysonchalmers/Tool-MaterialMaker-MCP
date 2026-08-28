@@ -87,9 +87,11 @@ def get_graph(host: str = LIVE_HOST, port: int = LIVE_PORT, timeout: float = 5.0
     return _send_command({"cmd": "get_graph"}, host, port, timeout)
 
 
-def _wait_for_ready_or_give_up(host: str, port: int, deadline: float) -> tuple[bool, bool, str]:
+def _wait_for_ready_or_give_up(host: str, port: int,
+                                deadline: float) -> tuple[bool, bool, bool, str]:
     """Poll ping() until it reports ready, or `deadline` (a time.monotonic()
-    value) passes. Returns (ready, ever_answered, last_error).
+    value) passes. Returns (ready, ever_answered, main_window_ever_ready,
+    last_error).
 
     "Ready" here means both `ready` (main_window resolved) AND `has_graph`
     (a graph tab exists) from ping()'s response -- main_window can resolve
@@ -104,21 +106,36 @@ def _wait_for_ready_or_give_up(host: str, port: int, deadline: float) -> tuple[b
     the spec's "lazy main_window resolution" constraint). A single
     successful-but-not-ready response is proof this is a live addon that's
     still booting, not a dead/squatted process -- even if it never reaches
-    ready before the deadline. last_error is always a string, even on
-    success (harmless: callers only read it on failure).
+    ready before the deadline.
+
+    main_window_ever_ready is True the moment ping() ever reports `ready`
+    True on its own, independent of `has_graph` -- this lets a caller on
+    the "already listening, attaching" path tell apart two situations that
+    both look like "not ready by the deadline" from the combined check
+    alone: main_window genuinely never resolving (still booting -- the
+    existing ever_answered handling already covers this and must keep
+    waiting), versus main_window resolving but no graph tab ever following
+    it within the deadline (see connect_or_launch's docstring for why that
+    second case gets failed fast instead of given the full launch_timeout).
+
+    last_error is always a string, even on success (harmless: callers only
+    read it on failure).
     """
     ever_answered = False
+    main_window_ever_ready = False
     last_error = "timed out waiting for a response"
     while time.monotonic() < deadline:
         result = ping(host, port)
         if result.ok:
             ever_answered = True
-            if result.data.get("ready") and result.data.get("has_graph"):
-                return True, ever_answered, last_error
+            if result.data.get("ready"):
+                main_window_ever_ready = True
+                if result.data.get("has_graph"):
+                    return True, ever_answered, main_window_ever_ready, last_error
         else:
             last_error = result.error
         time.sleep(0.5)
-    return False, ever_answered, last_error
+    return False, ever_answered, main_window_ever_ready, last_error
 
 
 _catalog_cache: dict[str, dict] = {}
@@ -317,9 +334,14 @@ def connect_or_launch(cfg: Config | None = None, host: str = LIVE_HOST,
                        port: int = LIVE_PORT, launch_timeout: float = 60.0) -> LiveSession:
     """Probe (host, port); if nothing answers, rebuild the overlay if stale
     and launch Material Maker against it. Either way, poll ping() until the
-    addon reports main_window is wired -- never assume the first successful
-    ping means the GUI has finished loading (see the spec's "lazy
-    main_window resolution" constraint) -- or give up after launch_timeout.
+    addon reports both main_window is wired AND a graph tab exists -- never
+    assume the first successful ping means the GUI is usable (see the
+    spec's "lazy main_window resolution" constraint) -- or give up. Giving
+    up can happen two ways: after the full launch_timeout (the normal case,
+    and the only case for a process this call launched itself), or fast,
+    within the much shorter grace period, when attaching to an
+    already-listening instance that turns out to be responsive but stuck
+    without a graph tab (see the grace-period paragraph below).
 
     A port that's already listening gets a short grace period
     (_SQUATTED_PORT_GRACE, much shorter than launch_timeout) to either
@@ -337,6 +359,20 @@ def connect_or_launch(cfg: Config | None = None, host: str = LIVE_HOST,
     -- not whether it reaches `ready` in time, since a real instance can
     legitimately take far longer than the grace period to finish booting.
 
+    A third outcome shares that same grace period: if the port answers and
+    even reports `ready` (main_window resolved) at least once during the
+    grace period, but `has_graph` never follows within that same window,
+    this function fails fast with a diagnosis rather than falling through
+    to the full launch_timeout. A real addon's own boot sequence creates
+    the default graph tab near-synchronously after main_window resolves,
+    so the grace period is already generous enough to see it happen if it's
+    ever going to; waiting the full launch_timeout here would just misdiagnose
+    a genuinely responsive (but stale-addon or tab-less) instance as "timed
+    out". This only applies to the "already listening, attaching" path --
+    a process this call launched itself always gets the full launch_timeout
+    for both conditions, since there's no ambiguity to resolve (we know it's
+    a fresh boot, not a possibly-stale pre-existing instance).
+
     Attaching to an already-running instance never launches a process, so
     the returned session's close() is a no-op for that case: we only own the
     lifecycle of a process we started ourselves.
@@ -347,7 +383,8 @@ def connect_or_launch(cfg: Config | None = None, host: str = LIVE_HOST,
 
     if still_listening:
         grace_deadline = time.monotonic() + min(_SQUATTED_PORT_GRACE, launch_timeout)
-        ready, ever_answered, grace_error = _wait_for_ready_or_give_up(host, port, grace_deadline)
+        ready, ever_answered, main_window_ever_ready, grace_error = _wait_for_ready_or_give_up(
+            host, port, grace_deadline)
         if ready:
             return LiveSession(ok=True, process=None)
         if not ever_answered:
@@ -364,12 +401,36 @@ def connect_or_launch(cfg: Config | None = None, host: str = LIVE_HOST,
                 )
             # else: the occupant stopped listening during the grace period --
             # the port is free now, so fall through and launch normally.
-        # else: it answered at least once during the grace period -- a real
-        # live-addon socket that's still booting (main_window not wired
-        # yet), not squatted. still_listening stays True, so we skip the
-        # launch branch below and fall straight into the main poll loop
-        # with its full launch_timeout budget, same as this project's
-        # pre-hardening behavior for this exact case.
+        elif main_window_ever_ready:
+            # main_window resolved at least once during the grace period,
+            # but has_graph never followed within that same window -- this
+            # is not a still-booting instance (that case leaves
+            # main_window_ever_ready False and is handled below), it's a
+            # responsive, already-running Material Maker with no graph tab.
+            # A real addon's boot sequence makes graph-tab creation follow
+            # main_window resolution near-synchronously, so the grace
+            # period (already far longer than that gap) is enough to prove
+            # this isn't just slow. Fail fast here instead of falling
+            # through to the full launch_timeout, which would otherwise
+            # misdiagnose a healthy-but-stuck instance as "timed out" a
+            # minute later.
+            return LiveSession(
+                ok=False,
+                error=(
+                    f"Material Maker at {host}:{port} is running and responsive, but reports no "
+                    "active graph tab after waiting "
+                    f"{min(_SQUATTED_PORT_GRACE, launch_timeout):.0f}s. If this instance was "
+                    "launched before this version, close it and let this tool relaunch a fresh "
+                    "one so the updated live-control addon loads; otherwise open a material/graph "
+                    "tab in it and retry."
+                ),
+            )
+        # else: it answered at least once during the grace period but
+        # main_window itself never resolved -- a real live-addon socket
+        # that's still booting, not squatted. still_listening stays True,
+        # so we skip the launch branch below and fall straight into the
+        # main poll loop with its full launch_timeout budget, same as this
+        # project's pre-hardening behavior for this exact case.
 
     if not still_listening:
         process = _launch_overlay(cfg)

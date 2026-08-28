@@ -585,27 +585,46 @@ def test_connect_or_launch_waits_past_grace_for_a_slow_booting_real_instance(mon
         server.stop()
 
 
-def test_connect_or_launch_waits_for_a_graph_tab_after_main_window_is_ready(monkeypatch):
-    monkeypatch.setattr(live, "_SQUATTED_PORT_GRACE", 1.0)
+def test_connect_or_launch_waits_for_a_graph_tab_after_main_window_is_ready_on_a_fresh_launch(
+        monkeypatch):
+    # This scenario used to be exercised on the "already listening, attach"
+    # path (no _launch_overlay call), with has_graph flipping true after the
+    # grace period. That's no longer valid: the readiness-race final review
+    # found that an already-listening instance which reports `ready` but
+    # never `has_graph` within the grace period must fail fast with a
+    # diagnosis instead of waiting out the full launch_timeout (see
+    # test_connect_or_launch_fails_fast_when_attached_instance_never_reports_has_graph
+    # below) -- a real addon's boot sequence makes graph-tab creation follow
+    # main_window resolution near-synchronously, so a multi-second gap on
+    # the attach path doesn't model anything real. The behavior this test
+    # actually protects -- "don't report ready before has_graph, even once
+    # main_window is ready" -- still matters and is still unchanged for a
+    # process this call launched itself (no grace-period ambiguity there,
+    # per connect_or_launch's docstring), so it's retargeted to that path.
+    picked_port = _free_port()
+    fake_process = _FakeProcess()
     state = {"has_graph": False}
-    server = _FakeLiveServer(
-        lambda cmd: {"ok": True, "ready": True, "has_graph": state["has_graph"]})
-    launched = {"called": False}
+    started_server = {"server": None}
 
-    def _no_launch(passed_cfg):
-        launched["called"] = True
-        return _FakeProcess()
+    def _fake_launch(passed_cfg):
+        def _start_late():
+            time.sleep(0.3)  # simulate Godot booting before the addon listens
+            started_server["server"] = _FakeLiveServer(
+                lambda cmd: {"ok": True, "ready": True, "has_graph": state["has_graph"]},
+                port=picked_port)
+        threading.Thread(target=_start_late, daemon=True).start()
+        return fake_process
 
-    monkeypatch.setattr(live, "_launch_overlay", _no_launch)
+    monkeypatch.setattr(live, "_launch_overlay", _fake_launch)
 
     def _open_graph_tab_soon():
-        time.sleep(1.5)  # past the 1.0s grace period, well within launch_timeout
+        time.sleep(1.5)  # well within launch_timeout
         state["has_graph"] = True
 
     threading.Thread(target=_open_graph_tab_soon, daemon=True).start()
     try:
         started = time.monotonic()
-        session = live.connect_or_launch(cfg=cfg, host="127.0.0.1", port=server.port,
+        session = live.connect_or_launch(cfg=cfg, host="127.0.0.1", port=picked_port,
                                           launch_timeout=10.0)
         elapsed = time.monotonic() - started
         assert session.ok, session.error
@@ -613,8 +632,42 @@ def test_connect_or_launch_waits_for_a_graph_tab_after_main_window_is_ready(monk
             "connect_or_launch must not report ready before the addon reports a graph "
             "tab, even once main_window itself is already ready"
         )
-        assert session.process is None  # attached, never launched a new one
-        assert launched["called"] is False
+        assert session.process is fake_process
+    finally:
+        if started_server["server"] is not None:
+            started_server["server"].stop()
+
+
+def test_connect_or_launch_fails_fast_when_attached_instance_never_reports_has_graph(monkeypatch):
+    # Guards the regression the final whole-branch review found in the
+    # has_graph fix: attaching to an already-listening, already-responsive
+    # instance that answers ping with ready=True but has_graph=False
+    # forever (a pre-upgrade addon that never sends the field at all, or a
+    # genuinely tab-less instance) must fail fast within the grace period
+    # with a diagnosis -- not hang for the full launch_timeout and then
+    # misreport a healthy process as "timed out".
+    monkeypatch.setattr(live, "_SQUATTED_PORT_GRACE", 1.0)
+    server = _FakeLiveServer(lambda cmd: {"ok": True, "ready": True, "has_graph": False})
+    launched = {"called": False}
+
+    def _no_launch(passed_cfg):
+        launched["called"] = True
+        return _FakeProcess()
+
+    monkeypatch.setattr(live, "_launch_overlay", _no_launch)
+    try:
+        started = time.monotonic()
+        session = live.connect_or_launch(cfg=cfg, host="127.0.0.1", port=server.port,
+                                          launch_timeout=30.0)
+        elapsed = time.monotonic() - started
+        assert not session.ok
+        assert elapsed < 10.0, "should fail fast on the grace period, not wait out launch_timeout"
+        assert "responsive" in session.error.lower()
+        assert "graph" in session.error.lower()
+        assert launched["called"] is False, (
+            "a responsive-but-graphless instance must not be misdiagnosed as a free port "
+            "and relaunched"
+        )
     finally:
         server.stop()
 
