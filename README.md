@@ -178,7 +178,7 @@ through a render.
 
 ## Tools
 
-The server exposes seven tools and one resource:
+The server exposes eight tools and one resource:
 
 | Tool | What it does |
 |---|---|
@@ -186,11 +186,34 @@ The server exposes seven tools and one resource:
 | `describe_node` | Full typed inputs/outputs/parameters for one node type |
 | `validate` | Validate a `.ptex` graph against the catalog; returns problems as data |
 | `render_graph` | Render a `.ptex` to PBR maps at a given size |
+| `render_preview` | Composite already-rendered maps onto a sphere/cube/cutaway-ball preview scene |
 | `save_graph` | Write a `.ptex` graph to a path |
 | `list_examples` | List the bundled Material Maker examples |
 | `load_example` | Load a bundled example as a `.ptex` graph |
 
 Resource `catalog://nodes` exposes the full node catalog.
+
+## Live mode (optional)
+
+Batch mode above (`render_graph` et al.) is the default, simplest path: no
+Material Maker GUI involved. Live mode is a second, additive way to work --
+open Material Maker yourself, and Claude can see the graph on your active
+tab, build and edit it live, and trigger renders, so you watch it happen in
+the GUI instead of copying files back and forth.
+
+| Tool | What it does |
+|---|---|
+| `live_start` | Attach to an already-open Material Maker, or launch it against a disposable overlay if nothing's listening |
+| `live_get_graph` | Fetch the active tab's current graph, `.ptex`-shaped |
+| `live_apply` | Apply a batch of validated mutations (`add_node`/`connect_nodes`/`set_param`) to the live graph |
+| `live_render` | Trigger a render in the live window, same result shape as `render_graph` |
+
+No manual setup beyond what batch mode already needs -- the addon ships in
+this repo and builds its own disposable working copy on first use. Live
+mode is turn-based, not simultaneous: there's no conflict resolution for
+edits from both sides at once. See
+[docs/superpowers/specs/2026-08-26-live-control-addon-design.md](docs/superpowers/specs/2026-08-26-live-control-addon-design.md)
+for the full design.
 
 ## Notes and gotchas
 
