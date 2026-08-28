@@ -141,6 +141,18 @@ def live_start(launch_timeout: float = 60.0) -> dict:
             "error": session.error}
 
 
+def live_get_graph() -> dict:
+    """Fetch the graph currently on Material Maker's active tab, in the same
+    {nodes, connections} shape as a .ptex file."""
+    cfg, _ = _ensure_ready()
+    session = _ensure_live_session(cfg)
+    if not session.ok:
+        return {"ok": False, "graph": None, "error": session.error}
+    result = live.get_graph()
+    return {"ok": result.ok, "graph": result.data.get("graph") if result.ok else None,
+            "error": result.error}
+
+
 # Register the plain functions as MCP tools.
 mcp.tool()(list_node_types)
 mcp.tool()(describe_node)
@@ -151,6 +163,7 @@ mcp.tool()(save_graph)
 mcp.tool()(list_examples)
 mcp.tool()(load_example)
 mcp.tool()(live_start)
+mcp.tool()(live_get_graph)
 
 
 @mcp.resource("catalog://nodes")
