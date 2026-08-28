@@ -166,6 +166,21 @@ def live_get_graph() -> dict:
             "error": result.error}
 
 
+def live_clear() -> dict:
+    """Reset the live graph on Material Maker's active tab to a single
+    default Material node, discarding every other node and connection --
+    the same reset the GUI's own "New" menu item performs. Irreversible;
+    there is no undo over the socket, so call live_get_graph first if the
+    current graph is worth keeping. Shows a brief on-screen notice in the
+    live window so a person watching isn't left wondering why it changed."""
+    cfg, _ = _ensure_ready()
+    session = _ensure_live_session(cfg)
+    if not session.ok:
+        return {"ok": False, "error": session.error}
+    result = live.clear_graph()
+    return {"ok": result.ok, "error": result.error}
+
+
 _LIVE_OP_HANDLERS = {
     "add_node": lambda op, cfg: live.add_node(
         op["node_type"], op.get("parameters"), x=op.get("x", 0.0), y=op.get("y", 0.0), cfg=cfg),
@@ -249,6 +264,7 @@ mcp.tool()(live_start)
 mcp.tool()(live_get_graph)
 mcp.tool()(live_apply)
 mcp.tool()(live_render)
+mcp.tool()(live_clear)
 
 
 @mcp.resource("catalog://nodes")

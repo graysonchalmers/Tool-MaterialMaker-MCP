@@ -80,6 +80,31 @@ def test_live_get_graph_reports_session_failure_without_calling_get_graph(monkey
     assert called["yes"] is False
 
 
+def test_live_clear_returns_ok_on_success(monkeypatch):
+    monkeypatch.setattr(server, "_ensure_ready", lambda: (cfg, {}))
+    monkeypatch.setattr(live, "connect_or_launch",
+                         lambda cfg, launch_timeout=60.0: _FakeSession(ok=True))
+    monkeypatch.setattr(live, "clear_graph", lambda: live.LiveResult(ok=True))
+    result = server.live_clear()
+    assert result == {"ok": True, "error": None}
+
+
+def test_live_clear_reports_session_failure_without_calling_clear_graph(monkeypatch):
+    monkeypatch.setattr(server, "_ensure_ready", lambda: (cfg, {}))
+    monkeypatch.setattr(live, "connect_or_launch",
+                         lambda cfg, launch_timeout=60.0: _FakeSession(ok=False, error="no server"))
+    called = {"yes": False}
+
+    def _boom():
+        called["yes"] = True
+        raise AssertionError("clear_graph should not be called when the session failed")
+
+    monkeypatch.setattr(live, "clear_graph", _boom)
+    result = server.live_clear()
+    assert result == {"ok": False, "error": "no server"}
+    assert called["yes"] is False
+
+
 def test_live_apply_runs_ops_in_order_and_stops_at_first_failure(monkeypatch):
     monkeypatch.setattr(server, "_ensure_ready", lambda: (cfg, {}))
     monkeypatch.setattr(live, "connect_or_launch",

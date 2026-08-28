@@ -99,6 +99,22 @@ def test_get_graph_returns_graph_payload_from_fake_server():
         server.stop()
 
 
+def test_clear_graph_sends_clear_graph_command():
+    received = {}
+
+    def responder(cmd):
+        received.update(cmd)
+        return {"ok": True}
+
+    server = _FakeLiveServer(responder)
+    try:
+        result = live.clear_graph(host="127.0.0.1", port=server.port)
+        assert result.ok
+        assert received == {"cmd": "clear_graph"}
+    finally:
+        server.stop()
+
+
 def test_send_command_reports_server_side_failure():
     server = _FakeLiveServer(lambda cmd: {"ok": False, "error": "main_window not ready"})
     try:
@@ -765,5 +781,46 @@ def test_live_ops_build_and_render_a_simple_graph(tmp_path):
         assert rendered.images, "render reported ok but produced no image paths"
         for path in rendered.images:
             assert os.path.getsize(path) > 0
+    finally:
+        session.close()
+
+
+@pytest.mark.integration
+def test_clear_graph_resets_a_built_graph_to_the_default_material_node(tmp_path):
+    # Isolated overlay dir so this test never collides with (or clobbers) a
+    # manual session's overlay, matching this file's other integration tests.
+    isolated_cfg = replace(cfg, live_overlay_dir=str(tmp_path / "mm_live_overlay"))
+    session = live.connect_or_launch(cfg=isolated_cfg, launch_timeout=90.0)
+    try:
+        assert session.ok, session.error
+        assert session.process is not None, (
+            "attached to a pre-existing instance on port 8765 -- close it and rerun; "
+            "this test must launch its own overlay to prove the committed addon works"
+        )
+
+        added = live.add_node("perlin", {}, x=0, y=0, cfg=isolated_cfg)
+        assert added.ok, added.error
+        source_name = added.data["name"]
+        connected = live.connect_nodes(source_name, 0, "Material", 0, cfg=isolated_cfg)
+        assert connected.ok, connected.error
+
+        built_graph = live.get_graph()
+        assert built_graph.ok, built_graph.error
+        assert len(built_graph.data["graph"]["nodes"]) >= 2, (
+            "setup didn't actually build a multi-node graph -- clear wouldn't prove anything"
+        )
+
+        cleared = live.clear_graph()
+        assert cleared.ok, cleared.error
+
+        graph_after = live.get_graph()
+        assert graph_after.ok, graph_after.error
+        nodes_after = graph_after.data["graph"]["nodes"]
+        assert len(nodes_after) == 1, (
+            f"expected a single default node after clear, got {nodes_after}"
+        )
+        assert nodes_after[0]["type"] == "material"
+        assert nodes_after[0]["name"] == "Material"
+        assert graph_after.data["graph"]["connections"] == []
     finally:
         session.close()

@@ -87,6 +87,17 @@ def get_graph(host: str = LIVE_HOST, port: int = LIVE_PORT, timeout: float = 5.0
     return _send_command({"cmd": "get_graph"}, host, port, timeout)
 
 
+def clear_graph(host: str = LIVE_HOST, port: int = LIVE_PORT, timeout: float = 5.0) -> LiveResult:
+    """Reset the live graph on Material Maker's active tab to a single
+    default Material node, discarding every other node and connection --
+    the same reset the GUI's own "New" menu item performs
+    (graph_edit.gd:714's new_material()). No validation to do here (there
+    is no proposed graph to check against the catalog), so this is a bare
+    one-shot command like ping/get_graph. Irreversible; there is no undo
+    over the socket."""
+    return _send_command({"cmd": "clear_graph"}, host, port, timeout)
+
+
 def _wait_for_ready_or_give_up(host: str, port: int,
                                 deadline: float) -> tuple[bool, bool, bool, str]:
     """Poll ping() until it reports ready, or `deadline` (a time.monotonic()

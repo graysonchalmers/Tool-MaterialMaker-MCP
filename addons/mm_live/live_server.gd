@@ -11,7 +11,8 @@ extends Node
 ##
 ## Mutating commands (add_node/connect_nodes/set_param/render) were added in
 ## Phase 5 build step 3. See docs/superpowers/plans/2026-08-27-phase5-mutating-commands.md
-## for the source citations behind each handler's Godot API calls.
+## for the source citations behind each handler's Godot API calls. clear_graph
+## was added later, same session as Phase 5's hands-on verification.
 
 const LIVE_PORT := 8765
 
@@ -73,6 +74,8 @@ func _dispatch(peer: StreamPeerTCP, line: String) -> void:
 				response = _cmd_set_param(parsed)
 			"render":
 				response = await _cmd_render(parsed)
+			"clear_graph":
+				response = await _cmd_clear_graph()
 			_:
 				response = {"ok": false, "error": "unknown command: %s" % str(parsed["cmd"])}
 	peer.put_data((JSON.stringify(response) + "\n").to_utf8_buffer())
@@ -187,3 +190,43 @@ func _cmd_render(cmd: Dictionary) -> Dictionary:
 	# command -- the same flag the proven --export-material CLI path uses.
 	await material_node.export_material(prefix, profile, 0, true)
 	return {"ok": true}
+
+
+func _cmd_clear_graph() -> Dictionary:
+	if mm_globals.main_window == null:
+		return {"ok": false, "error": "main_window not ready"}
+	var graph_edit: MMGraphEdit = mm_globals.main_window.get_current_graph_edit()
+	if graph_edit == null:
+		return {"ok": false, "error": "no active graph tab"}
+	# graph_edit.gd:714's new_material() is the same reset the GUI's own
+	# "New" menu item performs on the current tab -- it calls clear_material()
+	# then rebuilds from its default init_nodes (a single "Material" node, no
+	# connections), so this does not need to specify that shape itself. It is
+	# a coroutine (awaits mm_loader.create_gen internally), so this must be
+	# awaited directly -- the same await-or-it-resolves-same-frame bug class
+	# that hit _cmd_render's export_material call applies here too.
+	await graph_edit.new_material()
+	_show_transient_notice("Claude cleared the graph")
+	return {"ok": true}
+
+
+func _show_transient_notice(text: String) -> void:
+	# Non-blocking, non-modal: a person watching the window sees this happen,
+	# but nothing waits on them dismissing it -- a remote clear must never
+	# hang the socket response on a human being at the keyboard. Material
+	# Maker has no existing toast/notification system to reuse (only blocking
+	# AcceptDialogs), so this is a minimal self-contained overlay.
+	var layer := CanvasLayer.new()
+	layer.layer = 100
+	var label := Label.new()
+	label.text = text
+	label.add_theme_color_override("font_color", Color.WHITE)
+	label.add_theme_font_size_override("font_size", 18)
+	label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	label.position = Vector2(-320, 20)
+	label.size = Vector2(300, 30)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	layer.add_child(label)
+	get_tree().root.add_child(layer)
+	var timer := get_tree().create_timer(3.0)
+	timer.timeout.connect(layer.queue_free)
