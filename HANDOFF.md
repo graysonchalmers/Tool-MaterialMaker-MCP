@@ -1,118 +1,80 @@
 # 🧭 Session Handoff — Tool-MaterialMaker-MCP
 
-_Last updated: 2026-08-27 (night) CT (America/Chicago)_
+_Last updated: 2026-08-28 CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**Phase 5 build step 4 (MCP tool surface) shipped: built, reviewed, fixed,
-merged, pushed. All four build steps of the Phase 5 sub-plan are now done.**
-Picked up via `pickup`, Grayson chose "start on Phase 5 step 4 via
-writing-plans" and asked to fold the `connect_or_launch` port-race hardening
-backlog item into the same plan. Same full pipeline as steps 1-3:
-`writing-plans` -> consent for an isolated worktree (native `EnterWorktree`)
--> `subagent-driven-development` (7 tasks) -> whole-branch review on opus ->
-one consolidated fix wave -> `finishing-a-development-branch` (merged
-locally, then pushed).
+**The `connect_or_launch` readiness race (last session's top backlog item) is
+fixed, merged to `main`, and pushed.** Picked up via `pickup`, the race was
+written up as a plan via `writing-plans`, then executed fully via
+`subagent-driven-development` for the first time truly end to end with zero
+execution-mode prompts -- Grayson asked, explicitly, that the
+Subagent-Driven default stop being asked as a question at all; the
+standing-preference wording in `C:\Users\Grayson\.claude\CLAUDE.md`'s "Plan
+execution" section was the actual blocker (it said "still present the menu,
+just frame it as confirmation," which still produced a stop-and-wait every
+time), so that file and the matching memory note were rewritten this session
+to state the execution plainly and proceed, asking only for genuine
+blockers. This is a cross-project change, not specific to this repo.
 
-`server.py` gained four new MCP tools: `live_start` (connect-or-launch,
-returns session status), `live_get_graph` (current active-tab graph,
-`.ptex`-shaped), `live_apply` (a batch of validated `add_node`/
-`connect_nodes`/`set_param` mutations, stopping at the first failure), and
-`live_render` (trigger a render, same result shape as `render_graph`). All
-four share `_ensure_live_session`, which calls `connect_or_launch` fresh on
-every call -- cheap when a session is already up, per the spec's "a live
-tool call launches it rather than erroring out" decision. `connect_or_launch`
-itself got the port-race hardening: a short grace period now distinguishes a
-port that's genuinely booting from one squatted by an unresponsive process.
-A real integration test drives the full tool surface end to end (`live_start`
--> `live_get_graph` -> `live_apply` x3 -> `live_render`) against a real
-launched Material Maker and confirms real, non-empty PNGs -- the sub-plan's
-own final gate, met.
+The fix itself: `ping` now reports a new `has_graph` field (a graph tab
+genuinely exists), computed by a new `_has_active_graph()` helper in the
+GDScript addon; `connect_or_launch`'s two polling call sites require both
+`ready` and `has_graph` before declaring a session usable. 4 tasks (isolated
+worktree, `EnterWorktree`), each passed its own task review clean. **The
+final whole-branch review (opus) found a real second-order bug no task-level
+review could see, fixed in one consolidated wave, re-reviewed clean:** the
+fix as speced would make an already-running Material Maker that never
+reports `has_graph` (a pre-upgrade addon that predates this branch, or a
+genuinely tab-less instance) hang for the full `launch_timeout` (60s) on
+every live tool call and report a misdiagnosed "timed out waiting for the
+live server to become ready" about a process that's actually running fine.
+Fixed by making `connect_or_launch` distinguish "never became ready at all"
+(still genuinely booting -- keep the existing patient behavior) from
+"became ready but `has_graph` never appeared" (fail fast within the
+existing grace period, with a diagnostic message naming the real cause).
+Implementing that fix made one of Task 1's own already-approved tests
+logically unsatisfiable (its exact scenario became the new fail-fast case);
+retargeted that test to the fresh-launch path instead, where its original
+protection still holds -- checked with the advisor, then independently
+re-derived and confirmed sound by the scoped re-reviewer, not just accepted.
 
-**The final whole-branch review (opus) caught two real regressions this
-step's own tasks introduced, verified against actual source rather than
-trusting reports, both fixed in one consolidated wave:**
-1. `_ensure_live_session` unconditionally overwrote the module-global
-   `_live_session` on every call. Since `connect_or_launch`'s attach path
-   always returns `process=None`, any live tool call after the one that
-   launched Material Maker clobbered the stored process handle --
-   `server._live_session.close()` became a permanent no-op from that point
-   on. This was very likely the actual cause of orphaned Godot processes
-   observed during the integration test. Fixed by preserving a
-   previously-launched process's handle across later attach-only calls;
-   `_reset()` now also clears `_live_session`.
-2. The grace-period hardening (built earlier in this same plan) would
-   misclassify a normally-booting Material Maker as squatted: the addon's
-   `ping` legitimately returns `ready: false` for far longer than the grace
-   period during a real GUI boot -- exactly the scenario this plan's own new
-   README section tells Grayson to use (open Material Maker himself, then
-   ask Claude to act). Ruled to fix the discriminator to "did ping ever
-   answer at all during the grace window" (proves a live, booting addon)
-   instead of "did it become ready" -- required rewriting the plan's own
-   given test for the occupied-port case plus adding a new regression test.
+A real 4x back-to-back relaunch verification (the same technique that found
+the bug last session) confirmed **zero `"no active graph"` failures**, where
+the pre-fix code had reproduced it 3 times in 4 runs. Fast suite: 179 passed
+(up from 177), 6 deselected integration tests.
 
-A third Important finding (`live_apply` raised `KeyError`/`AttributeError`
-on a malformed op instead of returning it as data, losing the record of ops
-that already succeeded) was fixed in the same wave, consistent with this
-project's established "validation errors are data, not exceptions"
-convention.
-
-**Follow-up, same session:** Grayson asked to also fix the GUI-child-process
-leak flagged at wrap-up. Fixed `live.py`'s `_terminate` to run `taskkill
-/F /T /PID <pid>` (kills the whole process tree, reaching the GUI child
-Godot spawns outside its own Popen tree) before the existing
-terminate()/kill() fallback, guarded so test doubles without a real `.pid`
-skip straight to the fallback unchanged. 3 new unit tests mock
-`subprocess.run` to verify the taskkill invocation and its failure-handling
-directly, since testing a real process tree isn't practical in this suite.
-**While manually verifying against a real launch, found and confirmed (via
-`git stash`, reproduced identically on the pre-fix code) a separate,
-pre-existing race unrelated to this fix:** `connect_or_launch`'s readiness
-check only waits for `main_window` to be non-null, not for the default
-graph tab to exist, so `add_node` can occasionally race ahead of tab
-creation with a `"no active graph"` error. Confirmed NOT caused by the
-`_terminate` change (identical failure on the untouched pre-fix code) and
-NOT chased further, deliberately out of scope for a leak fix and needs its
-own investigation into the addon's startup sequence -- see Open questions.
-Full fast suite: 177 passed (up from 158 before this session, 174 after the
-main plan, +3 for this follow-up).
-
-Prior sessions' detail (overlay builder, addon skeleton, mutating commands,
-feasibility spike, seam fix, render_preview) is preserved in the Session log
-below.
+Prior sessions' detail (Phase 5 build steps 1-4, overlay builder, addon
+skeleton, mutating commands, feasibility spike, seam fix, render_preview) is
+preserved in the Session log below.
 
 ## 📌 Where we stopped
 
-Clean stop. Merged to `main` locally (fast-forward to `502eb4d`), pushed,
-then a same-session follow-up fixed the GUI-child-process leak (`f97a2ac`),
-fast suite 177/177 green. Pushed and confirmed synced with `origin/main`.
-No worktree, no branch, no lingering Godot processes (checked repeatedly
-with `tasklist` during the follow-up fix's manual verification).
+Clean stop. Merged fast-forward to `main` (`4f4240a`), pushed, confirmed
+synced with `origin/main`. Fast suite 179/179 green + 6 deselected
+integration tests. No worktree, no branch, no lingering Godot processes.
 
 ## ▶️ Next concrete step
 
-**Investigate the `"no active graph"` race found this session's follow-up
-work** (see Open questions) -- `connect_or_launch`'s readiness check only
-waits for `main_window` to be non-null, not for the default graph tab to
-exist, so `add_node` can occasionally race ahead of tab creation. Confirmed
-pre-existing (reproduces identically on the pre-`_terminate`-fix code via
-`git stash`), reproduced 3 times in a row this session against 1 clean pass
-earlier the same day, so it's real and not vanishingly rare. Needs its own
-investigation into whether the addon can signal "a graph tab actually
-exists" as part of `ping`'s `ready` field, or whether `connect_or_launch`
-needs an extra poll step after `ready` before returning.
-
-**Alternatively, the manual live-GUI verification with Grayson** carried
-over from earlier this session: all four Phase 5 build steps are done and
+**The manual live-GUI verification with Grayson** -- carried over from
+earlier sessions, now the natural next step since the race that could have
+made it flaky is fixed. All four Phase 5 build steps are done and
 automated-tested, but the spec's own literal "Done" criterion ("Grayson has
 Material Maker open, asks Claude to build or tweak a material, and watches
 nodes appear and connect in the live window as Claude works, then asks for
-a render and sees the preview update in place") has never actually
-happened hands-on. That pass is what would let Phase 5 itself (not just its
-build sub-plan) move from 🔌 wired to ✅ verified in STATUS.md -- though the
-race above is worth fixing first, since it could make that demo flaky.
+a render and sees the preview update in place") has never actually happened
+hands-on. That pass is what would let Phase 5 itself (not just its build
+sub-plan) move from 🔌 wired to ✅ verified in STATUS.md.
+
+**⚠️ Heads-up before that session:** close any Material Maker window that's
+been open since before this merge landed. It's running the pre-upgrade
+addon (no `has_graph` field), and this session's fix will now make it fail
+fast with a "no graph tab" diagnostic on the first live tool call instead
+of the old, slower "no active graph" race -- not yet hit in practice, just
+flagged by this session's final review as the predictable first thing to
+happen. Close it and let the next live tool call relaunch a fresh one.
 
 Further alternatives, all carried over unchanged:
 - **A. More cookbook categories** (extend the authoring recipe library).
@@ -125,28 +87,18 @@ Further alternatives, all carried over unchanged:
 
 ## ❓ Open questions
 
-- **🔴 New backlog: `connect_or_launch`'s readiness check races ahead of the
-  default graph tab's creation.** Found this session while manually
-  verifying the GUI-child-process-leak fix below: `add_node` occasionally
-  fails with `{"ok": false, "error": "no active graph"}` immediately after
-  `connect_or_launch` reports `ok: true`, because the addon's `ping`
-  handler only checks `mm_globals.main_window != null`, not whether
-  `get_current_graph_edit()`/its `generator` exist yet. Reproduced 3 times
-  in a row (1 clean pass earlier the same day, then 3 consecutive failures
-  under repeated back-to-back relaunches), and confirmed pre-existing via
-  `git stash` against the untouched pre-`_terminate`-fix code -- not caused
-  by this session's leak fix. `addons/mm_live/live_server.gd`'s
-  `_cmd_get_graph`/`_cmd_add_node`/etc. all share the same
-  `graph_edit == null or graph_edit.generator == null` check (lines 92-93,
-  101-102, and three more), so any fix to the readiness signal should cover
-  all of them, not just `add_node`. Workaround until fixed: retry the
-  first mutating call once if it fails with exactly this error.
-- **✅ Resolved this session:** the `connect_or_launch` squatted/dying-port
+- **✅ Resolved this session:** `connect_or_launch`'s readiness check racing
+  ahead of the default graph tab's creation -- see Current state. `ping` now
+  reports `has_graph`; `connect_or_launch` requires both `ready` and
+  `has_graph`, and fails fast with a diagnostic message (rather than a 60s
+  hang) if it attaches to a responsive instance that never reports
+  `has_graph`. 4x back-to-back relaunch verification: zero failures.
+- **✅ Resolved a prior session:** the `connect_or_launch` squatted/dying-port
   backlog item is fixed, and so is the GUI-child-process leak (`live.py`'s
   `_terminate` now runs `taskkill /F /T /PID <pid>` before its existing
-  terminate()/kill() fallback -- see Current state). The two-instance
-  launch race and the unauthenticated-local-channel question remain
-  separately deferred, unchanged, explicitly out of scope for either fix.
+  terminate()/kill() fallback). The two-instance launch race and the
+  unauthenticated-local-channel question remain separately deferred,
+  unchanged, explicitly out of scope for any of these fixes.
 - A cheap, partial mitigation for a bug class found in the *prior* session
   (a GDScript parse error): the final review confirmed Godot 4.7.1 supports
   `--headless --check-only --script <path>` against the built overlay as a
@@ -166,7 +118,48 @@ Further alternatives, all carried over unchanged:
   cross-platform (macOS/Linux) verification, still untested, no machine
   available.
 
-## 🗂️ Changed this session (Phase 5 MCP tool surface)
+## 🗂️ Changed this session (connect_or_launch readiness race)
+
+- Branch: `main`. Landed via a feature branch
+  (`worktree-connect-or-launch-readiness-race`) built end to end with
+  `subagent-driven-development` in an isolated worktree, merged fast-forward
+  then pushed: `1d3908f` plan doc, `0df1992` Task 1 (Python readiness gate +
+  new fake-server test, 4 existing fixtures updated), `ba9f620` Task 2
+  (GDScript `has_graph` signal via a new `_has_active_graph()` helper),
+  `e3a9dd9` Task 3 (real integration verification: a new `ping`-shape
+  assertion in the existing integration test, plus a 4x back-to-back
+  manual relaunch check), `84948ae` Task 4 (spec doc amendment), `4f4240a`
+  final-review fix wave (fail-fast on a responsive-but-graph-less attach,
+  a second spec amendment, a stale docstring fix, one new regression test).
+- Decisions (+ why): `has_graph` is reported as a field alongside `ready`
+  rather than folded into it, so an already-running, fully-healthy instance
+  keeps attaching near-instantly -- folding it into `ready` directly would
+  have meant every already-attached live tool call re-derives readiness
+  from scratch on every single call (per `_ensure_live_session`'s "cheap
+  when already up" design), and any transient "no tab focused" moment would
+  have looked identical to "still booting." The five existing mutating
+  command handlers in `live_server.gd` were deliberately left untouched
+  (their own `graph_edit == null` guards stay as defense-in-depth, now
+  normally unreachable) rather than refactored into the new
+  `_has_active_graph()` helper, since they need the live `MMGraphEdit`
+  reference afterward for their own work, not just a boolean -- collapsing
+  them would have added indirection without removing real duplication.
+  The final review's two Important findings (the 60s misdiagnosed hang on
+  attach, and the spec doc not documenting it) were ruled real and
+  load-bearing rather than deferred, since merging this branch while a
+  Material Maker window is already open from before the merge is exactly
+  the trigger -- fixed in the same wave rather than left for a future
+  session to rediscover. Implementing that fix made Task 1's own
+  already-approved test (`test_connect_or_launch_waits_for_a_graph_tab_
+  after_main_window_is_ready`) logically unsatisfiable, since its exact
+  attach-path scenario became the new required-fail-fast case; retargeted
+  to the fresh-launch path instead of inverting or deleting it, preserving
+  the original protection on the one path where it still applies -- this
+  call was checked with the advisor before implementing, then independently
+  re-derived (not just trusted) by the scoped re-reviewer, who confirmed no
+  better alternative existed given the brief's own definition of the bug.
+
+## 🗂️ Changed the prior session (Phase 5 MCP tool surface)
 
 - Branch: `main`. Landed as 9 commits via a feature branch (`worktree-phase5-mcp-tool-surface`)
   merged locally (fast-forward) then pushed: `e48b40d` plan doc, `6a0ee8b`
@@ -203,44 +196,46 @@ Further alternatives, all carried over unchanged:
   identically in a pre-existing integration test from a prior session, not
   something this session's tasks caused.
 
-## 🗂️ Changed the prior session (Phase 5 mutating commands)
-
-- Branch: `main`. Landed as 9 commits via a feature branch (`worktree-phase5-mutating-commands`)
-  merged locally (fast-forward) then pushed: `af25848` plan doc, `3711fea`
-  Task 1 (`add_node` GDScript), `1c8bd92` Task 2 (`connect_nodes`/`set_param`
-  GDScript), `ce6961a` Task 3 (`render` GDScript), `b0032da` Task 4
-  (`add_node`/`connect_nodes`/`set_param` Python client), `efd6334` Task 5
-  (`render` Python client), `0bc5f92` Task 2 fix round (`:=` type-inference
-  bug), `17a98d3` Task 3 fix round (un-awaited `export_material` bug),
-  `e597367` Task 6 (real integration test), then the final-review fix wave:
-  `7037f46` (`set_param` unknown-parameter hardening + its test), `356665a`
-  (plan doc corrections), `071dbb6` (STATUS.md gate update).
-- Decisions (+ why): the addon stays deliberately thin -- no validation
-  logic added to any of the three new GDScript handlers, matching step 2's
-  precedent; all mutation validation lives in `live.py` via `graph.py`'s
-  existing `validate_graph`. `add_node`'s Python-side validation checks the
-  new node in isolation rather than merged into the fetched live graph,
-  since a brand-new unconnected node has nothing `validate_graph` checks
-  against the rest of the graph -- explicit scope call, not an oversight.
-  `render()` reuses `render.py`'s `RenderResult`/`_collect_fresh_images`
-  rather than reimplementing freshness detection, matching this codebase's
-  established DRY convention (`tests/test_render.py` already imports the
-  same private helper). Both real bugs found via the integration test were
-  ruled plan-mandated or task-implementation gaps (not the test's fault) and
-  fixed as scoped fix rounds against their original task, each independently
-  re-reviewed clean, rather than patched inline by the test's own
-  implementer -- kept the "who owns this fix" line clean across the loop.
-  The full-suite port race (both live-control integration tests sharing
-  `LIVE_PORT = 8765` with no isolation) was ruled a pre-existing,
-  already-flagged `connect_or_launch` gap and explicitly kept out of this
-  plan's scope rather than chased under time pressure -- see Open questions.
-
-(Older "Changed" write-ups -- addon skeleton, overlay builder, seam fix,
+(Older "Changed" write-ups -- Phase 5 mutating commands, addon skeleton, overlay builder, seam fix,
 feasibility spike, render_preview -- have rolled into the Session log below;
 that's where their full detail lives now.)
 
 ## ⚠️ Heads-up for the next agent
 
+- **`ping`'s response now has a `has_graph` field alongside `ready`, and
+  they mean different things -- don't conflate them.** `ready` is still
+  purely "main_window resolved." `has_graph` (new this session) is "a graph
+  tab actually exists" (`get_current_graph_edit()`/`.generator` non-null,
+  same check the five mutating handlers already did). `connect_or_launch`
+  requires both before declaring a session usable. Computed by a new
+  `_has_active_graph()` helper in `live_server.gd`, placed right after
+  `_cmd_ping`. The five mutating command handlers were deliberately left
+  unchanged -- their own `graph_edit == null` guards are now normally
+  unreachable defense-in-depth, not dead code to clean up.
+- **`connect_or_launch` now has THREE ways to give up, not two -- know
+  which one you're touching.** (1) Genuinely still booting: `ping` never
+  reports `ready: true` during the initial grace period -- falls through to
+  the full `launch_timeout` main poll loop, unchanged from before this
+  session. (2) Squatted port: `ping` never answers at all during the grace
+  period -- fails fast with the pre-existing "occupied by an unresponsive
+  process" message, unchanged. (3) **New this session:** responsive but
+  graph-less -- `ping` reports `ready: true` at least once during the grace
+  period but `has_graph` never follows -- fails fast within that same grace
+  period (reusing `_SQUATTED_PORT_GRACE`, no new constant) with a message
+  naming the instance as responsive and pointing at a stale/pre-upgrade
+  addon or a genuinely tab-less instance. `_wait_for_ready_or_give_up`'s
+  return contract grew a fourth value, `main_window_ever_ready`, to let
+  `connect_or_launch` tell (1) apart from (3) -- read its docstring before
+  changing the discriminator again. The "we launched this process
+  ourselves" (fresh-launch) path is completely untouched by (3): it still
+  waits the full `launch_timeout` for both `ready` and `has_graph`, no
+  grace-period ambiguity, since there's no "maybe it's a stale addon"
+  question for a process this session just spawned.
+- **✅ Resolved this session: the readiness-race backlog item from last
+  session is fixed and verified.** A real 4x back-to-back relaunch check
+  (the same technique that originally found the bug) showed zero
+  `"no active graph"` failures, versus 3-of-4 before the fix. See Current
+  state and the two items above for the mechanism.
 - **`server.py` now has four live MCP tools consuming `live.py`:**
   `live_start`/`live_get_graph`/`live_apply`/`live_render`, all going through
   a shared `_ensure_live_session(cfg, launch_timeout=60.0)` helper that
@@ -282,18 +277,20 @@ that's where their full detail lives now.)
   row (2 successes, 2 mid-test failures from the unrelated race below) --
   zero leftover Godot processes every time, versus 2 leftover every time
   before this fix.
-- **🔴 New, unfixed gap found while verifying the fix above:
-  `connect_or_launch`'s readiness check races ahead of the default graph
-  tab's creation.** `ping`'s `ready` field only checks `mm_globals.main_window
+- **✅ Fixed a later session: the gap below (readiness races ahead of graph
+  tab creation) is resolved.** See the top of this section (`has_graph`,
+  the three-way give-up split) for the actual mechanism now in place. Kept
+  the original finding text below for the historical record of how it was
+  found.
+- `connect_or_launch`'s readiness check races ahead of the default graph
+  tab's creation. `ping`'s `ready` field only checks `mm_globals.main_window
   != null`; it doesn't check whether `get_current_graph_edit()` (and its
   `generator`) actually exist yet. `add_node`/`get_graph`/etc. all
   independently check `graph_edit == null or graph_edit.generator == null`
   and return `{"ok": false, "error": "no active graph"}` when that race
   loses. Reproduced 3 times in a row this session (after 1 clean pass
   earlier the same day), confirmed pre-existing and unrelated to the
-  `_terminate` fix via `git stash` against the untouched code. See Open
-  questions for the fix candidate (extend `ping`'s readiness check, or add
-  an extra poll after `ready` before `connect_or_launch` returns).
+  `_terminate` fix via `git stash` against the untouched code.
 - **`addons/mm_live/live_server.gd` now answers all five commands:**
   `ping`/`get_graph` (read-only, from step 2) plus `add_node`/`connect_nodes`/
   `set_param`/`render` (mutating, from this session). Still deliberately
@@ -427,6 +424,78 @@ that's where their full detail lives now.)
 ---
 
 ## 🕓 Session log
+
+### 2026-08-28 — connect_or_launch readiness race, full SDD pipeline + final-review fix wave
+- Picked up via `pickup`, argument named the top backlog item from last
+  session (`connect_or_launch`'s readiness race). Started `writing-plans`
+  directly given the item was already fully scoped and repro'd in the prior
+  handoff -- read the real source (`live_server.gd`, `live.py`, the existing
+  `_FakeLiveServer` test fixtures, the design spec) before writing the plan,
+  not just the handoff's summary. Saved to
+  `docs/superpowers/plans/2026-08-27-connect-or-launch-readiness-race.md`.
+- **Standing-preference friction, fixed at the source:** when the plan
+  finished, Claude presented the Subagent-Driven-vs-Inline menu as usual.
+  Grayson pushed back hard: this preference has been confirmed twice
+  before and he doesn't know how to make it stick harder, and asked what
+  was actually blocking it. The real answer: `C:\Users\Grayson\.claude\
+  CLAUDE.md`'s own "Plan execution" section explicitly said to keep
+  presenting the menu (just framed as confirmation), which is what
+  produced the recurring stop-and-wait. Rewrote that file to state the
+  execution plainly and proceed in the same turn, asking only for a
+  genuine blocker; rewrote the matching memory note
+  ([[phase5-live-control-design]]-adjacent `feedback-execution-mode.md`)
+  the same way. This is a cross-project fix, not specific to this repo.
+- **`using-git-worktrees`:** consent given (was on `main` directly),
+  isolated worktree via native `EnterWorktree`. The plan doc was
+  uncommitted on `main` at pickup time -- the same recurring gap flagged in
+  every prior Phase 5 session -- copied into the worktree and committed
+  there first. Fresh `.venv`, `.env` copied over, baseline 177 fast tests
+  green.
+- **`subagent-driven-development`:** pre-flight conflict scan across all 4
+  tasks, clean (documented as a table in the ledger per the skill's
+  updated requirement, not just a verdict). All 4 tasks passed their first
+  task-level review clean -- haiku for the two mechanical/transcription
+  tasks (Python fake-server fix, GDScript signal, spec doc edit), sonnet
+  for Task 3's real-launch judgment work (which included the 4x manual
+  relaunch verification, the actual empirical proof the bug is gone).
+- **Final whole-branch review** (opus): "Ready to merge, with fixes."
+  Confirmed the `has_graph` contract agrees exactly across the Python task
+  (written first, before the GDScript field existed) and the GDScript task,
+  confirmed no stale `ping` consumer was left anywhere in the codebase, and
+  confirmed all four live MCP tools genuinely funnel through the new gate.
+  Found 2 Important findings, both real: attaching to an already-running,
+  pre-upgrade-addon Material Maker now hung the full `launch_timeout` (60s)
+  per tool call with a misdiagnosed timeout error instead of the actual
+  cause (a responsive instance with no graph tab) -- and the spec doc's own
+  amendment (from Task 4) didn't document this new failure mode. Ruled both
+  real, load-bearing, and in-scope for this same fix wave (merging this
+  branch while a Material Maker window is already open is exactly the
+  trigger), with the fix's shape decided by the controller: distinguish
+  "never became ready" from "became ready but no graph tab," fail fast on
+  the latter within the existing grace period (no new timing constant).
+- **One consolidated fix wave** (sonnet): implemented the 3-way readiness
+  split in `connect_or_launch` (a new `main_window_ever_ready` return value
+  from `_wait_for_ready_or_give_up`), a diagnostic error message, the spec
+  amendment, a stale-docstring fix, and one new regression test. Surfaced a
+  real judgment call along the way: implementing the fix made Task 1's own
+  already-approved test logically unsatisfiable (its exact scenario --
+  attach path, `ready` immediately true, `has_graph` arriving only after
+  the grace period -- became the new required-fail-fast case). Confirmed
+  with the advisor, then retargeted that test to the fresh-launch path
+  instead of inverting or deleting it, preserving its original protection
+  on the one path where it still legitimately applies. Scoped re-review
+  (sonnet) verdicted all 3 findings ADDRESSED, and independently
+  re-derived the test-retargeting call from the raw diff rather than
+  trusting the report -- confirmed sound, confirmed no better alternative
+  existed given the brief's own definition of the bug. No new breakage.
+  Full fast suite: 179 passed (up from 177).
+- **`finishing-a-development-branch`:** fast-forward merge to `main`
+  (`4f4240a`), 179/179 fast tests green on the merged tip (an untracked
+  duplicate of the plan doc, left over on `main` from before the worktree
+  existed, had to be removed first so the merge could bring in the
+  tracked copy cleanly -- same recurring gap as every prior Phase 5
+  session). Worktree and branch cleaned up. Grayson asked to push and
+  wrap up in one message; pushed, confirmed `origin/main` synced.
 
 ### 2026-08-27 (night) — Phase 5 build step 4: MCP tool surface, full SDD pipeline + final-review fix wave
 - Picked up via `pickup`, Grayson chose "start on Phase 5 step 4 via
