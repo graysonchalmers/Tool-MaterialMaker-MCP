@@ -57,7 +57,27 @@ A third Important finding (`live_apply` raised `KeyError`/`AttributeError`
 on a malformed op instead of returning it as data, losing the record of ops
 that already succeeded) was fixed in the same wave, consistent with this
 project's established "validation errors are data, not exceptions"
-convention. Full fast suite: 174 passed (up from 158 before this session).
+convention.
+
+**Follow-up, same session:** Grayson asked to also fix the GUI-child-process
+leak flagged at wrap-up. Fixed `live.py`'s `_terminate` to run `taskkill
+/F /T /PID <pid>` (kills the whole process tree, reaching the GUI child
+Godot spawns outside its own Popen tree) before the existing
+terminate()/kill() fallback, guarded so test doubles without a real `.pid`
+skip straight to the fallback unchanged. 3 new unit tests mock
+`subprocess.run` to verify the taskkill invocation and its failure-handling
+directly, since testing a real process tree isn't practical in this suite.
+**While manually verifying against a real launch, found and confirmed (via
+`git stash`, reproduced identically on the pre-fix code) a separate,
+pre-existing race unrelated to this fix:** `connect_or_launch`'s readiness
+check only waits for `main_window` to be non-null, not for the default
+graph tab to exist, so `add_node` can occasionally race ahead of tab
+creation with a `"no active graph"` error. Confirmed NOT caused by the
+`_terminate` change (identical failure on the untouched pre-fix code) and
+NOT chased further, deliberately out of scope for a leak fix and needs its
+own investigation into the addon's startup sequence -- see Open questions.
+Full fast suite: 177 passed (up from 158 before this session, 174 after the
+main plan, +3 for this follow-up).
 
 Prior sessions' detail (overlay builder, addon skeleton, mutating commands,
 feasibility spike, seam fix, render_preview) is preserved in the Session log
@@ -65,32 +85,38 @@ below.
 
 ## 📌 Where we stopped
 
-Clean stop. Merged to `main` locally (fast-forward to `502eb4d`), fast suite
-174/174 green on the merged tip, pushed and confirmed synced with
-`origin/main`. No worktree, no branch, no lingering Godot processes (checked
-after this session's own integration test run, which did leak two -- see
-Open questions' new backlog item).
+Clean stop. Merged to `main` locally (fast-forward to `502eb4d`), pushed,
+then a same-session follow-up fixed the GUI-child-process leak (`f97a2ac`),
+fast suite 177/177 green. Pushed and confirmed synced with `origin/main`.
+No worktree, no branch, no lingering Godot processes (checked repeatedly
+with `tasklist` during the follow-up fix's manual verification).
 
 ## ▶️ Next concrete step
 
-**Manual live-GUI verification with Grayson.** All four Phase 5 build steps
-are done and automated-tested, but the spec's own literal "Done" criterion
-("Grayson has Material Maker open, asks Claude to build or tweak a material,
-and watches nodes appear and connect in the live window as Claude works,
-then asks for a render and sees the preview update in place") has never
-actually happened -- every verification so far has been via integration
-tests, not a hands-on session with Grayson watching the GUI update live.
-That hands-on pass is what would let Phase 5 itself (not just its build
-sub-plan) move from 🔌 wired to ✅ verified in STATUS.md.
+**Investigate the `"no active graph"` race found this session's follow-up
+work** (see Open questions) -- `connect_or_launch`'s readiness check only
+waits for `main_window` to be non-null, not for the default graph tab to
+exist, so `add_node` can occasionally race ahead of tab creation. Confirmed
+pre-existing (reproduces identically on the pre-`_terminate`-fix code via
+`git stash`), reproduced 3 times in a row this session against 1 clean pass
+earlier the same day, so it's real and not vanishingly rare. Needs its own
+investigation into whether the addon can signal "a graph tab actually
+exists" as part of `ping`'s `ready` field, or whether `connect_or_launch`
+needs an extra poll step after `ready` before returning.
 
-Alternatives, all carried over unchanged:
+**Alternatively, the manual live-GUI verification with Grayson** carried
+over from earlier this session: all four Phase 5 build steps are done and
+automated-tested, but the spec's own literal "Done" criterion ("Grayson has
+Material Maker open, asks Claude to build or tweak a material, and watches
+nodes appear and connect in the live window as Claude works, then asks for
+a render and sees the preview update in place") has never actually
+happened hands-on. That pass is what would let Phase 5 itself (not just its
+build sub-plan) move from 🔌 wired to ✅ verified in STATUS.md -- though the
+race above is worth fixing first, since it could make that demo flaky.
+
+Further alternatives, all carried over unchanged:
 - **A. More cookbook categories** (extend the authoring recipe library).
 - **B. The two honest partials** (wool loop-knit, circuit-board mask-bleed).
-- **C. Backlog: fix the GUI-child-process leak** in `live.py`'s
-  `LiveSession.close()`/`_terminate` (see Open questions) -- a real,
-  reproduced-this-session gap, but not blocking since it only affects
-  automated test cleanup, not interactive use (Grayson closes the GUI
-  himself in the real workflow).
 - **D. PyPI publish** (on hold; GitHub-clone is the current route).
 - **E. Document `render_preview`** in `docs/AUTHORING.md` / README, or leave it
   as just an MCP tool.
@@ -99,24 +125,28 @@ Alternatives, all carried over unchanged:
 
 ## ❓ Open questions
 
-- **🔴 New backlog: `live.py`'s `LiveSession.close()`/`_terminate` doesn't
-  reap the GUI child process.** Discovered (not fixed -- `live.py`'s core
-  lifecycle code predates this plan and was frozen after earlier tasks'
-  clean reviews) during this session's own real integration test run: two
-  orphaned `Godot_v4.7.1-stable_win64*.exe` processes were left running
-  after the test passed, confirmed via `tasklist`/`wmic`. `_terminate` calls
-  `process.terminate()` on the launcher's `Popen` handle, but the launcher
-  spawns a child GUI process outside that process tree, so terminating the
-  parent doesn't reap the child. Reproduces identically in the pre-existing
-  `tests/test_live.py` integration test too, not a regression from this
-  session. Fix candidate: a Job Object or process-group kill in
-  `live.py._terminate`. Workaround until fixed: `taskkill //F //IM
-  Godot_v4.7.1-stable_win64_console.exe` (Bash tool, not PowerShell) after
-  running either integration test.
+- **🔴 New backlog: `connect_or_launch`'s readiness check races ahead of the
+  default graph tab's creation.** Found this session while manually
+  verifying the GUI-child-process-leak fix below: `add_node` occasionally
+  fails with `{"ok": false, "error": "no active graph"}` immediately after
+  `connect_or_launch` reports `ok: true`, because the addon's `ping`
+  handler only checks `mm_globals.main_window != null`, not whether
+  `get_current_graph_edit()`/its `generator` exist yet. Reproduced 3 times
+  in a row (1 clean pass earlier the same day, then 3 consecutive failures
+  under repeated back-to-back relaunches), and confirmed pre-existing via
+  `git stash` against the untouched pre-`_terminate`-fix code -- not caused
+  by this session's leak fix. `addons/mm_live/live_server.gd`'s
+  `_cmd_get_graph`/`_cmd_add_node`/etc. all share the same
+  `graph_edit == null or graph_edit.generator == null` check (lines 92-93,
+  101-102, and three more), so any fix to the readiness signal should cover
+  all of them, not just `add_node`. Workaround until fixed: retry the
+  first mutating call once if it fails with exactly this error.
 - **✅ Resolved this session:** the `connect_or_launch` squatted/dying-port
-  backlog item from the last session is fixed (see Current state). The
-  two-instance launch race and the unauthenticated-local-channel question
-  remain separately deferred, unchanged, explicitly out of this plan's scope.
+  backlog item is fixed, and so is the GUI-child-process leak (`live.py`'s
+  `_terminate` now runs `taskkill /F /T /PID <pid>` before its existing
+  terminate()/kill() fallback -- see Current state). The two-instance
+  launch race and the unauthenticated-local-channel question remain
+  separately deferred, unchanged, explicitly out of scope for either fix.
 - A cheap, partial mitigation for a bug class found in the *prior* session
   (a GDScript parse error): the final review confirmed Godot 4.7.1 supports
   `--headless --check-only --script <path>` against the built overlay as a
@@ -145,7 +175,9 @@ Alternatives, all carried over unchanged:
   (`live_apply`), `8ed1c9b` Task 5 (`live_render`), `52d5a6e` Task 6 (README
   Live mode section), `9fcf6a7` Task 7 (real integration test), `502eb4d`
   final-review fix wave (process-handle bug, grace-period discriminator,
-  `live_apply` error-as-data, README wording).
+  `live_apply` error-as-data, README wording). Plus one same-session
+  follow-up directly on `main` (small, well-scoped, no worktree needed):
+  `f97a2ac` fixes the GUI-child-process leak in `live.py`'s `_terminate`.
 - Decisions (+ why): every `live_*` MCP tool calls `_ensure_live_session`
   first rather than requiring an explicit `live_start` call beforehand,
   matching the spec's "a live tool call launches it rather than erroring
@@ -237,18 +269,31 @@ that's where their full detail lives now.)
   (even with `ready=False`) must fall through to the patient main poll loop,
   not fail fast. Only a port that *never* answers a single valid ping during
   the whole grace window is treated as squatted.
-- **🔴 Known, unfixed gap: `LiveSession.close()`/`_terminate` leaks the GUI
-  child process.** `_terminate` only calls `process.terminate()` on the
-  launcher's `Popen` handle; the launcher spawns a separate GUI child
-  process that isn't in the same process tree, so terminating the parent
-  doesn't reap the child. Confirmed via `tasklist`/`wmic` after this
-  session's own integration test: two orphaned
-  `Godot_v4.7.1-stable_win64*.exe` processes remained after the test passed
-  and `close()` ran. Reproduces identically for `tests/test_live.py`'s
-  pre-existing integration test too. Not fixed this session (deliberately
-  out of scope -- `live.py`'s core lifecycle code predates this plan).
-  Workaround: `taskkill //F //IM Godot_v4.7.1-stable_win64_console.exe`
-  (Bash tool, not PowerShell) after running a live-control integration test.
+- **✅ Fixed this session: `_terminate` now kills the GUI child process
+  too.** It used to only call `process.terminate()` on the launcher's
+  `Popen` handle, which left the spawned GUI child running (confirmed via
+  `tasklist`/`wmic`: two orphaned `Godot_v4.7.1-stable_win64*.exe` processes
+  after a real integration test passed and `close()` ran). Now runs
+  `taskkill /F /T /PID <pid>` (kills the whole process tree) before the
+  original terminate()/kill() sequence, which still runs after as a
+  fallback. A test double with no real `.pid` attribute skips the taskkill
+  call and falls straight to the fallback, so the existing fake-process
+  tests needed zero changes. Verified manually against 4 real launches in a
+  row (2 successes, 2 mid-test failures from the unrelated race below) --
+  zero leftover Godot processes every time, versus 2 leftover every time
+  before this fix.
+- **🔴 New, unfixed gap found while verifying the fix above:
+  `connect_or_launch`'s readiness check races ahead of the default graph
+  tab's creation.** `ping`'s `ready` field only checks `mm_globals.main_window
+  != null`; it doesn't check whether `get_current_graph_edit()` (and its
+  `generator`) actually exist yet. `add_node`/`get_graph`/etc. all
+  independently check `graph_edit == null or graph_edit.generator == null`
+  and return `{"ok": false, "error": "no active graph"}` when that race
+  loses. Reproduced 3 times in a row this session (after 1 clean pass
+  earlier the same day), confirmed pre-existing and unrelated to the
+  `_terminate` fix via `git stash` against the untouched code. See Open
+  questions for the fix candidate (extend `ping`'s readiness check, or add
+  an extra poll after `ready` before `connect_or_launch` returns).
 - **`addons/mm_live/live_server.gd` now answers all five commands:**
   `ping`/`get_graph` (read-only, from step 2) plus `add_node`/`connect_nodes`/
   `set_param`/`render` (mutating, from this session). Still deliberately
@@ -450,6 +495,24 @@ that's where their full detail lives now.)
   `.claude/worktrees/` location, not a superpowers-managed one). Grayson
   asked to merge, push, and wrap up in one go -- pushed, confirmed
   `origin/main` synced (`502eb4d` on both sides).
+- **Same-session follow-up via `/wrap-up`'s own `+` argument:** Grayson
+  asked to also fix the GUI-child-process leak flagged in the wrap-up
+  report. Small enough to fix directly on `main` (no plan, no worktree):
+  wrote 3 failing unit tests mocking `subprocess.run` first, then added a
+  `taskkill /F /T /PID` call to `_terminate` ahead of its existing
+  terminate()/kill() fallback (`f97a2ac`). Manually verified against 4 real
+  Material Maker launches in a row via `tasklist` -- zero leftover
+  processes every time (previously: 2 every time). While doing that manual
+  verification, hit a different, unrelated failure 3 times in a row
+  (`"no active graph"` right after a successful `connect_or_launch`) --
+  suspected the repeated back-to-back launches might be an artifact of the
+  fix itself, so proved otherwise with `git stash`: reproduced identically
+  on the untouched pre-fix code, confirming it's a separate, pre-existing
+  race in the readiness check, not a regression. Documented as a new
+  backlog item rather than chased further (out of scope for a leak fix,
+  and it touches the addon's startup sequence, not just `live.py`). Fast
+  suite 177/177, committed and pushed directly to `main` (small, low-risk,
+  already-standing push approval this session).
 
 ### 2026-08-27 (evening) — Phase 5 build step 3: mutating commands, full SDD pipeline
 - Picked up via `pickup`, Grayson chose "start on Phase 5 step 3 via
