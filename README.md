@@ -178,7 +178,7 @@ through a render.
 
 ## Tools
 
-The server exposes eight tools and one resource:
+The server exposes eight batch-mode tools and one resource (plus four more in Live mode, below):
 
 | Tool | What it does |
 |---|---|

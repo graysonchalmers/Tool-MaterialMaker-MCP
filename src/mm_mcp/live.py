@@ -87,19 +87,31 @@ def get_graph(host: str = LIVE_HOST, port: int = LIVE_PORT, timeout: float = 5.0
     return _send_command({"cmd": "get_graph"}, host, port, timeout)
 
 
-def _wait_for_ready_or_give_up(host: str, port: int, deadline: float) -> tuple[bool, str]:
+def _wait_for_ready_or_give_up(host: str, port: int, deadline: float) -> tuple[bool, bool, str]:
     """Poll ping() until it reports ready, or `deadline` (a time.monotonic()
-    value) passes. Returns (ready, last_error) -- last_error is always a
-    string, even on success (harmless: callers only read it on failure)."""
+    value) passes. Returns (ready, ever_answered, last_error).
+
+    ever_answered is True the moment ping() ever returns ok=True, even with
+    ready=False -- a real live-addon socket answers ping almost immediately
+    after binding (project startup), well before main_window resolves (see
+    the spec's "lazy main_window resolution" constraint). A single
+    successful-but-not-ready response is proof this is a live addon that's
+    still booting, not a dead/squatted process -- even if it never reaches
+    ready before the deadline. last_error is always a string, even on
+    success (harmless: callers only read it on failure).
+    """
+    ever_answered = False
     last_error = "timed out waiting for a response"
     while time.monotonic() < deadline:
         result = ping(host, port)
-        if result.ok and result.data.get("ready"):
-            return True, last_error
-        if not result.ok:
+        if result.ok:
+            ever_answered = True
+            if result.data.get("ready"):
+                return True, ever_answered, last_error
+        else:
             last_error = result.error
         time.sleep(0.5)
-    return False, last_error
+    return False, ever_answered, last_error
 
 
 _catalog_cache: dict[str, dict] = {}
@@ -292,7 +304,11 @@ def connect_or_launch(cfg: Config | None = None, host: str = LIVE_HOST,
     answer. If the port is still listening and still unresponsive after the
     grace period, that's treated as a squatted port: connect_or_launch fails
     fast with a diagnostic error rather than continuing to wait, since it
-    can't safely bind its own listener there anyway.
+    can't safely bind its own listener there anyway. The discriminator is
+    whether the port ever answers a ping validly at all (proves a live,
+    still-booting addon) versus never answering once (genuinely squatted)
+    -- not whether it reaches `ready` in time, since a real instance can
+    legitimately take far longer than the grace period to finish booting.
 
     Attaching to an already-running instance never launches a process, so
     the returned session's close() is a no-op for that case: we only own the
@@ -304,22 +320,29 @@ def connect_or_launch(cfg: Config | None = None, host: str = LIVE_HOST,
 
     if still_listening:
         grace_deadline = time.monotonic() + min(_SQUATTED_PORT_GRACE, launch_timeout)
-        ready, grace_error = _wait_for_ready_or_give_up(host, port, grace_deadline)
+        ready, ever_answered, grace_error = _wait_for_ready_or_give_up(host, port, grace_deadline)
         if ready:
             return LiveSession(ok=True, process=None)
-        still_listening = _is_listening(host, port)
-        if still_listening:
-            return LiveSession(
-                ok=False,
-                error=(
-                    f"port {port} is occupied by a process that never answered as the live "
-                    f"server after waiting {_SQUATTED_PORT_GRACE:.0f}s ({grace_error}). If a "
-                    "previous Material Maker/Godot process is stuck on this port, close it "
-                    "(or taskkill the Godot console binary) and retry."
-                ),
-            )
-        # The occupant stopped listening during the grace period -- the port
-        # is free now, so fall through and launch normally.
+        if not ever_answered:
+            still_listening = _is_listening(host, port)
+            if still_listening:
+                return LiveSession(
+                    ok=False,
+                    error=(
+                        f"port {port} is occupied by a process that never answered as the live "
+                        f"server after waiting {min(_SQUATTED_PORT_GRACE, launch_timeout):.0f}s "
+                        f"({grace_error}). If a previous Material Maker/Godot process is stuck "
+                        "on this port, close it (or taskkill the Godot console binary) and retry."
+                    ),
+                )
+            # else: the occupant stopped listening during the grace period --
+            # the port is free now, so fall through and launch normally.
+        # else: it answered at least once during the grace period -- a real
+        # live-addon socket that's still booting (main_window not wired
+        # yet), not squatted. still_listening stays True, so we skip the
+        # launch branch below and fall straight into the main poll loop
+        # with its full launch_timeout budget, same as this project's
+        # pre-hardening behavior for this exact case.
 
     if not still_listening:
         process = _launch_overlay(cfg)

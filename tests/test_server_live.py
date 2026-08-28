@@ -16,6 +16,19 @@ class _FakeSession:
     error: str | None = None
 
 
+@pytest.fixture(autouse=True)
+def _isolate_server_state():
+    """_ensure_live_session now preserves a previously-launched process
+    handle across attach-only calls (Finding 1's fix), so the module-global
+    _live_session can no longer be treated as inert between tests: a prior
+    test's leftover process would otherwise leak into the next test's first
+    call. Reset before and after every test in this file so each test's
+    _live_session starts (and leaves) clean, regardless of run order."""
+    server._reset()
+    yield
+    server._reset()
+
+
 def test_live_start_reports_attach_when_already_running(monkeypatch):
     monkeypatch.setattr(server, "_ensure_ready", lambda: (cfg, {}))
     monkeypatch.setattr(live, "connect_or_launch",
@@ -200,3 +213,60 @@ def test_live_tools_hold_a_real_session_against_material_maker(tmp_path, monkeyp
             server._live_session.close()
     finally:
         server._reset()
+
+
+def test_ensure_live_session_preserves_a_previously_launched_process_across_attach_calls(monkeypatch):
+    launched_process = object()  # stand-in for a real subprocess.Popen
+
+    calls = {"n": 0}
+
+    def _fake_connect_or_launch(cfg, launch_timeout=60.0):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return _FakeSession(ok=True, process=launched_process)
+        return _FakeSession(ok=True, process=None)  # attach path on later calls
+
+    monkeypatch.setattr(live, "connect_or_launch", _fake_connect_or_launch)
+    server._reset()
+
+    first = server._ensure_live_session(cfg)
+    assert first.process is launched_process
+
+    second = server._ensure_live_session(cfg)
+    assert second.process is launched_process, (
+        "a later attach-only call must not lose the handle to a process this server launched"
+    )
+
+
+def test_live_apply_reports_malformed_op_as_data_instead_of_raising(monkeypatch):
+    monkeypatch.setattr(server, "_ensure_ready", lambda: (cfg, {}))
+    monkeypatch.setattr(live, "connect_or_launch",
+                         lambda cfg, launch_timeout=60.0: _FakeSession(ok=True))
+    calls = []
+
+    def _fake_add_node(node_type, parameters, x=0.0, y=0.0, cfg=None):
+        calls.append("add_node")
+        return live.LiveResult(ok=True, data={"name": "perlin_1"})
+
+    monkeypatch.setattr(live, "add_node", _fake_add_node)
+
+    ops = [
+        {"op": "add_node", "node_type": "perlin", "parameters": {}, "x": 0, "y": 0},
+        {"op": "set_param", "name": "perlin_1"},  # missing required "parameters" key
+    ]
+    result = server.live_apply(ops)
+    assert result["ok"] is False
+    assert len(result["results"]) == 2  # first op's success is preserved, not lost
+    assert result["results"][0]["ok"] is True
+    assert result["results"][1]["ok"] is False
+    assert "malformed" in result["error"] or "missing" in result["error"]
+    assert calls == ["add_node"]
+
+
+def test_live_apply_rejects_a_non_dict_op_without_raising(monkeypatch):
+    monkeypatch.setattr(server, "_ensure_ready", lambda: (cfg, {}))
+    monkeypatch.setattr(live, "connect_or_launch",
+                         lambda cfg, launch_timeout=60.0: _FakeSession(ok=True))
+    result = server.live_apply(["not_a_dict"])
+    assert result["ok"] is False
+    assert result["results"][0]["ok"] is False

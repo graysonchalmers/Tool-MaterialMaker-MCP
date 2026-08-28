@@ -35,9 +35,10 @@ def _reset() -> None:
     _ensure_ready only memoizes after require_valid + build_catalog succeed, a
     bad config re-raises on every call rather than sticking a half-built state.
     """
-    global _cfg, _CATALOG
+    global _cfg, _CATALOG, _live_session
     _cfg = None
     _CATALOG = None
+    _live_session = None
 
 
 mcp = MCPServer("material-maker")
@@ -123,9 +124,21 @@ def _ensure_live_session(cfg, launch_timeout: float = 60.0) -> live.LiveSession:
     Material Maker via live.connect_or_launch, per the design spec's "a live
     tool call launches it rather than erroring out" scope decision. Cheap
     when a session is already up and ready (one ping round-trip); only slow
-    the first time, when nothing is listening yet."""
+    the first time, when nothing is listening yet.
+
+    connect_or_launch's attach path always returns process=None (it only
+    reports a process handle for one it just spawned itself), so a naive
+    "store whatever comes back" would lose the handle to a process THIS
+    server launched the moment any later call re-probes and attaches to it
+    instead of relaunching. Preserve a previously-launched process's handle
+    across attach-only calls so close() still works no matter how many live
+    tool calls happened in between.
+    """
     global _live_session
-    _live_session = live.connect_or_launch(cfg=cfg, launch_timeout=launch_timeout)
+    session = live.connect_or_launch(cfg=cfg, launch_timeout=launch_timeout)
+    if session.process is None and _live_session is not None and _live_session.process is not None:
+        session.process = _live_session.process
+    _live_session = session
     return _live_session
 
 
@@ -173,6 +186,12 @@ def live_apply(ops: list) -> dict:
     {"op": "add_node", "node_type": ..., "parameters": {...}, "x": ..., "y": ...} |
     {"op": "connect_nodes", "from_name": ..., "from_port": ..., "to_name": ..., "to_port": ...} |
     {"op": "set_param", "name": ..., "parameters": {...}}.
+
+    A malformed op (not a dict, or missing a required field) is reported as
+    data rather than raised, same as an unrecognized 'op' value -- so a
+    batch that partially applied before hitting a bad op still reports what
+    already succeeded, instead of losing that record to an uncaught
+    exception.
     """
     cfg, _ = _ensure_ready()
     session = _ensure_live_session(cfg)
@@ -180,13 +199,22 @@ def live_apply(ops: list) -> dict:
         return {"ok": False, "results": [], "error": session.error}
     results = []
     for i, op in enumerate(ops):
+        if not isinstance(op, dict):
+            error = f"op {i} is not a valid operation object: {op!r}"
+            results.append({"index": i, "op": None, "ok": False, "data": None, "error": error})
+            return {"ok": False, "results": results, "error": error}
         kind = op.get("op")
         handler = _LIVE_OP_HANDLERS.get(kind)
         if handler is None:
             error = f"op {i} has an unrecognized 'op' value: {kind!r}"
             results.append({"index": i, "op": kind, "ok": False, "data": None, "error": error})
             return {"ok": False, "results": results, "error": error}
-        result = handler(op, cfg)
+        try:
+            result = handler(op, cfg)
+        except (KeyError, TypeError) as exc:
+            error = f"op {i} ({kind}) is missing or has a malformed field: {exc}"
+            results.append({"index": i, "op": kind, "ok": False, "data": None, "error": error})
+            return {"ok": False, "results": results, "error": error}
         results.append({"index": i, "op": kind, "ok": result.ok,
                          "data": result.data, "error": result.error})
         if not result.ok:

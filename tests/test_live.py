@@ -468,7 +468,7 @@ def test_connect_or_launch_returns_immediately_when_process_exits_early(monkeypa
 
 def test_connect_or_launch_fails_fast_when_port_is_occupied_by_an_unresponsive_process(monkeypatch):
     monkeypatch.setattr(live, "_SQUATTED_PORT_GRACE", 1.0)
-    server = _FakeLiveServer(lambda cmd: {"ok": True, "ready": False})  # never becomes ready
+    server = _FakeLiveServer(lambda cmd: None)  # accepts connections but never answers -- a true squatter
     launched = {"called": False}
 
     def _no_launch(passed_cfg):
@@ -492,7 +492,7 @@ def test_connect_or_launch_fails_fast_when_port_is_occupied_by_an_unresponsive_p
 def test_connect_or_launch_relaunches_when_a_squatting_process_stops_listening_during_grace(monkeypatch):
     monkeypatch.setattr(live, "_SQUATTED_PORT_GRACE", 2.0)
     picked_port = _free_port()
-    stale_server = _FakeLiveServer(lambda cmd: {"ok": True, "ready": False}, port=picked_port)
+    stale_server = _FakeLiveServer(lambda cmd: None, port=picked_port)  # never answers, matching a dying process
 
     def _stop_stale_soon():
         time.sleep(0.3)
@@ -520,6 +520,35 @@ def test_connect_or_launch_relaunches_when_a_squatting_process_stops_listening_d
     finally:
         if started_server["server"] is not None:
             started_server["server"].stop()
+
+
+def test_connect_or_launch_waits_past_grace_for_a_slow_booting_real_instance(monkeypatch):
+    monkeypatch.setattr(live, "_SQUATTED_PORT_GRACE", 1.0)
+    state = {"ready": False}
+    server = _FakeLiveServer(lambda cmd: {"ok": True, "ready": state["ready"]})
+    launched = {"called": False}
+
+    def _no_launch(passed_cfg):
+        launched["called"] = True
+        return _FakeProcess()
+
+    monkeypatch.setattr(live, "_launch_overlay", _no_launch)
+
+    def _become_ready_soon():
+        time.sleep(1.5)  # past the 1.0s grace period, well within launch_timeout
+        state["ready"] = True
+
+    threading.Thread(target=_become_ready_soon, daemon=True).start()
+    try:
+        session = live.connect_or_launch(cfg=cfg, host="127.0.0.1", port=server.port,
+                                          launch_timeout=10.0)
+        assert session.ok, session.error
+        assert session.process is None  # attached, never launched a new one
+        assert launched["called"] is False, (
+            "a slow-booting real instance must not be misclassified as squatted and relaunched"
+        )
+    finally:
+        server.stop()
 
 
 @pytest.mark.integration
