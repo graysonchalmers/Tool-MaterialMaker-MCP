@@ -3,7 +3,7 @@ import json
 import os
 import sys
 from mcp.server.mcpserver import MCPServer
-from mm_mcp import __version__
+from mm_mcp import __version__, live
 from mm_mcp.config import load_config, require_valid
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.validator import validate_graph
@@ -115,6 +115,32 @@ def load_example(name: str) -> dict:
         return json.load(fh)
 
 
+_live_session: live.LiveSession | None = None
+
+
+def _ensure_live_session(cfg, launch_timeout: float = 60.0) -> live.LiveSession:
+    """Every live_* tool call goes through this first: probes (or launches)
+    Material Maker via live.connect_or_launch, per the design spec's "a live
+    tool call launches it rather than erroring out" scope decision. Cheap
+    when a session is already up and ready (one ping round-trip); only slow
+    the first time, when nothing is listening yet."""
+    global _live_session
+    _live_session = live.connect_or_launch(cfg=cfg, launch_timeout=launch_timeout)
+    return _live_session
+
+
+def live_start(launch_timeout: float = 60.0) -> dict:
+    """Connect to an already-open Material Maker, or launch it against the
+    disposable live overlay if nothing's listening on the known port. Not
+    required before the other live_* tools -- they each do this same
+    connect-or-launch check themselves -- but useful to call first to
+    surface a launch failure (or confirm attach) before issuing real ops."""
+    cfg, _ = _ensure_ready()
+    session = _ensure_live_session(cfg, launch_timeout=launch_timeout)
+    return {"ok": session.ok, "launched": session.process is not None,
+            "error": session.error}
+
+
 # Register the plain functions as MCP tools.
 mcp.tool()(list_node_types)
 mcp.tool()(describe_node)
@@ -124,6 +150,7 @@ mcp.tool()(render_preview)
 mcp.tool()(save_graph)
 mcp.tool()(list_examples)
 mcp.tool()(load_example)
+mcp.tool()(live_start)
 
 
 @mcp.resource("catalog://nodes")
