@@ -153,6 +153,48 @@ def live_get_graph() -> dict:
             "error": result.error}
 
 
+_LIVE_OP_HANDLERS = {
+    "add_node": lambda op, cfg: live.add_node(
+        op["node_type"], op.get("parameters"), x=op.get("x", 0.0), y=op.get("y", 0.0), cfg=cfg),
+    "connect_nodes": lambda op, cfg: live.connect_nodes(
+        op["from_name"], op["from_port"], op["to_name"], op["to_port"], cfg=cfg),
+    "set_param": lambda op, cfg: live.set_param(op["name"], op["parameters"], cfg=cfg),
+}
+
+
+def live_apply(ops: list) -> dict:
+    """Apply a batch of mutations to the live graph in order, each validated
+    against the catalog before it reaches the socket (same validation
+    live.py's add_node/connect_nodes/set_param already do). Stops at the
+    first failing op rather than continuing: a later op in the same batch
+    may assume an earlier one already applied (e.g. connecting a node
+    add_node just created), so there's nothing safe to do with the rest of
+    the batch once one op fails. Each op is a dict:
+    {"op": "add_node", "node_type": ..., "parameters": {...}, "x": ..., "y": ...} |
+    {"op": "connect_nodes", "from_name": ..., "from_port": ..., "to_name": ..., "to_port": ...} |
+    {"op": "set_param", "name": ..., "parameters": {...}}.
+    """
+    cfg, _ = _ensure_ready()
+    session = _ensure_live_session(cfg)
+    if not session.ok:
+        return {"ok": False, "results": [], "error": session.error}
+    results = []
+    for i, op in enumerate(ops):
+        kind = op.get("op")
+        handler = _LIVE_OP_HANDLERS.get(kind)
+        if handler is None:
+            error = f"op {i} has an unrecognized 'op' value: {kind!r}"
+            results.append({"index": i, "op": kind, "ok": False, "data": None, "error": error})
+            return {"ok": False, "results": results, "error": error}
+        result = handler(op, cfg)
+        results.append({"index": i, "op": kind, "ok": result.ok,
+                         "data": result.data, "error": result.error})
+        if not result.ok:
+            return {"ok": False, "results": results,
+                    "error": f"op {i} ({kind}) failed: {result.error}"}
+    return {"ok": True, "results": results, "error": None}
+
+
 # Register the plain functions as MCP tools.
 mcp.tool()(list_node_types)
 mcp.tool()(describe_node)
@@ -164,6 +206,7 @@ mcp.tool()(list_examples)
 mcp.tool()(load_example)
 mcp.tool()(live_start)
 mcp.tool()(live_get_graph)
+mcp.tool()(live_apply)
 
 
 @mcp.resource("catalog://nodes")
