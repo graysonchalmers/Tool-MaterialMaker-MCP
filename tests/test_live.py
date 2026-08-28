@@ -392,6 +392,40 @@ def test_launch_command_uses_console_binary_and_overlay_path():
     assert cmd == [cfg.console_binary, "--path", r"C:\somewhere\overlay"]
 
 
+def test_terminate_kills_the_process_tree_via_taskkill_when_pid_is_available(monkeypatch):
+    calls = []
+    monkeypatch.setattr(live.subprocess, "run", lambda *a, **kw: calls.append(a[0]))
+    process = _FakeProcess()
+    process.pid = 4242
+    live._terminate(process)
+    assert calls == [["taskkill", "/F", "/T", "/PID", "4242"]]
+    assert process.terminated is True  # the plain terminate() fallback still runs
+
+
+def test_terminate_skips_taskkill_without_a_real_pid(monkeypatch):
+    called = {"yes": False}
+
+    def _fake_run(*a, **kw):
+        called["yes"] = True
+
+    monkeypatch.setattr(live.subprocess, "run", _fake_run)
+    process = _FakeProcess()  # no .pid attribute at all -- a test double, not a real Popen
+    live._terminate(process)
+    assert called["yes"] is False
+    assert process.terminated is True
+
+
+def test_terminate_swallows_taskkill_failure_and_still_falls_back(monkeypatch):
+    def _fake_run(*a, **kw):
+        raise OSError("taskkill not found")
+
+    monkeypatch.setattr(live.subprocess, "run", _fake_run)
+    process = _FakeProcess()
+    process.pid = 4242
+    live._terminate(process)  # must not raise
+    assert process.terminated is True
+
+
 def test_connect_or_launch_attaches_when_already_listening(monkeypatch):
     server = _FakeLiveServer(lambda cmd: {"ok": True, "ready": True})
     launched = {"called": False}
