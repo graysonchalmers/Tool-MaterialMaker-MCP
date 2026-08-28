@@ -1,5 +1,6 @@
 # Secrets / config
 .env
+.mcp.json
 
 # Python
 __pycache__/

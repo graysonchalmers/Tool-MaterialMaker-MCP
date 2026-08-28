@@ -1,13 +1,25 @@
 # 🧭 Session Handoff — Tool-MaterialMaker-MCP
 
-_Last updated: 2026-08-28 CT (America/Chicago)_
+_Last updated: 2026-08-28 (later same day) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**The `connect_or_launch` readiness race (last session's top backlog item) is
-fixed, merged to `main`, and pushed.** Picked up via `pickup`, the race was
+**This session was a short pickup that hit a blocker before the manual
+live-GUI verification could start: this Claude Code session had no MCP
+wiring to the `mm-mcp` server at all** (no `.mcp.json`, no `mcpServers`
+entry anywhere), so none of the four `live_*` tools were callable. Fixed by
+creating a project-local `.mcp.json` pointing at the project's own
+`.venv\Scripts\mm-mcp.exe`, with `MM_GODOT_BINARY`/`MM_PROJECT_PATH`/
+`MM_OUTPUT_DIR` mirrored from the existing `.env`. Added `.mcp.json` to
+`.gitignore` alongside `.env` (same reasoning: local absolute machine paths,
+not something the repo should carry). No code changed this session -- the
+prior session's `connect_or_launch` readiness-race fix (see below) is still
+the last real code change, merged and pushed.
+
+**That prior fix (last session's top backlog item) is fixed, merged to
+`main`, and pushed.** Picked up via `pickup`, the race was
 written up as a plan via `writing-plans`, then executed fully via
 `subagent-driven-development` for the first time truly end to end with zero
 execution-mode prompts -- Grayson asked, explicitly, that the
@@ -52,29 +64,32 @@ preserved in the Session log below.
 
 ## 📌 Where we stopped
 
-Clean stop. Merged fast-forward to `main` (`4f4240a`), pushed, confirmed
-synced with `origin/main`. Fast suite 179/179 green + 6 deselected
-integration tests. No worktree, no branch, no lingering Godot processes.
+`.mcp.json` created and gitignored, `.gitignore` change committed locally
+(not yet pushed -- no push approval given this session). Session ended here
+so Grayson can restart Claude Code and pick up the new `material-maker` MCP
+server; a fresh session is required, this one's tool set can't reload
+mid-conversation.
 
 ## ▶️ Next concrete step
 
-**The manual live-GUI verification with Grayson** -- carried over from
-earlier sessions, now the natural next step since the race that could have
-made it flaky is fixed. All four Phase 5 build steps are done and
-automated-tested, but the spec's own literal "Done" criterion ("Grayson has
-Material Maker open, asks Claude to build or tweak a material, and watches
-nodes appear and connect in the live window as Claude works, then asks for
-a render and sees the preview update in place") has never actually happened
-hands-on. That pass is what would let Phase 5 itself (not just its build
-sub-plan) move from 🔌 wired to ✅ verified in STATUS.md.
+**Restart Claude Code in this folder, approve the one-time trust prompt for
+the new `material-maker` MCP server, then run `pickup` again.** Once the
+`live_start`/`live_get_graph`/`live_apply`/`live_render` tools are visible,
+the actual next step is unchanged from last session: **the manual live-GUI
+verification with Grayson** -- open Material Maker, ask Claude to build or
+tweak a material, watch nodes appear and connect live, then render and see
+the preview update in place. That's Phase 5's own literal "Done" criterion,
+still never done hands-on, and what would move Phase 5 from 🔌 wired to
+✅ verified in STATUS.md.
 
 **⚠️ Heads-up before that session:** close any Material Maker window that's
-been open since before this merge landed. It's running the pre-upgrade
-addon (no `has_graph` field), and this session's fix will now make it fail
-fast with a "no graph tab" diagnostic on the first live tool call instead
-of the old, slower "no active graph" race -- not yet hit in practice, just
-flagged by this session's final review as the predictable first thing to
-happen. Close it and let the next live tool call relaunch a fresh one.
+been open since before the `connect_or_launch` merge (`4f4240a`) landed.
+It's running the pre-upgrade addon (no `has_graph` field), and that fix
+will now make it fail fast with a "no graph tab" diagnostic on the first
+live tool call instead of the old, slower "no active graph" race -- not yet
+hit in practice, just flagged by that session's final review as the
+predictable first thing to happen. Close it and let the next live tool call
+relaunch a fresh one.
 
 Further alternatives, all carried over unchanged:
 - **A. More cookbook categories** (extend the authoring recipe library).
@@ -87,6 +102,10 @@ Further alternatives, all carried over unchanged:
 
 ## ❓ Open questions
 
+- **New this session:** is `.mcp.json` the right long-term wiring, or should
+  this get folded into `project-setup`'s standard kit for future projects
+  that also need MCP-client wiring for a manual-verification step? Not
+  decided, just noticed while fixing the immediate blocker.
 - **✅ Resolved this session:** `connect_or_launch`'s readiness check racing
   ahead of the default graph tab's creation -- see Current state. `ping` now
   reports `has_graph`; `connect_or_launch` requires both `ready` and
@@ -424,6 +443,33 @@ that's where their full detail lives now.)
 ---
 
 ## 🕓 Session log
+
+### 2026-08-28 (later same day) — MCP wiring blocker found and fixed
+- Picked up via `pickup`. Handoff and git agreed exactly (main, `0c105c2`,
+  clean) -- no drift. Grayson said "go" on the recommended next step (manual
+  live-GUI verification).
+- Hit a blocker immediately: this Claude Code session had no `mm-mcp` server
+  wired in at all, confirmed via `find`/`cat` for `.mcp.json` and
+  `claude_desktop_config*` (none existed) and by checking the session's own
+  loaded tool list (no `mm_mcp`-prefixed tools present). The README's
+  "Connect it to an MCP client" section (`README.md:154`) documents the
+  recipe but nothing in the repo actually did it.
+- Asked Grayson which client to wire it into (this Claude Code session via a
+  project-local `.mcp.json`, or Claude Desktop instead); he said "go for it."
+  Verified `.venv\Scripts\mm-mcp.exe` exists before pointing at it (rather
+  than assuming global PATH). Created `.mcp.json` with `MM_GODOT_BINARY`/
+  `MM_PROJECT_PATH`/`MM_OUTPUT_DIR` copied from the existing `.env` (no
+  secrets in any of the three, confirmed by reading `.env` first and
+  grepping out anything key/secret/token-shaped).
+- Added `.mcp.json` to `.gitignore` next to `.env` -- same reasoning: local
+  absolute machine paths, not a repo concern, and no deliberate decision was
+  made to track it.
+- Wrote the required `_agent-commons\log\` entry
+  (`2026-08-28-claude-code-mm-mcp-mcp-json.md`) before this wrap-up, per
+  `C:\Projects-local\CLAUDE.md`'s standing rule.
+- No code changed. The actual live-GUI verification is still pending --
+  requires a fresh Claude Code session (or restart) to pick up the new MCP
+  server, which this session's own tool set can't do mid-conversation.
 
 ### 2026-08-28 — connect_or_launch readiness race, full SDD pipeline + final-review fix wave
 - Picked up via `pickup`, argument named the top backlog item from last
