@@ -81,15 +81,12 @@ mid-task.
 
 ## ▶️ Next concrete step
 
-**Two live decision points from this session, likely the actual next pick:**
-- **K. Fix the two worst live-control correctness bugs.** `live_render_node_output`
-  (`server.py`) never checks whether restoring the original wiring after a
-  preview succeeded — a failed restore reports success while the live graph
-  stays wired to the temporary preview connection. `live_apply` (`server.py`)
-  only catches `(KeyError, TypeError)` from op handlers, so a malformed op
-  (e.g. a list where a parameters dict is expected) raises an uncaught
-  `AttributeError` and discards the batch's already-succeeded results. Full
-  list of all 10 findings from today's code review is in Heads-up below.
+**K. ✅ Done this session.** Fixed the two worst live-control correctness
+bugs (`live_render_node_output`'s unchecked restore, `live_apply`'s narrow
+exception tuple) — see Heads-up and Changed-this-session below. 8 lower-severity
+findings from the same code review remain unfixed, full list in Heads-up.
+
+**Two live decision points remaining:**
 - **L. Adopt a HANDOFF.md trim/archive convention.** This doc is 1640+ lines /
   110KB+ after 4 calendar days with no cap or archiving mechanism — flagged
   by today's teardown (Maintainer lens) as a real, growing pickup cost. No
@@ -101,6 +98,15 @@ mid-task.
   project: 39% of commits, 49% of test lines, one real hands-on verification
   session, and the one time Grayson did real keepable work (the moss-edit),
   live mode was bypassed because it can't rename/reposition nodes.
+- **N. "Material Maker for dummies" — a simplified interface, unscoped.**
+  New backlog idea from Grayson this session (captured in full in
+  `_agent-commons/ideas/Tool-MaterialMaker-MCP.md`): the real node graph can
+  be intimidating to a non-technical viewer; is there a simpler on-ramp?
+  Explicitly deferred pending its own `brainstorming` session — worth
+  checking against `docs/NORTH_STAR.md`'s round-trip-learning-tool framing
+  first, since hiding the graph outright vs. exposing a simplified parameter
+  panel on top of a graph mm-mcp already authored are very different scope
+  bets.
 
 **Older backlog, unchanged, still open:**
 - **A. Unreal UE5 export verification** — the natural continuation of a
@@ -175,6 +181,30 @@ mid-task.
   available; two parked-not-fixed overlay-builder findings from a much
   earlier session (staleness marker, `_append_autoload`'s first-occurrence
   match, both verified low-priority).
+
+## 🗂️ Changed this session (backlog item K: the two worst live-control bugs)
+
+- Branch: `main`. Not yet committed (pending wrap-up). Changed: `src/mm_mcp/server.py`
+  (`live_render_node_output` now checks the restore call's own success;
+  `live_apply`'s op-handler exception tuple grew `AttributeError`),
+  `tests/test_server_live.py` (4 new tests), `STATUS.md`, `HANDOFF.md`. No
+  plan doc, no worktree — both bugs were already diagnosed with exact line
+  numbers and root causes from the prior session's code review, so this was
+  direct TDD on `main`, matching this project's own precedent for
+  well-scoped fixes this size.
+- Decisions (+ why): a failed restore now reports `ok=False` rather than
+  being silently swallowed, since the live graph staying wired to a
+  temporary preview connection is exactly the kind of state a human
+  watching the live window needs to know about — but the render's own
+  image is still attached when the render itself succeeded, since losing
+  that real result to a separate, unrelated restore failure would throw
+  away useful output. `live_apply`'s fix was the narrowest correct change
+  (add `AttributeError` to the existing tuple) rather than broadening to a
+  bare `except Exception`, matching this project's existing precise/narrow
+  exception-handling style rather than papering over unknown failure modes.
+  Wrote all 4 new tests first and confirmed each failed against the
+  pre-fix code (red) before implementing, per `test-driven-development`.
+  Fast suite: 211 passed (up from 207), 9 deselected.
 
 ## 🗂️ Changed this session (pre-release audit, teardown, doc-accuracy fixes)
 
@@ -460,18 +490,27 @@ that's where their full detail lives now.)
 
 ## ⚠️ Heads-up for the next agent
 
-- **Today's 8-angle code review found 10 verified correctness bugs, NONE
-  fixed yet.** Recorded here so they aren't tribal knowledge living only in
-  a conversation transcript (a teardown finding this same session called
-  out as a real risk). Ranked most severe first:
-  1. `server.py` (`live_render_node_output`, ~line 315): the restore-original-wiring
-     call after a preview isn't checked for success — a failed restore
-     reports overall success while the live graph stays wired to the
-     temporary preview connection. CONFIRMED.
-  2. `server.py` (`live_apply`, ~line 268): only catches `(KeyError, TypeError)`
+- **The 2026-08-29 8-angle code review found 10 verified correctness bugs;
+  the top 2 are now fixed (2026-08-29, this session), 8 remain.** Recorded
+  here so they aren't tribal knowledge living only in a conversation
+  transcript (a teardown finding this same session called out as a real
+  risk). Ranked most severe first:
+  1. **✅ FIXED.** `server.py` (`live_render_node_output`): the restore-original-wiring
+     call after a preview wasn't checked for success — a failed restore used
+     to report overall success while the live graph stayed wired to the
+     temporary preview connection. Now checked; a failed restore reports
+     `ok=False` with a message naming the live graph's actual state (still
+     wired to the preview), while still attaching the render's own image if
+     the render itself succeeded. New tests:
+     `test_live_render_node_output_reports_a_failed_reconnect_restore`,
+     `..._reports_a_failed_disconnect_restore`,
+     `..._combines_render_and_restore_failures`.
+  2. **✅ FIXED.** `server.py` (`live_apply`): only caught `(KeyError, TypeError)`
      from op handlers; a malformed op (e.g. a list where a parameters dict
-     is expected) raises an uncaught `AttributeError`, discarding the
-     batch's already-succeeded results. CONFIRMED.
+     is expected) could raise an uncaught `AttributeError` from deep inside
+     `validate_graph`'s `.items()` call, discarding the batch's
+     already-succeeded results. `AttributeError` added to the caught tuple.
+     New test: `test_live_apply_reports_a_malformed_op_field_as_data_not_a_raised_exception`.
   3. `server.py` (`main`, ~line 403): no atexit/signal handler ever calls
      `_live_session.close()`, so a launched Godot process is orphaned if the
      MCP server exits uncleanly. CONFIRMED.

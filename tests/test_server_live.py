@@ -157,6 +157,30 @@ def test_live_apply_rejects_unrecognized_op_without_contacting_the_server(monkey
     assert "delete_everything" in result["error"]
 
 
+def test_live_apply_reports_a_malformed_op_field_as_data_not_a_raised_exception(monkeypatch):
+    # Bug: a malformed field (e.g. a list where a parameters dict is
+    # expected) can raise AttributeError deep inside validate_graph
+    # (n.get("parameters").items()) -- only (KeyError, TypeError) were
+    # caught, so this used to escape live_apply uncaught and discard the
+    # batch's already-succeeded results.
+    monkeypatch.setattr(server, "_ensure_ready", lambda: (cfg, {}))
+    monkeypatch.setattr(live, "connect_or_launch",
+                         lambda cfg, launch_timeout=60.0: _FakeSession(ok=True))
+
+    def _fake_add_node(node_type, parameters, x=0.0, y=0.0, cfg=None):
+        raise AttributeError("'list' object has no attribute 'items'")
+
+    monkeypatch.setattr(live, "add_node", _fake_add_node)
+
+    result = server.live_apply([
+        {"op": "add_node", "node_type": "perlin", "parameters": ["not", "a", "dict"]},
+    ])
+
+    assert result["ok"] is False
+    assert "op 0" in result["error"]
+    assert result["results"][0]["ok"] is False
+
+
 def test_live_render_returns_images_on_success(monkeypatch):
     monkeypatch.setattr(server, "_ensure_ready", lambda: (cfg, {}))
     monkeypatch.setattr(live, "connect_or_launch",
@@ -480,6 +504,80 @@ def test_live_render_node_output_reports_session_failure_without_calling_get_gra
 
     assert result == {"ok": False, "image": None, "error": "no server"}
     assert called["yes"] is False
+
+
+def test_live_render_node_output_reports_a_failed_reconnect_restore(monkeypatch):
+    # Bug: a failed restore after a successful render used to be silently
+    # dropped, reporting ok=True while the live graph stayed wired to the
+    # temporary preview connection.
+    monkeypatch.setattr(server, "_ensure_ready", lambda: (cfg, {}))
+    monkeypatch.setattr(live, "connect_or_launch",
+                         lambda cfg, launch_timeout=60.0: _FakeSession(ok=True))
+    monkeypatch.setattr(live, "get_graph",
+                         lambda: live.LiveResult(ok=True, data={"graph": _LIVE_GRAPH_WITH_ALBEDO_SOURCE}))
+    calls = []
+
+    def _fake_connect_nodes(from_name, from_port, to_name, to_port, cfg=None):
+        calls.append((from_name, to_name))
+        if from_name == "orig":
+            return live.LiveResult(ok=False, error="socket timeout")
+        return live.LiveResult(ok=True)
+
+    monkeypatch.setattr(live, "connect_nodes", _fake_connect_nodes)
+    monkeypatch.setattr(live, "render",
+                         lambda basename, profile, cfg: RenderResult(
+                             ok=True, images=[f"{basename}_albedo.png"]))
+
+    result = server.live_render_node_output("target")
+
+    assert result["ok"] is False
+    assert result["image"] == "node_output_albedo.png"  # the render itself did succeed
+    assert "socket timeout" in result["error"]
+    assert "temporary preview connection" in result["error"]
+    assert calls == [("target", "Material"), ("orig", "Material")]
+
+
+def test_live_render_node_output_reports_a_failed_disconnect_restore(monkeypatch):
+    monkeypatch.setattr(server, "_ensure_ready", lambda: (cfg, {}))
+    monkeypatch.setattr(live, "connect_or_launch",
+                         lambda cfg, launch_timeout=60.0: _FakeSession(ok=True))
+    monkeypatch.setattr(live, "get_graph",
+                         lambda: live.LiveResult(ok=True, data={"graph": _LIVE_GRAPH_WITHOUT_ALBEDO_SOURCE}))
+    monkeypatch.setattr(live, "connect_nodes", lambda *a, **k: live.LiveResult(ok=True))
+    monkeypatch.setattr(live, "disconnect_nodes",
+                         lambda *a, **k: live.LiveResult(ok=False, error="socket timeout"))
+    monkeypatch.setattr(live, "render",
+                         lambda basename, profile, cfg: RenderResult(
+                             ok=True, images=[f"{basename}_albedo.png"]))
+
+    result = server.live_render_node_output("target")
+
+    assert result["ok"] is False
+    assert result["image"] == "node_output_albedo.png"
+    assert "socket timeout" in result["error"]
+
+
+def test_live_render_node_output_combines_render_and_restore_failures(monkeypatch):
+    monkeypatch.setattr(server, "_ensure_ready", lambda: (cfg, {}))
+    monkeypatch.setattr(live, "connect_or_launch",
+                         lambda cfg, launch_timeout=60.0: _FakeSession(ok=True))
+    monkeypatch.setattr(live, "get_graph",
+                         lambda: live.LiveResult(ok=True, data={"graph": _LIVE_GRAPH_WITH_ALBEDO_SOURCE}))
+
+    def _fake_connect_nodes(from_name, from_port, to_name, to_port, cfg=None):
+        if from_name == "orig":
+            return live.LiveResult(ok=False, error="restore failed")
+        return live.LiveResult(ok=True)
+
+    monkeypatch.setattr(live, "connect_nodes", _fake_connect_nodes)
+    monkeypatch.setattr(live, "render",
+                         lambda basename, profile, cfg: RenderResult(ok=False, error="Godot exited 1"))
+
+    result = server.live_render_node_output("target")
+
+    assert result["ok"] is False
+    assert "Godot exited 1" in result["error"]
+    assert "restore failed" in result["error"]
 
 
 def test_live_apply_rejects_a_non_dict_op_without_raising(monkeypatch):

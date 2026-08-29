@@ -265,7 +265,7 @@ def live_apply(ops: list) -> dict:
             return {"ok": False, "results": results, "error": error}
         try:
             result = handler(op, cfg)
-        except (KeyError, TypeError) as exc:
+        except (KeyError, TypeError, AttributeError) as exc:
             error = f"op {i} ({kind}) is missing or has a malformed field: {exc}"
             results.append({"index": i, "op": kind, "ok": False, "data": None, "error": error})
             return {"ok": False, "results": results, "error": error}
@@ -285,9 +285,13 @@ def live_render_node_output(node_name: str, port: int = 0, basename: str = "node
     whatever originally fed albedo_tex -- reconnecting the original source if
     one existed, or disconnecting the temporary wire if albedo_tex started
     out unconnected. Restore always runs, even if the render itself fails, so
-    the live window is never left stuck mid-preview. Mirrors render_node_output's
-    batch-path behavior and return shape ({ok, image, error, log_tail}), but
-    against whatever graph is currently open in the live window."""
+    the live window is never left stuck mid-preview -- but if the restore
+    call itself fails, that is reported back as ok=False (with the render's
+    own image still attached if the render succeeded), never silently
+    swallowed, since a failed restore leaves the live graph wired to the
+    temporary preview connection. Mirrors render_node_output's batch-path
+    return shape ({ok, image, error, log_tail}), but against whatever graph
+    is currently open in the live window."""
     cfg, _ = _ensure_ready()
     session = _ensure_live_session(cfg)
     if not session.ok:
@@ -313,18 +317,30 @@ def live_render_node_output(node_name: str, port: int = 0, basename: str = "node
     result = live.render(basename=basename, profile=profile, cfg=cfg)
 
     if original is not None:
-        live.connect_nodes(original["from"], original.get("from_port", 0),
-                            material_name, 0, cfg=cfg)
+        restore = live.connect_nodes(original["from"], original.get("from_port", 0),
+                                      material_name, 0, cfg=cfg)
     else:
-        live.disconnect_nodes(node_name, port, material_name, 0, cfg=cfg)
+        restore = live.disconnect_nodes(node_name, port, material_name, 0, cfg=cfg)
+    restore_warning = None
+    if not restore.ok:
+        restore_warning = (f"restoring the original wiring failed: {restore.error} -- "
+                            "the live graph is still wired to the temporary preview connection")
 
     if not result.ok:
-        return {"ok": False, "image": None, "error": result.error,
+        error = result.error
+        if restore_warning:
+            error = f"{error}; additionally, {restore_warning}"
+        return {"ok": False, "image": None, "error": error,
                 "log_tail": result.log_tail}
     albedo = next((p for p in result.images if p.endswith("_albedo.png")), None)
     if albedo is None:
-        return {"ok": False, "image": None,
-                "error": "render succeeded but no albedo output was produced",
+        error = "render succeeded but no albedo output was produced"
+        if restore_warning:
+            error = f"{error}; additionally, {restore_warning}"
+        return {"ok": False, "image": None, "error": error,
+                "log_tail": result.log_tail}
+    if restore_warning:
+        return {"ok": False, "image": albedo, "error": restore_warning,
                 "log_tail": result.log_tail}
     return {"ok": True, "image": albedo, "error": None, "log_tail": result.log_tail}
 
