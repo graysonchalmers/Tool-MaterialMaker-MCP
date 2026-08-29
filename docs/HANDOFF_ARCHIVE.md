@@ -273,6 +273,76 @@ doc's window.
 
 ## Archived session log
 
+### 2026-08-28 (evening) — wood/stone cookbook categories, editability + cross-engine docs
+- Picked up via `pickup`. Drift found and reported: the handoff said the
+  overlay read-only-rmtree fix was uncommitted; git showed `main` and
+  `origin/main` both at `09455c8` -- already landed. No other drift.
+- Grayson asked for four things at once: (1) human-editability as a written
+  constraint, (2) some cookbook categories, (3) short answer on the
+  GDScript smoke-check backlog item, (4) checking Material Maker's export
+  options and other local projects for Unreal texture QA prior art, then
+  updating NORTH_STAR.md if it made sense.
+- **(1)** Added a "Human-editability constraint" section to
+  `docs/AUTHORING.md` (simple chains, descriptive names, sane layout,
+  prefer the simpler equivalent).
+- **(3)** Built and ran the GDScript parse-only smoke check for real before
+  trusting the prior review's claim it was viable. It isn't:
+  `--headless --check-only --script` never boots the project's autoloads
+  or global `class_name`s, so it can't resolve `mm_globals`/`MMGraphEdit`.
+  Confirmed with a dependency-free scratch script (passes) vs. the real
+  addon (fails identically with/without `--path`). Reverted the test.
+- **(4)** Dispatched an Explore agent across Grayson's other local projects
+  for Unreal asset-QA prior art before writing anything. Found
+  `Tool-UnityQA` had already scoped and deferred the identical problem
+  (texture channel-packing/color-space checks across engines) -- confirmed
+  this is new ground, not a reuse. Read Material Maker's own export docs
+  (Unity `.mat`, Unreal UE4 manual/UE5 python-script). Added a "Cross-engine
+  portability" section to `docs/NORTH_STAR.md`.
+- **(2)** Built `quality/cookbook_wood.py` (3 recipes) and
+  `quality/cookbook_stone.py` (3 recipes), following the established
+  cookbook-growth pattern. Visually verified every render before writing
+  anything up -- caught and fixed a real miss along the way (`w03`'s first
+  paint-mask attempt read as cow-hide blotches, fixed by tuning the mask).
+- Grayson then pointed out he'd never actually been SHOWN any of this --
+  every review to that point was me looking at renders via `Read`, not
+  sending them. Started `SendUserFile`-ing every pass; saved as a standing
+  feedback memory (`feedback-send-render-previews.md`). He also asked for
+  a tiled contact sheet -- built `quality/contact_sheet.py`.
+- Grayson's review of the sent images found three real problems, fixed all
+  three: `w03`'s speckle (root-caused to the `blend` node's opacity math at
+  a razor-thin mask threshold -- widening the band fixed it; tested and
+  confirmed this does NOT generalize to `sf03`'s similar-looking unresolved
+  bug), `s04` concrete too light (darkened), `s05` hex tile too flat (added
+  a fine-grain multiply layer -- then discovered the 512px tracked preview
+  was hiding that detail entirely, a real caveat now in memory).
+- Grayson asked for a sixth stone (natural river stones/pebbles) and
+  flagged `w03` as still "not quite right" and asked for a softer
+  pebble-style replacement for `s04`. Built `s06_river_pebbles` (rounded
+  voronoi cells, per-cell random tone, `param4=0` relief) -- the flat
+  albedo looked like angular polygons; confirmed correct via
+  `render_preview` (3D), establishing "judge relief materials in 3D" as a
+  standing rule. Root-caused `w03` for real this time: the donor (`wood`)
+  had no board structure at all, so no mask tuning could ever make it read
+  as siding -- swapped to `wooden_floor` and it worked immediately.
+- Grayson's next review: "the white feels weird" on `w03` (two more real
+  fixes -- the paint color was capped at 88% brightness with a muddy cast,
+  and the mask balance had wood as the majority, backwards for siding) and
+  wanted `s04` replaced entirely with something softer/pebble-like.
+  Built `s04_scattered_river_stones` (stones in a sand matrix, distinct
+  from `s06`'s packed mosaic) -- hit and fixed a real bug: assumed
+  `voronoi` port 0's distance field was high at cell centers, it's actually
+  the opposite, which had to be found by rendering and looking, not derived
+  from the shader source alone.
+- Captured Grayson's backlog idea (image-to-material decomposition from
+  reference photos) verbatim in a new
+  `_agent-commons/ideas/Tool-MaterialMaker-MCP.md` -- this project had none.
+- Wrote six `_agent-commons/log/` entries across the session (one per major
+  thread) plus the ideas file, all in a single scoped commit to the Skills
+  repo (staged only this session's own files, left other agents' pending
+  work untouched).
+- Fast suite not re-run this session -- no Python/GDScript code changed,
+  only new standalone `quality/` scripts and docs.
+
 ### 2026-08-28 (yet later still) — overlay read-only rmtree bug, found and fixed
 - Picked up via `pickup`; no drift between the handoff and the repo. Grayson
   chose to try `live_clear` live in chat (build something, render, clear,

@@ -1,103 +1,36 @@
 # 🧭 Session Handoff — Tool-MaterialMaker-MCP
 
-_Last updated: 2026-08-29 CT (America/Chicago)_
+_Last updated: 2026-08-29 (later) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**This session ran a full pre-release audit ahead of Grayson recruiting
-external alpha testers, then a 6-lens adversarial teardown, then fixed the
-documentation-accuracy findings from both.** No feature work. Test suite
-confirmed live at 207 passed / 9 deselected (matches this doc's existing
-216-total figure). A code review across `src/mm_mcp/*.py` +
-`addons/mm_live/live_server.gd` found 10 verified correctness bugs, none
-fixed yet — full list in Heads-up below so it isn't lost. A docs audit and
-the teardown both independently found NORTH_STAR.md and PLAN.md describing
-the fully-shipped Phase 5 live-control as "not built," and README.md
-contradicting its own quality score (said "11 of 15" in the alpha warning;
-the real number is 15/15, 11 was the ship gate). The teardown's headline
-verdict: keep the core (Phases 0-3, the `quality/` harness) almost exactly
-as-is; refactor live-control (sound design, real bugs, unproven real-world
-load — 39% of commits and 49% of test lines for a workflow used once for
-real, and bypassed that one time); refactor the docs; kill `graph.py`'s
-dead `Graph` class and the unused `list_node_types` tool. Full teardown
-delivered to Grayson as a file via `SendUserFile`, not committed to this
-repo. Fixed every concrete false/stale doc claim the teardown found
-(README, NORTH_STAR.md, PLAN.md, AUTHORING.md, `.env.example`, STATUS.md's
-internal Phase 5 table disagreement); committed `1fb0d45`, pushed this
-session.
-
-**Prior session, for context:** picked up via `pickup`, did two quick
-housekeeping fixes Grayson asked for, then built backlog item H (and part
-of I) end to end. Committed as `b85a55f` (housekeeping) and `f891fbb` (the
-feature), both pushed to `origin/main`.
-
-**Housekeeping:** reverted the upstream `z-Git\material-maker` checkout's
-`bricks.ptex` back to pristine now that Grayson's real edit is safely
-copied into `saved_graphs/` (resolves last session's open question). Moved
-his own `examples/g01-natural-stone/` GUI save into
-[saved_graphs/natural_stone_grayson_edit.ptex](../saved_graphs/natural_stone_grayson_edit.ptex),
-following the same naming convention as the bricks edit — he confirmed
-that's the one he actually wants kept (resolves last session's other open
-question about that untracked file).
-
-**Backlog item H shipped: `render_node_output` (batch) +
-`live_render_node_output` (live).** Renders a single node's output in
-isolation — rewires a copy of the graph so that node feeds the material's
-albedo input, renders, returns just the resulting albedo image — instead
-of hand-rerouting the graph, which is exactly what last session's moss-mask
-threshold debugging had to do by hand. Batch path is two pure functions in
-`graph.py` (`find_material_node`/`isolate_node_output`) plus a thin
-`server.py` wrapper reusing the existing `render()`/`validate_graph()`
-exactly like `render_graph` already does.
-
-**Grayson asked for both batch and live in the same pass, which surfaced
-real hidden complexity: item I, partially.** The live path needed a way to
-fully undo a preview connection (reconnect-or-disconnect), but only
-`connect_nodes` existed — no `disconnect_nodes`. Added it as the missing
-counterpart (`addons/mm_live/live_server.gd`'s new `_cmd_disconnect_nodes`
-calls Material Maker's own pre-existing `do_disconnect_node`; `live.py`
-confirms the connection exists before sending), also exposed as a fourth
-`live_apply` op. This closes the "disconnect" half of backlog item I —
-the "rename/reposition an existing node" half is still open, unchanged.
-Surfaced to Grayson mid-brainstorming before building (this counts as
-hidden complexity found mid-design, not a silent scope decision); he chose
-to build it now.
-
-Built via `brainstorming` (bounded) → `test-driven-development`. Full
-suite: 216 passed (up from 187). The new GDScript handler is proven by a
-dedicated integration test that forces the no-original-connection restore
-branch — the actual new code path, not the already-proven reconnect
-branch. Zero leftover Godot processes after the integration runs.
+**This session closed out all three next-moves the prior session's teardown
+surfaced: fixed the top 2 code-review bugs, adopted a HANDOFF.md trim
+convention, and closed backlog item I (with a scope correction).** Working
+tree clean, `origin/main` in sync, fast suite at 214 passed / 10 deselected
+(up from 207). Full detail on all three, plus a new unscoped backlog idea
+(item N, a simplified "for dummies" interface), is in this session's log
+entry below and in the "Changed this session" blocks. The prior session's
+own audit/teardown/doc-fix work is preserved in the log entry right after
+this one; older history beyond the 3 write-ups / 5 log entries kept here
+lives in [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).
 
 ## 📌 Where we stopped
 
-Doc-accuracy fixes are committed (`1fb0d45`) and pushed this session,
-`origin/main` in sync. Neither remaining fix option — the two worst
-live-control correctness bugs, or the HANDOFF.md baton-hygiene cleanup this
-doc's own growth pattern was flagged for — has been started. Nothing left
-mid-task.
+Nothing mid-task. All three commits from this session (`12a4be3`, `cb47010`,
+`352317a`) are pushed and confirmed in sync with `origin/main`. The only
+untracked file is the long-flagged `docs/images/contact-sheet-wood-stone.png`
+(see Open questions).
 
 ## ▶️ Next concrete step
 
-**K. ✅ Done this session.** Fixed the two worst live-control correctness
-bugs (`live_render_node_output`'s unchecked restore, `live_apply`'s narrow
-exception tuple) — see Heads-up and Changed-this-session below. 8 lower-severity
-findings from the same code review remain unfixed, full list in Heads-up.
-
-**Two live decision points remaining:**
-- **L. Adopt a HANDOFF.md trim/archive convention.** This doc is 1640+ lines /
-  110KB+ after 4 calendar days with no cap or archiving mechanism — flagged
-  by today's teardown (Maintainer lens) as a real, growing pickup cost. No
-  convention decided yet; candidates: fold session-log entries past some age
-  into a single dated summary, keep Heads-up pruned to current facts only.
-- **M. Decide whether to keep growing live-control's mutation surface before
-  it gets more real (non-demo) use.** The teardown's Economist lens flagged
-  it as the single biggest sunk-cost-vs-evidenced-value mismatch in the
-  project: 39% of commits, 49% of test lines, one real hands-on verification
-  session, and the one time Grayson did real keepable work (the moss-edit),
-  live mode was bypassed because it can't rename/reposition nodes.
+**K, L, M, and backlog item I are all ✅ done this session** — see Changed
+this session below and the Session log entry for the full story. What's
+left:
+- **8 lower-severity correctness bugs** from the prior session's code
+  review remain unfixed (findings 3-10, full list in Heads-up below).
 - **N. "Material Maker for dummies" — a simplified interface, unscoped.**
   New backlog idea from Grayson this session (captured in full in
   `_agent-commons/ideas/Tool-MaterialMaker-MCP.md`): the real node graph can
@@ -137,17 +70,10 @@ findings from the same code review remain unfixed, full list in Heads-up.
 - **F. PyPI publish** (on hold; GitHub-clone is the current route).
 - **G. Document `render_preview`** in `docs/AUTHORING.md` / README, or leave
   it as just an MCP tool.
-- **H. ✅ Done this session.** `render_node_output`/`live_render_node_output`
-  shipped — see Current state.
-- **I. ✅ Done this session, with a scope correction.** `reposition_node` is
-  now a real `live_apply` op (see Changed-this-session above). Renaming an
-  existing node live is ruled OUT, not just deferred: Material Maker's own
-  undo/redo command dispatcher has no rename case at all, and reimplementing
-  one by hand would risk desyncing the addon's `"node_"+name` GraphNode
-  addressing and Godot's own built-in connection bookkeeping, both keyed by
-  name. A human-editability reorganize pass that needs a rename (like the
-  earlier bricks rename) still has to be file-side -- that's now a
-  structural limit of live mode, not an unbuilt feature.
+- **H and I are done** (`render_node_output`/`live_render_node_output` and
+  `reposition_node`, respectively) — see the Session log's 2026-08-28 and
+  2026-08-29 (later) entries. Renaming an existing node live is a ruled-out
+  non-goal, not an open gap: see `live.reposition_node`'s docstring for why.
 - **J. Load an existing `.ptex` into a live session.** No `live_load`
   equivalent exists; `live_start`/`connect_or_launch` only ever begin from
   a default graph or whatever's already open in the attached window. Lowest
@@ -155,9 +81,10 @@ findings from the same code review remain unfixed, full list in Heads-up.
 
 ## ❓ Open questions
 
-- **New this session:** whether to keep expanding live-control's mutation
-  surface before it gets more real (non-demo) use — see backlog item M above.
-- **Still open, flagged a third session running now:** `docs/images/contact-sheet-wood-stone.png`
+- **Resolved this session:** whether to keep expanding live-control's
+  mutation surface. Grayson said keep building it (see item I above) —
+  no longer open.
+- **Still open, flagged a fourth session running now:** `docs/images/contact-sheet-wood-stone.png`
   is still untracked. Just decide next time `docs/images` is touched instead
   of re-flagging it again.
 - **New this session:** the cross-engine North Star wording treats UE4's
@@ -186,13 +113,13 @@ findings from the same code review remain unfixed, full list in Heads-up.
 
 ## 🗂️ Changed this session (backlog item I: reposition_node, rename ruled out)
 
-- Branch: `main`. Not yet committed (pending wrap-up). Changed:
+- Branch: `main`. Committed and pushed: `352317a`. Changed:
   `src/mm_mcp/live.py` (`reposition_node`), `src/mm_mcp/server.py`
   (`reposition_node` as a 5th `live_apply` op), `addons/mm_live/live_server.gd`
   (`_cmd_reposition_node`), `tests/test_live.py`, `tests/test_server_live.py`
-  (2 unit tests + 1 real integration test). No plan doc, no worktree; direct
-  TDD on `main`, matching this project's precedent for well-scoped
-  additions this size.
+  (2 unit tests + 1 real integration test), `HANDOFF.md`, `STATUS.md`,
+  `docs/HANDOFF_ARCHIVE.md`. No plan doc, no worktree; direct TDD on `main`,
+  matching this project's precedent for well-scoped additions this size.
 - Decisions (+ why): built the reposition half of item I but deliberately
   ruled OUT the rename half as unsupported, not just undone. Checked
   Material Maker's own `graph_edit.gd:undoredo_command` -- the exhaustive
@@ -220,7 +147,7 @@ findings from the same code review remain unfixed, full list in Heads-up.
 
 ## 🗂️ Changed this session (backlog item K: the two worst live-control bugs)
 
-- Branch: `main`. Not yet committed (pending wrap-up). Changed: `src/mm_mcp/server.py`
+- Branch: `main`. Committed and pushed: `12a4be3`. Changed: `src/mm_mcp/server.py`
   (`live_render_node_output` now checks the restore call's own success;
   `live_apply`'s op-handler exception tuple grew `AttributeError`),
   `tests/test_server_live.py` (4 new tests), `STATUS.md`, `HANDOFF.md`. No
@@ -574,10 +501,69 @@ findings from the same code review remain unfixed, full list in Heads-up.
 > section past that cap, the oldest entry moves out verbatim (no
 > summarizing) into [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md)
 > instead of letting this doc grow unbounded -- flagged as a real pickup
-> cost by the 2026-08-29 teardown (Maintainer lens). **21 older entries were
-> archived there this session**, from "overlay read-only rmtree bug, found
-> and fixed" back through the project's Phase 1-2 kickoff on 2026-08-25.
+> cost by the 2026-08-29 teardown (Maintainer lens). **22 older entries are
+> now archived there**, from "wood/stone cookbook categories" back through
+> the project's Phase 1-2 kickoff on 2026-08-25.
 
+
+### 2026-08-29 (later) — fixed the top 2 code-review bugs, trimmed HANDOFF.md, closed backlog item I
+- Picked up via `pickup`. No drift: `main` matched the prior session's
+  `d0df55b`, `origin/main` in sync, working tree clean except the
+  long-flagged untracked `docs/images/contact-sheet-wood-stone.png`.
+- Grayson said he liked all three of the prior session's proposed next
+  moves (K, L, M) and was fine with any order, so this session did all
+  three. Also raised a new, unscoped idea: a simplified "Material Maker for
+  dummies" interface, since the real node graph can be intimidating to a
+  non-technical viewer. Logged it as backlog item N in
+  `_agent-commons/ideas/Tool-MaterialMaker-MCP.md` verbatim rather than
+  designing anything, since it's explicit backlog wanting its own
+  `brainstorming` session, and flagged a possible tension with
+  `docs/NORTH_STAR.md`'s round-trip-learning-tool framing worth checking
+  first.
+- **K:** fixed the two worst live-control correctness bugs via direct TDD
+  on `main` (both already diagnosed with line numbers from the prior
+  session's code review). `live_render_node_output` now checks whether
+  restoring the original wiring after a preview actually succeeded, instead
+  of silently reporting success while the live graph stayed wired to the
+  temporary connection. `live_apply` now also catches `AttributeError` from
+  a malformed op (alongside the existing `KeyError`/`TypeError`), since a
+  list where a parameters dict was expected could raise uncaught deep
+  inside `validate_graph`. 4 new tests, all written and confirmed red
+  before the fix. Committed `12a4be3`.
+- **L:** adopted a HANDOFF.md trim/archive convention. The doc had grown to
+  1840 lines with no cap, flagged by the prior session's teardown. Moved 8
+  older "Changed this session" write-ups and 22 older session-log entries
+  verbatim into a new `docs/HANDOFF_ARCHIVE.md`; this doc now keeps only
+  the 3 most recent write-ups and 5 most recent log entries, documented as
+  a standing convention in both this doc and `CLAUDE.md`. Also fixed a
+  stale `-t`-vs-`--target` flag in `CLAUDE.md`'s manual render example
+  while in there. Committed `cb47010`.
+- **M:** asked Grayson directly (via a structured question, not a coin
+  flip) whether to keep growing live-control's mutation surface given the
+  teardown's sunk-cost flag. He said keep building it, so picked up backlog
+  item I. Investigated Material Maker's own source before writing any
+  GDScript: its undo/redo command dispatcher
+  (`graph_edit.gd:undoredo_command`) has a `move_generators` case (reuses
+  `do_set_position`, which also writes the new position back onto the
+  generator, not just the on-screen node) but genuinely no rename case
+  anywhere for an ordinary node -- confirmed this isn't a gap in the addon,
+  it's unsupported by Material Maker itself, since faking a rename by hand
+  would risk desyncing the addon's `"node_"+name` addressing and Godot's
+  own built-in connection bookkeeping. Built `reposition_node` as a new
+  `live_apply` op reusing the same verified-safe call, proven with a real
+  integration test that adds a node, moves it, and confirms the new
+  position via `get_graph`. Ruled the rename half out explicitly rather
+  than leaving it as a silent gap. Committed `352317a`.
+- Pushed all three commits after confirming `origin/main` sync
+  (`git rev-list --left-right --count` → `0  0`).
+- Wrote and pushed the required `_agent-commons\log\` entry
+  (`2026-08-29-claude-code-materialmaker-mcp-bugfix-trim-reposition.md`),
+  scoped to just this session's own new files since the commons repo had
+  other agents' pending work sitting uncommitted.
+- Fast suite: 214 passed (up from 207 at pickup), 10 deselected. Zero
+  leftover Godot processes after the two real integration runs (item K's
+  restore-failure tests were unit-level; item I's reposition test launched
+  a real overlay).
 
 ### 2026-08-29 — pre-release audit, code review, adversarial teardown, doc-accuracy fixes
 - Grayson asked whether the project was ready to post for external alpha
@@ -813,74 +799,3 @@ findings from the same code review remain unfixed, full list in Heads-up.
 - Wrote the required `_agent-commons\log\` entry
   (`2026-08-28-claude-code-unity-export-target-fix.md`) before this
   wrap-up, per `C:\Projects-local\CLAUDE.md`'s standing rule.
-
-### 2026-08-28 (evening) — wood/stone cookbook categories, editability + cross-engine docs
-- Picked up via `pickup`. Drift found and reported: the handoff said the
-  overlay read-only-rmtree fix was uncommitted; git showed `main` and
-  `origin/main` both at `09455c8` -- already landed. No other drift.
-- Grayson asked for four things at once: (1) human-editability as a written
-  constraint, (2) some cookbook categories, (3) short answer on the
-  GDScript smoke-check backlog item, (4) checking Material Maker's export
-  options and other local projects for Unreal texture QA prior art, then
-  updating NORTH_STAR.md if it made sense.
-- **(1)** Added a "Human-editability constraint" section to
-  `docs/AUTHORING.md` (simple chains, descriptive names, sane layout,
-  prefer the simpler equivalent).
-- **(3)** Built and ran the GDScript parse-only smoke check for real before
-  trusting the prior review's claim it was viable. It isn't:
-  `--headless --check-only --script` never boots the project's autoloads
-  or global `class_name`s, so it can't resolve `mm_globals`/`MMGraphEdit`.
-  Confirmed with a dependency-free scratch script (passes) vs. the real
-  addon (fails identically with/without `--path`). Reverted the test.
-- **(4)** Dispatched an Explore agent across Grayson's other local projects
-  for Unreal asset-QA prior art before writing anything. Found
-  `Tool-UnityQA` had already scoped and deferred the identical problem
-  (texture channel-packing/color-space checks across engines) -- confirmed
-  this is new ground, not a reuse. Read Material Maker's own export docs
-  (Unity `.mat`, Unreal UE4 manual/UE5 python-script). Added a "Cross-engine
-  portability" section to `docs/NORTH_STAR.md`.
-- **(2)** Built `quality/cookbook_wood.py` (3 recipes) and
-  `quality/cookbook_stone.py` (3 recipes), following the established
-  cookbook-growth pattern. Visually verified every render before writing
-  anything up -- caught and fixed a real miss along the way (`w03`'s first
-  paint-mask attempt read as cow-hide blotches, fixed by tuning the mask).
-- Grayson then pointed out he'd never actually been SHOWN any of this --
-  every review to that point was me looking at renders via `Read`, not
-  sending them. Started `SendUserFile`-ing every pass; saved as a standing
-  feedback memory (`feedback-send-render-previews.md`). He also asked for
-  a tiled contact sheet -- built `quality/contact_sheet.py`.
-- Grayson's review of the sent images found three real problems, fixed all
-  three: `w03`'s speckle (root-caused to the `blend` node's opacity math at
-  a razor-thin mask threshold -- widening the band fixed it; tested and
-  confirmed this does NOT generalize to `sf03`'s similar-looking unresolved
-  bug), `s04` concrete too light (darkened), `s05` hex tile too flat (added
-  a fine-grain multiply layer -- then discovered the 512px tracked preview
-  was hiding that detail entirely, a real caveat now in memory).
-- Grayson asked for a sixth stone (natural river stones/pebbles) and
-  flagged `w03` as still "not quite right" and asked for a softer
-  pebble-style replacement for `s04`. Built `s06_river_pebbles` (rounded
-  voronoi cells, per-cell random tone, `param4=0` relief) -- the flat
-  albedo looked like angular polygons; confirmed correct via
-  `render_preview` (3D), establishing "judge relief materials in 3D" as a
-  standing rule. Root-caused `w03` for real this time: the donor (`wood`)
-  had no board structure at all, so no mask tuning could ever make it read
-  as siding -- swapped to `wooden_floor` and it worked immediately.
-- Grayson's next review: "the white feels weird" on `w03` (two more real
-  fixes -- the paint color was capped at 88% brightness with a muddy cast,
-  and the mask balance had wood as the majority, backwards for siding) and
-  wanted `s04` replaced entirely with something softer/pebble-like.
-  Built `s04_scattered_river_stones` (stones in a sand matrix, distinct
-  from `s06`'s packed mosaic) -- hit and fixed a real bug: assumed
-  `voronoi` port 0's distance field was high at cell centers, it's actually
-  the opposite, which had to be found by rendering and looking, not derived
-  from the shader source alone.
-- Captured Grayson's backlog idea (image-to-material decomposition from
-  reference photos) verbatim in a new
-  `_agent-commons/ideas/Tool-MaterialMaker-MCP.md` -- this project had none.
-- Wrote six `_agent-commons/log/` entries across the session (one per major
-  thread) plus the ideas file, all in a single scoped commit to the Skills
-  repo (staged only this session's own files, left other agents' pending
-  work untouched).
-- Fast suite not re-run this session -- no Python/GDScript code changed,
-  only new standalone `quality/` scripts and docs.
-
