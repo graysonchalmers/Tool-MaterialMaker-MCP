@@ -1,34 +1,47 @@
 # 🧭 Session Handoff — Tool-MaterialMaker-MCP
 
-_Last updated: 2026-08-29 (cleanup session) CT (America/Chicago)_
+_Last updated: 2026-08-29 (leather cookbook session) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**This session cleared the rest of the pre-release code-review debt and
-finished the teardown's cleanup theme.** Resolved 6 of the 8 remaining
-code-review findings (3-10) and documented 2 as deliberate non-changes with
-primary-source reasons, then ran 4 teardown-blessed cleanup passes: killed
-the dead `Graph` class and deduped three repeated helper snippets into shared
-helpers (`_snapshot_pngs`, `_run_godot`+`_log_tail`, `_first_albedo`). Every
-change was test-first or behavior-preserving under existing tests. Fast suite
-**226 passed** / 10 deselected (up from 214 at pickup). **All 5 code commits
-plus the wrap-up doc commit are pushed** (`c65cc83`, `13c7490`, `9726a59`,
-`19427a7`, `f436300`, `c5b0cfb`); `origin/main` confirmed in sync (`0 0`).
-Older history beyond the 3 write-ups / 5 log entries kept here lives in
-[docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).
+**This session grew the recipe library: a whole new `leather` cookbook
+category, 6 materials** (`quality/cookbook_leather.py` + a Leather section in
+`docs/AUTHORING.md`). All clone the `crocodile_skin` donor across distinct
+levers: l01 black oiled (recolor + grain relief), l02 distressed two-tone
+(masked worn composite), l03 suede (perlin-nap donor swap), l04 exotic reptile
+(enlarged voronoi cells), l05 quilted (pattern-sine pads + channel seams), l06
+topstitched (raised cream stitch dashes). Two reusable lessons landed in
+AUTHORING: `_dome_the_cells` (the voronoi-port-0 polarity flip that fixes the
+inside-out grain Grayson caught in 3D, same trap on l04's albedo ramp), and
+the stitch-generator hunt (`shape`+`tiler` is a trap that times the renderer
+out at 180s; `pattern` Square×Square works but its polarity is inside-out, one
+reversed colorize fixes it). **3 commits pushed** (`5f1a27b`, `6915fc8`,
+`f55359a`); `origin/main` in sync (`0 0`). This is informal cookbook growth,
+no gate, no STATUS.md change. Older history beyond the 3 write-ups / 5 log
+entries kept here lives in [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).
 
 ## 📌 Where we stopped
 
-Wrapped cleanly, nothing mid-task, everything pushed and in sync. The only
-untracked file is the long-flagged
+Wrapped cleanly, nothing mid-task, all 3 code commits pushed and in sync. The
+only untracked file is the long-flagged
 `docs/images/contact-sheet-wood-stone.png` (kept deliberately out of every
-commit this session; see Open questions).
+commit again; see Open questions).
 
 ## ▶️ Next concrete step
 
-Nothing pending on the code side. The open backlog, unchanged:
+Nothing pending on the code side. Cookbook follow-ups surfaced this session:
+- **Debug materials / visual smoke-test swatches** (Grayson's new idea,
+  captured in `_agent-commons/ideas/Tool-MaterialMaker-MCP.md`): known-answer
+  diagnostic swatches that make a wrong node wiring visually obvious (a
+  voronoi-port-0 polarity tester would have caught today's inverted grain on
+  sight). Deferred, wants its own `brainstorming` pass.
+- **Finer/seam-following stitches**: l06's dashes are bold and a full grid,
+  not fine seam-lines. A refinement, not a bug.
+- **More categories**: glass, plastics, painted metal still uncovered.
+
+The older open backlog, unchanged:
 - **2 findings ruled out, not fixed** (deliberate): #8 (`_cmd_clear_graph`'s
   guard is correct — `new_material()` creates the generator, doesn't read
   one) and #10 (`generic_size or 1` coercion is safer than passing an
@@ -117,6 +130,34 @@ Nothing pending on the code side. The open backlog, unchanged:
   earlier session (staleness marker, `_append_autoload`'s first-occurrence
   match, both verified low-priority).
 
+## 🗂️ Changed this session (new leather cookbook category, 6 materials)
+
+- Branch: `main`. Committed and **pushed**: `5f1a27b` (l01-l04 + AUTHORING
+  section), `6915fc8` (l04 albedo-polarity fix + l05 quilted), `f55359a` (l06
+  topstitched). New file `quality/cookbook_leather.py`; new AUTHORING Leather
+  section; 6 tracked albedo thumbnails under `docs/images/cookbook-leather/`.
+  Also appended the debug-materials idea to
+  `_agent-commons/ideas/Tool-MaterialMaker-MCP.md`. No plan doc, no worktree,
+  no gate: informal cookbook growth per `quality/README.md`, same pattern as
+  the fabrics/wood/stone cookbooks.
+- Decisions (+ why): followed the visual-iteration workflow (render + 3D
+  preview + send to Grayson each pass; judge relief in 3D, not the flat
+  swatch). Reworked three materials from honest misses rather than shipping
+  them: l02's first wear mask made cow-hide blobs (finer/softer/lower-contrast
+  fixed it), l04's bronze was on the wrong voronoi region (albedo-polarity
+  flip), l05's intended stitch dashes via `shape`+`tiler` failed so it became
+  a `pattern`-based quilt. Two general levers came out of it and are the real
+  keep-value, both written into AUTHORING: **`_dome_the_cells`** (reverse
+  `colorize_0` so voronoi cell BODIES dome up and seams recess; the stock
+  crocodile ramp is inside-out because voronoi port 0 is low at centers, high
+  at borders) and the **stitch-generator hunt** (`shape`+`tiler` degenerate
+  shader → 180s timeout when isolated; `pattern` Square×Square grid works but
+  its "on" region is the connected field, so the dash rectangles are its LOW
+  cells → one reversed sharpen colorize fixes colour + flattened field at
+  once). Also learned: isolating a node's output to albedo for a quick
+  diagnostic reliably timed the renderer out here twice; prefer reading the
+  full render over an isolate-to-albedo pass.
+
 ## 🗂️ Changed this session (remaining code-review findings + teardown cleanup)
 
 - Branch: `main`. Committed and **pushed**: `c65cc83` (6 fixes + 2 documented
@@ -177,31 +218,7 @@ Nothing pending on the code side. The open backlog, unchanged:
   a real launch proves it" precedent. Zero leftover Godot processes after
   the integration run. Fast suite: 214 passed (up from 211), 10 deselected.
 
-## 🗂️ Changed this session (backlog item K: the two worst live-control bugs)
-
-- Branch: `main`. Committed and pushed: `12a4be3`. Changed: `src/mm_mcp/server.py`
-  (`live_render_node_output` now checks the restore call's own success;
-  `live_apply`'s op-handler exception tuple grew `AttributeError`),
-  `tests/test_server_live.py` (4 new tests), `STATUS.md`, `HANDOFF.md`. No
-  plan doc, no worktree — both bugs were already diagnosed with exact line
-  numbers and root causes from the prior session's code review, so this was
-  direct TDD on `main`, matching this project's own precedent for
-  well-scoped fixes this size.
-- Decisions (+ why): a failed restore now reports `ok=False` rather than
-  being silently swallowed, since the live graph staying wired to a
-  temporary preview connection is exactly the kind of state a human
-  watching the live window needs to know about — but the render's own
-  image is still attached when the render itself succeeded, since losing
-  that real result to a separate, unrelated restore failure would throw
-  away useful output. `live_apply`'s fix was the narrowest correct change
-  (add `AttributeError` to the existing tuple) rather than broadening to a
-  bare `except Exception`, matching this project's existing precise/narrow
-  exception-handling style rather than papering over unknown failure modes.
-  Wrote all 4 new tests first and confirmed each failed against the
-  pre-fix code (red) before implementing, per `test-driven-development`.
-  Fast suite: 211 passed (up from 207), 9 deselected.
-
-> 📦 **9 older "Changed this session" write-ups archived** (through
+> 📦 **10 older "Changed this session" write-ups archived** (through
 > 2026-08-29) -- the pre-release audit/teardown/doc-fix pass,
 > render_node_output/live_render_node_output (item H), saved_graphs/
 > round-trip, Unity export proof, wood/stone cookbooks, the overlay
@@ -523,6 +540,33 @@ Nothing pending on the code side. The open backlog, unchanged:
 > the project's Phase 1-2 kickoff on 2026-08-25.
 
 
+### 2026-08-29 (leather cookbook) — new leather category, 6 materials, 2 reusable levers
+- Picked up via `pickup` (clean, `main` at `969d420`, in sync). Grayson chose
+  next-move #1: author a new cookbook category. Picked leather (backlog B).
+- Built 6 leather recipes in `quality/cookbook_leather.py`, each a distinct
+  lever on the `crocodile_skin` donor. Followed the visual-iteration workflow
+  throughout: render flat + 3D `render_preview`, `SendUserFile` the previews
+  every pass, judge relief in 3D, ask before continuing.
+- Reworked three from honest misses rather than shipping them: l02's first
+  wear mask made cow-hide blobs (fixed with finer/softer/lower-contrast perlin
+  + threshold); l04's bronze was landing on the thin voronoi borders not the
+  scale bodies (albedo-polarity flip); l05's intended `shape`+`tiler` stitch
+  dashes failed (no visible dashes; isolating the tiler output timed the
+  renderer out at 180s) so it became a `pattern`-sine quilt.
+- Grayson then queued: push, tweak l04, add a 5th "stitched". Did all three,
+  plus chased real stitches into l06. l06's `pattern` Square×Square grid works
+  but its polarity is inside-out (dash rectangles are the pattern's LOW cells);
+  one reversed sharpen colorize fixed colour + flattened field at once. l06
+  dashes render raised and cream in 3D (bold, full-grid, not fine seam-lines).
+- Two general levers written into `docs/AUTHORING.md` as the real keep-value:
+  `_dome_the_cells` (voronoi-port-0 height-ramp flip; Grayson caught the
+  inside-out grain in 3D) and the stitch-generator hunt (shape+tiler trap vs.
+  pattern polarity). Captured Grayson's new "debug materials / visual
+  smoke-test swatches" idea to `_agent-commons/ideas/`.
+- 3 commits pushed (`5f1a27b`, `6915fc8`, `f55359a`); `origin/main` in sync.
+  Wrote `_agent-commons\log\2026-08-29-claude-code-materialmaker-mcp-leather-cookbook.md`.
+  No integration/gate changes (informal cookbook growth).
+
 ### 2026-08-29 (cleanup) — resolved the remaining code-review findings, then 4 teardown cleanup passes
 - Picked up via `pickup`; no drift, `main` at the prior session's `1368115`,
   `origin/main` in sync, 214 passing (only untracked file the long-flagged
@@ -726,73 +770,3 @@ Nothing pending on the code side. The open backlog, unchanged:
   Cowork/cloud session, so the `github-push` skill's clone-and-reapply flow
   doesn't apply here). Confirmed `origin/main` in sync.
 
-### 2026-08-28 (even later) — saved_graphs/ round-trip: version control, rename, moss
-- Continuation of the same session, after the Unity/--target work below was
-  pushed. Grayson had tweaked `bricks.ptex` live in the GUI window launched
-  at the end of the previous thread and asked, in one rambling but clear
-  message, for four things: version control the change, a screenshot,
-  organized/labeled controls, and moss in the crevices.
-- Checked the upstream `z-Git\material-maker` checkout: Grayson's Ctrl+S
-  had saved directly into it (`git status` showed a real diff), exactly
-  the "pristine, don't modify" file this project's CLAUDE.md warns about.
-  Copied the edit out to a new `saved_graphs/` folder rather than editing
-  in place, establishing it as the convention for Grayson's own saved work
-  going forward.
-- Screenshot: tried computer-use directly. `request_access(["Material
-  Maker"])` granted at full tier (per `computer-use-tiers`, a native app's
-  own window, not the taskbar surface, so full tier was expected), but the
-  window itself never appeared in a screenshot. Diagnosed properly rather
-  than guessing: `open_application` failed (the running process was
-  launched directly by path, not through the Steam-registered app entry
-  the grant matched), then found via a PowerShell `Get-Process`/Win32 check
-  that the window was minimized (`IsIconic: True`) at an off-screen
-  position. Restored and foregrounded it via `ShowWindow`/
-  `SetForegroundWindow`, but a `computer_batch` key press then errored
-  "Godot_v4.7.1-stable_win64 is not in the allowed applications", proving
-  the raw process is a different identity than the granted Steam-app entry
-  no matter what state it's in. Tried `request_access` again with three
-  plausible raw-process names; all came back "not installed" (the request
-  wasn't even shown to Grayson). Recognized this as the tiers skill's
-  genuinely-blocked case, not a "try harder" one, and handed the actual
-  screenshot to Grayson to take himself.
-- Read the saved graph directly (17 nodes) rather than guessing at what to
-  rename: traced every connection back through `describe_node('material')`
-  and `describe_node('blend')` to get the real input port names/order
-  (`albedo_tex`/`metallic_tex`/`roughness_tex`/`normal_tex`/`ao_tex`/
-  `depth_tex`, `blend`'s `s1`/`s2`/`a` mask ports), and checked
-  `blend_type`'s enum values directly rather than assuming what mode 7
-  meant (it's "Burn"). Built a full role map for all 16 top-level nodes
-  from that (e.g. `colorize_2` → `BrickMortarMask`, `blend_1` →
-  `BrickColorVariationMask`) before touching anything.
-- Grayson clarified he wanted the offline/file-side path, not live
-  injection, after asking a genuine "how does this actually work"
-  question. Answered honestly rather than picking one silently: explained
-  both mechanisms, and surfaced that live mode currently can't rename or
-  reposition existing nodes at all (only add/wire/set-params), which ruled
-  it out for the rename half regardless of preference.
-- Wrote a one-off Python script (not part of the repo, moved to the
-  session scratchpad after use) to apply the rename map, add the moss
-  nodes/connections, and recompute node positions by topological depth,
-  rather than hand-editing ~500 lines of JSON where a missed connection
-  reference would silently break the graph.
-- First moss render came back with zero visible moss. Didn't assume the
-  wiring was wrong; diagnosed it properly (`systematic-debugging` in
-  spirit): rerouted the graph to output `MossMask` directly as albedo,
-  confirmed it was solid black, then rendered `SurfaceDetailMask` (the
-  mask's own input) the same way and histogrammed the PNG by hand (no
-  numpy in the venv, used PIL's histogram directly) to find its real value
-  range (40-231 of 255, not the 0-40 range the first threshold assumed).
-  Retuned the gradient thresholds to match, re-rendered, moss appeared
-  correctly in the crevices on the second attempt.
-- Verified in both the flat albedo and a real `render_preview` 3D pass
-  (sphere/cube/cutaway under lighting), per this project's own standing
-  rule to judge relief/detail in 3D, not the flat swatch. Sent both to
-  Grayson via `SendUserFile`, not just described.
-- Grayson confirmed it looked good, then asked directly what should improve
-  about the MCP based on everything this session surfaced. Answered with
-  three concrete, session-evidenced gaps (not a speculative wishlist): no
-  single-node-output rendering tool, `live_apply` can't rename/reposition,
-  no way to load an existing `.ptex` into a live session. Recommended the
-  first as smallest/highest-value. Grayson asked to log all three as
-  backlog rather than build any of them now; added as items H/I/J in Next
-  concrete step.

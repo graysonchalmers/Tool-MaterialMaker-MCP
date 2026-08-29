@@ -19,6 +19,30 @@ doc's window.
 
 ## Archived "Changed this session" write-ups
 
+## 🗂️ Changed this session (backlog item K: the two worst live-control bugs)
+
+- Branch: `main`. Committed and pushed: `12a4be3`. Changed: `src/mm_mcp/server.py`
+  (`live_render_node_output` now checks the restore call's own success;
+  `live_apply`'s op-handler exception tuple grew `AttributeError`),
+  `tests/test_server_live.py` (4 new tests), `STATUS.md`, `HANDOFF.md`. No
+  plan doc, no worktree — both bugs were already diagnosed with exact line
+  numbers and root causes from the prior session's code review, so this was
+  direct TDD on `main`, matching this project's own precedent for
+  well-scoped fixes this size.
+- Decisions (+ why): a failed restore now reports `ok=False` rather than
+  being silently swallowed, since the live graph staying wired to a
+  temporary preview connection is exactly the kind of state a human
+  watching the live window needs to know about — but the render's own
+  image is still attached when the render itself succeeded, since losing
+  that real result to a separate, unrelated restore failure would throw
+  away useful output. `live_apply`'s fix was the narrowest correct change
+  (add `AttributeError` to the existing tuple) rather than broadening to a
+  bare `except Exception`, matching this project's existing precise/narrow
+  exception-handling style rather than papering over unknown failure modes.
+  Wrote all 4 new tests first and confirmed each failed against the
+  pre-fix code (red) before implementing, per `test-driven-development`.
+  Fast suite: 211 passed (up from 207), 9 deselected.
+
 ## 🗂️ Changed this session (pre-release audit, teardown, doc-accuracy fixes)
 
 - Branch: `main`. Committed and pushed: `1fb0d45`. Changed:
@@ -300,6 +324,77 @@ doc's window.
 ---
 
 ## Archived session log
+
+### 2026-08-28 (even later) — saved_graphs/ round-trip: version control, rename, moss
+- Continuation of the same session, after the Unity/--target work below was
+  pushed. Grayson had tweaked `bricks.ptex` live in the GUI window launched
+  at the end of the previous thread and asked, in one rambling but clear
+  message, for four things: version control the change, a screenshot,
+  organized/labeled controls, and moss in the crevices.
+- Checked the upstream `z-Git\material-maker` checkout: Grayson's Ctrl+S
+  had saved directly into it (`git status` showed a real diff), exactly
+  the "pristine, don't modify" file this project's CLAUDE.md warns about.
+  Copied the edit out to a new `saved_graphs/` folder rather than editing
+  in place, establishing it as the convention for Grayson's own saved work
+  going forward.
+- Screenshot: tried computer-use directly. `request_access(["Material
+  Maker"])` granted at full tier (per `computer-use-tiers`, a native app's
+  own window, not the taskbar surface, so full tier was expected), but the
+  window itself never appeared in a screenshot. Diagnosed properly rather
+  than guessing: `open_application` failed (the running process was
+  launched directly by path, not through the Steam-registered app entry
+  the grant matched), then found via a PowerShell `Get-Process`/Win32 check
+  that the window was minimized (`IsIconic: True`) at an off-screen
+  position. Restored and foregrounded it via `ShowWindow`/
+  `SetForegroundWindow`, but a `computer_batch` key press then errored
+  "Godot_v4.7.1-stable_win64 is not in the allowed applications", proving
+  the raw process is a different identity than the granted Steam-app entry
+  no matter what state it's in. Tried `request_access` again with three
+  plausible raw-process names; all came back "not installed" (the request
+  wasn't even shown to Grayson). Recognized this as the tiers skill's
+  genuinely-blocked case, not a "try harder" one, and handed the actual
+  screenshot to Grayson to take himself.
+- Read the saved graph directly (17 nodes) rather than guessing at what to
+  rename: traced every connection back through `describe_node('material')`
+  and `describe_node('blend')` to get the real input port names/order
+  (`albedo_tex`/`metallic_tex`/`roughness_tex`/`normal_tex`/`ao_tex`/
+  `depth_tex`, `blend`'s `s1`/`s2`/`a` mask ports), and checked
+  `blend_type`'s enum values directly rather than assuming what mode 7
+  meant (it's "Burn"). Built a full role map for all 16 top-level nodes
+  from that (e.g. `colorize_2` → `BrickMortarMask`, `blend_1` →
+  `BrickColorVariationMask`) before touching anything.
+- Grayson clarified he wanted the offline/file-side path, not live
+  injection, after asking a genuine "how does this actually work"
+  question. Answered honestly rather than picking one silently: explained
+  both mechanisms, and surfaced that live mode currently can't rename or
+  reposition existing nodes at all (only add/wire/set-params), which ruled
+  it out for the rename half regardless of preference.
+- Wrote a one-off Python script (not part of the repo, moved to the
+  session scratchpad after use) to apply the rename map, add the moss
+  nodes/connections, and recompute node positions by topological depth,
+  rather than hand-editing ~500 lines of JSON where a missed connection
+  reference would silently break the graph.
+- First moss render came back with zero visible moss. Didn't assume the
+  wiring was wrong; diagnosed it properly (`systematic-debugging` in
+  spirit): rerouted the graph to output `MossMask` directly as albedo,
+  confirmed it was solid black, then rendered `SurfaceDetailMask` (the
+  mask's own input) the same way and histogrammed the PNG by hand (no
+  numpy in the venv, used PIL's histogram directly) to find its real value
+  range (40-231 of 255, not the 0-40 range the first threshold assumed).
+  Retuned the gradient thresholds to match, re-rendered, moss appeared
+  correctly in the crevices on the second attempt.
+- Verified in both the flat albedo and a real `render_preview` 3D pass
+  (sphere/cube/cutaway under lighting), per this project's own standing
+  rule to judge relief/detail in 3D, not the flat swatch. Sent both to
+  Grayson via `SendUserFile`, not just described.
+- Grayson confirmed it looked good, then asked directly what should improve
+  about the MCP based on everything this session surfaced. Answered with
+  three concrete, session-evidenced gaps (not a speculative wishlist): no
+  single-node-output rendering tool, `live_apply` can't rename/reposition,
+  no way to load an existing `.ptex` into a live session. Recommended the
+  first as smallest/highest-value. Grayson asked to log all three as
+  backlog rather than build any of them now; added as items H/I/J in Next
+  concrete step.
 
 ### 2026-08-28 (late night) — Unity export proven, render.py --target CLI bug found and fixed
 - Picked up via `pickup`; no drift, `main` matched the wood/stone session's
