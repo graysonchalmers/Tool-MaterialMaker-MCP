@@ -13,24 +13,22 @@ primary-source reasons, then ran 4 teardown-blessed cleanup passes: killed
 the dead `Graph` class and deduped three repeated helper snippets into shared
 helpers (`_snapshot_pngs`, `_run_godot`+`_log_tail`, `_first_albedo`). Every
 change was test-first or behavior-preserving under existing tests. Fast suite
-**226 passed** / 10 deselected (up from 214 at pickup). **5 commits sit local
-and UNPUSHED** (`c65cc83`, `13c7490`, `9726a59`, `19427a7`, `f436300`) —
-`origin/main` is 5 behind. Push approval was never given this session, so
-they wait. Older history beyond the 3 write-ups / 5 log entries kept here
-lives in [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).
+**226 passed** / 10 deselected (up from 214 at pickup). **All 5 code commits
+plus the wrap-up doc commit are pushed** (`c65cc83`, `13c7490`, `9726a59`,
+`19427a7`, `f436300`, `c5b0cfb`); `origin/main` confirmed in sync (`0 0`).
+Older history beyond the 3 write-ups / 5 log entries kept here lives in
+[docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).
 
 ## 📌 Where we stopped
 
-Wrapped cleanly, nothing mid-task. The 5 commits above are committed locally
-but not pushed. The only untracked file is the long-flagged
+Wrapped cleanly, nothing mid-task, everything pushed and in sync. The only
+untracked file is the long-flagged
 `docs/images/contact-sheet-wood-stone.png` (kept deliberately out of every
 commit this session; see Open questions).
 
 ## ▶️ Next concrete step
 
-**Push the 5 local commits** (local session, plain `git push`; confirm sync
-with `git rev-list --left-right --count origin/main...HEAD` → `0 0`). Then the
-open backlog, unchanged:
+Nothing pending on the code side. The open backlog, unchanged:
 - **2 findings ruled out, not fixed** (deliberate): #8 (`_cmd_clear_graph`'s
   guard is correct — `new_material()` creates the generator, doesn't read
   one) and #10 (`generic_size or 1` coercion is safer than passing an
@@ -121,7 +119,7 @@ open backlog, unchanged:
 
 ## 🗂️ Changed this session (remaining code-review findings + teardown cleanup)
 
-- Branch: `main`. Committed, **NOT pushed**: `c65cc83` (6 fixes + 2 documented
+- Branch: `main`. Committed and **pushed**: `c65cc83` (6 fixes + 2 documented
   non-changes), `13c7490` (kill dead `Graph` class), `9726a59` (dedupe the
   PNG-snapshot loop), `19427a7` (share the Godot retry loop + log-tail across
   render/preview), `f436300` (extract `_first_albedo`). No plan doc, no
@@ -551,8 +549,8 @@ open backlog, unchanged:
   render/preview (`19427a7`, dup pair 2 — added 4 characterization tests for
   the previously-untested retry/timeout behavior). On "one more cycle then
   wrap up", extracted `_first_albedo` (`f436300`, dup pair 3).
-- All 5 commits are LOCAL and UNPUSHED — Grayson never gave a push go this
-  session (kept saying "keep going"). Fast suite ended at 226 passed (up from
+- All 5 commits (plus the wrap-up doc commit) were pushed at end of session
+  once Grayson said "push + /wrap". Fast suite ended at 226 passed (up from
   214), 10 deselected. No integration runs this session (all changes
   unit-level or behavior-preserving refactors), so zero Godot processes
   spawned.
