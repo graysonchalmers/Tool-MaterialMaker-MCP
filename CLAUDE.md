@@ -19,6 +19,11 @@ doesn't serve that loop, check with Grayson before building it.
 - [HANDOFF.md](HANDOFF.md) is the session baton. Read it at pickup, write it at wrap-up.
 - [STATUS.md](STATUS.md) is the gate ledger. Three states only: verified, wired, not started.
 - [docs/PLAN.md](docs/PLAN.md) holds the phase plan and exit gates.
+- [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md) holds older HANDOFF.md
+  content, moved out to keep the live doc scannable. Not read at pickup by
+  default. At wrap-up, keep at most the 3 most recent "Changed this session"
+  write-ups and the 5 most recent session-log entries in HANDOFF.md; move
+  anything older there verbatim instead of letting HANDOFF.md grow unbounded.
 
 ## Environment (this machine)
 
@@ -37,10 +42,13 @@ doesn't serve that loop, check with Grayson before building it.
 - Node definitions: `<MM_PROJECT>/addons/material_maker/nodes/*.mmg`, each with a
   `shader_model` declaring typed inputs/outputs/parameters.
 - Headless render (VERIFIED working): `Godot_..._console.exe --path <MM_PROJECT>
-  --export-material <file.ptex> -t "Godot/Godot 4 Standard" -o <outdir> --size <n>`.
+  --export-material <file.ptex> --target "Godot/Godot 4 Standard" -o <outdir> --size <n>`.
   Gotchas learned the hard way:
   - Use `--export-material`, NOT `--export`. Godot 4 reserved `--export` as an
     engine flag (build export); the app flag is `--export-material`.
+  - Use `--target`, NOT `-t` — Material Maker's own arg parser silently
+    ignores `-t` and falls back to its hardcoded default profile (found and
+    fixed in `render.py` 2026-08-28; the CLI itself has the same trap).
   - Do NOT pass `parse_args.tscn`; it is the project main scene and would be
     loaded as a material file. Just pass the flags.
   - Use the `_console.exe` binary to capture stdout; the GUI exe returns empty logs.
