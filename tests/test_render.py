@@ -3,7 +3,7 @@ import os
 import time
 import pytest
 from mm_mcp.config import load_config
-from mm_mcp.render import render, _collect_fresh_images
+from mm_mcp.render import render, _build_command, _collect_fresh_images
 
 cfg = load_config()
 
@@ -93,6 +93,28 @@ def test_collect_fresh_images_ignores_non_png_files(tmp_path):
 
     fresh = _collect_fresh_images(str(tmp_path), "brick", before)
     assert fresh == []
+
+
+def test_build_command_uses_long_target_flag():
+    """Godot's CLI parser only recognizes --target, not -t (silently a
+    no-op for -t, confirmed empirically against a real Godot binary)."""
+    cmd = _build_command(cfg, "C:/out/bricks.ptex", "Unity/URP", "C:/out", 512)
+    assert "--target" in cmd
+    idx = cmd.index("--target")
+    assert cmd[idx + 1] == "Unity/URP"
+    assert "-t" not in cmd
+
+
+def test_build_command_defaults_preserved():
+    """Positional shape (path/export-material/output/size flags) is
+    unchanged by the --target fix."""
+    cmd = _build_command(cfg, "C:/out/bricks.ptex", "Godot/Godot 4 Standard", "C:/out", 256)
+    assert cmd == [
+        cfg.console_binary, "--path", cfg.project_path,
+        "--export-material", "C:/out/bricks.ptex",
+        "--target", "Godot/Godot 4 Standard",
+        "-o", "C:/out", "--size", "256",
+    ]
 
 
 @pytest.mark.integration

@@ -64,14 +64,15 @@ def validate(ptex: dict) -> list:
     return validate_graph(ptex, catalog)
 
 
-def render_graph(ptex: dict, size: int = 512, basename: str = "material") -> dict:
+def render_graph(ptex: dict, size: int = 512, basename: str = "material",
+                  target: str = "Godot/Godot 4 Standard") -> dict:
     cfg, catalog = _ensure_ready()
     problems = validate_graph(ptex, catalog)
     errors = [p for p in problems if p["severity"] == "error"]
     if errors:
         return {"ok": False, "images": [], "error": "validation failed",
                 "problems": errors}
-    result = render(ptex, size=size, basename=basename, cfg=cfg)
+    result = render(ptex, size=size, basename=basename, target=target, cfg=cfg)
     return {"ok": result.ok, "images": result.images,
             "error": result.error, "log_tail": result.log_tail}
 

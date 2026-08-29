@@ -38,6 +38,38 @@ def test_save_graph_writes_file(tmp_path):
         assert json.load(fh)["type"] == "graph"
 
 
+def test_render_graph_forwards_target_to_render(monkeypatch):
+    """render_graph's target param must reach render(), not get dropped —
+    this is what actually lets a caller pick Unity/Unreal instead of Godot."""
+    captured = {}
+
+    def fake_render(ptex, size=512, outdir=None, basename="material",
+                     target="Godot/Godot 4 Standard", cfg=None):
+        captured["target"] = target
+        from mm_mcp.render import RenderResult
+        return RenderResult(ok=True, images=["fake.png"])
+
+    monkeypatch.setattr(server, "render", fake_render)
+    ptex = {"type": "graph", "nodes": [], "connections": []}
+    server.render_graph(ptex, target="Unity/URP")
+    assert captured["target"] == "Unity/URP"
+
+
+def test_render_graph_defaults_to_godot_target(monkeypatch):
+    captured = {}
+
+    def fake_render(ptex, size=512, outdir=None, basename="material",
+                     target="Godot/Godot 4 Standard", cfg=None):
+        captured["target"] = target
+        from mm_mcp.render import RenderResult
+        return RenderResult(ok=True, images=["fake.png"])
+
+    monkeypatch.setattr(server, "render", fake_render)
+    ptex = {"type": "graph", "nodes": [], "connections": []}
+    server.render_graph(ptex)
+    assert captured["target"] == "Godot/Godot 4 Standard"
+
+
 def test_render_preview_missing_map_returns_error_as_data(tmp_path):
     albedo = tmp_path / "albedo.png"
     albedo.write_text("x")

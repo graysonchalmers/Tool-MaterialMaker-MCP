@@ -38,8 +38,18 @@ def _collect_fresh_images(outdir: str, basename: str, before: dict) -> list[str]
     return fresh
 
 
+def _build_command(cfg: Config, ptex_path: str, target: str, outdir: str, size: int) -> list[str]:
+    return [
+        cfg.console_binary, "--path", cfg.project_path,
+        "--export-material", ptex_path,
+        "--target", target,
+        "-o", outdir, "--size", str(size),
+    ]
+
+
 def render(ptex: dict, size: int = 512, outdir: str | None = None,
-           basename: str = "material", cfg: Config | None = None) -> RenderResult:
+           basename: str = "material", target: str = "Godot/Godot 4 Standard",
+           cfg: Config | None = None) -> RenderResult:
     cfg = cfg or load_config()
     outdir = outdir or cfg.output_dir
     os.makedirs(outdir, exist_ok=True)
@@ -58,12 +68,7 @@ def render(ptex: dict, size: int = 512, outdir: str | None = None,
     with open(ptex_path, "w", encoding="utf-8") as fh:
         json.dump(ptex, fh)
 
-    cmd = [
-        cfg.console_binary, "--path", cfg.project_path,
-        "--export-material", ptex_path,
-        "-t", "Godot/Godot 4 Standard",
-        "-o", outdir, "--size", str(size),
-    ]
+    cmd = _build_command(cfg, ptex_path, target, outdir, size)
 
     # Godot occasionally dies mid-export with a Windows crash code (access
     # violation 0xC0000005 = 3221225477, stack-guard 0xC0000409 = 3221226505)
