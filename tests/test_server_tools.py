@@ -1,5 +1,6 @@
 import json
 import os
+import pytest
 from mm_mcp import server
 from mm_mcp.config import load_config
 
@@ -78,3 +79,81 @@ def test_render_preview_missing_map_returns_error_as_data(tmp_path):
     assert result["ok"] is False
     assert result["image"] is None
     assert "normal" in result["error"]
+
+
+def _simple_ptex():
+    return {"type": "graph", "connections": [
+        {"from": "perlin_0", "from_port": 0, "to": "Material", "to_port": 0},
+    ], "nodes": [
+        {"name": "perlin_0", "type": "perlin", "node_position": {"x": 0, "y": 0}, "parameters": {}},
+        {"name": "Material", "type": "material", "node_position": {"x": 300, "y": 0}, "parameters": {}},
+    ]}
+
+
+def test_render_node_output_returns_the_albedo_image(monkeypatch):
+    captured = {}
+
+    def fake_render(ptex, size=512, outdir=None, basename="node_output",
+                     target="Godot/Godot 4 Standard", cfg=None):
+        captured["ptex"] = ptex
+        from mm_mcp.render import RenderResult
+        return RenderResult(ok=True, images=[
+            "out/node_output_albedo.png", "out/node_output_normal.png",
+            "out/node_output_heightmap.png", "out/node_output_orm.png",
+        ])
+
+    monkeypatch.setattr(server, "render", fake_render)
+    result = server.render_node_output(_simple_ptex(), "perlin_0")
+    assert result["ok"] is True
+    assert result["image"] == "out/node_output_albedo.png"
+    assert result["error"] is None
+    # the rewired graph, not the original, must be what actually rendered
+    conns = captured["ptex"]["connections"]
+    assert {"from": "perlin_0", "from_port": 0, "to": "Material", "to_port": 0} in conns
+
+
+def test_render_node_output_unknown_node_is_a_data_error(monkeypatch):
+    called = []
+    monkeypatch.setattr(server, "render", lambda *a, **k: called.append(1))
+    result = server.render_node_output(_simple_ptex(), "nope")
+    assert result["ok"] is False
+    assert result["image"] is None
+    assert "nope" in result["error"]
+    assert not called  # render() must never be reached
+
+
+def test_render_node_output_render_failure_is_forwarded(monkeypatch):
+    def fake_render(ptex, size=512, outdir=None, basename="node_output",
+                     target="Godot/Godot 4 Standard", cfg=None):
+        from mm_mcp.render import RenderResult
+        return RenderResult(ok=False, error="Godot exited 1", log_tail="boom")
+
+    monkeypatch.setattr(server, "render", fake_render)
+    result = server.render_node_output(_simple_ptex(), "perlin_0")
+    assert result["ok"] is False
+    assert result["image"] is None
+    assert result["error"] == "Godot exited 1"
+    assert result["log_tail"] == "boom"
+
+
+def test_render_node_output_missing_albedo_output_is_an_error(monkeypatch):
+    def fake_render(ptex, size=512, outdir=None, basename="node_output",
+                     target="Godot/Godot 4 Standard", cfg=None):
+        from mm_mcp.render import RenderResult
+        return RenderResult(ok=True, images=["out/node_output_normal.png"])
+
+    monkeypatch.setattr(server, "render", fake_render)
+    result = server.render_node_output(_simple_ptex(), "perlin_0")
+    assert result["ok"] is False
+    assert result["image"] is None
+    assert "albedo" in result["error"]
+
+
+@pytest.mark.integration
+def test_render_node_output_bundled_example_produces_a_real_image():
+    ptex = server.load_example("bricks")
+    result = server.render_node_output(ptex, "colorize_2", size=256,
+                                        basename="node_probe")
+    assert result["ok"], result["error"] or result.get("log_tail")
+    assert result["image"].endswith("_albedo.png")
+    assert os.path.getsize(result["image"]) > 0

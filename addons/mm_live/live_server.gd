@@ -70,6 +70,8 @@ func _dispatch(peer: StreamPeerTCP, line: String) -> void:
 				response = await _cmd_add_node(parsed)
 			"connect_nodes":
 				response = _cmd_connect_nodes(parsed)
+			"disconnect_nodes":
+				response = _cmd_disconnect_nodes(parsed)
 			"set_param":
 				response = _cmd_set_param(parsed)
 			"render":
@@ -149,6 +151,32 @@ func _cmd_connect_nodes(cmd: Dictionary) -> Dictionary:
 			to_node_name, int(cmd.get("to_port", 0)))
 	if not connected:
 		return {"ok": false, "error": "Material Maker refused the connection (incompatible ports?)"}
+	return {"ok": true}
+
+
+func _cmd_disconnect_nodes(cmd: Dictionary) -> Dictionary:
+	# Mirrors _cmd_connect_nodes exactly, calling Material Maker's own
+	# do_disconnect_node (graph_edit.gd) instead of do_connect_node -- the
+	# missing counterpart that lets a caller fully restore a port to
+	# "unconnected" rather than only ever reconnecting it to something else.
+	if mm_globals.main_window == null:
+		return {"ok": false, "error": "main_window not ready"}
+	var graph_edit: MMGraphEdit = mm_globals.main_window.get_current_graph_edit()
+	if graph_edit == null or graph_edit.generator == null:
+		return {"ok": false, "error": "no active graph"}
+	var from_name := str(cmd.get("from"))
+	var to_name := str(cmd.get("to"))
+	var from_node_name := "node_" + from_name
+	var to_node_name := "node_" + to_name
+	if not graph_edit.has_node(from_node_name):
+		return {"ok": false, "error": "no node named '%s' in the live graph" % from_name}
+	if not graph_edit.has_node(to_node_name):
+		return {"ok": false, "error": "no node named '%s' in the live graph" % to_name}
+	var disconnected: bool = graph_edit.do_disconnect_node(
+			from_node_name, int(cmd.get("from_port", 0)),
+			to_node_name, int(cmd.get("to_port", 0)))
+	if not disconnected:
+		return {"ok": false, "error": "no such connection to remove"}
 	return {"ok": true}
 
 

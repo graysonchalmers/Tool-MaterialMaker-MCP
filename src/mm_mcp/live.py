@@ -206,6 +206,29 @@ def connect_nodes(from_name: str, from_port: int, to_name: str, to_port: int,
                            "to": to_name, "to_port": to_port}, host, port, timeout)
 
 
+def disconnect_nodes(from_name: str, from_port: int, to_name: str, to_port: int,
+                      cfg: Config | None = None, host: str = LIVE_HOST, port: int = LIVE_PORT,
+                      timeout: float = 5.0) -> LiveResult:
+    """Fetch the current live graph and confirm the exact connection exists
+    before sending disconnect_nodes -- there's nothing to validate against
+    the catalog here (removing a connection can't violate a port-range or
+    unknown-type check), only whether it's actually there to remove."""
+    cfg = cfg or load_config()
+    current = get_graph(host, port, timeout)
+    if not current.ok:
+        return current
+    graph = current.data["graph"]
+    exists = any(c.get("from") == from_name and c.get("from_port", 0) == from_port
+                 and c.get("to") == to_name and c.get("to_port", 0) == to_port
+                 for c in graph.get("connections", []))
+    if not exists:
+        return LiveResult(ok=False,
+                           error=f"no connection from '{from_name}' port {from_port} to "
+                                 f"'{to_name}' port {to_port} in the current live graph")
+    return _send_command({"cmd": "disconnect_nodes", "from": from_name, "from_port": from_port,
+                           "to": to_name, "to_port": to_port}, host, port, timeout)
+
+
 def set_param(name: str, parameters: dict, cfg: Config | None = None, host: str = LIVE_HOST,
               port: int = LIVE_PORT, timeout: float = 5.0) -> LiveResult:
     """Fetch the current live graph, confirm the target node exists, merge

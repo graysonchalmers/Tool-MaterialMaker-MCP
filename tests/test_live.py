@@ -269,6 +269,52 @@ def test_connect_nodes_rejects_out_of_range_port_without_contacting_server(monke
         server.stop()
 
 
+def test_disconnect_nodes_sends_command_when_connection_exists(monkeypatch):
+    fake_graph = {"nodes": [
+        {"name": "perlin_1", "type": "perlin", "node_position": {"x": 0, "y": 0}, "parameters": {}},
+        {"name": "warp_1", "type": "warp", "node_position": {"x": 0, "y": 0}, "parameters": {}},
+    ], "connections": [{"from": "perlin_1", "from_port": 0, "to": "warp_1", "to_port": 0}]}
+    received = {}
+
+    def responder(cmd):
+        if cmd["cmd"] == "get_graph":
+            return {"ok": True, "graph": fake_graph}
+        received.update(cmd)
+        return {"ok": True}
+
+    server = _FakeLiveServer(responder)
+    try:
+        result = live.disconnect_nodes("perlin_1", 0, "warp_1", 0,
+                                        host="127.0.0.1", port=server.port)
+        assert result.ok
+        assert received == {"cmd": "disconnect_nodes", "from": "perlin_1", "from_port": 0,
+                             "to": "warp_1", "to_port": 0}
+    finally:
+        server.stop()
+
+
+def test_disconnect_nodes_reports_missing_connection_without_contacting_server():
+    fake_graph = {"nodes": [
+        {"name": "perlin_1", "type": "perlin", "node_position": {"x": 0, "y": 0}, "parameters": {}},
+        {"name": "warp_1", "type": "warp", "node_position": {"x": 0, "y": 0}, "parameters": {}},
+    ], "connections": []}  # no connection between them
+    calls = []
+
+    def responder(cmd):
+        calls.append(cmd["cmd"])
+        return {"ok": True, "graph": fake_graph}
+
+    server = _FakeLiveServer(responder)
+    try:
+        result = live.disconnect_nodes("perlin_1", 0, "warp_1", 0,
+                                        host="127.0.0.1", port=server.port)
+        assert not result.ok
+        assert "no connection" in result.error.lower()
+        assert calls == ["get_graph"]  # disconnect_nodes was never sent
+    finally:
+        server.stop()
+
+
 def test_set_param_sends_command_for_existing_node(monkeypatch):
     monkeypatch.setattr(live, "_ensure_catalog", lambda cfg: _FAKE_CATALOG)
     fake_graph = {"nodes": [

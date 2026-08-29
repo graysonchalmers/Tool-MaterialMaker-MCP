@@ -6,6 +6,7 @@ from mcp.server.mcpserver import MCPServer
 from mm_mcp import __version__, live
 from mm_mcp.config import load_config, require_valid
 from mm_mcp.catalog_builder import build_catalog
+from mm_mcp.graph import find_material_node, isolate_node_output
 from mm_mcp.validator import validate_graph
 from mm_mcp.render import render
 from mm_mcp.preview import render_preview as _render_preview
@@ -75,6 +76,40 @@ def render_graph(ptex: dict, size: int = 512, basename: str = "material",
     result = render(ptex, size=size, basename=basename, target=target, cfg=cfg)
     return {"ok": result.ok, "images": result.images,
             "error": result.error, "log_tail": result.log_tail}
+
+
+def render_node_output(ptex: dict, node_name: str, port: int = 0, size: int = 512,
+                        basename: str = "node_output",
+                        target: str = "Godot/Godot 4 Standard") -> dict:
+    """Render a single node's output in isolation, without editing the real
+    graph: rewires a copy of ptex so node_name's output `port` feeds the
+    material node's albedo input, renders that copy, and returns just the
+    resulting albedo image (the other exported maps reflect whatever else
+    was already wired, not the isolated node, so they're not returned).
+
+    Use this instead of manually rerouting a graph by hand to check an
+    intermediate node (e.g. a mask) during authoring.
+    """
+    cfg, catalog = _ensure_ready()
+    try:
+        isolated = isolate_node_output(ptex, node_name, port)
+    except ValueError as exc:
+        return {"ok": False, "image": None, "error": str(exc)}
+    problems = validate_graph(isolated, catalog)
+    errors = [p for p in problems if p["severity"] == "error"]
+    if errors:
+        return {"ok": False, "image": None, "error": "validation failed",
+                "problems": errors}
+    result = render(isolated, size=size, basename=basename, target=target, cfg=cfg)
+    if not result.ok:
+        return {"ok": False, "image": None, "error": result.error,
+                "log_tail": result.log_tail}
+    albedo = next((p for p in result.images if p.endswith("_albedo.png")), None)
+    if albedo is None:
+        return {"ok": False, "image": None,
+                "error": "render succeeded but no albedo output was produced",
+                "log_tail": result.log_tail}
+    return {"ok": True, "image": albedo, "error": None, "log_tail": result.log_tail}
 
 
 def render_preview(albedo_path: str, normal_path: str, orm_path: str,
@@ -188,6 +223,8 @@ _LIVE_OP_HANDLERS = {
     "connect_nodes": lambda op, cfg: live.connect_nodes(
         op["from_name"], op["from_port"], op["to_name"], op["to_port"], cfg=cfg),
     "set_param": lambda op, cfg: live.set_param(op["name"], op["parameters"], cfg=cfg),
+    "disconnect_nodes": lambda op, cfg: live.disconnect_nodes(
+        op["from_name"], op["from_port"], op["to_name"], op["to_port"], cfg=cfg),
 }
 
 
@@ -201,6 +238,7 @@ def live_apply(ops: list) -> dict:
     the batch once one op fails. Each op is a dict:
     {"op": "add_node", "node_type": ..., "parameters": {...}, "x": ..., "y": ...} |
     {"op": "connect_nodes", "from_name": ..., "from_port": ..., "to_name": ..., "to_port": ...} |
+    {"op": "disconnect_nodes", "from_name": ..., "from_port": ..., "to_name": ..., "to_port": ...} |
     {"op": "set_param", "name": ..., "parameters": {...}}.
 
     A malformed op (not a dict, or missing a required field) is reported as
@@ -239,6 +277,58 @@ def live_apply(ops: list) -> dict:
     return {"ok": True, "results": results, "error": None}
 
 
+def live_render_node_output(node_name: str, port: int = 0, basename: str = "node_output",
+                             profile: str = "Godot/Godot 4 Standard") -> dict:
+    """Render a single node's output in isolation on the live graph, without
+    leaving it rewired afterward: temporarily reconnects node_name's output
+    `port` into the material node's albedo input, renders, then restores
+    whatever originally fed albedo_tex -- reconnecting the original source if
+    one existed, or disconnecting the temporary wire if albedo_tex started
+    out unconnected. Restore always runs, even if the render itself fails, so
+    the live window is never left stuck mid-preview. Mirrors render_node_output's
+    batch-path behavior and return shape ({ok, image, error, log_tail}), but
+    against whatever graph is currently open in the live window."""
+    cfg, _ = _ensure_ready()
+    session = _ensure_live_session(cfg)
+    if not session.ok:
+        return {"ok": False, "image": None, "error": session.error}
+    current = live.get_graph()
+    if not current.ok:
+        return {"ok": False, "image": None, "error": current.error}
+    graph = current.data["graph"]
+    try:
+        material_name = find_material_node(graph)["name"]
+    except ValueError as exc:
+        return {"ok": False, "image": None, "error": str(exc)}
+    if not any(n.get("name") == node_name for n in graph.get("nodes", [])):
+        return {"ok": False, "image": None,
+                "error": f"no node named '{node_name}' in the live graph"}
+    original = next((c for c in graph.get("connections", [])
+                      if c.get("to") == material_name and c.get("to_port", 0) == 0), None)
+
+    preview = live.connect_nodes(node_name, port, material_name, 0, cfg=cfg)
+    if not preview.ok:
+        return {"ok": False, "image": None, "error": preview.error}
+
+    result = live.render(basename=basename, profile=profile, cfg=cfg)
+
+    if original is not None:
+        live.connect_nodes(original["from"], original.get("from_port", 0),
+                            material_name, 0, cfg=cfg)
+    else:
+        live.disconnect_nodes(node_name, port, material_name, 0, cfg=cfg)
+
+    if not result.ok:
+        return {"ok": False, "image": None, "error": result.error,
+                "log_tail": result.log_tail}
+    albedo = next((p for p in result.images if p.endswith("_albedo.png")), None)
+    if albedo is None:
+        return {"ok": False, "image": None,
+                "error": "render succeeded but no albedo output was produced",
+                "log_tail": result.log_tail}
+    return {"ok": True, "image": albedo, "error": None, "log_tail": result.log_tail}
+
+
 def live_render(basename: str = "material", profile: str = "Godot/Godot 4 Standard") -> dict:
     """Trigger a render in the live window (the same underlying export path
     the GUI's own render button uses) and return the same {ok, images,
@@ -257,6 +347,7 @@ mcp.tool()(list_node_types)
 mcp.tool()(describe_node)
 mcp.tool()(validate)
 mcp.tool()(render_graph)
+mcp.tool()(render_node_output)
 mcp.tool()(render_preview)
 mcp.tool()(save_graph)
 mcp.tool()(list_examples)
@@ -265,6 +356,7 @@ mcp.tool()(live_start)
 mcp.tool()(live_get_graph)
 mcp.tool()(live_apply)
 mcp.tool()(live_render)
+mcp.tool()(live_render_node_output)
 mcp.tool()(live_clear)
 
 

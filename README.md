@@ -178,7 +178,7 @@ through a render.
 
 ## Tools
 
-The server exposes eight batch-mode tools and one resource (plus four more in Live mode, below):
+The server exposes nine batch-mode tools and one resource (plus six more in Live mode, below):
 
 | Tool | What it does |
 |---|---|
@@ -186,6 +186,7 @@ The server exposes eight batch-mode tools and one resource (plus four more in Li
 | `describe_node` | Full typed inputs/outputs/parameters for one node type |
 | `validate` | Validate a `.ptex` graph against the catalog; returns problems as data |
 | `render_graph` | Render a `.ptex` to PBR maps at a given size |
+| `render_node_output` | Render one node's output in isolation, without editing the real graph |
 | `render_preview` | Composite already-rendered maps onto a sphere/cube/cutaway-ball preview scene |
 | `save_graph` | Write a `.ptex` graph to a path |
 | `list_examples` | List the bundled Material Maker examples |
@@ -205,8 +206,10 @@ the GUI instead of copying files back and forth.
 |---|---|
 | `live_start` | Attach to an already-open Material Maker, or launch it against a disposable overlay if nothing's listening |
 | `live_get_graph` | Fetch the active tab's current graph, `.ptex`-shaped |
-| `live_apply` | Apply a batch of validated mutations (`add_node`/`connect_nodes`/`set_param`) to the live graph |
+| `live_apply` | Apply a batch of validated mutations (`add_node`/`connect_nodes`/`disconnect_nodes`/`set_param`) to the live graph |
 | `live_render` | Trigger a render in the live window, same result shape as `render_graph` |
+| `live_render_node_output` | Render one node's output in isolation on the live graph, previewing then restoring the original wiring |
+| `live_clear` | Reset the live graph to a single default Material node, discarding everything else |
 
 No manual setup beyond what batch mode already needs -- the addon ships in
 this repo and builds its own disposable working copy on first use. Live
