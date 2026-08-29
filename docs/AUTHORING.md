@@ -545,3 +545,65 @@ brick coursing or crack network.
   `render_preview`, not the albedo thumbnail. It's closer to a packed
   gravel/fieldstone bed than perfectly smooth individual river stones (the
   cells are still voronoi-angular), but reads clearly as natural stone.
+
+## Leather cookbook (cookbook growth, informal — 2026-08-29)
+
+`quality/cookbook_leather.py`. `f02_brown_leather` is already frozen in the
+Phase 3 test set (a plain `crocodile_skin` recolor) — these four extend the
+category into distinct finishes. All four clone `crocodile_skin`, the proven
+leather donor: its cellular voronoi grain drives albedo (`colorize_1` →
+Material.albedo), roughness (`colorize_3` → Material.roughness) and a height
+chain (`voronoi_0` → `colorize_0` → `normal_map_0` → Material.normal).
+
+| Preview | Material | Verdict |
+|---|---|---|
+| ![](images/cookbook-leather/l01_black_oiled_leather.png) | Black oiled/waxed leather | HIT (judge in 3D — dark albedo undersells it) |
+| ![](images/cookbook-leather/l02_distressed_two_tone.png) | Distressed two-tone worn leather | HIT (after reworking the wear mask) |
+| ![](images/cookbook-leather/l03_suede.png) | Suede / nubuck | HIT |
+| ![](images/cookbook-leather/l04_reptile_exotic.png) | Exotic reptile scale | HIT |
+
+- **The inverted-grain trap (applies to EVERY cell-based leather here):**
+  `crocodile_skin`'s stock height ramp (`colorize_0`, fed by `voronoi_0`
+  port 0) maps low→dark, high→bright. Voronoi port 0 is LOW at cell centers
+  and HIGH at the borders, so the stock ramp raises the SEAMS and sinks the
+  scale bodies — grain that looks inside-out (edges higher than the middle,
+  caught in the 3D preview). Physically, pebbled/scaled leather wants the
+  scale bodies domed UP and the seams recessed. **Fix: reverse the
+  `colorize_0` ramp** (centers→high, borders→low) — the `_dome_the_cells`
+  helper in `cookbook_leather.py`. This is the exact same port-0 polarity
+  confusion the stone cookbook hit with its scattered-river-stones mask;
+  worth internalizing: **voronoi port 0 is low at centers, high toward the
+  network.** (Suede is exempt — it's a perlin donor with no cells.)
+- **Black oiled/waxed leather (HIT — judge in 3D):** pure recolor to a
+  near-black warm base with a lifted brown highlight in the raised grain,
+  plus LOW roughness for a conditioned/polished finish and the `param4=0`
+  grain-relief fix. The albedo thumbnail is nearly black and shows almost
+  nothing; the pebble grain and its specular only read under real lighting,
+  same rule as the stone pebbles. First pass was too dark even in 3D —
+  lifting the highlight stop (grain ~0.22/0.16/0.11) made the grain read.
+- **Distressed two-tone worn leather (HIT — after reworking the wear
+  mask):** the masked-composite lever (same as `combo01`/`w03`), but here
+  BOTH layers are leather — a dark saddle base with a lighter rubbed tan
+  showing through irregular worn patches, for albedo and a small roughness
+  lift. **The wear mask is the whole game, and it's easy to get wrong:** the
+  first pass used a coarse perlin (`scale` 7) with a narrow threshold band
+  and a big base-vs-worn tonal gap → a few giant high-contrast blotches that
+  read as cow-hide/Holstein spots, not wear (the exact trap `w03` documents).
+  Fixed with a FINER perlin (`scale` 16, `iterations` 6), a WIDE feathered
+  threshold band (0.40→0.72), and a SMALL tonal gap between base and worn, so
+  the rubs read as a distributed change of finish, not a second color.
+- **Suede / nubuck (HIT):** the donor-swap lever (same as `f06` velvet) —
+  soft napped leather has no cellular grain, so retype `voronoi_0` to
+  `perlin` (continuous, no hard cell edges; `iterations` add fine fiber
+  grain), warm fawn albedo, very high matte roughness, and a very low
+  `normal_map` `param1` (~0.10, still `param4=0`) so it's soft nap, not hard
+  relief. Reads dead-on; no rework needed.
+- **Exotic reptile scale (HIT):** the recolor lever leaning INTO the voronoi
+  cell scale (`f02` kept the default fine grain) — drop `voronoi_0` scale to
+  ~7×9 (fewer, bigger, slightly elongated scales), recolor to an exotic
+  bronze-green, and use STRONG `param4=0` relief (`param1` ~0.7) so the scale
+  edges cast real depth. Reads clearly as reptilian. Two honest notes: the
+  finish comes out glossier than typical leather (a touch wet/plastic — raise
+  roughness if a matter reptile is wanted), and the bronze crest I aimed for
+  landed mostly olive-green (the voronoi field rarely reaches the ramp's top
+  stop). Both are single-knob tweaks a human can dial in the real graph.
