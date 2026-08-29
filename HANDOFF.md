@@ -1,19 +1,55 @@
 # 🧭 Session Handoff — Tool-MaterialMaker-MCP
 
-_Last updated: 2026-08-28 (evening) CT (America/Chicago)_
+_Last updated: 2026-08-28 (late night) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**No code (Python/GDScript) changed this session — pure content/docs work:
-two new cookbook categories (wood, stone), a human-editability authoring
-constraint, a cross-engine portability goal, and a real workflow fix
-(sending Grayson actual render previews instead of only looking at them
-myself).** Picked up via `pickup`; the overlay read-only-rmtree fix from
-last session turned out to already be committed and pushed (`09455c8`,
-`origin/main` in sync) — the prior handoff's "not yet committed" note was
-stale, resolved on its own between sessions.
+**Real code changed this session: proved out cross-engine export and fixed
+a dormant CLI bug it exposed.** Picked up via `pickup`, no drift (wood/stone
+cookbook session from earlier was already committed at `7f8f9f2`, in sync
+with `origin/main`). Grayson asked to prove Material Maker's export can
+produce a genuine engine-native shader/material asset for Unity or Unreal,
+not just PNGs he'd wire up by hand. Spiked it (`brainstorming`, spike
+classification): confirmed from Material Maker's own export templates that
+both Unity's `.mat` profiles and Unreal UE5's python-script profile produce
+real engine-native materials. Unreal needs a live Editor connection to run
+the generated script (Grayson's Unreal MCP bridge wasn't reachable this
+session — "Unreal is not working right now"); Unity needs no live
+connection at all, it just writes files, so that half got proven fully.
+
+**While probing the export CLI directly, found a real bug in our own code:
+`render.py`'s `-t` flag has been a silent no-op since Phase 1.** Material
+Maker's arg parser (`parse_args.gd`) only recognizes the long `--target`
+flag; `-t` matches nothing and falls through to the parser's own hardcoded
+default. This was invisible because that default (`"Godot/Godot 4
+Standard"`) happens to be the exact string `render.py` was already passing
+— so every Godot render "worked" by coincidence, not because the flag did
+anything. Confirmed empirically (valid Unity target, alternate Godot
+target, and a garbage string via `-t` all produced identical default-Godot
+output; `--target` with the same values worked immediately).
+
+Fixed via `test-driven-development`: extracted a pure `_build_command()` in
+`render.py` (matching `preview.py`/`live.py`'s existing command-builder
+pattern), switched to `--target`, added a `target` parameter to `render()`
+(default unchanged) and threaded it through `server.py`'s `render_graph`
+tool. 4 new tests, all written and watched fail first. Full fast suite: 187
+passed (up from 174). Verified for real through the actual MCP tool path,
+not just the raw CLI: `server.render_graph(ptex, target="Unity/URP")`
+against the bundled `bricks` example produced a genuine `.mat` referencing
+Unity's real URP Lit shader GUID with `_NORMALMAP`/`_PARALLAXMAP`/
+`_METALLICSPECGLOSSMAP` correctly wired, plus proper `.meta` files.
+Committed and pushed on Grayson's go-ahead (`82a57f0`, `origin/main` in
+sync).
+
+Grayson also asked for a way to open an example in the real Material Maker
+GUI so he can tweak it and save a new version himself — the round-trip loop
+`docs/NORTH_STAR.md` is built around. Launched the real (non-overlay) GUI
+directly with `bricks.ptex` loaded, running in the background on his
+machine as this session ends; not verified he actually tweaked/saved
+anything, just confirmed the launch didn't crash (only cosmetic HDR-loader
+and window-transient-parent warnings in the log, both known-benign).
 
 **Human-editability constraint, written into `docs/AUTHORING.md`:**
 resolves a question open since a prior session (Grayson wanted "construct
@@ -105,38 +141,36 @@ log below.
 
 ## 📌 Where we stopped
 
-Grayson said the wood/stone results look good and asked to wrap up. Nothing
-was left mid-fix — the last two things he flagged (w03's white/balance, and
-"number four" replaced with river stones) were both fixed, re-rendered,
-visually confirmed (including in 3D via `render_preview` for the two
-relief-driven cases), and shown back to him before he called it. All new
-files are staged nowhere yet — see the commit below.
+Grayson said to push and wrap up right after the `--target` fix landed and
+was verified. Nothing left mid-fix. He also asked, in the same breath, for
+a way to open an example in the real GUI to tweak/save himself; that's
+launched and running in the background as this session ends, but not
+confirmed he actually used it yet (see Open questions).
 
 ## ▶️ Next concrete step
 
 **Pick a direction, nothing is blocking:**
-- **A. More cookbook categories** — wood and stone are now both represented
-  (5 categories total: fabrics, organics, sci-fi, terrain, wood, stone).
-  Natural next candidates weren't discussed this session; ask Grayson or
-  pick from what's NOT covered yet (e.g. leather beyond `f02`, glass,
-  plastics, painted metal beyond `combo01`).
-- **B. `render.py` target-engine parameter** — now that
-  `docs/NORTH_STAR.md` states the cross-engine goal, the actual work
-  (making the hardcoded `-t "Godot/Godot 4 Standard"` a configurable
-  parameter, verifying against Unity's `.mat` export and Unreal UE5's
-  python-script export) is unscoped and unbuilt. Probably wants its own
-  `writing-plans` pass — touches `render.py`, `server.py`'s `render_graph`
-  tool signature, and needs real verification against at least one other
-  engine, which Grayson may need to do host-side (no Unity/Unreal project
-  set up in this repo).
+- **A. Unreal UE5 export verification** — the natural continuation of this
+  session's work. Unity is proven end to end; Unreal's export mechanism is
+  confirmed real at the file-generation level (same CLI, just
+  `--target "Unreal/Unreal Engine 5"`) but running the generated script
+  needs a live Unreal Editor with the `mcp__unreal-engine__*` MCP bridge
+  connected and Material Maker's `export/mm.py` added to Unreal's Python
+  paths (one-time setup, documented upstream). Grayson said Unreal "is not
+  working right now" this session; check whether that's fixed before
+  trying again.
+- **B. More cookbook categories** — wood and stone are both represented (5
+  categories total: fabrics, organics, sci-fi, terrain, wood, stone).
+  Leather beyond `f02`, glass, plastics, painted metal beyond `combo01` are
+  uncovered.
 - **C. True cobblestone** — `s05_hex_stone_tile` is an honest partial
   (regular hex grid, not irregular). A voronoi-plate approach (like
   `dry_earth`'s cracked-plate network, recolored to stone tones with
   per-plate variation) is untried and would likely get real irregularity.
 - **D. The two remaining honest partials** (wool loop-knit, sf03's
-  circuit-board trace-bleed-through — this session ruled OUT one hypothesis
-  for the circuit-board bug, see Open questions, but didn't find the real
-  cause).
+  circuit-board trace-bleed-through; a prior session ruled OUT one
+  hypothesis for the circuit-board bug, see Open questions, but didn't find
+  the real cause).
 - **E. Image-to-material decomposition** — Grayson's own backlog idea,
   captured in `_agent-commons/ideas/Tool-MaterialMaker-MCP.md`. Explicitly
   deferred; likely wants its own `brainstorming` session before any design
@@ -147,35 +181,29 @@ files are staged nowhere yet — see the commit below.
 
 ## ❓ Open questions
 
+- **New this session:** did Grayson actually get to tweak/save the
+  `bricks.ptex` example in the GUI window launched at session end? Not
+  confirmed; check at next pickup whether the file changed
+  (`z-Git\material-maker\material_maker\examples\bricks.ptex`, though note
+  that's the pristine upstream checkout, not somewhere he'd normally want
+  to save real work; worth clarifying where he actually wants to save
+  tweaked graphs long-term, e.g. a scratch folder outside the checkout).
 - **New this session:** the cross-engine North Star wording treats UE4's
   export path (PNGs + manual in-editor assembly) as a lesser tier, not a
   real target — Grayson said "sounds good" generally but never explicitly
   confirmed that specific framing. Worth a quick check before it drives
-  real `render.py` scope decisions.
+  real scope decisions.
+- **✅ Resolved this session:** the CLI target-engine question from last
+  session's handoff (item B) is answered and built. `render.py`/
+  `server.py`'s `render_graph` now take a `target` parameter, Unity/URP
+  proven end to end. See Current state.
 - **New this session:** `sf03_circuit_board`'s trace-bleed-through bug is
-  STILL unresolved, but one hypothesis is now ruled OUT — tested whether
-  w03's fix (widen a razor-thin mask threshold band) would also fix `sf03`'s
-  bleed-through (both had similarly narrow bands); it didn't. Whoever picks
-  this up next should look elsewhere, possibly the specific interaction
-  between `voronoi` port 2 (per-cell random) and `blend`, since `sf03`'s
-  chips use voronoi where w03's fixed case used a plain perlin mask.
-- **✅ Resolved this session:** "construct graphs in an easy-to-human-edit
-  way" is now a written constraint in `docs/AUTHORING.md` (simple chains,
-  descriptive names, sane layout, prefer the simpler equivalent).
-- **✅ Resolved this session (tested, not just assumed):** the backlog's
-  GDScript parse-only smoke check (`--headless --check-only --script`) does
-  NOT work for `live_server.gd` — it needs the project's autoloads/global
-  classes, which `--check-only` never boots. No cheap substitute exists;
-  don't re-add this without first stubbing `mm_globals`/`MMGraphEdit`, or
-  accept there isn't a parse-only check for this file.
-- **✅ Resolved (drift caught, not actually open):** the overlay
-  read-only-rmtree fix from last session's handoff said "not yet
-  committed" — it was actually already committed and pushed (`09455c8`,
-  confirmed `origin/main` in sync) by the time this session started.
-- **✅ Resolved (tentatively) this session:** did Grayson see the
-  `live_clear` on-screen notice during the demo? He said "I think
-  confirmed... I saw it clear, I think" when asked at pickup — treated as
-  sufficient, not pursued further.
+  STILL unresolved, but one hypothesis is ruled OUT (from a prior session):
+  widening a razor-thin mask threshold band (w03's fix) does not fix
+  `sf03`'s bleed-through. Whoever picks this up next should look elsewhere,
+  possibly the specific interaction between `voronoi` port 2 (per-cell
+  random) and `blend`, since `sf03`'s chips use voronoi where w03's fixed
+  case used a plain perlin mask.
 - Still open, unchanged: is `.mcp.json` the right long-term wiring, or
   should it fold into `project-setup`'s standard kit? Not decided.
 - Still open, unchanged: should `render_preview` get documented in
@@ -188,7 +216,31 @@ files are staged nowhere yet — see the commit below.
   earlier session (staleness marker, `_append_autoload`'s first-occurrence
   match, both verified low-priority).
 
-## 🗂️ Changed this session (wood/stone cookbooks, editability + cross-engine docs)
+## 🗂️ Changed this session (Unity export proven, render.py --target fix)
+
+- Branch: `main`. Committed and pushed (`82a57f0`, `origin/main` in sync):
+  `src/mm_mcp/render.py` (extracted `_build_command()`, `-t` → `--target`,
+  new `target` param on `render()`), `src/mm_mcp/server.py` (`target` param
+  on `render_graph`, forwarded through), `tests/test_render.py` +
+  `tests/test_server_tools.py` (4 new tests). No plan doc, no worktree;
+  small, TDD, matching this project's precedent for well-scoped fixes.
+- Decisions (+ why): the spike (Unity/Unreal export feasibility) surfaced a
+  real bug rather than staying a pure investigation, so it graduated from
+  spike to a bounded implementation task with Grayson's explicit "go" before
+  any code was touched, per `brainstorming`'s path discipline. Extracted a
+  pure `_build_command()` rather than patching the inline `cmd` list, to
+  match the existing testable-command-builder convention in `preview.py`/
+  `live.py` (noted as a project pattern in earlier handoffs) rather than
+  introducing a one-off. `target` defaults to `"Godot/Godot 4 Standard"` on
+  both `render()` and `render_graph()` so no existing caller's behavior
+  changes; this was a deliberate minimal-scope choice, Grayson asked to
+  prove cross-engine export works, not to change what the default render
+  does. Verified through the real MCP tool path (`server.render_graph`)
+  against the bundled `bricks` example, not just the raw CLI probe used
+  during the spike, since the point was proving *this project's* pipeline
+  works, not just Material Maker's own CLI in isolation.
+
+## 🗂️ Changed a prior session (wood/stone cookbooks, editability + cross-engine docs)
 
 - Branch: `main`. New files: `quality/cookbook_wood.py`,
   `quality/cookbook_stone.py`, `quality/contact_sheet.py`, plus tracked
@@ -592,6 +644,60 @@ that's where their full detail lives now.)
 ---
 
 ## 🕓 Session log
+
+### 2026-08-28 (late night) — Unity export proven, render.py --target CLI bug found and fixed
+- Picked up via `pickup`; no drift, `main` matched the wood/stone session's
+  `7f8f9f2`, in sync with `origin/main`.
+- Grayson wanted to prove cross-engine export could produce a real
+  shader/material asset, "not just exporting images and then loading those
+  into Unreal Engine." **`brainstorming`:** classified as a spike (a
+  feasibility question, not a scoped change). Read Material Maker's own
+  export templates directly (`material.mmg`) rather than assuming from
+  docs: confirmed Unity's export writes a ready `.mat` + `.meta` files with
+  no live Editor needed, and Unreal UE5's export writes a python script
+  that builds a real native Unreal Material graph via `MaterialEditingLibrary`
+  when run inside a live Editor.
+- Tried to verify the Unreal half against this session's connected
+  `mcp__unreal-engine__*` tools; no live Editor was reachable (`inspect`/
+  `system_control` both errored "Unreal Engine is not connected"),
+  confirmed across multiple retries and after Grayson said Unreal should be
+  open. He asked to try Unity instead, no live bridge exists for Unity in
+  this session, but Unity's export doesn't need one.
+- Answered Grayson's follow-up question (pros/cons of Unity's Built-in vs
+  URP vs HDRP pipelines, which for games) directly from general knowledge
+  plus a quick read of Material Maker's per-pipeline export blocks; he
+  picked URP.
+- Probed the export CLI directly against a real Godot binary
+  (`--export-material -t/--target <profile> -o <dir> <ptex>`) to prove
+  Unity/URP produces a real `.mat`. Found the actual bug along the way:
+  `-t` (the flag `render.py` has always used) is a silent no-op in Material
+  Maker's `parse_args.gd`; only `--target` works. Confirmed with four
+  direct CLI runs (valid Unity target, alternate Godot target, garbage
+  string all via `-t`, all producing identical default-Godot output; the
+  same values via `--target` worked immediately).
+- Presented the fix as a bounded design in chat per `brainstorming`'s
+  discipline (spike output graduating to real code needs its own
+  approval); Grayson said "go." **`test-driven-development`:** extracted
+  `_build_command()` in `render.py`, fixed the flag, added a `target`
+  parameter to `render()` and `server.py`'s `render_graph`, 4 new tests
+  written and watched fail first. Full fast suite: 187 passed (up from
+  174). Verified for real through `server.render_graph(target="Unity/URP")`
+  against the bundled `bricks` example: a genuine `.mat` wired to Unity's
+  URP Lit shader with `_NORMALMAP`/`_PARALLAXMAP`/`_METALLICSPECGLOSSMAP`
+  all correctly enabled, plus the confirmed-unchanged Godot default path.
+  Cleaned up scratch spike output afterward.
+- Grayson also asked for a way to open an example in the real GUI to
+  tweak/save himself, part of the round-trip loop `docs/NORTH_STAR.md` is
+  built around. Launched the real (non-overlay) Godot GUI directly with
+  `bricks.ptex` loaded, running in the background as this session ends;
+  confirmed the launch didn't crash (only cosmetic HDR-loader and
+  window-transient-parent warnings, both known-benign), not confirmed
+  Grayson actually used it.
+- Committed and pushed on Grayson's explicit "let's push" (`82a57f0`,
+  confirmed `origin/main` in sync via `git rev-list --left-right --count`).
+- Wrote the required `_agent-commons\log\` entry
+  (`2026-08-28-claude-code-unity-export-target-fix.md`) before this
+  wrap-up, per `C:\Projects-local\CLAUDE.md`'s standing rule.
 
 ### 2026-08-28 (evening) — wood/stone cookbook categories, editability + cross-engine docs
 - Picked up via `pickup`. Drift found and reported: the handoff said the

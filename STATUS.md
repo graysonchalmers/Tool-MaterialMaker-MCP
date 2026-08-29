@@ -6,7 +6,7 @@
 
 Gate ledger. Three states only: ✅ verified · 🔌 wired · ⬜ not started.
 
-_Last updated: 2026-08-28 (yet later still) — real read-only-rmtree bug found and fixed in overlay.py's rebuild path (see Components row); Phase 5 gate itself unchanged, still ✅ verified_
+_Last updated: 2026-08-28 (late night) — real -t/--target CLI bug found and fixed in render.py; Unity/URP export verified end to end (see Components row); Phase 5 gate itself unchanged, still ✅ verified_
 
 ## Phases
 
@@ -32,7 +32,7 @@ _Last updated: 2026-08-28 (yet later still) — real read-only-rmtree bug found 
 | smoke harness | ✅ | `smoke/smoke.ps1` runs and passes |
 | catalog_builder.py | ✅ | Builds `catalog.json` from `.mmg` files; all 43 bundled examples validate against it |
 | graph.py (build + validate) | ✅ | `Graph.to_ptex`/`from_ptex` + `validate_graph`; covered by `tests/test_graph.py`, `tests/test_validator.py` |
-| render.py (runner) | ✅ | Headless Godot render runner; `tests/test_render.py` incl. the integration test that renders `bricks.ptex` for real |
+| render.py (runner) | ✅ | Headless Godot render runner; takes a `target` parameter (default `"Godot/Godot 4 Standard"`) forwarded from `server.py`'s `render_graph`. **Real bug fixed 2026-08-28:** the CLI flag used to be `-t`, which Material Maker's own arg parser silently ignores (only `--target` works) — dormant since Phase 1 because the parser's hardcoded default happened to match. Unity/URP export verified end to end (`server.render_graph(target="Unity/URP")` on `bricks` produces a real `.mat` wired to Unity's URP Lit shader). Unreal UE5 export confirmed real at the file-generation level but unverified end to end (needs a live Unreal Editor + MCP bridge). `tests/test_render.py` incl. the integration test that renders `bricks.ptex` for real, plus `_build_command()` unit tests |
 | server.py (MCP) | ✅ | All eight batch tools + four live tools (`live_start`/`live_get_graph`/`live_apply`/`live_render`) + `catalog://nodes` resource; batch path exercised end to end by `smoke/smoke_mcp.py`, live path by `tests/test_server_live.py`'s integration test. Lazy startup (`_ensure_ready`); `main(argv)` handles `--check`/`--version`/`--help` |
 | doctor.py (setup preflight) | ✅ | `mm-mcp --check` green/red checklist; `tests/test_doctor.py` (11 tests) |
 | Packaging (pip/wheel/sdist) | 🔌 | Installable, `twine`-clean, clean-venv verified; PyPI upload on hold, macOS/Linux untested |
