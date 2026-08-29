@@ -1,82 +1,71 @@
 # 🧭 Session Handoff — Tool-MaterialMaker-MCP
 
-_Last updated: 2026-08-28 (even later) CT (America/Chicago)_
+_Last updated: 2026-08-28 (later still) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**Two-part session: proved cross-engine export (and fixed a real CLI bug),
-then set up a real hand-edit round-trip workflow with Grayson.** Picked up
-via `pickup`, no drift. Full detail for both parts is in the Session log;
-this section covers just what's current.
+**This session picked up via `pickup`, did two quick housekeeping fixes
+Grayson asked for, then built backlog item H (and part of I) end to end.**
+Committed as `b85a55f` (housekeeping) and `f891fbb` (the feature), both
+pushed to `origin/main`.
 
-**Part 1 — Unity export proven, `render.py`'s `-t` flag fixed to
-`--target`** (committed and pushed, `82a57f0`). Material Maker's arg parser
-silently ignores `-t`, only the long flag works; this had been dormant
-since Phase 1 because the parser's own default happened to match what
-`render.py` was already sending. `render()`/`server.py`'s `render_graph`
-now take a `target` parameter (default unchanged); Unity/URP verified end
-to end producing a real `.mat` wired to Unity's actual URP Lit shader.
-Unreal UE5 confirmed real at the file-generation level but still
-unverified end to end, blocked on a live Unreal Editor + MCP bridge
-connection that wasn't reachable this session.
+**Housekeeping:** reverted the upstream `z-Git\material-maker` checkout's
+`bricks.ptex` back to pristine now that Grayson's real edit is safely
+copied into `saved_graphs/` (resolves last session's open question). Moved
+his own `examples/g01-natural-stone/` GUI save into
+[saved_graphs/natural_stone_grayson_edit.ptex](../saved_graphs/natural_stone_grayson_edit.ptex),
+following the same naming convention as the bricks edit — he confirmed
+that's the one he actually wants kept (resolves last session's other open
+question about that untracked file).
 
-**Part 2 — Grayson hand-edited `bricks.ptex` in a real (non-overlay) GUI
-window, and this session built out the round-trip this project is actually
-for.** New convention: [saved_graphs/](../saved_graphs/) is where Grayson's
-own tweaked graphs live now, version-controlled in this repo, distinct
-from `quality/`'s Claude-authored cookbook recipes and from the pristine
-`z-Git\material-maker` checkout he'd accidentally saved his first edit
-into. Copied his edit out, then did a full human-editability pass on it
-(traced every connection, renamed all 16 top-level auto-generated node
-names like `colorize_4`/`blend_1` to role-descriptive ones like
-`RoughnessMap`/`BrickColorVariationMask`, relaid the graph left-to-right by
-topological depth) and added a moss-in-crevices layer (new `MossMask`/
-`MossColor`/`MossAlbedoComposite`/`MossRoughnessComposite` nodes). Real
-mid-task finding: the first moss threshold guess rendered solid black
-because the guess didn't match the graph's actual value range; caught it
-by rerouting the graph to isolate `MossMask` and rendering it alone, then
-retuned the threshold against the measured range. Confirmed good by
-Grayson via `SendUserFile` (flat albedo + a 3D `render_preview` pass, per
-the "judge relief in 3D" standing rule). File-side edit chosen over
-`live_apply` deliberately: live mode currently can't rename or reposition
-existing nodes, only add new ones, a real gap now logged in the backlog.
+**Backlog item H shipped: `render_node_output` (batch) +
+`live_render_node_output` (live).** Renders a single node's output in
+isolation — rewires a copy of the graph so that node feeds the material's
+albedo input, renders, returns just the resulting albedo image — instead
+of hand-rerouting the graph, which is exactly what last session's moss-mask
+threshold debugging had to do by hand. Batch path is two pure functions in
+`graph.py` (`find_material_node`/`isolate_node_output`) plus a thin
+`server.py` wrapper reusing the existing `render()`/`validate_graph()`
+exactly like `render_graph` already does.
 
-**Three MCP tool-surface gaps this session actually hit, added to the
-backlog below (H/I/J):** no way to render a single intermediate node's
-output in isolation (had to work around this by hand for the moss
-threshold), `live_apply` can't rename/reposition nodes, and there's no way
-to load an existing `.ptex` into a live session. `render_node_output` is
-the recommended first pick, smallest and most likely to pay for itself.
+**Grayson asked for both batch and live in the same pass, which surfaced
+real hidden complexity: item I, partially.** The live path needed a way to
+fully undo a preview connection (reconnect-or-disconnect), but only
+`connect_nodes` existed — no `disconnect_nodes`. Added it as the missing
+counterpart (`addons/mm_live/live_server.gd`'s new `_cmd_disconnect_nodes`
+calls Material Maker's own pre-existing `do_disconnect_node`; `live.py`
+confirms the connection exists before sending), also exposed as a fourth
+`live_apply` op. This closes the "disconnect" half of backlog item I —
+the "rename/reposition an existing node" half is still open, unchanged.
+Surfaced to Grayson mid-brainstorming before building (this counts as
+hidden complexity found mid-design, not a silent scope decision); he chose
+to build it now.
 
-**Heads-up, not yet resolved:** a new untracked file showed up during this
-session, `examples/g01-natural-stone/` (a `.ptex` + `.mmcr`, timestamped
-during this session). Not something this session created or was asked to
-create; almost certainly Grayson saved something himself in the GUI
-separately from the bricks work. Left untouched and uncommitted; ask
-Grayson at next pickup whether it should be tracked.
+Built via `brainstorming` (bounded) → `test-driven-development`. Full
+suite: 216 passed (up from 187). The new GDScript handler is proven by a
+dedicated integration test that forces the no-original-connection restore
+branch — the actual new code path, not the already-proven reconnect
+branch. Zero leftover Godot processes after the integration runs.
 
 ## 📌 Where we stopped
 
-Grayson confirmed the renamed/moss bricks graph looked good, asked what
-MCP gaps this session surfaced, then asked to log them as backlog and wrap
-up. Nothing left mid-task. He also asked, earlier in the session, for a
-way to open an example in the real GUI to tweak/save himself; he did, and
-the rest of the session (Part 2 above) was the round-trip that came out of
-that. Nothing pending on any of it.
+Grayson asked to push and wrap up right after the feature landed and the
+report was given. Nothing left mid-task; both commits are pushed and
+`origin/main` is in sync.
 
 ## ▶️ Next concrete step
 
 **Pick a direction, nothing is blocking:**
-- **A. Unreal UE5 export verification** — the natural continuation of this
-  session's work. Unity is proven end to end; Unreal's export mechanism is
-  confirmed real at the file-generation level (same CLI, just
+- **A. Unreal UE5 export verification** — the natural continuation of a
+  prior session's work. Unity is proven end to end; Unreal's export
+  mechanism is confirmed real at the file-generation level (same CLI, just
   `--target "Unreal/Unreal Engine 5"`) but running the generated script
   needs a live Unreal Editor with the `mcp__unreal-engine__*` MCP bridge
   connected and Material Maker's `export/mm.py` added to Unreal's Python
   paths (one-time setup, documented upstream). Grayson said Unreal "is not
-  working right now" this session; check whether that's fixed before
+  working right now" as of that session; check whether that's fixed before
   trying again.
 - **B. More cookbook categories** — wood and stone are both represented (5
   categories total: fabrics, organics, sci-fi, terrain, wood, stone).
@@ -97,50 +86,27 @@ that. Nothing pending on any of it.
 - **F. PyPI publish** (on hold; GitHub-clone is the current route).
 - **G. Document `render_preview`** in `docs/AUTHORING.md` / README, or leave
   it as just an MCP tool.
-- **H. ⭐ `render_node_output(node_name)` MCP tool (recommended pick).**
-  Render a single intermediate node's output in isolation, so authoring a
-  mask/threshold doesn't require rerouting the graph by hand and
-  histogramming a PNG to find its real value range. Hit twice now: this
-  session's moss-mask threshold (first guess rendered solid black, had to
-  reroute + measure to find the real range), and a prior session's 512px
-  preview hiding fine detail. Smallest of the three MCP gaps below, most
-  likely to pay for itself immediately.
-- **I. `live_apply` rename/reposition ops.** Currently only
-  `add_node`/`connect_nodes`/`set_param` exist; there's no way to rename or
-  move an existing node live, so the human-editability reorganize pass this
-  session had to be file-side even though live mode exists to watch changes
-  happen. Bigger than H, needs a new op type plus a GDScript handler.
+- **H. ✅ Done this session.** `render_node_output`/`live_render_node_output`
+  shipped — see Current state.
+- **I. `live_apply` rename/reposition ops — disconnect half done, rename/
+  reposition half still open.** `disconnect_nodes` was added this session
+  (see Current state), but there's still no way to rename or move an
+  existing node live, so a human-editability reorganize pass (like last
+  session's bricks rename) still has to be file-side. Needs a new op type
+  plus a GDScript handler, following the exact pattern `disconnect_nodes`
+  just established.
 - **J. Load an existing `.ptex` into a live session.** No `live_load`
   equivalent exists; `live_start`/`connect_or_launch` only ever begin from
-  a default graph or whatever's already open in the attached window. Hit
-  this session trying to get a saved edit into a live-control window for
-  step-by-step viewing; worked around by staying file-side (works, just
-  slower to iterate). Lowest priority of the three.
+  a default graph or whatever's already open in the attached window. Lowest
+  priority of the remaining live-mode gaps.
 
 ## ❓ Open questions
 
-- **✅ Resolved this session:** Grayson did tweak/save `bricks.ptex` in the
-  GUI window (confirmed via `git status` in the upstream checkout showing a
-  real diff). The edit was copied out to
-  [saved_graphs/bricks_grayson_edit.ptex](../saved_graphs/bricks_grayson_edit.ptex)
-  (new convention: this is where Grayson's own saved/tweaked graphs live,
-  distinct from `quality/`'s Claude-authored cookbook recipes), then
-  renamed/reorganized (human-editability pass) and given a moss-in-crevices
-  layer, rendered and confirmed good by Grayson. The upstream checkout's
-  `bricks.ptex` still has his original raw edit sitting in it, unresolved
-  whether to reset it back to pristine, see below.
-- **New this session:** should the upstream `z-Git\material-maker` checkout's
-  `bricks.ptex` be reset back to pristine now that Grayson's real edit is
-  safely copied into `saved_graphs/`? Asked, not yet answered.
 - **New this session:** the cross-engine North Star wording treats UE4's
   export path (PNGs + manual in-editor assembly) as a lesser tier, not a
   real target — Grayson said "sounds good" generally but never explicitly
   confirmed that specific framing. Worth a quick check before it drives
   real scope decisions.
-- **✅ Resolved this session:** the CLI target-engine question from last
-  session's handoff (item B) is answered and built. `render.py`/
-  `server.py`'s `render_graph` now take a `target` parameter, Unity/URP
-  proven end to end. See Current state.
 - **New this session:** `sf03_circuit_board`'s trace-bleed-through bug is
   STILL unresolved, but one hypothesis is ruled OUT (from a prior session):
   widening a razor-thin mask threshold band (w03's fix) does not fix
@@ -148,11 +114,11 @@ that. Nothing pending on any of it.
   possibly the specific interaction between `voronoi` port 2 (per-cell
   random) and `blend`, since `sf03`'s chips use voronoi where w03's fixed
   case used a plain perlin mask.
-- **New this session:** `examples/g01-natural-stone/` (a `.ptex` + `.mmcr`)
-  appeared untracked during this session, not something this session
-  created. Likely Grayson saved something himself in the GUI separately
-  from the bricks work; ask at next pickup whether it should be tracked or
-  was just a scratch save.
+- **Still open, new this session:** `docs/images/contact-sheet-wood-stone.png`
+  is untracked in the repo (flagged at this session's pickup, not addressed
+  — Grayson only asked about the bricks/natural-stone housekeeping and
+  building item H). Decide whether to track or delete it, next time
+  `docs/images` is touched.
 - Still open, unchanged: is `.mcp.json` the right long-term wiring, or
   should it fold into `project-setup`'s standard kit? Not decided.
 - Still open, unchanged: should `render_preview` get documented in
@@ -164,6 +130,44 @@ that. Nothing pending on any of it.
   available; two parked-not-fixed overlay-builder findings from a much
   earlier session (staleness marker, `_append_autoload`'s first-occurrence
   match, both verified low-priority).
+
+## 🗂️ Changed this session (render_node_output + live_render_node_output, backlog item H)
+
+- Branch: `main`. Committed and pushed: `b85a55f` (housekeeping: revert
+  upstream `bricks.ptex`, move `examples/g01-natural-stone/` into
+  `saved_graphs/`), `f891fbb` (the feature). `origin/main` in sync.
+  New/changed: `src/mm_mcp/graph.py` (`find_material_node`/
+  `isolate_node_output`), `src/mm_mcp/server.py` (`render_node_output`,
+  `live_render_node_output`, `disconnect_nodes` as a 4th `live_apply` op),
+  `src/mm_mcp/live.py` (`disconnect_nodes`), `addons/mm_live/live_server.gd`
+  (`_cmd_disconnect_nodes`), `tests/test_graph.py`, `tests/test_server_tools.py`,
+  `tests/test_live.py`, `tests/test_server_live.py`, `README.md`, `STATUS.md`.
+  No plan doc, no worktree — classified `bounded` via `brainstorming`, built
+  directly via `test-driven-development` on `main`.
+- Decisions (+ why): `render_node_output` returns just the single `_albedo.png`
+  path, not all four exported maps, since only albedo actually reflects the
+  isolated node after the rewire — the others reflect whatever else was
+  already wired and would be misleading if returned alongside it. The live
+  path's `disconnect_nodes` was added specifically because Material Maker's
+  own `connect_children` (verified in the real upstream source) already
+  disconnects whatever previously fed a port before wiring a new one, so a
+  reconnect-based restore works whenever the target port started out
+  connected to something — but there was no way to restore "unconnected" if
+  it didn't, which item I's rename/reposition backlog entry had already
+  flagged as a gap, just not yet needed until this feature. `disconnect_nodes`
+  checks the connection actually exists (fetches the current graph first)
+  rather than blindly forwarding to the socket, matching `connect_nodes`'
+  existing "validate before touching the socket" convention, even though
+  there's no catalog rule to check here (only existence). `live_render_node_output`
+  restores unconditionally after render, even on a render failure, so the
+  live window is never left stuck mid-preview if the render itself errors.
+  The new GDScript handler was deliberately proven by a dedicated integration
+  test that forces the disconnect-restore branch (no original connection to
+  reconnect to) rather than folding it into an existing test, since the
+  already-existing tests only exercise the reconnect branch (which reuses
+  the already-proven `connect_nodes`/`do_connect_node`) — this project has no
+  automated GDScript test harness, so the real integration test is the only
+  proof any new GDScript code actually works.
 
 ## 🗂️ Changed this session (Grayson's saved_graphs/ round-trip: rename + moss)
 
@@ -620,6 +624,69 @@ that's where their full detail lives now.)
 ---
 
 ## 🕓 Session log
+
+### 2026-08-28 (later still) — render_node_output + live_render_node_output, backlog item H
+- Picked up via `pickup`; no drift, `main` matched the prior session's
+  `f6e3edb`, in sync with `origin/main`.
+- Grayson asked for two quick housekeeping fixes first: revert the upstream
+  `z-Git\material-maker` checkout's `bricks.ptex` back to pristine (his real
+  edit was already safely copied into `saved_graphs/`), and move his own
+  `examples/g01-natural-stone/` GUI save into `saved_graphs/` since he
+  confirmed that's the natural-stone variant he actually wants kept.
+  Renamed it to `natural_stone_grayson_edit.ptex` to match the bricks
+  convention. Committed separately (`b85a55f`) before the main feature.
+- Then built backlog item H (`render_node_output`) via `brainstorming`
+  (classified bounded — the render/validate/catalog flow it composes
+  already exists) → `test-driven-development`. Read `graph.py`/`render.py`/
+  `server.py`/`catalog_builder.py`/`validator.py` first, then confirmed the
+  real `material` node's input order (`albedo_tex` is port 0) via
+  `describe_node` and the real `bricks` example graph, rather than assuming.
+- Grayson asked for both batch and live-mode in the same pass. Checking the
+  live protocol for feasibility surfaced real hidden complexity before any
+  code was written: Material Maker's own `connect_children` (verified
+  directly in the `z-Git\material-maker` source) already disconnects
+  whatever fed a port before wiring a new one, so restoring by reconnecting
+  the original source works — but only if the port started out connected to
+  something. There was no `disconnect_nodes` primitive to restore
+  "unconnected" when it didn't. Surfaced this to Grayson as a real scope
+  question (three options: add the primitive now, refuse that one case,
+  drop live-mode from this pass) rather than silently deciding, per
+  `brainstorming`'s "hidden complexity upgrades the path" rule — he chose to
+  add it now.
+- Confirmed `do_disconnect_node` already exists in Material Maker's own
+  `graph_edit.gd`, mirroring `do_connect_node` exactly (found by reading the
+  real source, not assumed), which meant the new op was a straightforward
+  addition rather than inventing a new mechanism.
+- Presented the full design (batch path, live path, testing plan) in chat
+  per `brainstorming`'s bounded-path requirement; Grayson approved with "go
+  for it."
+- Built via strict TDD, one unit at a time, watching each fail for the
+  right reason before implementing: `graph.py`'s `find_material_node`/
+  `isolate_node_output` (pure, 8 new tests), `server.py`'s
+  `render_node_output` (5 new tests + 1 real integration test against the
+  bundled `bricks` example), `live.py`'s `disconnect_nodes` (2 new tests),
+  the GDScript `_cmd_disconnect_nodes` handler (no unit harness exists for
+  GDScript in this repo — only provable via integration test), `server.py`'s
+  `live_render_node_output` and the `disconnect_nodes` `live_apply` op (7
+  new tests) — then one dedicated real integration test, deliberately
+  designed so the preview node starts with no existing `albedo_tex`
+  connection, forcing the disconnect-restore branch specifically (the
+  actual new GDScript code), not the already-proven reconnect branch.
+- Full suite: 216 passed (up from 187), confirmed zero leftover Godot
+  processes afterward via `tasklist`.
+- Updated `README.md`'s tool tables (9 batch + 6 live tools now, was
+  stale by one entry already — `live_clear` was missing from the Live mode
+  table before this session, fixed in the same edit) and `STATUS.md`'s
+  Components rows for `server.py` and the live-control stack.
+- Committed as `f891fbb`. Wrote a `_agent-commons/log/` entry, committed and
+  pushed it directly (not via `Push-Repo`, since that helper's `git add -A`
+  would have swept in an unrelated modified `dashboard/index.html` and
+  dozens of other agents' pending log entries sitting uncommitted in that
+  repo — staged and pushed only this session's own file instead).
+- Grayson asked to push and wrap up. Pushed both commits (`git push`,
+  direct — this is a local session with the real working tree, not a
+  Cowork/cloud session, so the `github-push` skill's clone-and-reapply flow
+  doesn't apply here). Confirmed `origin/main` in sync.
 
 ### 2026-08-28 (even later) — saved_graphs/ round-trip: version control, rename, moss
 - Continuation of the same session, after the Unity/--target work below was
