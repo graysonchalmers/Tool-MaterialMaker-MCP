@@ -549,8 +549,8 @@ brick coursing or crack network.
 ## Leather cookbook (cookbook growth, informal — 2026-08-29)
 
 `quality/cookbook_leather.py`. `f02_brown_leather` is already frozen in the
-Phase 3 test set (a plain `crocodile_skin` recolor) — these five extend the
-category into distinct finishes. All five clone `crocodile_skin`, the proven
+Phase 3 test set (a plain `crocodile_skin` recolor) — these six extend the
+category into distinct finishes. All six clone `crocodile_skin`, the proven
 leather donor: its cellular voronoi grain drives albedo (`colorize_1` →
 Material.albedo), roughness (`colorize_3` → Material.roughness) and a height
 chain (`voronoi_0` → `colorize_0` → `normal_map_0` → Material.normal).
@@ -561,7 +561,8 @@ chain (`voronoi_0` → `colorize_0` → `normal_map_0` → Material.normal).
 | ![](images/cookbook-leather/l02_distressed_two_tone.png) | Distressed two-tone worn leather | HIT (after reworking the wear mask) |
 | ![](images/cookbook-leather/l03_suede.png) | Suede / nubuck | HIT |
 | ![](images/cookbook-leather/l04_reptile_exotic.png) | Exotic reptile scale | HIT (after fixing the albedo polarity) |
-| ![](images/cookbook-leather/l05_quilted_leather.png) | Quilted / tufted leather | HIT (quilt + channel seams; no per-stitch dashes yet) |
+| ![](images/cookbook-leather/l05_quilted_leather.png) | Quilted / tufted leather | HIT (quilt + channel seams; no per-stitch dashes) |
+| ![](images/cookbook-leather/l06_topstitched_leather.png) | Topstitched leather (raised stitch dashes) | HIT (bold rather than fine; judge in 3D) |
 
 - **The inverted-grain trap (applies to EVERY cell-based leather here):**
   `crocodile_skin`'s stock height ramp (`colorize_0`, fed by `voronoi_0`
@@ -634,4 +635,29 @@ chain (`voronoi_0` → `colorize_0` → `normal_map_0` → Material.normal).
   pattern) so the channels read as recessed. **Honest gap:** this delivers the
   quilt + channel seams but NOT individual per-stitch dash marks running along
   the seams — that needs a different dash generator (the `shape`+`tiler`
-  trap above rules out the easy one), open for a future pass.
+  trap above rules out the easy one). l06 solves the dash generator.
+- **Topstitched leather — raised stitch dashes (HIT — two traps, one flip):**
+  the real per-stitch marks l05 lacked: a grid of raised cream thread dashes
+  in rows on saddle grain. Getting a dash generator that works took ruling out
+  two approaches and correcting a polarity that bites twice:
+  1. **`shape`+`tiler` is a trap** (also noted under l05): a single centered
+     `shape` through `tiler` produced no visible dashes in the full graph and
+     TIMED OUT the renderer at 180s when its output was isolated to albedo.
+     Don't reach for it for a repeated-mark grid.
+  2. **`pattern` Square×Square (Multiply) makes the grid reliably** — one node,
+     `x_wave`/`y_wave` = Square, `mix` = Multiply, `x_scale`/`y_scale` set the
+     dash pitch. But its **polarity is inside-out**: the pattern's HIGH (on)
+     region is the connected FIELD, and the isolated rectangles you want as
+     dashes are its LOW cells. Rendered straight, that put dark RECESSED marks
+     on a flat thread-coloured field (the exact inverse of stitches). **Fix: a
+     single reversed sharpen colorize** (`1` at the pattern's LOW, `0` at its
+     HIGH) so the mask is 1 AT the dash marks — which corrects the colour AND
+     un-flattens the field (the leather grain shows again) in one edit.
+  With the mask right, the dashes drive a cream thread in albedo and a raised
+  bump in the normal (blended over the grain height before `normal_map`,
+  `param4=0`). Honest note: the dashes render bold/blocky rather than fine
+  topstitch, and it's a full grid, not seam-following lines — finer dashes
+  (higher `x`/`y_scale`) risk the docs thumbnail losing them, so judge in 3D.
+  This is the same "isolating a node to albedo can time the renderer out"
+  gotcha the diagnosis hit twice; when a mask needs checking, prefer reading
+  the full render's channels over an isolate-to-albedo pass here.

@@ -240,12 +240,71 @@ def build_l05_quilted_leather() -> str:
     return save_variant(g, _LABEL, "l05_quilted_leather", 1)
 
 
+def build_l06_topstitched_leather() -> str:
+    """Topstitched leather panel: saddle-tan grain with a regular grid of RAISED
+    cream stitch dashes -- the real per-stitch marks l05's quilt lacked.
+
+    Stitch mechanism, take two (the reliable one): a SINGLE `pattern` node makes
+    the whole dash grid -- Square in X (short on-segments = dashes) times Square
+    in Y (rows), mixed Multiply -> an on/off grid of dash marks. This avoids
+    both traps found earlier: the `shape`+`tiler` timeout, and the two-mask
+    blend-AND whose polarity came out inverted (a channel version rendered as
+    dark RECESSED perforations instead of raised light thread -- the `pattern`
+    Square output and the `blend` Multiply's default opacity fought the intent).
+    One pattern node, one sharpen colorize, unambiguous polarity:
+      - albedo: cream thread at the dash marks over the saddle grain;
+      - normal: the dashes raised proud of the grain (thread sits on top)."""
+    g = load_example("crocodile_skin")
+    set_gradient(g, "colorize_1", [           # saddle tan leather
+        (0.0, 0.22, 0.13, 0.07),
+        (1.0, 0.44, 0.28, 0.15),
+    ])
+    set_gradient(g, "colorize_3", [           # mid roughness leather
+        (0.0, 0.40, 0.40, 0.40),
+        (1.0, 0.52, 0.52, 0.52),
+    ])
+    _dome_the_cells(g)                        # fine grain: bodies up, seams down
+
+    # Dash grid in ONE node: short on-segments in X (dashes) x rows in Y.
+    add_node(g, "dash_grid", "pattern",
+             {"mix": 0, "x_wave": 2, "x_scale": 32, "y_wave": 2, "y_scale": 12})
+    # NOTE the polarity: pattern Square*Square's HIGH region is the connected
+    # field; the isolated rectangles (the actual dash marks we want) are its LOW
+    # cells. So the mask is 1 at LOW (marks) -> reversed gradient. (Rendered the
+    # un-reversed version first: dark recessed marks on a flat thread-coloured
+    # field -- the exact inverse.)
+    add_node(g, "stitch_mask", "colorize",    # 1 AT the dash marks (pattern low)
+             {"gradient": _grad([(0.40, 1, 1, 1), (0.58, 0, 0, 0)])})
+    add_node(g, "thread_alb", "colorize",     # cream thread colour
+             {"gradient": _grad([(0.0, 0.80, 0.74, 0.60), (1.0, 0.88, 0.82, 0.68)])})
+    add_node(g, "blend_alb_st", "blend", {"blend_type": 0, "amount": 1})
+    add_node(g, "blend_h_st", "blend", {"blend_type": 0, "amount": 1})
+    g["connections"] += [
+        {"from": "dash_grid", "from_port": 0, "to": "stitch_mask", "to_port": 0},
+        {"from": "stitch_mask", "from_port": 0, "to": "thread_alb", "to_port": 0},
+        # albedo: cream thread at the dashes over the saddle grain
+        {"from": "colorize_1", "from_port": 0, "to": "blend_alb_st", "to_port": 0},
+        {"from": "thread_alb", "from_port": 0, "to": "blend_alb_st", "to_port": 1},
+        {"from": "stitch_mask", "from_port": 0, "to": "blend_alb_st", "to_port": 2},
+        # normal: raise the stitches above the grain height before normal_map
+        {"from": "colorize_0", "from_port": 0, "to": "blend_h_st", "to_port": 0},
+        {"from": "stitch_mask", "from_port": 0, "to": "blend_h_st", "to_port": 1},
+        {"from": "stitch_mask", "from_port": 0, "to": "blend_h_st", "to_port": 2},
+    ]
+    rewire(g, "Material", 0, "blend_alb_st", 0)     # albedo <- thread over grain
+    rewire(g, "normal_map_0", 0, "blend_h_st", 0)   # height <- grain + raised stitches
+    set_param(g, "normal_map_0", "param4", 0)
+    set_param(g, "normal_map_0", "param1", 0.6)
+    return save_variant(g, _LABEL, "l06_topstitched_leather", 1)
+
+
 BUILDERS = {
     "l01_black_oiled_leather": build_l01_black_oiled_leather,
     "l02_distressed_two_tone": build_l02_distressed_two_tone,
     "l03_suede": build_l03_suede,
     "l04_reptile_exotic": build_l04_reptile_exotic,
     "l05_quilted_leather": build_l05_quilted_leather,
+    "l06_topstitched_leather": build_l06_topstitched_leather,
 }
 
 
