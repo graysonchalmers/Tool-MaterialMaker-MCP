@@ -27,8 +27,8 @@ _LABEL = "cookbook-scifi"
 
 def _new_graph() -> dict:
     """Minimal valid .ptex shape for a from-scratch graph (no donor to clone).
-    Mirrors mm_mcp.graph.Graph.to_ptex()'s top-level keys -- from_ptex/
-    validate_graph only really need nodes+connections, but match the real
+    Matches a real Material Maker .ptex's top-level keys -- validate_graph
+    only really needs nodes+connections, but this mirrors the real on-disk
     shape rather than a stripped-down guess."""
     return {"type": "graph", "name": "graph", "label": "Graph",
             "node_position": {"x": 0, "y": 0}, "parameters": {},

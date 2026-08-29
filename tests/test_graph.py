@@ -1,42 +1,30 @@
 import pytest
 
-from mm_mcp.graph import Graph, find_material_node, isolate_node_output
-
-
-def test_build_minimal_graph_to_ptex():
-    g = Graph()
-    g.add_node("perlin_0", "perlin", {"scale_x": 4, "scale_y": 4}, x=0, y=0)
-    g.add_node("colorize_0", "colorize", {}, x=300, y=0)
-    g.add_node("Material", "material", {}, x=600, y=0)
-    g.connect("perlin_0", 0, "colorize_0", 0)
-    g.connect("colorize_0", 0, "Material", 0)
-    ptex = g.to_ptex()
-    assert ptex["type"] == "graph"
-    assert len(ptex["nodes"]) == 3
-    assert len(ptex["connections"]) == 2
-    names = {n["name"] for n in ptex["nodes"]}
-    assert names == {"perlin_0", "colorize_0", "Material"}
-    c0 = ptex["connections"][0]
-    assert c0 == {"from": "perlin_0", "from_port": 0,
-                  "to": "colorize_0", "to_port": 0}
-
-
-def test_roundtrip_from_ptex():
-    g = Graph()
-    g.add_node("a", "perlin", {}, 0, 0)
-    d = g.to_ptex()
-    g2 = Graph.from_ptex(d)
-    assert g2.to_ptex()["nodes"][0]["type"] == "perlin"
+from mm_mcp.graph import find_material_node, isolate_node_output
 
 
 def _simple_graph_ptex():
-    g = Graph()
-    g.add_node("perlin_0", "perlin", {}, 0, 0)
-    g.add_node("mask_0", "colorize", {}, 300, 0)
-    g.add_node("Material", "material", {}, 600, 0)
-    g.connect("perlin_0", 0, "mask_0", 0)
-    g.connect("mask_0", 0, "Material", 0)
-    return g.to_ptex()
+    """A minimal three-node ptex (perlin -> colorize -> material) used as the
+    fixture for the find_material_node / isolate_node_output tests below.
+    Built as a plain dict on purpose: this is exactly the .ptex on-disk shape
+    those functions consume (nodes + connections), with no authoring-helper
+    layer in between."""
+    return {
+        "type": "graph", "name": "graph", "label": "Graph",
+        "node_position": {"x": 0, "y": 0}, "parameters": {},
+        "nodes": [
+            {"name": "perlin_0", "type": "perlin",
+             "node_position": {"x": 0, "y": 0}, "parameters": {}},
+            {"name": "mask_0", "type": "colorize",
+             "node_position": {"x": 300, "y": 0}, "parameters": {}},
+            {"name": "Material", "type": "material",
+             "node_position": {"x": 600, "y": 0}, "parameters": {}},
+        ],
+        "connections": [
+            {"from": "perlin_0", "from_port": 0, "to": "mask_0", "to_port": 0},
+            {"from": "mask_0", "from_port": 0, "to": "Material", "to_port": 0},
+        ],
+    }
 
 
 def test_find_material_node_returns_the_material_node():
