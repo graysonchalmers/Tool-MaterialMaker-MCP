@@ -109,6 +109,61 @@ def test_collect_fresh_images_ignores_non_png_files(tmp_path):
     assert fresh == []
 
 
+class _FakeProc:
+    def __init__(self, returncode, stdout="", stderr=""):
+        self.returncode = returncode
+        self.stdout = stdout
+        self.stderr = stderr
+
+
+def test_run_godot_retries_a_transient_crash_then_returns_success(monkeypatch):
+    from mm_mcp import render as render_mod
+    codes = [3221225477, 0]  # a transient access-violation crash, then success
+    calls = {"n": 0}
+
+    def _fake_run(cmd, **kw):
+        rc = codes[calls["n"]]
+        calls["n"] += 1
+        return _FakeProc(rc)
+
+    monkeypatch.setattr(render_mod.subprocess, "run", _fake_run)
+    proc = render_mod._run_godot(["godot"], 10)
+    assert proc.returncode == 0
+    assert calls["n"] == 2  # retried exactly once past the transient crash
+
+
+def test_run_godot_does_not_retry_a_non_transient_returncode(monkeypatch):
+    from mm_mcp import render as render_mod
+    calls = {"n": 0}
+
+    def _fake_run(cmd, **kw):
+        calls["n"] += 1
+        return _FakeProc(1)  # an ordinary, non-transient failure
+
+    monkeypatch.setattr(render_mod.subprocess, "run", _fake_run)
+    proc = render_mod._run_godot(["godot"], 10)
+    assert proc.returncode == 1
+    assert calls["n"] == 1  # a normal exit code is not retried
+
+
+def test_run_godot_raises_godot_timeout_on_timeout(monkeypatch):
+    import subprocess
+    from mm_mcp import render as render_mod
+
+    def _fake_run(cmd, **kw):
+        raise subprocess.TimeoutExpired(cmd, kw.get("timeout"))
+
+    monkeypatch.setattr(render_mod.subprocess, "run", _fake_run)
+    with pytest.raises(render_mod._GodotTimeout):
+        render_mod._run_godot(["godot"], 10)
+
+
+def test_log_tail_returns_the_last_lines_of_combined_output():
+    from mm_mcp import render as render_mod
+    proc = _FakeProc(0, stdout="a\nb\nc\n", stderr="d\ne")
+    assert render_mod._log_tail(proc, lines=3) == "c\nd\ne"
+
+
 def test_build_command_uses_long_target_flag():
     """Godot's CLI parser only recognizes --target, not -t (silently a
     no-op for -t, confirmed empirically against a real Godot binary)."""

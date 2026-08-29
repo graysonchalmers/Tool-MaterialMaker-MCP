@@ -1,13 +1,9 @@
 import os
-import subprocess
 from dataclasses import dataclass
 from mm_mcp.config import Config, load_config
+from mm_mcp.render import _run_godot, _log_tail, _GodotTimeout
 
 _PREVIEW_PROJECT = os.path.join(os.path.dirname(__file__), "preview_project")
-
-# Same transient Godot crash codes render.py retries around (access violation /
-# stack-guard, unrelated to the scene, a re-run of the same input succeeds).
-_TRANSIENT = {3221225477, 3221226505}
 
 
 @dataclass
@@ -61,17 +57,11 @@ def render_preview(albedo_path: str, normal_path: str, orm_path: str,
 
     cmd = _build_command(cfg, albedo_path, normal_path, orm_path, out_path, tile)
 
-    proc = None
-    for _ in range(3):
-        try:
-            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
-        except subprocess.TimeoutExpired:
-            return PreviewResult(ok=False, error="preview render timed out after 60s")
-        if proc.returncode not in _TRANSIENT:
-            break
-
-    log = (proc.stdout or "") + (proc.stderr or "")
-    log_tail = "\n".join(log.splitlines()[-20:])
+    try:
+        proc = _run_godot(cmd, 60)
+    except _GodotTimeout:
+        return PreviewResult(ok=False, error="preview render timed out after 60s")
+    log_tail = _log_tail(proc)
 
     if not os.path.isfile(out_path) or os.path.getsize(out_path) <= 0:
         error = f"Godot exited {proc.returncode}" if proc.returncode != 0 else "no PNG output produced"

@@ -13,6 +13,43 @@ class RenderResult:
     error: str | None = None
 
 
+# Godot occasionally dies mid-export with a Windows crash code (access
+# violation 0xC0000005 = 3221225477, stack-guard 0xC0000409 = 3221226505)
+# that is unrelated to the input -- an identical re-run succeeds. Both the
+# batch render path and the preview path retry around these.
+_TRANSIENT_GODOT_CRASH_CODES = {3221225477, 3221226505}
+
+
+class _GodotTimeout(Exception):
+    """Raised by _run_godot when the subprocess exceeds its timeout, so each
+    caller can shape its own result type (RenderResult vs PreviewResult) for
+    the timeout case rather than sharing one."""
+
+
+def _run_godot(cmd: list, timeout: int) -> subprocess.CompletedProcess:
+    """Run a Godot command with capture, retrying up to 3x around the
+    transient Windows crash codes above. Raises _GodotTimeout on timeout.
+    Shared by render() and preview.render_preview(), which otherwise each had
+    a near-identical copy of this retry loop and the crash-code set."""
+    proc = None
+    for _ in range(3):
+        try:
+            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        except subprocess.TimeoutExpired:
+            raise _GodotTimeout
+        if proc.returncode not in _TRANSIENT_GODOT_CRASH_CODES:
+            break
+    return proc
+
+
+def _log_tail(proc: subprocess.CompletedProcess, lines: int = 20) -> str:
+    """The last `lines` lines of a Godot subprocess's combined stdout+stderr,
+    for surfacing diagnostics without dumping the whole log. Shared by the
+    batch and preview paths, which had a byte-for-byte copy of this."""
+    log = (proc.stdout or "") + (proc.stderr or "")
+    return "\n".join(log.splitlines()[-lines:])
+
+
 def _snapshot_pngs(outdir: str, basename: str) -> dict:
     """Snapshot {filename: mtime} for existing <basename>_*.png files in
     outdir, so a later _collect_fresh_images call can tell which outputs a
@@ -80,22 +117,11 @@ def render(ptex: dict, size: int = 512, outdir: str | None = None,
 
     cmd = _build_command(cfg, ptex_path, target, outdir, size)
 
-    # Godot occasionally dies mid-export with a Windows crash code (access
-    # violation 0xC0000005 = 3221225477, stack-guard 0xC0000409 = 3221226505)
-    # that is unrelated to the graph — the identical .ptex renders on a re-run.
-    # Retry those transient crashes a couple of times before giving up.
-    _TRANSIENT = {3221225477, 3221226505}
-    proc = None
-    for attempt in range(3):
-        try:
-            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
-        except subprocess.TimeoutExpired:
-            return RenderResult(ok=False, error="Godot render timed out after 180s")
-        if proc.returncode not in _TRANSIENT:
-            break
-
-    log = (proc.stdout or "") + (proc.stderr or "")
-    log_tail = "\n".join(log.splitlines()[-20:])
+    try:
+        proc = _run_godot(cmd, 180)
+    except _GodotTimeout:
+        return RenderResult(ok=False, error="Godot render timed out after 180s")
+    log_tail = _log_tail(proc)
 
     images = _collect_fresh_images(outdir, basename, before)
 
