@@ -35,17 +35,33 @@ If a render disagrees with the "should look like" column, that's a caught bug.
 | `voronoi_port1_field` | voronoi port 1, raw grayscale | A **different** distance metric: dark cells with **dark seams** (not bright like port 0). Distinct from port 0 — confusing the two is a documented trap. |
 | `voronoi_port2_random` | voronoi port 2 (rgb) → albedo | **Flat, solid random color per cell**, no gradient inside a cell. This is `rand3`, the fleck/speckle source. If it looks like a smooth field, something is feeding the wrong port. |
 | `uv_direction` | UV axes as R (U) and G (V) | A 2×2 grid (repeat=2). **+U points RIGHT** (R rises left→right), **+V points DOWN** (G rises top→bottom — Godot/MM texture convention, row 0 at top). Corners: top-left BLACK, top-right RED, bottom-left GREEN, bottom-right YELLOW. The hard color cross down the middle is the tiling seam. |
-| `normal_relief_check` | `shape` dome → `normal_map` (param4=0) | **Judge in 3D.** The circle should **dome OUT** and catch light on the side facing the light. **Flat** = the `param4` trap (a buffered `edge_detect` returns flat for a directly-fed analytic generator; `param4=0` fixes it). **Dented IN** = a green-channel / engine normal-convention flip. |
 
-### 3D preview for the relief swatch
+### The relief family (`relief_*`)
+
+All five feed a height source through the same `normal_map(param4=0)` chain onto
+a flat gray material, so the relief is the whole story. **Judge in 3D** — each
+shape should stand **OUT**. **Flat** = the `param4` trap (a buffered
+`edge_detect` returns flat for a directly-fed analytic generator; `param4=0`
+fixes it). **Inverted** = a green-channel / engine normal-convention flip. They
+cover different stress cases:
+
+| Swatch | Height source | Stresses |
+|---|---|---|
+| `relief_circle` | `shape` Circle | Smooth curves. The one swatch with a **strict dome-out** pixel check (apex neutral, R rises left→right across it — which distinguishes dome-out from flat and from dented-in). |
+| `relief_polygon` | `shape` Polygon (triangle) | Straight edges and hard corners. |
+| `relief_star` | `shape` Star | Concave inner corners the convex shapes lack. |
+| `relief_rays` | `shape` Rays | Thin radial strokes — where a too-coarse normal buffer smears or drops detail. |
+| `relief_glyph` | two `sixteen_segment` glyphs → transform → blend | **Text.** Spells `UP` (MM has no text node). The sharp-thin-stroke-with-gaps case; its automated check scans the full buffer because the strokes are too thin for a sparse grid. |
+
+### 3D preview for a relief swatch
 
 ```
 # after rendering (albedo + normal + orm all land in the swatch's outdir):
 render_preview(
-  albedo_path=".../normal_relief_check_albedo.png",
-  normal_path=".../normal_relief_check_normal.png",
-  orm_path=".../normal_relief_check_orm.png",
-  basename="normal_relief_check_preview")
+  albedo_path=".../relief_glyph_albedo.png",
+  normal_path=".../relief_glyph_normal.png",
+  orm_path=".../relief_glyph_orm.png",
+  basename="relief_glyph_preview")
 ```
 
 ## Phase 2 (built): automated regression assertions

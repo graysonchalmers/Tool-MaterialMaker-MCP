@@ -122,44 +122,99 @@ def build_voronoi_port2_random() -> str:
 
 # ---- 3. normal-map relief check (judge in 3D) -----------------------------
 
-def build_normal_relief_check() -> str:
-    """A known raised dome (a `shape` circle used as a heightmap) fed through
-    normal_map with the param4=0 fix, on a flat gray material so all shading
-    comes from the normal. JUDGE THIS IN 3D (render_preview): the circle should
-    dome OUT and catch light. Flat = the param4 trap (buffered edge_detect
-    returns flat for a directly-fed analytic generator). Dented IN = a
-    green-channel / engine normal-convention flip.
-
-    Albedo and roughness are wired to flat colorizes (both stops equal) fed off
-    the same shape, purely so the renderer emits albedo + orm maps too -- without
-    them render only produces normal.png and render_preview has nothing to
-    composite. The flat gradients keep albedo/roughness uniform, so the 3D read
-    is pure relief."""
+def _relief_graph(height_nodes, height_conns, height_out):
+    """Wire a height source (`height_out` = the node whose port 0 is the
+    heightmap) through normal_map(param4=0) onto a flat gray material, so all
+    shading comes from the normal. Albedo + roughness are flat colorizes fed off
+    the same height, only so the renderer also emits albedo + orm maps (needed
+    for render_preview); the flat gradients keep them uniform, so the 3D read is
+    pure relief. JUDGE IN 3D -- shapes should stand OUT. Flat = the param4 trap;
+    inverted = a normal-convention flip."""
     flat_grey = _grad([(0.0, 0.55, 0.55, 0.55), (1.0, 0.55, 0.55, 0.55)])
     flat_rough = _grad([(0.0, 0.5, 0.5, 0.5), (1.0, 0.5, 0.5, 0.5)])
-    nodes = [
-        {"name": "shape_0", "type": "shape",
-         "node_position": {"x": 0, "y": 0},
-         "parameters": {"shape": 0, "sides": 6, "radius": 0.5, "edge": 0.65}},
+    nodes = list(height_nodes) + [
         {"name": "normal_map_0", "type": "normal_map",
-         "node_position": {"x": 320, "y": 200},
+         "node_position": {"x": 520, "y": 200},
          "parameters": {"param0": 11, "param1": 0.9, "param2": 0, "param4": 0}},
         {"name": "colorize_alb", "type": "colorize",
-         "node_position": {"x": 320, "y": -80},
+         "node_position": {"x": 520, "y": -80},
          "parameters": {"gradient": flat_grey}},
         {"name": "colorize_rgh", "type": "colorize",
-         "node_position": {"x": 320, "y": 60},
+         "node_position": {"x": 520, "y": 60},
          "parameters": {"gradient": flat_rough}},
     ]
-    conns = [
-        {"from": "shape_0", "from_port": 0, "to": "normal_map_0", "to_port": 0},
-        {"from": "shape_0", "from_port": 0, "to": "colorize_alb", "to_port": 0},
-        {"from": "shape_0", "from_port": 0, "to": "colorize_rgh", "to_port": 0},
+    conns = list(height_conns) + [
+        {"from": height_out, "from_port": 0, "to": "normal_map_0", "to_port": 0},
+        {"from": height_out, "from_port": 0, "to": "colorize_alb", "to_port": 0},
+        {"from": height_out, "from_port": 0, "to": "colorize_rgh", "to_port": 0},
         {"from": "colorize_alb", "from_port": 0, "to": "Material", "to_port": 0},
         {"from": "colorize_rgh", "from_port": 0, "to": "Material", "to_port": 2},
         {"from": "normal_map_0", "from_port": 0, "to": "Material", "to_port": 4},
     ]
-    return save_variant(_graph(nodes, conns), _LABEL, "normal_relief_check", 1)
+    return _graph(nodes, conns)
+
+
+def _shape_node(shape, sides, radius, edge):
+    return {"name": "shape_0", "type": "shape", "node_position": {"x": 0, "y": 0},
+            "parameters": {"shape": shape, "sides": sides,
+                           "radius": radius, "edge": edge}}
+
+
+def build_relief_circle() -> str:
+    """Smooth curved relief: the canonical dome. Should dome OUT in 3D. Flat =
+    the param4 trap (buffered edge_detect returns flat for a directly-fed
+    analytic generator); dented IN = a normal-convention flip. This is the one
+    relief swatch with a strict dome-out pixel check."""
+    return save_variant(_relief_graph([_shape_node(0, 6, 0.5, 0.65)], [], "shape_0"),
+                        _LABEL, "relief_circle", 1)
+
+
+def build_relief_polygon() -> str:
+    """Straight-edge / sharp-corner relief: a triangle. Stresses how the normal
+    handles hard corners and flat faces, which the smooth circle never exercises."""
+    return save_variant(_relief_graph([_shape_node(1, 3, 0.55, 0.35)], [], "shape_0"),
+                        _LABEL, "relief_polygon", 1)
+
+
+def build_relief_star() -> str:
+    """Concave sharp-point relief: a star. Stresses the inner concave corners the
+    convex shapes don't have."""
+    return save_variant(_relief_graph([_shape_node(2, 6, 0.55, 0.3)], [], "shape_0"),
+                        _LABEL, "relief_star", 1)
+
+
+def build_relief_rays() -> str:
+    """Thin-feature relief: radial rays. Stresses thin strokes, where a
+    too-coarse normal buffer would smear or drop detail."""
+    return save_variant(_relief_graph([_shape_node(4, 10, 0.6, 0.3)], [], "shape_0"),
+                        _LABEL, "relief_rays", 1)
+
+
+def build_relief_glyph() -> str:
+    """Text relief: the word 'UP' spelled from two sixteen_segment glyphs, each
+    scaled and translated, then unioned. Material Maker has no text node, so this
+    is the sharp-thin-stroke-with-gaps stress case -- exactly where normal
+    generation on fine features shows its limits."""
+    def seg(name, code, tx, y):
+        return [
+            {"name": name, "type": "sixteen_segment",
+             "node_position": {"x": 0, "y": y},
+             "parameters": {"t": 0, "a": code, "sl": 0.15, "st": 0.2, "b": 0}},
+            {"name": name + "_xf", "type": "transform",
+             "node_position": {"x": 240, "y": y},
+             "parameters": {"translate_x": tx, "scale_x": 0.5, "scale_y": 0.85,
+                            "repeat": False}},
+        ]
+    nodes = seg("seg_u", 85, -0.25, -80) + seg("seg_p", 80, 0.25, 120) + [
+        {"name": "word", "type": "blend", "node_position": {"x": 460, "y": 20},
+         "parameters": {"blend_type": 9, "amount": 1}}]  # 9 = Lighten (max) = union
+    conns = [
+        {"from": "seg_u", "from_port": 0, "to": "seg_u_xf", "to_port": 0},
+        {"from": "seg_p", "from_port": 0, "to": "seg_p_xf", "to_port": 0},
+        {"from": "seg_u_xf", "from_port": 0, "to": "word", "to_port": 0},
+        {"from": "seg_p_xf", "from_port": 0, "to": "word", "to_port": 1},
+    ]
+    return save_variant(_relief_graph(nodes, conns, "word"), _LABEL, "relief_glyph", 1)
 
 
 # ---- 4. UV direction / tiling ---------------------------------------------
@@ -289,13 +344,32 @@ def _check_relief_normal(s):
     return out
 
 
+def _check_relief_present(s):
+    """Generic 'the shape produced real relief, not the flat param4 purple' guard
+    for the non-circle relief swatches (their geometry has no single central
+    apex to point-sample). Scans the FULL buffer, not a sparse grid, because the
+    glyph's sixteen_segment strokes have sharp thin edges a coarse grid walks
+    right past -- yet a flat param4 trap is uniform (127,127,255), so ANY
+    reasonable count of off-neutral pixels separates real relief from flat."""
+    buf, c = s.buf, s.c
+    off = sum(1 for i in range(0, len(buf), c)
+              if abs(buf[i] - 127) > 25 or abs(buf[i + 1] - 127) > 25)
+    if off < 20:
+        return [f"no relief detected (flat param4 trap?): {off} off-neutral normal pixels"]
+    return []
+
+
 PIXEL_CHECKS = {
     "voronoi_port0_polarity": ("albedo", _check_polarity),
     "voronoi_port0_field": ("albedo", _check_port0_field),
     "voronoi_port1_field": ("albedo", _check_port1_field),
     "voronoi_port2_random": ("albedo", _check_port2_random),
     "uv_direction": ("albedo", _check_uv_direction),
-    "normal_relief_check": ("normal", _check_relief_normal),
+    "relief_circle": ("normal", _check_relief_normal),
+    "relief_polygon": ("normal", _check_relief_present),
+    "relief_star": ("normal", _check_relief_present),
+    "relief_rays": ("normal", _check_relief_present),
+    "relief_glyph": ("normal", _check_relief_present),
 }
 
 
@@ -304,8 +378,12 @@ BUILDERS = {
     "voronoi_port0_field": build_voronoi_port0_field,
     "voronoi_port1_field": build_voronoi_port1_field,
     "voronoi_port2_random": build_voronoi_port2_random,
-    "normal_relief_check": build_normal_relief_check,
     "uv_direction": build_uv_direction,
+    "relief_circle": build_relief_circle,
+    "relief_polygon": build_relief_polygon,
+    "relief_star": build_relief_star,
+    "relief_rays": build_relief_rays,
+    "relief_glyph": build_relief_glyph,
 }
 
 
