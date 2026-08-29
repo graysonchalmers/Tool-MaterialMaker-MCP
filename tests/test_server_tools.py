@@ -7,6 +7,15 @@ from mm_mcp.config import load_config
 cfg = load_config()
 
 
+def test_first_albedo_picks_the_albedo_output():
+    imgs = ["/out/x_normal.png", "/out/x_albedo.png", "/out/x_orm.png"]
+    assert server._first_albedo(imgs) == "/out/x_albedo.png"
+
+
+def test_first_albedo_returns_none_when_no_albedo_present():
+    assert server._first_albedo(["/out/x_normal.png", "/out/x_orm.png"]) is None
+
+
 def test_list_node_types_includes_blend():
     assert "blend" in server.list_node_types()
 

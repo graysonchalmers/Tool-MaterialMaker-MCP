@@ -43,6 +43,14 @@ def _reset() -> None:
     _live_session = None
 
 
+def _first_albedo(images: list) -> str | None:
+    """The albedo output among a render's image paths, or None if absent.
+    Shared by render_node_output and live_render_node_output, which both
+    return only the isolated node's albedo (the other exported maps reflect
+    whatever else was wired, not the isolated node)."""
+    return next((p for p in images if p.endswith("_albedo.png")), None)
+
+
 mcp = MCPServer("material-maker")
 
 
@@ -105,7 +113,7 @@ def render_node_output(ptex: dict, node_name: str, port: int = 0, size: int = 51
     if not result.ok:
         return {"ok": False, "image": None, "error": result.error,
                 "log_tail": result.log_tail}
-    albedo = next((p for p in result.images if p.endswith("_albedo.png")), None)
+    albedo = _first_albedo(result.images)
     if albedo is None:
         return {"ok": False, "image": None,
                 "error": "render succeeded but no albedo output was produced",
@@ -362,7 +370,7 @@ def live_render_node_output(node_name: str, port: int = 0, basename: str = "node
             error = f"{error}; additionally, {restore_warning}"
         return {"ok": False, "image": None, "error": error,
                 "log_tail": result.log_tail}
-    albedo = next((p for p in result.images if p.endswith("_albedo.png")), None)
+    albedo = _first_albedo(result.images)
     if albedo is None:
         error = "render succeeded but no albedo output was produced"
         if restore_warning:
