@@ -194,6 +194,111 @@ def build_uv_direction() -> str:
     return save_variant(_graph(nodes, conns), _LABEL, "uv_direction", 1)
 
 
+# ---- phase 2: known-answer pixel checks -----------------------------------
+# Each entry: swatch name -> (which rendered map to sample, check function). A
+# check takes a pngread.Sampler (0-255 rgb, v points down) and returns a list of
+# human-readable failure strings ([] == matches its known-answer). Consumed by
+# tests/test_debug_swatches.py, which renders each swatch LIVE and runs its
+# checks on the fresh pixels -- a real regression smoke test. Thresholds are
+# calibrated against actual size-128 renders (the margins are wide, but the
+# voronoi layout is deterministic since MM's voronoi uses a fixed hash).
+
+
+def _check_uv_direction(s):
+    tl, tr = s.at(0.05, 0.05), s.at(0.95, 0.05)
+    bl, br = s.at(0.05, 0.95), s.at(0.95, 0.95)
+    out = []
+    if not (tl[0] < 70 and tl[1] < 70):
+        out.append(f"top-left should be ~black (U=V=0), got {tl}")
+    if not (tr[0] > 140 and tr[1] < 90):
+        out.append(f"top-right should be red (+U points right), got {tr}")
+    if not (bl[1] > 140 and bl[0] < 90):
+        out.append(f"bottom-left should be green (+V points down), got {bl}")
+    if not (br[0] > 140 and br[1] > 140):
+        out.append(f"bottom-right should be yellow (U=V=1), got {br}")
+    return out
+
+
+def _check_polarity(s):
+    pts = s.grid(24)
+    red = sum(1 for r, g, b in pts if r > 150 and b < 100)
+    blue = sum(1 for r, g, b in pts if b > 150 and r < 100)
+    green = sum(1 for r, g, b in pts if g > 120 and r < 120 and b < 120)
+    out = []
+    if red < 40:
+        out.append(f"too few red (cell-center) pixels: {red}")
+    if blue < 15:
+        out.append(f"too few blue (seam) pixels: {blue}")
+    if green > 5:
+        out.append(f"unexpected green ({green}); gradient should be red->blue only")
+    # low port-0 -> red covers the cell interiors, which out-area the high->blue
+    # seams in this swatch's render; a flipped port-0 polarity swaps the two.
+    if red <= blue:
+        out.append(f"polarity flip? red(centers)={red} should exceed blue(seams)={blue}")
+    return out
+
+
+def _is_greyscale(pts, tol=14):
+    return max(abs(r - g) + abs(g - b) for r, g, b in pts) <= tol
+
+
+def _check_port0_field(s):
+    pts = s.grid(24)
+    out = []
+    if not _is_greyscale(pts):
+        out.append("port-0 field should be greyscale")
+    lo, hi = min(min(p) for p in pts), max(max(p) for p in pts)
+    if not (lo < 80 and hi > 140):
+        out.append(f"port-0 field should span dark cores to bright seams, got {lo}..{hi}")
+    return out
+
+
+def _check_port1_field(s):
+    pts = s.grid(24)
+    out = []
+    if not _is_greyscale(pts):
+        out.append("port-1 field should be greyscale")
+    if max(max(p) for p in pts) < 90:
+        out.append("port-1 field looks blank")
+    return out
+
+
+def _check_port2_random(s):
+    pts = s.grid(24)
+    colorful = sum(1 for r, g, b in pts if max(r, g, b) - min(r, g, b) > 40)
+    uniq = len(set(pts))
+    out = []
+    if colorful < 200:
+        out.append(f"port-2 should be per-cell random color, only {colorful}/{len(pts)} colorful")
+    if uniq < 15:
+        out.append(f"port-2 should have many distinct cell colors, got {uniq}")
+    return out
+
+
+def _check_relief_normal(s):
+    out = []
+    apex = s.at(0.5, 0.5)
+    if not (abs(apex[0] - 127) < 45 and abs(apex[1] - 127) < 45 and apex[2] > 180):
+        out.append(f"dome apex normal should be ~neutral-up (127,127,>180), got {apex}")
+    rl, rr = s.at(0.30, 0.5)[0], s.at(0.70, 0.5)[0]
+    # dome-out: the normal tilts +X right of the apex and -X left of it, so the
+    # R channel rises left->right across the circle. Flat (param4 trap) -> no
+    # change; dented-in -> the difference reverses.
+    if rr - rl < 30:
+        out.append(f"no dome-out relief (flat param4 trap, or dented?): R left={rl} right={rr}")
+    return out
+
+
+PIXEL_CHECKS = {
+    "voronoi_port0_polarity": ("albedo", _check_polarity),
+    "voronoi_port0_field": ("albedo", _check_port0_field),
+    "voronoi_port1_field": ("albedo", _check_port1_field),
+    "voronoi_port2_random": ("albedo", _check_port2_random),
+    "uv_direction": ("albedo", _check_uv_direction),
+    "normal_relief_check": ("normal", _check_relief_normal),
+}
+
+
 BUILDERS = {
     "voronoi_port0_polarity": build_voronoi_port0_polarity,
     "voronoi_port0_field": build_voronoi_port0_field,

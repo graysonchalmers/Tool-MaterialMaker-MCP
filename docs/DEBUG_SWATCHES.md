@@ -48,21 +48,40 @@ render_preview(
   basename="normal_relief_check_preview")
 ```
 
-## Phase 2 (planned, not built): automated regression assertions
+## Phase 2 (built): automated regression assertions
 
-Today these are a **visual** smoke test — a human reads the gallery. The
-intended next step turns each known-answer row above into a **headless pixel
-assertion** so a broken node change fails in CI without anyone looking:
+The visual gallery above is also a **headless regression smoke test**. Each
+known-answer row is encoded as a pixel check in `debug_swatches.py`'s
+`PIXEL_CHECKS`, and `tests/test_debug_swatches.py` renders each swatch LIVE (at
+size 128, `@pytest.mark.integration`) and asserts on the fresh pixels — so a
+wiring or render regression fails without anyone eyeballing the gallery.
 
-- Sample known pixels and assert the relationship, e.g. for
-  `voronoi_port0_polarity`, a cell-center pixel has `R > B` and a seam pixel has
-  `B > R`; for `uv_direction`, the top-left pixel is near-black and the
-  bottom-right is yellow (`R` high, `G` high, `B` low).
-- Open design question for that phase: assert against a **live render** (truly
-  exercises the Godot pipeline, but slow and Godot-dependent, so an
-  `integration`-marked test) versus a **committed reference render** (fast, but
-  only a snapshot test). Also: what reads the PNG pixels, since Pillow is in the
-  venv but deliberately not a project dependency.
+Design decisions that shaped it:
 
-That phase is scoped separately; this file documents the visual gallery it will
-build on.
+- **Live render, not a committed reference.** A snapshot of a stored PNG can't
+  catch a wiring or render regression; only re-rendering can. So the checks are
+  integration tests that launch Godot, like the rest of the suite.
+- **Two assertion styles**, because voronoi cell positions are random (no fixed
+  "cell center" pixel):
+  - *Deterministic point-samples* where geometry is fixed — `uv_direction`'s
+    four corners, `normal_relief_check`'s apex + the left→right R rise across the
+    dome (which even distinguishes dome-out from flat or dented).
+  - *Statistical invariants* where it's procedural — the polarity swatch has more
+    red (centers) than blue (seams), so a flipped port-0 reverses it;
+    `port2_random` is colorful with many distinct cell colors; port-0 and port-1
+    fields are greyscale and measurably different from each other.
+- **PNG reading is vendored** (`quality/pngread.py`, ~60 lines of stdlib `zlib`)
+  rather than adding Pillow, keeping the project's dependency list clean.
+- **Thresholds are calibrated against real size-128 renders**, with wide margins;
+  the voronoi layout is deterministic (MM voronoi uses a fixed hash), so the
+  statistical checks are stable run to run.
+
+Run the automated layer:
+
+```
+python -m pytest tests/test_debug_swatches.py -q                 # reader + checks
+python -m pytest tests/test_debug_swatches.py -q -m integration  # just the live checks
+```
+
+Dome-out vs dented-in on the relief swatch is asserted from the normal map's R
+gradient, but the 3D `render_preview` above remains the clearest human read.
