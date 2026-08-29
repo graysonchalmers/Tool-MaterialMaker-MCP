@@ -1,36 +1,44 @@
 # 🧭 Session Handoff — Tool-MaterialMaker-MCP
 
-_Last updated: 2026-08-29 (later) CT (America/Chicago)_
+_Last updated: 2026-08-29 (cleanup session) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**This session closed out all three next-moves the prior session's teardown
-surfaced: fixed the top 2 code-review bugs, adopted a HANDOFF.md trim
-convention, and closed backlog item I (with a scope correction).** Working
-tree clean, `origin/main` in sync, fast suite at 214 passed / 10 deselected
-(up from 207). Full detail on all three, plus a new unscoped backlog idea
-(item N, a simplified "for dummies" interface), is in this session's log
-entry below and in the "Changed this session" blocks. The prior session's
-own audit/teardown/doc-fix work is preserved in the log entry right after
-this one; older history beyond the 3 write-ups / 5 log entries kept here
+**This session cleared the rest of the pre-release code-review debt and
+finished the teardown's cleanup theme.** Resolved 6 of the 8 remaining
+code-review findings (3-10) and documented 2 as deliberate non-changes with
+primary-source reasons, then ran 4 teardown-blessed cleanup passes: killed
+the dead `Graph` class and deduped three repeated helper snippets into shared
+helpers (`_snapshot_pngs`, `_run_godot`+`_log_tail`, `_first_albedo`). Every
+change was test-first or behavior-preserving under existing tests. Fast suite
+**226 passed** / 10 deselected (up from 214 at pickup). **5 commits sit local
+and UNPUSHED** (`c65cc83`, `13c7490`, `9726a59`, `19427a7`, `f436300`) —
+`origin/main` is 5 behind. Push approval was never given this session, so
+they wait. Older history beyond the 3 write-ups / 5 log entries kept here
 lives in [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).
 
 ## 📌 Where we stopped
 
-Nothing mid-task. All three commits from this session (`12a4be3`, `cb47010`,
-`352317a`) are pushed and confirmed in sync with `origin/main`. The only
-untracked file is the long-flagged `docs/images/contact-sheet-wood-stone.png`
-(see Open questions).
+Wrapped cleanly, nothing mid-task. The 5 commits above are committed locally
+but not pushed. The only untracked file is the long-flagged
+`docs/images/contact-sheet-wood-stone.png` (kept deliberately out of every
+commit this session; see Open questions).
 
 ## ▶️ Next concrete step
 
-**K, L, M, and backlog item I are all ✅ done this session** — see Changed
-this session below and the Session log entry for the full story. What's
-left:
-- **8 lower-severity correctness bugs** from the prior session's code
-  review remain unfixed (findings 3-10, full list in Heads-up below).
+**Push the 5 local commits** (local session, plain `git push`; confirm sync
+with `git rev-list --left-right --count origin/main...HEAD` → `0 0`). Then the
+open backlog, unchanged:
+- **2 findings ruled out, not fixed** (deliberate): #8 (`_cmd_clear_graph`'s
+  guard is correct — `new_material()` creates the generator, doesn't read
+  one) and #10 (`generic_size or 1` coercion is safer than passing an
+  explicit 0). Both annotated in-code. Findings 3-7 and 9 are fixed.
+- **`list_node_types` tool decision** — the teardown flagged it as redundant
+  with the `catalog://nodes` resource + `describe_node`. It's a live, tested
+  MCP tool, so removing it is a product call, not dead code. Undecided.
+- **The untracked contact-sheet PNG** — add it or gitignore it, still open.
 - **N. "Material Maker for dummies" — a simplified interface, unscoped.**
   New backlog idea from Grayson this session (captured in full in
   `_agent-commons/ideas/Tool-MaterialMaker-MCP.md`): the real node graph can
@@ -111,6 +119,32 @@ left:
   earlier session (staleness marker, `_append_autoload`'s first-occurrence
   match, both verified low-priority).
 
+## 🗂️ Changed this session (remaining code-review findings + teardown cleanup)
+
+- Branch: `main`. Committed, **NOT pushed**: `c65cc83` (6 fixes + 2 documented
+  non-changes), `13c7490` (kill dead `Graph` class), `9726a59` (dedupe the
+  PNG-snapshot loop), `19427a7` (share the Godot retry loop + log-tail across
+  render/preview), `f436300` (extract `_first_albedo`). No plan doc, no
+  worktree — scoped fixes plus behavior-preserving refactors, each test-first
+  or covered by existing tests, matching this project's precedent for
+  well-scoped work this size.
+- Decisions (+ why): took the advisor's split-by-verifiability framing. Did
+  the mechanical fixes (#4 negative port, #9 fd leak, #3 atexit) and the
+  judgment calls (#7 30s mutation timeout, #5 overlay cleanup, #6 log_tail
+  docstring), but ruled out #8 and #10 as non-bugs with primary-source
+  reasons rather than forcing 8 changes for an 8-item list. #8:
+  `new_material()` creates the generator (confirmed in `graph_edit.gd:690-724`),
+  so the guard is correct as-is. #10: an explicit `generic_size: 0` would
+  build a broken input-less node, so the `or 1` coercion is the safer
+  behavior. On cleanup, killed the dead `Graph` class (only self-tested,
+  teardown Kill verdict) and deduped the three repeated helper snippets the
+  teardown flagged into `_snapshot_pngs` / `_run_godot`+`_log_tail` /
+  `_first_albedo`. The retry/timeout behavior had NO coverage before, so that
+  dedup added 4 characterization tests that also fill the gap. Process note: a
+  `git add -A` slip swept the untracked contact-sheet PNG into `c65cc83`;
+  caught and removed via `git rm --cached` + amend (both amends local,
+  pre-push). Fast suite: 226 passed (up from 214), 10 deselected.
+
 ## 🗂️ Changed this session (backlog item I: reposition_node, rename ruled out)
 
 - Branch: `main`. Committed and pushed: `352317a`. Changed:
@@ -169,35 +203,8 @@ left:
   pre-fix code (red) before implementing, per `test-driven-development`.
   Fast suite: 211 passed (up from 207), 9 deselected.
 
-## 🗂️ Changed this session (pre-release audit, teardown, doc-accuracy fixes)
-
-- Branch: `main`. Committed and pushed: `1fb0d45`. Changed:
-  `README.md`, `docs/NORTH_STAR.md`, `docs/PLAN.md`, `docs/AUTHORING.md`,
-  `.env.example`, `STATUS.md`. No `src/` code touched this session. No plan
-  doc, no worktree — a mechanical accuracy pass following the teardown's own
-  "one change worth making first" recommendation, not a design change.
-- Also wrote and pushed `_agent-commons\log\2026-08-28-claude-code-materialmaker-mcp-teardown-and-doc-fixes.md`
-  (scoped commit, not `Push-Repo`, since the commons repo had 34 other
-  agents' pending log entries and an unrelated modified `dashboard/index.html`
-  sitting uncommitted — staged and pushed only this session's own file).
-- Decisions (+ why): fixed the README self-contradiction ("11 of 15" in the
-  alpha warning vs. the real 15/15 two hundred lines later) by keeping both
-  numbers but labeling which is the live score and which is the ship gate,
-  rather than deleting one — both facts are true and useful, they were just
-  unlabeled. Promoted `overlay.py` from 🔌 to ✅ in STATUS.md's Components
-  table (reconciling its disagreement with the Phases table's Phase-5 ✅)
-  because it's a proven hard dependency already exercised in the verified
-  hands-on session, matching this project's own convention of using ✅ with
-  caveats noted inline (like `render.py`'s Unreal-unverified note) rather
-  than reserving ✅ for zero-known-issues — the two new gaps the teardown
-  found in it (no rollback on a failed rebuild, staleness check ignores the
-  checkout's own content) are recorded inline as known, low-priority instead
-  of blocking the checkmark. Did not fold today's 10 code-review findings
-  into HANDOFF.md's Heads-up as full detail during the pass itself — that's
-  done now at wrap-up instead (see below), since the fix pass was scoped to
-  docs only and the findings needed the wrap-up's fuller space anyway.
-
-> 📦 **8 older "Changed this session" write-ups archived 2026-08-29** --
+> 📦 **9 older "Changed this session" write-ups archived** (through
+> 2026-08-29) -- the pre-release audit/teardown/doc-fix pass,
 > render_node_output/live_render_node_output (item H), saved_graphs/
 > round-trip, Unity export proof, wood/stone cookbooks, the overlay
 > read-only `rmtree` fix, Phase 5 hands-on verification + `live_clear`, the
@@ -207,11 +214,11 @@ left:
 
 ## ⚠️ Heads-up for the next agent
 
-- **The 2026-08-29 8-angle code review found 10 verified correctness bugs;
-  the top 2 are now fixed (2026-08-29, this session), 8 remain.** Recorded
-  here so they aren't tribal knowledge living only in a conversation
-  transcript (a teardown finding this same session called out as a real
-  risk). Ranked most severe first:
+- **The 2026-08-29 8-angle code review found 10 verified correctness bugs.
+  As of this cleanup session: 7 are fixed (findings 1-7 and 9), and 2 are
+  ruled out as deliberate non-changes (#8, #10) with in-code reasons. That
+  leaves none outstanding.** Recorded here so they aren't tribal knowledge
+  living only in a conversation transcript. Ranked most severe first:
   1. **✅ FIXED.** `server.py` (`live_render_node_output`): the restore-original-wiring
      call after a preview wasn't checked for success — a failed restore used
      to report overall success while the live graph stayed wired to the
@@ -228,29 +235,41 @@ left:
      `validate_graph`'s `.items()` call, discarding the batch's
      already-succeeded results. `AttributeError` added to the caught tuple.
      New test: `test_live_apply_reports_a_malformed_op_field_as_data_not_a_raised_exception`.
-  3. `server.py` (`main`, ~line 403): no atexit/signal handler ever calls
-     `_live_session.close()`, so a launched Godot process is orphaned if the
-     MCP server exits uncleanly. CONFIRMED.
-  4. `validator.py` (~line 62): connection port-range validation only checks
-     the upper bound, never rejects a negative port index. CONFIRMED.
-  5. `overlay.py` (`ensure_overlay`, ~line 151): the rebuild (`rmtree` then
-     `copytree`) has no rollback if the copy fails partway. CONFIRMED.
-  6. `live.py` (`render`, ~line 294): always returns an empty `log_tail` on
-     failure, contradicting `live_render_node_output`'s docstring claim that
-     it mirrors the batch path's diagnostics. CONFIRMED.
-  7. `live.py` (mutation ops, ~line 170): `add_node`/`connect_nodes`/`set_param`/
-     `disconnect_nodes` default to a 5s socket timeout vs. `render`'s 60s,
-     risking a spurious timeout right after a fresh launch (shader
-     warmup/compile). PLAUSIBLE.
-  8. `addons/mm_live/live_server.gd` (`_cmd_clear_graph`, ~line 227): only
-     checks `graph_edit == null`, unlike every sibling handler which also
-     checks `graph_edit.generator == null`. CONFIRMED.
-  9. `live.py` (`_launch_overlay`, ~line 359): the launched process's log
-     file handle is never closed — leaks one fd per launch/relaunch.
-     CONFIRMED.
-  10. `catalog_builder.py` (~line 74): `generic_size = data.get(...) or 1`
-      would silently coerce an explicit `generic_size: 0` to `1` — not
-      triggered by any currently-bundled `.mmg`, dormant until one appears.
+  3. **✅ FIXED.** `server.py`: no atexit handler called `_live_session.close()`,
+     orphaning a launched Godot process on unclean exit. Added
+     `_close_live_session_atexit` + `atexit.register`; verified it fires at
+     real interpreter shutdown (the `close()`→`_terminate` it calls was
+     already integration-proven).
+  4. **✅ FIXED.** `validator.py`: port-range validation only checked the
+     upper bound. Now rejects a negative `from_port`/`to_port` too; message
+     names the valid range (`0..N-1`).
+  5. **✅ FIXED.** `overlay.py` (`ensure_overlay`): a rebuild that failed
+     partway left an ambiguous marker-less partial. Now removes the
+     half-built overlay and re-raises (unambiguous: complete overlay or
+     none). Cleanup is best-effort, can't mask the original error.
+  6. **✅ FIXED (docstring).** `live.py` (`render`) always returns an empty
+     `log_tail` on the live path (live Godot output goes to `mm_live.log`,
+     whole-process). Docstrings in `live.render`/`live_render_node_output`
+     corrected to say so and point at `mm_live.log`, rather than populating
+     `log_tail` from a possibly-stale, misleading whole-process tail.
+  7. **✅ FIXED.** `live.py`: the five mutation ops now default to a 30s
+     socket timeout (was 5s), so a cold-launch shader compile doesn't
+     spuriously time out. 30s is a ceiling, half `render()`'s proven 60s;
+     read-only one-shots (`ping`/`get_graph`/`clear_graph`) stay 5s.
+     PLAUSIBLE, not reproduced.
+  8. **⛔ RULED OUT (non-bug).** `_cmd_clear_graph`'s `graph_edit==null`-only
+     guard is CORRECT, not a missing `generator==null` check. `new_material()`
+     CREATES a fresh generator (`clear_material()`→`create_gen`); it doesn't
+     read one like the mutating siblings. Adding the guard would refuse to
+     clear exactly the graph-less state a clear recovers. Confirmed against
+     Material Maker's `graph_edit.gd:690-724`. Annotated in-code.
+  9. **✅ FIXED.** `live.py` (`_launch_overlay`): the parent's `mm_live.log`
+     handle is now closed (try/finally) after Popen dups the fd, was leaking
+     one fd per launch.
+  10. **⛔ RULED OUT (deliberate).** `catalog_builder.py`'s `generic_size or 1`
+      coercion is intentional: an explicit `0` would build an input-less
+      (broken) node, so treating a falsy value as the default 1 is safer than
+      passing 0 through. No bundled `.mmg` triggers it. Annotated in-code.
       PLAUSIBLE.
   The full teardown also found real cleanup/duplication issues (a dead
   `Graph` class in `graph.py`, three byte-for-byte-duplicated helper pairs,
@@ -501,10 +520,44 @@ left:
 > section past that cap, the oldest entry moves out verbatim (no
 > summarizing) into [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md)
 > instead of letting this doc grow unbounded -- flagged as a real pickup
-> cost by the 2026-08-29 teardown (Maintainer lens). **22 older entries are
-> now archived there**, from "wood/stone cookbook categories" back through
+> cost by the 2026-08-29 teardown (Maintainer lens). **23 older entries are
+> now archived there**, from the 2026-08-28 Unity-export session back through
 > the project's Phase 1-2 kickoff on 2026-08-25.
 
+
+### 2026-08-29 (cleanup) — resolved the remaining code-review findings, then 4 teardown cleanup passes
+- Picked up via `pickup`; no drift, `main` at the prior session's `1368115`,
+  `origin/main` in sync, 214 passing (only untracked file the long-flagged
+  contact-sheet PNG).
+- Grayson picked next-move #1: fix the 8 remaining code-review findings
+  (3-10). Ran an advisor consult first; it recommended splitting by
+  verifiability and flagged #7/#5/#6 as judgment calls and #8/#10 as likely
+  non-bugs. Followed that.
+- Answered the two blocking file questions before touching code: `live_apply`
+  passes no timeout (so mutations inherit the 5s default — #7 is real), and
+  `new_material()` CREATES the generator via `clear_material()`→`create_gen`
+  (so #8's suggested guard is wrong — read `graph_edit.gd:690-724`).
+- Fixed 6 findings test-first (red confirmed): #4 negative port index, #9
+  `_launch_overlay` fd leak, #3 atexit handler (verified it fires at real
+  interpreter shutdown), #7 30s mutation timeout, #5 overlay cleanup-on-fail,
+  #6 log_tail docstring accuracy. Documented #8 and #10 as deliberate
+  non-changes with in-code reasons. Committed `c65cc83` — and caught a
+  `git add -A` slip that swept the untracked PNG in, removed it via
+  `git rm --cached` + amend (both amends local, pre-push).
+- Then, on Grayson's "keep going", ran the teardown's cleanup theme across 3
+  more rounds: killed the dead `Graph` class (`13c7490`, only self-tested,
+  rebuilt its test fixture as a plain dict), deduped the PNG-snapshot loop
+  (`9726a59`, dup pair 1), and shared the Godot retry loop + log-tail across
+  render/preview (`19427a7`, dup pair 2 — added 4 characterization tests for
+  the previously-untested retry/timeout behavior). On "one more cycle then
+  wrap up", extracted `_first_albedo` (`f436300`, dup pair 3).
+- All 5 commits are LOCAL and UNPUSHED — Grayson never gave a push go this
+  session (kept saying "keep going"). Fast suite ended at 226 passed (up from
+  214), 10 deselected. No integration runs this session (all changes
+  unit-level or behavior-preserving refactors), so zero Godot processes
+  spawned.
+- Wrote/updated the `_agent-commons\log\` entry
+  (`2026-08-29-claude-code-materialmaker-mcp-remaining-review-findings.md`).
 
 ### 2026-08-29 (later) — fixed the top 2 code-review bugs, trimmed HANDOFF.md, closed backlog item I
 - Picked up via `pickup`. No drift: `main` matched the prior session's
@@ -745,57 +798,3 @@ left:
   first as smallest/highest-value. Grayson asked to log all three as
   backlog rather than build any of them now; added as items H/I/J in Next
   concrete step.
-
-### 2026-08-28 (late night) — Unity export proven, render.py --target CLI bug found and fixed
-- Picked up via `pickup`; no drift, `main` matched the wood/stone session's
-  `7f8f9f2`, in sync with `origin/main`.
-- Grayson wanted to prove cross-engine export could produce a real
-  shader/material asset, "not just exporting images and then loading those
-  into Unreal Engine." **`brainstorming`:** classified as a spike (a
-  feasibility question, not a scoped change). Read Material Maker's own
-  export templates directly (`material.mmg`) rather than assuming from
-  docs: confirmed Unity's export writes a ready `.mat` + `.meta` files with
-  no live Editor needed, and Unreal UE5's export writes a python script
-  that builds a real native Unreal Material graph via `MaterialEditingLibrary`
-  when run inside a live Editor.
-- Tried to verify the Unreal half against this session's connected
-  `mcp__unreal-engine__*` tools; no live Editor was reachable (`inspect`/
-  `system_control` both errored "Unreal Engine is not connected"),
-  confirmed across multiple retries and after Grayson said Unreal should be
-  open. He asked to try Unity instead, no live bridge exists for Unity in
-  this session, but Unity's export doesn't need one.
-- Answered Grayson's follow-up question (pros/cons of Unity's Built-in vs
-  URP vs HDRP pipelines, which for games) directly from general knowledge
-  plus a quick read of Material Maker's per-pipeline export blocks; he
-  picked URP.
-- Probed the export CLI directly against a real Godot binary
-  (`--export-material -t/--target <profile> -o <dir> <ptex>`) to prove
-  Unity/URP produces a real `.mat`. Found the actual bug along the way:
-  `-t` (the flag `render.py` has always used) is a silent no-op in Material
-  Maker's `parse_args.gd`; only `--target` works. Confirmed with four
-  direct CLI runs (valid Unity target, alternate Godot target, garbage
-  string all via `-t`, all producing identical default-Godot output; the
-  same values via `--target` worked immediately).
-- Presented the fix as a bounded design in chat per `brainstorming`'s
-  discipline (spike output graduating to real code needs its own
-  approval); Grayson said "go." **`test-driven-development`:** extracted
-  `_build_command()` in `render.py`, fixed the flag, added a `target`
-  parameter to `render()` and `server.py`'s `render_graph`, 4 new tests
-  written and watched fail first. Full fast suite: 187 passed (up from
-  174). Verified for real through `server.render_graph(target="Unity/URP")`
-  against the bundled `bricks` example: a genuine `.mat` wired to Unity's
-  URP Lit shader with `_NORMALMAP`/`_PARALLAXMAP`/`_METALLICSPECGLOSSMAP`
-  all correctly enabled, plus the confirmed-unchanged Godot default path.
-  Cleaned up scratch spike output afterward.
-- Grayson also asked for a way to open an example in the real GUI to
-  tweak/save himself, part of the round-trip loop `docs/NORTH_STAR.md` is
-  built around. Launched the real (non-overlay) Godot GUI directly with
-  `bricks.ptex` loaded, running in the background as this session ends;
-  confirmed the launch didn't crash (only cosmetic HDR-loader and
-  window-transient-parent warnings, both known-benign), not confirmed
-  Grayson actually used it.
-- Committed and pushed on Grayson's explicit "let's push" (`82a57f0`,
-  confirmed `origin/main` in sync via `git rev-list --left-right --count`).
-- Wrote the required `_agent-commons\log\` entry
-  (`2026-08-28-claude-code-unity-export-target-fix.md`) before this
-  wrap-up, per `C:\Projects-local\CLAUDE.md`'s standing rule.

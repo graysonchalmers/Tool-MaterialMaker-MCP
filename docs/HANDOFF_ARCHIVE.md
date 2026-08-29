@@ -19,6 +19,34 @@ doc's window.
 
 ## Archived "Changed this session" write-ups
 
+## 🗂️ Changed this session (pre-release audit, teardown, doc-accuracy fixes)
+
+- Branch: `main`. Committed and pushed: `1fb0d45`. Changed:
+  `README.md`, `docs/NORTH_STAR.md`, `docs/PLAN.md`, `docs/AUTHORING.md`,
+  `.env.example`, `STATUS.md`. No `src/` code touched this session. No plan
+  doc, no worktree — a mechanical accuracy pass following the teardown's own
+  "one change worth making first" recommendation, not a design change.
+- Also wrote and pushed `_agent-commons\log\2026-08-28-claude-code-materialmaker-mcp-teardown-and-doc-fixes.md`
+  (scoped commit, not `Push-Repo`, since the commons repo had 34 other
+  agents' pending log entries and an unrelated modified `dashboard/index.html`
+  sitting uncommitted — staged and pushed only this session's own file).
+- Decisions (+ why): fixed the README self-contradiction ("11 of 15" in the
+  alpha warning vs. the real 15/15 two hundred lines later) by keeping both
+  numbers but labeling which is the live score and which is the ship gate,
+  rather than deleting one — both facts are true and useful, they were just
+  unlabeled. Promoted `overlay.py` from 🔌 to ✅ in STATUS.md's Components
+  table (reconciling its disagreement with the Phases table's Phase-5 ✅)
+  because it's a proven hard dependency already exercised in the verified
+  hands-on session, matching this project's own convention of using ✅ with
+  caveats noted inline (like `render.py`'s Unreal-unverified note) rather
+  than reserving ✅ for zero-known-issues — the two new gaps the teardown
+  found in it (no rollback on a failed rebuild, staleness check ignores the
+  checkout's own content) are recorded inline as known, low-priority instead
+  of blocking the checkmark. Did not fold today's 10 code-review findings
+  into HANDOFF.md's Heads-up as full detail during the pass itself — that's
+  done now at wrap-up instead (see below), since the fix pass was scoped to
+  docs only and the findings needed the wrap-up's fuller space anyway.
+
 ## 🗂️ Changed this session (render_node_output + live_render_node_output, backlog item H)
 
 - Branch: `main`. Committed and pushed: `b85a55f` (housekeeping: revert
@@ -272,6 +300,60 @@ doc's window.
 ---
 
 ## Archived session log
+
+### 2026-08-28 (late night) — Unity export proven, render.py --target CLI bug found and fixed
+- Picked up via `pickup`; no drift, `main` matched the wood/stone session's
+  `7f8f9f2`, in sync with `origin/main`.
+- Grayson wanted to prove cross-engine export could produce a real
+  shader/material asset, "not just exporting images and then loading those
+  into Unreal Engine." **`brainstorming`:** classified as a spike (a
+  feasibility question, not a scoped change). Read Material Maker's own
+  export templates directly (`material.mmg`) rather than assuming from
+  docs: confirmed Unity's export writes a ready `.mat` + `.meta` files with
+  no live Editor needed, and Unreal UE5's export writes a python script
+  that builds a real native Unreal Material graph via `MaterialEditingLibrary`
+  when run inside a live Editor.
+- Tried to verify the Unreal half against this session's connected
+  `mcp__unreal-engine__*` tools; no live Editor was reachable (`inspect`/
+  `system_control` both errored "Unreal Engine is not connected"),
+  confirmed across multiple retries and after Grayson said Unreal should be
+  open. He asked to try Unity instead, no live bridge exists for Unity in
+  this session, but Unity's export doesn't need one.
+- Answered Grayson's follow-up question (pros/cons of Unity's Built-in vs
+  URP vs HDRP pipelines, which for games) directly from general knowledge
+  plus a quick read of Material Maker's per-pipeline export blocks; he
+  picked URP.
+- Probed the export CLI directly against a real Godot binary
+  (`--export-material -t/--target <profile> -o <dir> <ptex>`) to prove
+  Unity/URP produces a real `.mat`. Found the actual bug along the way:
+  `-t` (the flag `render.py` has always used) is a silent no-op in Material
+  Maker's `parse_args.gd`; only `--target` works. Confirmed with four
+  direct CLI runs (valid Unity target, alternate Godot target, garbage
+  string all via `-t`, all producing identical default-Godot output; the
+  same values via `--target` worked immediately).
+- Presented the fix as a bounded design in chat per `brainstorming`'s
+  discipline (spike output graduating to real code needs its own
+  approval); Grayson said "go." **`test-driven-development`:** extracted
+  `_build_command()` in `render.py`, fixed the flag, added a `target`
+  parameter to `render()` and `server.py`'s `render_graph`, 4 new tests
+  written and watched fail first. Full fast suite: 187 passed (up from
+  174). Verified for real through `server.render_graph(target="Unity/URP")`
+  against the bundled `bricks` example: a genuine `.mat` wired to Unity's
+  URP Lit shader with `_NORMALMAP`/`_PARALLAXMAP`/`_METALLICSPECGLOSSMAP`
+  all correctly enabled, plus the confirmed-unchanged Godot default path.
+  Cleaned up scratch spike output afterward.
+- Grayson also asked for a way to open an example in the real GUI to
+  tweak/save himself, part of the round-trip loop `docs/NORTH_STAR.md` is
+  built around. Launched the real (non-overlay) Godot GUI directly with
+  `bricks.ptex` loaded, running in the background as this session ends;
+  confirmed the launch didn't crash (only cosmetic HDR-loader and
+  window-transient-parent warnings, both known-benign), not confirmed
+  Grayson actually used it.
+- Committed and pushed on Grayson's explicit "let's push" (`82a57f0`,
+  confirmed `origin/main` in sync via `git rev-list --left-right --count`).
+- Wrote the required `_agent-commons\log\` entry
+  (`2026-08-28-claude-code-unity-export-target-fix.md`) before this
+  wrap-up, per `C:\Projects-local\CLAUDE.md`'s standing rule.
 
 ### 2026-08-28 (evening) — wood/stone cookbook categories, editability + cross-engine docs
 - Picked up via `pickup`. Drift found and reported: the handoff said the
