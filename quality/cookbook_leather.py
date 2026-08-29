@@ -156,14 +156,21 @@ def build_l04_reptile_exotic() -> str:
     set_param(g, "voronoi_0", "scale_x", 7)    # fewer, bigger scales
     set_param(g, "voronoi_0", "scale_y", 9)    # slightly elongated (reptilian)
     set_param(g, "voronoi_0", "intensity", 0.6)
+    # Albedo polarity matters here (unlike the near-monochrome f02/l01): voronoi
+    # port 0 is LOW at the cell CENTERS (the scale bodies) and high at the
+    # borders. Map centers -> bronze-olive body, borders -> dark seam, so the
+    # scales carry the colour and the seams read as dark grooves (the stock
+    # low->dark ramp put the colour on the thin borders and left the bodies
+    # dark). This is the same port-0 polarity lesson as _dome_the_cells, applied
+    # to the albedo ramp instead of the height ramp.
     set_gradient(g, "colorize_1", [            # exotic bronze-green scales
-        (0.0, 0.06, 0.09, 0.04),   # dark scale seams
-        (0.6, 0.24, 0.30, 0.12),   # olive-green scale body
-        (1.0, 0.46, 0.42, 0.18),   # bronze scale crest
+        (0.0, 0.48, 0.41, 0.16),   # scale body (center): bronze-olive
+        (0.5, 0.28, 0.31, 0.12),   # mid
+        (1.0, 0.05, 0.08, 0.04),   # scale seam (border): dark
     ])
-    set_gradient(g, "colorize_3", [            # semi-gloss scales
-        (0.0, 0.28, 0.28, 0.28),
-        (1.0, 0.44, 0.44, 0.44),
+    set_gradient(g, "colorize_3", [            # drier reptile finish (was too wet)
+        (0.0, 0.46, 0.46, 0.46),
+        (1.0, 0.60, 0.60, 0.60),
     ])
     _dome_the_cells(g)                         # scales domed up, seams recessed
     set_param(g, "normal_map_0", "param4", 0)  # strong scale-edge relief
@@ -171,11 +178,74 @@ def build_l04_reptile_exotic() -> str:
     return save_variant(g, _LABEL, "l04_reptile_exotic", 1)
 
 
+def build_l05_quilted_leather() -> str:
+    """Quilted / tufted leather (car-seat / chesterfield): a saddle-tan grain
+    base raised into a regular grid of puffy pads separated by recessed
+    stitch-channel seams -- the classic stitched-upholstery look.
+
+    Stitch mechanism (practice notes -- this one took diagnosis): the obvious
+    `shape` -> `tiler` dash-grid approach FOUGHT BACK. Rendered in the full
+    graph it produced no visible dashes, and isolating the tiler output to the
+    albedo TIMED OUT the renderer at 180s (a single centered shape tiled by
+    `tiler` makes a degenerate/expensive shader here). The reliable path is the
+    parameter-only `pattern` node (same node the sci-fi cookbook uses): two Sine
+    waves multiplied give a smooth grid of rounded pads that peak at the pad
+    centers and fall to the seams -- exactly the quilt shape, with no
+    shape/tiler shader surprises. So:
+      - normal: drive the relief from the pattern pads (strong puffy quilt),
+        with the crocodile grain layered on top as fine detail;
+      - albedo: darken the seams so the recessed channels read as stitched
+        valleys, keeping the leather grain on the pad faces.
+    (Individual stitch-dash marks running ALONG each seam are a further
+    refinement; this delivers the quilt + channel seams reliably first.)"""
+    g = load_example("crocodile_skin")
+    set_gradient(g, "colorize_1", [           # saddle tan leather
+        (0.0, 0.22, 0.13, 0.07),
+        (1.0, 0.44, 0.28, 0.15),
+    ])
+    set_gradient(g, "colorize_3", [           # mid roughness leather
+        (0.0, 0.40, 0.40, 0.40),
+        (1.0, 0.52, 0.52, 0.52),
+    ])
+    _dome_the_cells(g)                        # fine grain: bodies up, seams down
+
+    # Quilt grid: two multiplied sine waves -> rounded pads (high at pad
+    # centers, low at the seams between them). Parameter-only, cheap, reliable.
+    add_node(g, "pattern_q", "pattern",
+             {"mix": 0, "x_wave": 0, "x_scale": 5, "y_wave": 0, "y_scale": 5})
+    # Seam mask: high in the recessed seams (low pattern value), 0 on the pads.
+    add_node(g, "seam_mask", "colorize",
+             {"gradient": _grad([(0.10, 1, 1, 1), (0.45, 0, 0, 0)])})
+    # Seam shade: a dark constant to sink the channels in albedo.
+    add_node(g, "seam_shade", "colorize",
+             {"gradient": _grad([(0.0, 0.09, 0.05, 0.03), (1.0, 0.09, 0.05, 0.03)])})
+    # Combined height: pads (pattern) as the big shape, grain layered on top.
+    add_node(g, "blend_h_q", "blend", {"blend_type": 0, "amount": 0.35})
+    add_node(g, "blend_alb_q", "blend", {"blend_type": 0, "amount": 1})
+    g["connections"] += [
+        {"from": "pattern_q", "from_port": 0, "to": "seam_mask", "to_port": 0},
+        {"from": "pattern_q", "from_port": 0, "to": "seam_shade", "to_port": 0},
+        # height: pattern pads (base) + grain (colorize_0) overlaid at 0.35
+        {"from": "pattern_q", "from_port": 0, "to": "blend_h_q", "to_port": 0},
+        {"from": "colorize_0", "from_port": 0, "to": "blend_h_q", "to_port": 1},
+        # albedo: darken the seams over the saddle grain, opacity = seam mask
+        {"from": "colorize_1", "from_port": 0, "to": "blend_alb_q", "to_port": 0},
+        {"from": "seam_shade", "from_port": 0, "to": "blend_alb_q", "to_port": 1},
+        {"from": "seam_mask", "from_port": 0, "to": "blend_alb_q", "to_port": 2},
+    ]
+    rewire(g, "Material", 0, "blend_alb_q", 0)     # albedo <- seam-shaded grain
+    rewire(g, "normal_map_0", 0, "blend_h_q", 0)   # height <- pads + grain
+    set_param(g, "normal_map_0", "param4", 0)
+    set_param(g, "normal_map_0", "param1", 0.9)    # pronounced puffy padding
+    return save_variant(g, _LABEL, "l05_quilted_leather", 1)
+
+
 BUILDERS = {
     "l01_black_oiled_leather": build_l01_black_oiled_leather,
     "l02_distressed_two_tone": build_l02_distressed_two_tone,
     "l03_suede": build_l03_suede,
     "l04_reptile_exotic": build_l04_reptile_exotic,
+    "l05_quilted_leather": build_l05_quilted_leather,
 }
 
 

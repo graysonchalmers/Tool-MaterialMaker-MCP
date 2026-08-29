@@ -549,8 +549,8 @@ brick coursing or crack network.
 ## Leather cookbook (cookbook growth, informal — 2026-08-29)
 
 `quality/cookbook_leather.py`. `f02_brown_leather` is already frozen in the
-Phase 3 test set (a plain `crocodile_skin` recolor) — these four extend the
-category into distinct finishes. All four clone `crocodile_skin`, the proven
+Phase 3 test set (a plain `crocodile_skin` recolor) — these five extend the
+category into distinct finishes. All five clone `crocodile_skin`, the proven
 leather donor: its cellular voronoi grain drives albedo (`colorize_1` →
 Material.albedo), roughness (`colorize_3` → Material.roughness) and a height
 chain (`voronoi_0` → `colorize_0` → `normal_map_0` → Material.normal).
@@ -560,7 +560,8 @@ chain (`voronoi_0` → `colorize_0` → `normal_map_0` → Material.normal).
 | ![](images/cookbook-leather/l01_black_oiled_leather.png) | Black oiled/waxed leather | HIT (judge in 3D — dark albedo undersells it) |
 | ![](images/cookbook-leather/l02_distressed_two_tone.png) | Distressed two-tone worn leather | HIT (after reworking the wear mask) |
 | ![](images/cookbook-leather/l03_suede.png) | Suede / nubuck | HIT |
-| ![](images/cookbook-leather/l04_reptile_exotic.png) | Exotic reptile scale | HIT |
+| ![](images/cookbook-leather/l04_reptile_exotic.png) | Exotic reptile scale | HIT (after fixing the albedo polarity) |
+| ![](images/cookbook-leather/l05_quilted_leather.png) | Quilted / tufted leather | HIT (quilt + channel seams; no per-stitch dashes yet) |
 
 - **The inverted-grain trap (applies to EVERY cell-based leather here):**
   `crocodile_skin`'s stock height ramp (`colorize_0`, fed by `voronoi_0`
@@ -598,12 +599,39 @@ chain (`voronoi_0` → `colorize_0` → `normal_map_0` → Material.normal).
   grain), warm fawn albedo, very high matte roughness, and a very low
   `normal_map` `param1` (~0.10, still `param4=0`) so it's soft nap, not hard
   relief. Reads dead-on; no rework needed.
-- **Exotic reptile scale (HIT):** the recolor lever leaning INTO the voronoi
-  cell scale (`f02` kept the default fine grain) — drop `voronoi_0` scale to
-  ~7×9 (fewer, bigger, slightly elongated scales), recolor to an exotic
-  bronze-green, and use STRONG `param4=0` relief (`param1` ~0.7) so the scale
-  edges cast real depth. Reads clearly as reptilian. Two honest notes: the
-  finish comes out glossier than typical leather (a touch wet/plastic — raise
-  roughness if a matter reptile is wanted), and the bronze crest I aimed for
-  landed mostly olive-green (the voronoi field rarely reaches the ramp's top
-  stop). Both are single-knob tweaks a human can dial in the real graph.
+- **Exotic reptile scale (HIT — after fixing the albedo polarity):** the
+  recolor lever leaning INTO the voronoi cell scale (`f02` kept the default
+  fine grain) — drop `voronoi_0` scale to ~7×9 (fewer, bigger, slightly
+  elongated scales), recolor to an exotic bronze-olive, and use STRONG
+  `param4=0` relief (`param1` ~0.7) so the scale edges cast real depth.
+  **The albedo ramp hit the SAME port-0 polarity trap as the height ramp,
+  and it matters here because the colour contrast is high (unlike the
+  near-monochrome f02/l01).** `colorize_1` is fed by `voronoi_0` port 0,
+  which is LOW at the cell centers (the scale BODIES) and high at the borders.
+  The first pass mapped low→dark, high→bronze, so the scale bodies came out
+  dark and only the thin border seams got colour — the whole thing read olive
+  with no bronze. Fix: reverse the ramp too (centers→bronze-olive body,
+  borders→dark seam), so the scales carry the colour and the seams read as
+  dark grooves. Same lesson as `_dome_the_cells`, applied to the albedo ramp.
+  Also dropped the roughness from semi-gloss to a drier matte (was reading
+  wet/plastic). Remaining knob a human can dial: the bronze still skews olive
+  because the voronoi field rarely reaches the ramp's very top stop.
+- **Quilted / tufted leather (HIT — reliable path found after a dead end):**
+  a saddle-tan grain base raised into a grid of puffy pads with recessed
+  stitch-channel seams (car-seat / chesterfield). **The stitch mechanism is
+  the lesson here, and the obvious tool is a trap:** the natural way to lay
+  down stitch dashes is a small `shape` repeated by `tiler`, but that FOUGHT
+  BACK — in the full graph it produced no visible dashes, and isolating the
+  tiler output to the albedo TIMED OUT the renderer at 180s (a single centered
+  shape through `tiler` builds a degenerate/expensive shader in this setup).
+  **The reliable path is the parameter-only `pattern` node** (same node the
+  sci-fi cookbook uses): two Sine waves multiplied (`x_wave`/`y_wave` = Sine,
+  `mix` = Multiply, scale ~5) give a smooth grid of rounded pads that peak at
+  the pad centers and fall to the seams — the quilt shape, with no shape/tiler
+  shader surprises. Drive the normal from the pattern pads (`param1` ~0.9 for
+  pronounced padding) with the crocodile grain blended on top at ~0.35 for
+  fine detail, and darken the seams in albedo (a seam mask off the same
+  pattern) so the channels read as recessed. **Honest gap:** this delivers the
+  quilt + channel seams but NOT individual per-stitch dash marks running along
+  the seams — that needs a different dash generator (the `shape`+`tiler`
+  trap above rules out the easy one), open for a future pass.
