@@ -3,9 +3,23 @@ import os
 import time
 import pytest
 from mm_mcp.config import load_config
-from mm_mcp.render import render, _build_command, _collect_fresh_images
+from mm_mcp.render import render, _build_command, _collect_fresh_images, _snapshot_pngs
 
 cfg = load_config()
+
+
+def test_snapshot_pngs_records_matching_files_and_skips_others(tmp_path):
+    """_snapshot_pngs captures {filename: mtime} for existing <basename>_*.png
+    files only -- non-matching names and non-png files are excluded, so a
+    later _collect_fresh_images call sees the right prior state."""
+    (tmp_path / "brick_albedo.png").write_text("a")
+    (tmp_path / "brick_normal.png").write_text("n")
+    (tmp_path / "other_albedo.png").write_text("x")  # wrong basename
+    (tmp_path / "brick_notes.txt").write_text("t")   # not a png
+
+    snap = _snapshot_pngs(str(tmp_path), "brick")
+    assert set(snap.keys()) == {"brick_albedo.png", "brick_normal.png"}
+    assert all(isinstance(v, float) for v in snap.values())
 
 
 def test_collect_fresh_images_ignores_stale_files(tmp_path):

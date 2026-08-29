@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.config import Config, load_config
 from mm_mcp.overlay import ensure_overlay
-from mm_mcp.render import RenderResult, _collect_fresh_images
+from mm_mcp.render import RenderResult, _collect_fresh_images, _snapshot_pngs
 from mm_mcp.validator import validate_graph
 
 # Must match addons/mm_live/live_server.gd's LIVE_PORT -- no shared-constant
@@ -326,14 +326,7 @@ def render(basename: str = "material", profile: str = "Godot/Godot 4 Standard",
     cfg = cfg or load_config()
     outdir = cfg.output_dir
     os.makedirs(outdir, exist_ok=True)
-    before = {}
-    for fn in os.listdir(outdir):
-        if fn.startswith(basename + "_") and fn.lower().endswith(".png"):
-            full = os.path.join(outdir, fn)
-            try:
-                before[fn] = os.path.getmtime(full)
-            except (OSError, FileNotFoundError):
-                pass
+    before = _snapshot_pngs(outdir, basename)
     prefix = os.path.join(outdir, basename)
     result = _send_command({"cmd": "render", "prefix": prefix, "profile": profile},
                             host, port, timeout)

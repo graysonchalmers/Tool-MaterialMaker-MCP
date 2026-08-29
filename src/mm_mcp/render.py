@@ -13,6 +13,23 @@ class RenderResult:
     error: str | None = None
 
 
+def _snapshot_pngs(outdir: str, basename: str) -> dict:
+    """Snapshot {filename: mtime} for existing <basename>_*.png files in
+    outdir, so a later _collect_fresh_images call can tell which outputs a
+    render actually (re)wrote. Missing/unreadable files are skipped. Shared
+    by both the batch render path (below) and live.py's socket render path,
+    which otherwise had a byte-for-byte copy of this loop."""
+    before = {}
+    for fn in os.listdir(outdir):
+        if fn.startswith(basename + "_") and fn.lower().endswith(".png"):
+            full = os.path.join(outdir, fn)
+            try:
+                before[fn] = os.path.getmtime(full)
+            except (OSError, FileNotFoundError):
+                pass
+    return before
+
+
 def _collect_fresh_images(outdir: str, basename: str, before: dict) -> list[str]:
     """Collect only fresh PNG outputs matching <basename>_*.png pattern.
 
@@ -55,14 +72,7 @@ def render(ptex: dict, size: int = 512, outdir: str | None = None,
     os.makedirs(outdir, exist_ok=True)
 
     # Snapshot existing output files before render to detect fresh outputs
-    before = {}
-    for fn in os.listdir(outdir):
-        if fn.startswith(basename + "_") and fn.lower().endswith(".png"):
-            full = os.path.join(outdir, fn)
-            try:
-                before[fn] = os.path.getmtime(full)
-            except (OSError, FileNotFoundError):
-                pass
+    before = _snapshot_pngs(outdir, basename)
 
     ptex_path = os.path.join(outdir, basename + ".ptex")
     with open(ptex_path, "w", encoding="utf-8") as fh:
