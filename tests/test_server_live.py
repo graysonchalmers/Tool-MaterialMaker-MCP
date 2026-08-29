@@ -265,6 +265,53 @@ def test_live_tools_hold_a_real_session_against_material_maker(tmp_path, monkeyp
 
 
 @pytest.mark.integration
+def test_live_apply_reposition_node_moves_a_real_node(tmp_path, monkeypatch):
+    # Isolated overlay + output dirs, matching this file's other integration
+    # tests. Proves the new _cmd_reposition_node GDScript handler actually
+    # moves the real node (and that the move is visible back through
+    # get_graph/serialize()), not just that the handler was written correctly
+    # on paper -- this repo has no automated GDScript test harness, so a real
+    # launch is the only proof.
+    isolated_cfg = replace(cfg, live_overlay_dir=str(tmp_path / "mm_live_overlay"),
+                            output_dir=str(tmp_path / "output"))
+    monkeypatch.setattr(server, "load_config", lambda *a, **kw: isolated_cfg)
+    server._reset()
+    try:
+        start = server.live_start(launch_timeout=90.0)
+        assert start["ok"], start["error"]
+        assert start["launched"] is True, (
+            "attached to a pre-existing instance on port 8765 -- close it and rerun; "
+            "this test must launch its own overlay to prove the new reposition_node "
+            "GDScript handler actually works, not just that it was written"
+        )
+        try:
+            built = server.live_apply([
+                {"op": "add_node", "node_type": "perlin", "parameters": {}, "x": 0, "y": 0},
+            ])
+            assert built["ok"], built["error"]
+            node_name = built["results"][0]["data"]["name"]
+
+            before = server.live_get_graph()
+            assert before["ok"], before["error"]
+            node_before = next(n for n in before["graph"]["nodes"] if n["name"] == node_name)
+            assert node_before["node_position"] == {"x": 0, "y": 0}
+
+            moved = server.live_apply([
+                {"op": "reposition_node", "name": node_name, "x": 321.0, "y": 654.0},
+            ])
+            assert moved["ok"], moved["error"]
+
+            after = server.live_get_graph()
+            assert after["ok"], after["error"]
+            node_after = next(n for n in after["graph"]["nodes"] if n["name"] == node_name)
+            assert node_after["node_position"] == {"x": 321.0, "y": 654.0}
+        finally:
+            server._live_session.close()
+    finally:
+        server._reset()
+
+
+@pytest.mark.integration
 def test_live_render_node_output_previews_and_restores_a_real_session(tmp_path, monkeypatch):
     # Isolated overlay + output dirs, matching this file's other integration
     # tests, so this never collides with a manual session's overlay.
@@ -376,6 +423,22 @@ def test_live_apply_dispatches_disconnect_nodes(monkeypatch):
                                   "to_name": "b", "to_port": 1}])
     assert result["ok"] is True
     assert calls == [("a", 0, "b", 1)]
+
+
+def test_live_apply_dispatches_reposition_node(monkeypatch):
+    monkeypatch.setattr(server, "_ensure_ready", lambda: (cfg, {}))
+    monkeypatch.setattr(live, "connect_or_launch",
+                         lambda cfg, launch_timeout=60.0: _FakeSession(ok=True))
+    calls = []
+
+    def _fake_reposition_node(name, x, y, cfg=None):
+        calls.append((name, x, y))
+        return live.LiveResult(ok=True)
+
+    monkeypatch.setattr(live, "reposition_node", _fake_reposition_node)
+    result = server.live_apply([{"op": "reposition_node", "name": "perlin_1", "x": 10, "y": 20}])
+    assert result["ok"] is True
+    assert calls == [("perlin_1", 10, 20)]
 
 
 _LIVE_GRAPH_WITH_ALBEDO_SOURCE = {

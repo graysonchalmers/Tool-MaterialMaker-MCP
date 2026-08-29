@@ -72,6 +72,8 @@ func _dispatch(peer: StreamPeerTCP, line: String) -> void:
 				response = _cmd_connect_nodes(parsed)
 			"disconnect_nodes":
 				response = _cmd_disconnect_nodes(parsed)
+			"reposition_node":
+				response = _cmd_reposition_node(parsed)
 			"set_param":
 				response = _cmd_set_param(parsed)
 			"render":
@@ -177,6 +179,29 @@ func _cmd_disconnect_nodes(cmd: Dictionary) -> Dictionary:
 			to_node_name, int(cmd.get("to_port", 0)))
 	if not disconnected:
 		return {"ok": false, "error": "no such connection to remove"}
+	return {"ok": true}
+
+
+func _cmd_reposition_node(cmd: Dictionary) -> Dictionary:
+	# Mirrors _cmd_connect_nodes/_cmd_disconnect_nodes's addressing, but reuses
+	# do_set_position (minimal.gd) instead of a connection primitive -- the
+	# exact same call graph_edit.gd's own undoredo_command "move_generators"
+	# case makes when the parent generator is the currently-open graph. That
+	# call's _on_offset_changed handler (minimal.gd) also writes the new
+	# position back onto the generator itself (generator.set_position), so a
+	# subsequent get_graph/serialize() reflects the move -- not just the
+	# GraphNode's on-screen position.
+	if mm_globals.main_window == null:
+		return {"ok": false, "error": "main_window not ready"}
+	var graph_edit: MMGraphEdit = mm_globals.main_window.get_current_graph_edit()
+	if graph_edit == null or graph_edit.generator == null:
+		return {"ok": false, "error": "no active graph"}
+	var node_name := str(cmd.get("name"))
+	var node_path := "node_" + node_name
+	if not graph_edit.has_node(node_path):
+		return {"ok": false, "error": "no node named '%s' in the live graph" % node_name}
+	var node = graph_edit.get_node(node_path)
+	node.do_set_position(Vector2(float(cmd.get("x", 0)), float(cmd.get("y", 0))))
 	return {"ok": true}
 
 

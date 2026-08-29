@@ -229,6 +229,32 @@ def disconnect_nodes(from_name: str, from_port: int, to_name: str, to_port: int,
                            "to": to_name, "to_port": to_port}, host, port, timeout)
 
 
+def reposition_node(name: str, x: float, y: float, cfg: Config | None = None,
+                     host: str = LIVE_HOST, port: int = LIVE_PORT,
+                     timeout: float = 5.0) -> LiveResult:
+    """Fetch the current live graph and confirm the target node exists before
+    sending reposition_node -- there's nothing to validate against the
+    catalog here (moving a node can't violate a type/connection rule), only
+    whether it's actually there to move. Renaming an existing node is
+    deliberately NOT supported: Material Maker's own undo/redo command
+    dispatcher (graph_edit.gd's undoredo_command) has no rename case at all
+    among its add/remove/update/setparams/move_generators/etc. commands, so
+    this isn't a gap in the addon -- it's genuinely unsupported by Material
+    Maker itself, and reimplementing it by hand (Node.name assignment) would
+    risk desyncing the GraphNode's "node_"+name scene-tree addressing and
+    Godot's own built-in GraphEdit connection bookkeeping (both keyed by
+    name), with no upstream precedent for doing it safely."""
+    cfg = cfg or load_config()
+    current = get_graph(host, port, timeout)
+    if not current.ok:
+        return current
+    graph = current.data["graph"]
+    if not any(n.get("name") == name for n in graph.get("nodes", [])):
+        return LiveResult(ok=False, error=f"no node named '{name}' in the current live graph")
+    return _send_command({"cmd": "reposition_node", "name": name, "x": x, "y": y},
+                          host, port, timeout)
+
+
 def set_param(name: str, parameters: dict, cfg: Config | None = None, host: str = LIVE_HOST,
               port: int = LIVE_PORT, timeout: float = 5.0) -> LiveResult:
     """Fetch the current live graph, confirm the target node exists, merge

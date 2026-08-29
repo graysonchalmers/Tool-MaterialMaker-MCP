@@ -139,13 +139,15 @@ findings from the same code review remain unfixed, full list in Heads-up.
   it as just an MCP tool.
 - **H. ✅ Done this session.** `render_node_output`/`live_render_node_output`
   shipped — see Current state.
-- **I. `live_apply` rename/reposition ops — disconnect half done, rename/
-  reposition half still open.** `disconnect_nodes` was added this session
-  (see Current state), but there's still no way to rename or move an
-  existing node live, so a human-editability reorganize pass (like last
-  session's bricks rename) still has to be file-side. Needs a new op type
-  plus a GDScript handler, following the exact pattern `disconnect_nodes`
-  just established.
+- **I. ✅ Done this session, with a scope correction.** `reposition_node` is
+  now a real `live_apply` op (see Changed-this-session above). Renaming an
+  existing node live is ruled OUT, not just deferred: Material Maker's own
+  undo/redo command dispatcher has no rename case at all, and reimplementing
+  one by hand would risk desyncing the addon's `"node_"+name` GraphNode
+  addressing and Godot's own built-in connection bookkeeping, both keyed by
+  name. A human-editability reorganize pass that needs a rename (like the
+  earlier bricks rename) still has to be file-side -- that's now a
+  structural limit of live mode, not an unbuilt feature.
 - **J. Load an existing `.ptex` into a live session.** No `live_load`
   equivalent exists; `live_start`/`connect_or_launch` only ever begin from
   a default graph or whatever's already open in the attached window. Lowest
@@ -181,6 +183,40 @@ findings from the same code review remain unfixed, full list in Heads-up.
   available; two parked-not-fixed overlay-builder findings from a much
   earlier session (staleness marker, `_append_autoload`'s first-occurrence
   match, both verified low-priority).
+
+## 🗂️ Changed this session (backlog item I: reposition_node, rename ruled out)
+
+- Branch: `main`. Not yet committed (pending wrap-up). Changed:
+  `src/mm_mcp/live.py` (`reposition_node`), `src/mm_mcp/server.py`
+  (`reposition_node` as a 5th `live_apply` op), `addons/mm_live/live_server.gd`
+  (`_cmd_reposition_node`), `tests/test_live.py`, `tests/test_server_live.py`
+  (2 unit tests + 1 real integration test). No plan doc, no worktree; direct
+  TDD on `main`, matching this project's precedent for well-scoped
+  additions this size.
+- Decisions (+ why): built the reposition half of item I but deliberately
+  ruled OUT the rename half as unsupported, not just undone. Checked
+  Material Maker's own `graph_edit.gd:undoredo_command` -- the exhaustive
+  dispatcher for every graph mutation the GUI itself can perform
+  (add/remove/update/setparams/setgenericsize/setseed/setminimized/
+  move_generators/resize_comment/node_color_change) -- and found no rename
+  case at all, and no "Rename" context-menu action anywhere in the codebase
+  for an ordinary graph node (only portal links and library items get one).
+  Renaming a generator's `Node.name` directly would work in isolation, but
+  the corresponding `GraphNode` (addressed as `"node_"+name"` by
+  `connect_nodes`/`disconnect_nodes`/`set_param`) would desync, and Godot's
+  own built-in `GraphEdit` keeps its connection list keyed by node name
+  too -- reimplementing a rename by hand risks corrupting either, with no
+  upstream precedent for doing it safely. Reposition is safe by contrast:
+  it reuses `do_set_position` (`minimal.gd`), the exact call
+  `move_generators`'s own undo/redo handler makes, whose `_on_offset_changed`
+  callback already writes the new position back onto the generator (not
+  just the on-screen `GraphNode`), so `get_graph`/serialize reflects the
+  move. Proven with a real integration test (`test_live_apply_reposition_node_moves_a_real_node`)
+  that adds a node, repositions it, and reads the graph back to confirm the
+  new `node_position` -- not just that the handler was written correctly on
+  paper, matching this project's "no automated GDScript test harness, only
+  a real launch proves it" precedent. Zero leftover Godot processes after
+  the integration run. Fast suite: 214 passed (up from 211), 10 deselected.
 
 ## 🗂️ Changed this session (backlog item K: the two worst live-control bugs)
 
@@ -234,49 +270,12 @@ findings from the same code review remain unfixed, full list in Heads-up.
   done now at wrap-up instead (see below), since the fix pass was scoped to
   docs only and the findings needed the wrap-up's fuller space anyway.
 
-## 🗂️ Changed this session (render_node_output + live_render_node_output, backlog item H)
-
-- Branch: `main`. Committed and pushed: `b85a55f` (housekeeping: revert
-  upstream `bricks.ptex`, move `examples/g01-natural-stone/` into
-  `saved_graphs/`), `f891fbb` (the feature). `origin/main` in sync.
-  New/changed: `src/mm_mcp/graph.py` (`find_material_node`/
-  `isolate_node_output`), `src/mm_mcp/server.py` (`render_node_output`,
-  `live_render_node_output`, `disconnect_nodes` as a 4th `live_apply` op),
-  `src/mm_mcp/live.py` (`disconnect_nodes`), `addons/mm_live/live_server.gd`
-  (`_cmd_disconnect_nodes`), `tests/test_graph.py`, `tests/test_server_tools.py`,
-  `tests/test_live.py`, `tests/test_server_live.py`, `README.md`, `STATUS.md`.
-  No plan doc, no worktree — classified `bounded` via `brainstorming`, built
-  directly via `test-driven-development` on `main`.
-- Decisions (+ why): `render_node_output` returns just the single `_albedo.png`
-  path, not all four exported maps, since only albedo actually reflects the
-  isolated node after the rewire — the others reflect whatever else was
-  already wired and would be misleading if returned alongside it. The live
-  path's `disconnect_nodes` was added specifically because Material Maker's
-  own `connect_children` (verified in the real upstream source) already
-  disconnects whatever previously fed a port before wiring a new one, so a
-  reconnect-based restore works whenever the target port started out
-  connected to something — but there was no way to restore "unconnected" if
-  it didn't, which item I's rename/reposition backlog entry had already
-  flagged as a gap, just not yet needed until this feature. `disconnect_nodes`
-  checks the connection actually exists (fetches the current graph first)
-  rather than blindly forwarding to the socket, matching `connect_nodes`'
-  existing "validate before touching the socket" convention, even though
-  there's no catalog rule to check here (only existence). `live_render_node_output`
-  restores unconditionally after render, even on a render failure, so the
-  live window is never left stuck mid-preview if the render itself errors.
-  The new GDScript handler was deliberately proven by a dedicated integration
-  test that forces the disconnect-restore branch (no original connection to
-  reconnect to) rather than folding it into an existing test, since the
-  already-existing tests only exercise the reconnect branch (which reuses
-  the already-proven `connect_nodes`/`do_connect_node`) — this project has no
-  automated GDScript test harness, so the real integration test is the only
-  proof any new GDScript code actually works.
-
-> 📦 **7 older "Changed this session" write-ups archived 2026-08-29** --
-> saved_graphs/ round-trip, Unity export proof, wood/stone cookbooks, the
-> overlay read-only `rmtree` fix, Phase 5 hands-on verification + `live_clear`,
-> the `connect_or_launch` readiness race, and the Phase 5 MCP tool surface --
-> moved to [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md) per the new trim
+> 📦 **8 older "Changed this session" write-ups archived 2026-08-29** --
+> render_node_output/live_render_node_output (item H), saved_graphs/
+> round-trip, Unity export proof, wood/stone cookbooks, the overlay
+> read-only `rmtree` fix, Phase 5 hands-on verification + `live_clear`, the
+> `connect_or_launch` readiness race, and the Phase 5 MCP tool surface --
+> moved to [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md) per the trim
 > convention (see the note above the Session log below).
 
 ## ⚠️ Heads-up for the next agent

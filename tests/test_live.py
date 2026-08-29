@@ -315,6 +315,47 @@ def test_disconnect_nodes_reports_missing_connection_without_contacting_server()
         server.stop()
 
 
+def test_reposition_node_sends_command_when_node_exists():
+    fake_graph = {"nodes": [
+        {"name": "perlin_1", "type": "perlin", "node_position": {"x": 0, "y": 0}, "parameters": {}},
+    ], "connections": []}
+    received = {}
+
+    def responder(cmd):
+        if cmd["cmd"] == "get_graph":
+            return {"ok": True, "graph": fake_graph}
+        received.update(cmd)
+        return {"ok": True}
+
+    server = _FakeLiveServer(responder)
+    try:
+        result = live.reposition_node("perlin_1", 100.0, 200.0,
+                                       host="127.0.0.1", port=server.port)
+        assert result.ok
+        assert received == {"cmd": "reposition_node", "name": "perlin_1", "x": 100.0, "y": 200.0}
+    finally:
+        server.stop()
+
+
+def test_reposition_node_reports_missing_node_without_contacting_server():
+    fake_graph = {"nodes": [], "connections": []}  # the target node doesn't exist
+    calls = []
+
+    def responder(cmd):
+        calls.append(cmd["cmd"])
+        return {"ok": True, "graph": fake_graph}
+
+    server = _FakeLiveServer(responder)
+    try:
+        result = live.reposition_node("does_not_exist", 0.0, 0.0,
+                                       host="127.0.0.1", port=server.port)
+        assert not result.ok
+        assert "does_not_exist" in result.error
+        assert calls == ["get_graph"]  # reposition_node was never sent
+    finally:
+        server.stop()
+
+
 def test_set_param_sends_command_for_existing_node(monkeypatch):
     monkeypatch.setattr(live, "_ensure_catalog", lambda cfg: _FAKE_CATALOG)
     fake_graph = {"nodes": [

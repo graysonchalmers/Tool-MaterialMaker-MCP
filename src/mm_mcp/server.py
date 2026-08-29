@@ -225,6 +225,8 @@ _LIVE_OP_HANDLERS = {
     "set_param": lambda op, cfg: live.set_param(op["name"], op["parameters"], cfg=cfg),
     "disconnect_nodes": lambda op, cfg: live.disconnect_nodes(
         op["from_name"], op["from_port"], op["to_name"], op["to_port"], cfg=cfg),
+    "reposition_node": lambda op, cfg: live.reposition_node(
+        op["name"], op["x"], op["y"], cfg=cfg),
 }
 
 
@@ -239,7 +241,11 @@ def live_apply(ops: list) -> dict:
     {"op": "add_node", "node_type": ..., "parameters": {...}, "x": ..., "y": ...} |
     {"op": "connect_nodes", "from_name": ..., "from_port": ..., "to_name": ..., "to_port": ...} |
     {"op": "disconnect_nodes", "from_name": ..., "from_port": ..., "to_name": ..., "to_port": ...} |
+    {"op": "reposition_node", "name": ..., "x": ..., "y": ...} |
     {"op": "set_param", "name": ..., "parameters": {...}}.
+
+    There is deliberately no "rename_node" op -- see live.reposition_node's
+    docstring for why renaming an existing node isn't supported.
 
     A malformed op (not a dict, or missing a required field) is reported as
     data rather than raised, same as an unrecognized 'op' value -- so a

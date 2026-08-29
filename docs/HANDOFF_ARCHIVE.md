@@ -19,6 +19,44 @@ doc's window.
 
 ## Archived "Changed this session" write-ups
 
+## 🗂️ Changed this session (render_node_output + live_render_node_output, backlog item H)
+
+- Branch: `main`. Committed and pushed: `b85a55f` (housekeeping: revert
+  upstream `bricks.ptex`, move `examples/g01-natural-stone/` into
+  `saved_graphs/`), `f891fbb` (the feature). `origin/main` in sync.
+  New/changed: `src/mm_mcp/graph.py` (`find_material_node`/
+  `isolate_node_output`), `src/mm_mcp/server.py` (`render_node_output`,
+  `live_render_node_output`, `disconnect_nodes` as a 4th `live_apply` op),
+  `src/mm_mcp/live.py` (`disconnect_nodes`), `addons/mm_live/live_server.gd`
+  (`_cmd_disconnect_nodes`), `tests/test_graph.py`, `tests/test_server_tools.py`,
+  `tests/test_live.py`, `tests/test_server_live.py`, `README.md`, `STATUS.md`.
+  No plan doc, no worktree — classified `bounded` via `brainstorming`, built
+  directly via `test-driven-development` on `main`.
+- Decisions (+ why): `render_node_output` returns just the single `_albedo.png`
+  path, not all four exported maps, since only albedo actually reflects the
+  isolated node after the rewire — the others reflect whatever else was
+  already wired and would be misleading if returned alongside it. The live
+  path's `disconnect_nodes` was added specifically because Material Maker's
+  own `connect_children` (verified in the real upstream source) already
+  disconnects whatever previously fed a port before wiring a new one, so a
+  reconnect-based restore works whenever the target port started out
+  connected to something — but there was no way to restore "unconnected" if
+  it didn't, which item I's rename/reposition backlog entry had already
+  flagged as a gap, just not yet needed until this feature. `disconnect_nodes`
+  checks the connection actually exists (fetches the current graph first)
+  rather than blindly forwarding to the socket, matching `connect_nodes`'
+  existing "validate before touching the socket" convention, even though
+  there's no catalog rule to check here (only existence). `live_render_node_output`
+  restores unconditionally after render, even on a render failure, so the
+  live window is never left stuck mid-preview if the render itself errors.
+  The new GDScript handler was deliberately proven by a dedicated integration
+  test that forces the disconnect-restore branch (no original connection to
+  reconnect to) rather than folding it into an existing test, since the
+  already-existing tests only exercise the reconnect branch (which reuses
+  the already-proven `connect_nodes`/`do_connect_node`) — this project has no
+  automated GDScript test harness, so the real integration test is the only
+  proof any new GDScript code actually works.
+
 ## 🗂️ Changed this session (Grayson's saved_graphs/ round-trip: rename + moss)
 
 - Branch: `main`. New: `saved_graphs/bricks_grayson_edit.ptex` (Grayson's
