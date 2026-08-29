@@ -1,45 +1,49 @@
 # 🧭 Session Handoff — Tool-MaterialMaker-MCP
 
-_Last updated: 2026-08-29 (leather cookbook session) CT (America/Chicago)_
+_Last updated: 2026-08-29 (debug swatch gallery session) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**This session grew the recipe library: a whole new `leather` cookbook
-category, 6 materials** (`quality/cookbook_leather.py` + a Leather section in
-`docs/AUTHORING.md`). All clone the `crocodile_skin` donor across distinct
-levers: l01 black oiled (recolor + grain relief), l02 distressed two-tone
-(masked worn composite), l03 suede (perlin-nap donor swap), l04 exotic reptile
-(enlarged voronoi cells), l05 quilted (pattern-sine pads + channel seams), l06
-topstitched (raised cream stitch dashes). Two reusable lessons landed in
-AUTHORING: `_dome_the_cells` (the voronoi-port-0 polarity flip that fixes the
-inside-out grain Grayson caught in 3D, same trap on l04's albedo ramp), and
-the stitch-generator hunt (`shape`+`tiler` is a trap that times the renderer
-out at 180s; `pattern` Square×Square works but its polarity is inside-out, one
-reversed colorize fixes it). **3 commits pushed** (`5f1a27b`, `6915fc8`,
-`f55359a`); `origin/main` in sync (`0 0`). This is informal cookbook growth,
-no gate, no STATUS.md change. Older history beyond the 3 write-ups / 5 log
-entries kept here lives in [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).
+**This session built the debug diagnostic swatch gallery** (Grayson's own
+backlog idea): `quality/debug_swatches.py` — 11 minimal single-node graphs that
+isolate ONE node behavior so a wrong wiring is obvious on sight. A visual smoke
+test AND a learning aid, separate from the frozen Phase 3 set and the cookbook.
+Both planned phases landed: **(1)** the visual gallery — voronoi port-0
+polarity (red centers / blue seams), port0/port1/port2 fields, a UV-direction
+checker (revealed MM's +V points DOWN), and a `relief_*` family (circle,
+polygon, star, rays, and `relief_glyph` which spells **"UP"** from two
+`sixteen_segment` glyphs since MM has no text node); **(2)** an automated
+regression layer — `PIXEL_CHECKS` + `tests/test_debug_swatches.py` renders each
+swatch live and asserts calibrated pixel invariants, backed by a vendored
+~60-line stdlib PNG reader (`quality/pngread.py`, no Pillow). All 14
+debug-swatch tests pass (10 checks + differ + 3 reader), fast suite 229.
+Legend + design in `docs/DEBUG_SWATCHES.md`. **3 commits** (`a0d7674` gallery,
+`ba3d968` phase-2, `ab688e6` relief family). Informal harness growth, no gate,
+no STATUS.md change. Older write-ups/log beyond the cap live in
+[docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).
 
 ## 📌 Where we stopped
 
-Wrapped cleanly, nothing mid-task, all 3 code commits pushed and in sync. The
-only untracked file is the long-flagged
-`docs/images/contact-sheet-wood-stone.png` (kept deliberately out of every
-commit again; see Open questions).
+Wrapped cleanly, nothing mid-task. All 3 commits pushed and in sync. A real
+latent bug surfaced mid-session and was flagged (not fixed here): `render.py`
+leaks a Material Maker self-relaunch child on a 180s render timeout, cascading
+into hangs — same class `live.py` already fixed with `taskkill /F /T`. A
+**separate session is fixing it right now** (spawned task
+`task_93dccd69`); this session deliberately left `render.py` untouched to avoid
+a conflict. The only untracked file is the long-flagged
+`docs/images/contact-sheet-wood-stone.png`.
 
 ## ▶️ Next concrete step
 
-Nothing pending on the code side. Cookbook follow-ups surfaced this session:
-- **Debug materials / visual smoke-test swatches** (Grayson's new idea,
-  captured in `_agent-commons/ideas/Tool-MaterialMaker-MCP.md`): known-answer
-  diagnostic swatches that make a wrong node wiring visually obvious (a
-  voronoi-port-0 polarity tester would have caught today's inverted grain on
-  sight). Deferred, wants its own `brainstorming` pass.
-- **Finer/seam-following stitches**: l06's dashes are bold and a full grid,
-  not fine seam-lines. A refinement, not a bug.
-- **More categories**: glass, plastics, painted metal still uncovered.
+Nothing pending on the debug-swatch code. Follow-ups surfaced:
+- **Land the `render.py` orphan-on-timeout fix** — running in its own session
+  (`task_93dccd69`); once it merges, batch renders stop cascading into hangs.
+  See the `render-orphan-contention` project memory for the mechanism.
+- **More debug swatches** if wanted: blend-mask polarity, height-to-normal
+  convention, colorize/ramp direction — same pattern, each tied to a real trap.
+- **More cookbook categories**: glass, plastics, painted metal still uncovered.
 
 The older open backlog, unchanged:
 - **2 findings ruled out, not fixed** (deliberate): #8 (`_cmd_clear_graph`'s
@@ -130,6 +134,36 @@ The older open backlog, unchanged:
   earlier session (staleness marker, `_append_autoload`'s first-occurrence
   match, both verified low-priority).
 
+## 🗂️ Changed this session (debug diagnostic swatch gallery, both phases)
+
+- Branch: `main`. Committed (local, then pushed at wrap): `a0d7674` (phase-1
+  visual gallery + `docs/DEBUG_SWATCHES.md`), `ba3d968` (phase-2 automated
+  checks + vendored `quality/pngread.py` + `tests/test_debug_swatches.py`),
+  `ab688e6` (relief `relief_*` family: circle/polygon/star/rays + "UP" glyph).
+  New files: `quality/debug_swatches.py`, `quality/pngread.py`,
+  `tests/test_debug_swatches.py`, `docs/DEBUG_SWATCHES.md`. No plan doc, no
+  worktree; informal harness growth, no gate. Outputs (`quality/authored`,
+  `quality/cookbook`) gitignored.
+- Decisions (+ why): ran `brainstorming` → classified bounded, then Grayson's
+  "both, phased" call (build the visual gallery now, add the automated
+  assertion layer). Chose a vendored ~60-line stdlib PNG reader over adding
+  Pillow (his call, keeps deps clean). Calibrated every check threshold against
+  real renders rather than guessing — which corrected two of my assumptions on
+  sight: MM's +V points DOWN (not up), and the polarity swatch's red centers
+  OUT-area the blue seams (so `red > blue` is the flip detector, not the
+  reverse). Two assertion styles because voronoi layout is random: deterministic
+  point-samples where geometry is fixed (UV corners, relief dome-out), full-
+  buffer statistical scans where it isn't (the glyph's thin strokes need the
+  full scan, a sparse grid walks past them). For "text", MM has no text node, so
+  `relief_glyph` spells "UP" from two `sixteen_segment` glyphs scaled/translated
+  via `transform` and unioned with `blend` Lighten. Left `render.py` untouched
+  despite finding its orphan bug, since a separate session is fixing it.
+- Process note: mid-session hit a render death-spiral from OVERLAPPING render
+  jobs (a timed-out foreground render kept running in the background while I
+  started another), which root-caused the `render.py` orphan-on-timeout bug.
+  Recovered by killing all Godot and rendering strictly sequentially. Captured
+  in the `render-orphan-contention` project memory.
+
 ## 🗂️ Changed this session (new leather cookbook category, 6 materials)
 
 - Branch: `main`. Committed and **pushed**: `5f1a27b` (l01-l04 + AUTHORING
@@ -184,41 +218,7 @@ The older open backlog, unchanged:
   caught and removed via `git rm --cached` + amend (both amends local,
   pre-push). Fast suite: 226 passed (up from 214), 10 deselected.
 
-## 🗂️ Changed this session (backlog item I: reposition_node, rename ruled out)
-
-- Branch: `main`. Committed and pushed: `352317a`. Changed:
-  `src/mm_mcp/live.py` (`reposition_node`), `src/mm_mcp/server.py`
-  (`reposition_node` as a 5th `live_apply` op), `addons/mm_live/live_server.gd`
-  (`_cmd_reposition_node`), `tests/test_live.py`, `tests/test_server_live.py`
-  (2 unit tests + 1 real integration test), `HANDOFF.md`, `STATUS.md`,
-  `docs/HANDOFF_ARCHIVE.md`. No plan doc, no worktree; direct TDD on `main`,
-  matching this project's precedent for well-scoped additions this size.
-- Decisions (+ why): built the reposition half of item I but deliberately
-  ruled OUT the rename half as unsupported, not just undone. Checked
-  Material Maker's own `graph_edit.gd:undoredo_command` -- the exhaustive
-  dispatcher for every graph mutation the GUI itself can perform
-  (add/remove/update/setparams/setgenericsize/setseed/setminimized/
-  move_generators/resize_comment/node_color_change) -- and found no rename
-  case at all, and no "Rename" context-menu action anywhere in the codebase
-  for an ordinary graph node (only portal links and library items get one).
-  Renaming a generator's `Node.name` directly would work in isolation, but
-  the corresponding `GraphNode` (addressed as `"node_"+name"` by
-  `connect_nodes`/`disconnect_nodes`/`set_param`) would desync, and Godot's
-  own built-in `GraphEdit` keeps its connection list keyed by node name
-  too -- reimplementing a rename by hand risks corrupting either, with no
-  upstream precedent for doing it safely. Reposition is safe by contrast:
-  it reuses `do_set_position` (`minimal.gd`), the exact call
-  `move_generators`'s own undo/redo handler makes, whose `_on_offset_changed`
-  callback already writes the new position back onto the generator (not
-  just the on-screen `GraphNode`), so `get_graph`/serialize reflects the
-  move. Proven with a real integration test (`test_live_apply_reposition_node_moves_a_real_node`)
-  that adds a node, repositions it, and reads the graph back to confirm the
-  new `node_position` -- not just that the handler was written correctly on
-  paper, matching this project's "no automated GDScript test harness, only
-  a real launch proves it" precedent. Zero leftover Godot processes after
-  the integration run. Fast suite: 214 passed (up from 211), 10 deselected.
-
-> 📦 **10 older "Changed this session" write-ups archived** (through
+> 📦 **11 older "Changed this session" write-ups archived** (through
 > 2026-08-29) -- the pre-release audit/teardown/doc-fix pass,
 > render_node_output/live_render_node_output (item H), saved_graphs/
 > round-trip, Unity export proof, wood/stone cookbooks, the overlay
@@ -540,6 +540,38 @@ The older open backlog, unchanged:
 > the project's Phase 1-2 kickoff on 2026-08-25.
 
 
+### 2026-08-29 (debug swatch gallery) — built both phases + a relief shapes/text family
+- Picked up via `pickup` (clean, `main` at `c9934a7`, in sync). Grayson chose
+  next-move #1: his own backlog "debug materials / visual smoke-test swatches"
+  idea.
+- Ran `brainstorming` → bounded. Grayson's "both, phased" call: build the
+  visual gallery now, add the automated-assertion layer as phase 2. Picked all
+  four candidate diagnostics for the first cut.
+- **Phase 1** (`a0d7674`): `quality/debug_swatches.py` — 6 single-node swatches
+  (voronoi port0 polarity, port0/1/2 fields+random, UV direction, relief dome)
+  + `docs/DEBUG_SWATCHES.md`. Followed visual-iteration: render, `SendUserFile`,
+  judge relief in 3D. The UV swatch corrected my guess — MM's +V points DOWN.
+- **Phase 2** (`ba3d968`): `PIXEL_CHECKS` + `tests/test_debug_swatches.py`
+  render each swatch live and assert calibrated pixel invariants. Grayson chose
+  a vendored ~60-line stdlib PNG reader (`quality/pngread.py`) over Pillow.
+  Calibration corrected a second assumption: red centers out-area blue seams, so
+  `red > blue` is the polarity-flip detector.
+- Grayson then asked for more relief shapes AND text. **Relief family**
+  (`ab688e6`): `relief_circle` (strict dome-out check kept), polygon, star,
+  rays, and `relief_glyph` spelling "UP" from two `sixteen_segment` glyphs
+  (MM has no text node) scaled/translated/unioned. The glyph's thin strokes
+  needed a full-buffer scan (a sparse grid walked past them). All 14
+  debug-swatch tests pass (93s), fast suite 229.
+- **Detour:** hit a render death-spiral from overlapping render jobs; root-
+  caused a real latent `render.py` bug — it leaks a Material Maker self-relaunch
+  child on a 180s timeout, cascading into hangs (same class `live.py` already
+  fixed). Recovered by killing all Godot and rendering sequentially; captured
+  in the `render-orphan-contention` memory; spawned `task_93dccd69` to fix it
+  (running in its own session). Left `render.py` untouched here to avoid a
+  conflict.
+- Wrote `_agent-commons/log/2026-08-29-claude-code-materialmaker-mcp-debug-swatches.md`.
+  3 commits pushed at wrap.
+
 ### 2026-08-29 (leather cookbook) — new leather category, 6 materials, 2 reusable levers
 - Picked up via `pickup` (clean, `main` at `969d420`, in sync). Grayson chose
   next-move #1: author a new cookbook category. Picked leather (backlog B).
@@ -707,66 +739,4 @@ The older open backlog, unchanged:
   handoff doc's top sections + Heads-up + a new "Changed this session" block,
   per this skill's own convention.
 
-### 2026-08-28 (later still) — render_node_output + live_render_node_output, backlog item H
-- Picked up via `pickup`; no drift, `main` matched the prior session's
-  `f6e3edb`, in sync with `origin/main`.
-- Grayson asked for two quick housekeeping fixes first: revert the upstream
-  `z-Git\material-maker` checkout's `bricks.ptex` back to pristine (his real
-  edit was already safely copied into `saved_graphs/`), and move his own
-  `examples/g01-natural-stone/` GUI save into `saved_graphs/` since he
-  confirmed that's the natural-stone variant he actually wants kept.
-  Renamed it to `natural_stone_grayson_edit.ptex` to match the bricks
-  convention. Committed separately (`b85a55f`) before the main feature.
-- Then built backlog item H (`render_node_output`) via `brainstorming`
-  (classified bounded — the render/validate/catalog flow it composes
-  already exists) → `test-driven-development`. Read `graph.py`/`render.py`/
-  `server.py`/`catalog_builder.py`/`validator.py` first, then confirmed the
-  real `material` node's input order (`albedo_tex` is port 0) via
-  `describe_node` and the real `bricks` example graph, rather than assuming.
-- Grayson asked for both batch and live-mode in the same pass. Checking the
-  live protocol for feasibility surfaced real hidden complexity before any
-  code was written: Material Maker's own `connect_children` (verified
-  directly in the `z-Git\material-maker` source) already disconnects
-  whatever fed a port before wiring a new one, so restoring by reconnecting
-  the original source works — but only if the port started out connected to
-  something. There was no `disconnect_nodes` primitive to restore
-  "unconnected" when it didn't. Surfaced this to Grayson as a real scope
-  question (three options: add the primitive now, refuse that one case,
-  drop live-mode from this pass) rather than silently deciding, per
-  `brainstorming`'s "hidden complexity upgrades the path" rule — he chose to
-  add it now.
-- Confirmed `do_disconnect_node` already exists in Material Maker's own
-  `graph_edit.gd`, mirroring `do_connect_node` exactly (found by reading the
-  real source, not assumed), which meant the new op was a straightforward
-  addition rather than inventing a new mechanism.
-- Presented the full design (batch path, live path, testing plan) in chat
-  per `brainstorming`'s bounded-path requirement; Grayson approved with "go
-  for it."
-- Built via strict TDD, one unit at a time, watching each fail for the
-  right reason before implementing: `graph.py`'s `find_material_node`/
-  `isolate_node_output` (pure, 8 new tests), `server.py`'s
-  `render_node_output` (5 new tests + 1 real integration test against the
-  bundled `bricks` example), `live.py`'s `disconnect_nodes` (2 new tests),
-  the GDScript `_cmd_disconnect_nodes` handler (no unit harness exists for
-  GDScript in this repo — only provable via integration test), `server.py`'s
-  `live_render_node_output` and the `disconnect_nodes` `live_apply` op (7
-  new tests) — then one dedicated real integration test, deliberately
-  designed so the preview node starts with no existing `albedo_tex`
-  connection, forcing the disconnect-restore branch specifically (the
-  actual new GDScript code), not the already-proven reconnect branch.
-- Full suite: 216 passed (up from 187), confirmed zero leftover Godot
-  processes afterward via `tasklist`.
-- Updated `README.md`'s tool tables (9 batch + 6 live tools now, was
-  stale by one entry already — `live_clear` was missing from the Live mode
-  table before this session, fixed in the same edit) and `STATUS.md`'s
-  Components rows for `server.py` and the live-control stack.
-- Committed as `f891fbb`. Wrote a `_agent-commons/log/` entry, committed and
-  pushed it directly (not via `Push-Repo`, since that helper's `git add -A`
-  would have swept in an unrelated modified `dashboard/index.html` and
-  dozens of other agents' pending log entries sitting uncommitted in that
-  repo — staged and pushed only this session's own file instead).
-- Grayson asked to push and wrap up. Pushed both commits (`git push`,
-  direct — this is a local session with the real working tree, not a
-  Cowork/cloud session, so the `github-push` skill's clone-and-reapply flow
-  doesn't apply here). Confirmed `origin/main` in sync.
 
