@@ -1,10 +1,9 @@
 # AUTHORING.md — how to author a Material Maker graph from a prompt
 
-> **Phase 3 status:** This file is a STUB during sub-phase 3B (baseline). The
-> recipe sections below are intentionally empty so the baseline run measures
-> authoring with only the raw catalog + examples as a control. Sub-phase 3C
-> fills them in from the miss taxonomy and re-measures. Do not add recipes
-> before the baseline scorecard is recorded.
+> **Phase 3 status:** done. The recipe sections below were filled in during
+> sub-phase 3C from the baseline miss taxonomy, and the frozen 15-case test
+> set now scores 15/15. See `quality/scorecards/` for the scorecards and
+> STATUS.md for the phase gate.
 
 ## Scoring rubric (frozen with the test set)
 
@@ -46,7 +45,7 @@ open. Concretely:
    `load_example` as a starting pattern.
 2. Draft 2-3 variant graphs using the catalog (`list_node_types`,
    `describe_node`, or the `catalog://nodes` resource) for exact ports/params.
-3. `validate_graph` each variant; fix every error-severity problem.
+3. `validate` each variant; fix every error-severity problem.
 4. Render via the harness (`quality/run_case.py`) or `render_graph`.
 5. Judge the maps against the rubric; log why any miss missed.
 

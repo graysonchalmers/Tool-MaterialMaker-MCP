@@ -36,8 +36,9 @@ sitting right there in the app, editable. That's deliberate, not a side
 effect: an assistant that only handed back flattened PNGs with no graph would
 not serve this goal, even if the images looked better.
 
-Phase 5 (live-control, speced but not built — see
-`docs/superpowers/specs/2026-08-26-live-control-addon-design.md`) deepens the
+Phase 5 (live-control — shipped and hands-on verified; see
+`docs/superpowers/specs/2026-08-26-live-control-addon-design.md` for the design
+and `STATUS.md` for verification evidence) deepens the
 same loop rather than replacing it: watching nodes appear in the live app as
 the assistant builds them, instead of via file hand-off, is the same
 "watch and learn the graph" idea in real time.

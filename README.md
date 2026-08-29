@@ -31,7 +31,8 @@ Why this project exists and what it's actually optimizing for is in
 > - **The material "quality" bar is deliberately low.** The goal is "gets you 80%
 >   of the way there so you finish in the app," not "photoreal." See the
 >   `quality/` scorecard for exactly how well (and badly) it does on 15 prompts:
->   it currently passes 11 of them by a generous, artist's eyeball standard.
+>   it currently passes all 15 of them by a generous, artist's eyeball
+>   standard (the ship gate was 11 of 15).
 >
 > I am sharing it in the open because it is a fun experiment and someone might find
 > it useful or want to build on it, not because it is polished. Feedback, issues,
@@ -77,8 +78,9 @@ checkout:
   node definitions and bundled examples and drives its headless export. Clone it
   from [github.com/RodZill4/material-maker](https://github.com/RodZill4/material-maker).
   Material Maker needs a `steam_appid.txt` (containing `4110830`) at the checkout
-  root, or the app self-relaunches and exits on headless render; the upstream
-  clone already includes one.
+  root, or the app self-relaunches and exits on headless render. The upstream
+  repo does not ship this file; create it yourself before your first render
+  (`echo 4110830 > steam_appid.txt` at the checkout root).
 
 ## Install
 
@@ -235,9 +237,10 @@ project's setup):
 
 ## Project status
 
-Very early alpha (see the warning up top). Phases 0 through 3 of my own rough plan
-are done and verified on one machine. See [STATUS.md](STATUS.md) for the gate
-ledger and [docs/PLAN.md](docs/PLAN.md) for the phase plan. Authoring quality is
+Very early alpha (see the warning up top). Phases 0 through 3 and 5 of my own
+rough plan are done and verified on one machine; Phase 4 (public packaging) is
+partway there. See [STATUS.md](STATUS.md) for the gate ledger and
+[docs/PLAN.md](docs/PLAN.md) for the phase plan. Authoring quality is
 measured against a frozen 15-case test set in [`quality/`](quality/); the current
 scorecard is 15/15 usable by an artist's eyeball standard (see
 `quality/scorecards/`). "Verified" here means "worked when I ran it," not

@@ -19,7 +19,7 @@ Build `catalog.json` from `<MM_PROJECT>/addons/material_maker/nodes/*.mmg`.
 
 ## Phase 2 — Render MCP
 Wire catalog + validator + render runner behind the MCP server.
-- Tools: `list_node_types`, `describe_node`, `validate_graph`, `render_graph`,
+- Tools: `list_node_types`, `describe_node`, `validate`, `render_graph`,
   `save_graph`, `list_examples`, `load_example`.
 - **Gate:** an MCP `render_graph` call on a loaded example returns image paths.
 
@@ -34,9 +34,20 @@ variant is usable.
 - Sub-gates: 3A harness + frozen test set → 3B baseline scorecard → 3C tuning
   loop to ≥ 70%.
 
-## Phase 4 — Public packaging (later, sketched)
+## Phase 4 — Public packaging
 Config-driven paths, cross-platform, binary auto-detect, install docs.
+- **Gate:** installable via `pip install -e .`/wheel, `mm-mcp --check` setup
+  doctor, install docs written.
+- **State:** done except cross-platform. Installable, config-driven, and
+  doctored; PyPI publish is on hold (GitHub-clone distribution instead) and
+  macOS/Linux remain unverified. See STATUS.md.
 
-## Phase 5 — Live-control (later, sketched)
-GDScript plugin inside a forked Material Maker exposing add-node/connect/
-set-param/render over a socket for interactive, watchable building.
+## Phase 5 — Live-control
+A GDScript addon layered onto a disposable Material Maker overlay (no source
+fork) exposing add-node/connect/disconnect/set-param/render/clear over a
+socket for interactive, watchable building.
+- **Gate:** a hands-on session with Grayson watching nodes appear and render
+  live in the real GUI.
+- **State:** done. Built via TDD, hands-on verified 2026-08-28. See STATUS.md
+  and the design spec:
+  [2026-08-26-live-control-addon-design.md](superpowers/specs/2026-08-26-live-control-addon-design.md).
