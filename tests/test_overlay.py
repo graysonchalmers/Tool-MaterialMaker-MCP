@@ -1,6 +1,7 @@
 import json
 import os
 import pytest
+import mm_mcp.overlay as overlay_mod
 from mm_mcp.overlay import _hash_dir, _append_autoload, _write_marker, _is_stale
 from mm_mcp.overlay import ensure_overlay, _marker_path
 
@@ -251,6 +252,31 @@ def test_ensure_overlay_rebuilds_on_addon_change(tmp_path, fake_checkout, fake_a
     rebuilt = (tmp_path / "overlay" / "addons" / "mm_live" / "live_server.gd").read_text(
         encoding="utf-8")
     assert rebuilt == "extends Node\n# v2, changed"
+
+
+def test_ensure_overlay_removes_a_partial_overlay_when_the_rebuild_fails(
+        tmp_path, fake_checkout, fake_addon, monkeypatch):
+    """A rebuild wipes overlay_dir then re-copies into it. If a copy fails
+    partway, the leftover half-built directory (checkout copied, addon and
+    marker missing) is an ambiguous state. ensure_overlay must clean it up
+    and re-raise, so a failure leaves either a complete overlay or none."""
+    overlay_dir = str(tmp_path / "overlay")
+    ensure_overlay(str(fake_checkout), str(fake_addon), overlay_dir)  # first build ok
+    _write(str(fake_addon), "live_server.gd", "extends Node\n# v2")  # force a rebuild
+
+    real_copytree = overlay_mod.shutil.copytree
+    calls = {"n": 0}
+
+    def _copytree_fails_on_the_addon(src, dst, *a, **kw):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return real_copytree(src, dst, *a, **kw)  # the checkout copy succeeds
+        raise OSError("simulated disk-full during the addon copy")
+
+    monkeypatch.setattr(overlay_mod.shutil, "copytree", _copytree_fails_on_the_addon)
+    with pytest.raises(OSError):
+        ensure_overlay(str(fake_checkout), str(fake_addon), overlay_dir)
+    assert not os.path.isdir(overlay_dir), "partial overlay should be cleaned up on failure"
 
 
 def test_ensure_overlay_rebuilds_on_checkout_path_change(tmp_path, fake_checkout, fake_addon):

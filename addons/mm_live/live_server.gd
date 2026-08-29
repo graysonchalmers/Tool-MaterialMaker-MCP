@@ -249,6 +249,14 @@ func _cmd_clear_graph() -> Dictionary:
 	if mm_globals.main_window == null:
 		return {"ok": false, "error": "main_window not ready"}
 	var graph_edit: MMGraphEdit = mm_globals.main_window.get_current_graph_edit()
+	# Only graph_edit == null is checked here, deliberately -- NOT the
+	# generator == null that every mutating sibling handler also checks.
+	# Those handlers READ graph_edit.generator (add nodes to it, set params
+	# on it), so a null generator is fatal for them. clear_graph instead
+	# CREATES a fresh generator: new_material() calls clear_material() first
+	# (which itself nulls the generator) and then rebuilds via create_gen.
+	# Adding a generator == null guard here would refuse to clear exactly the
+	# graph-less state a clear is meant to recover, so it stays out.
 	if graph_edit == null:
 		return {"ok": false, "error": "no active graph tab"}
 	# graph_edit.gd:714's new_material() is the same reset the GUI's own

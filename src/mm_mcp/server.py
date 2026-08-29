@@ -1,3 +1,4 @@
+import atexit
 import glob
 import json
 import os
@@ -178,6 +179,25 @@ def _ensure_live_session(cfg, launch_timeout: float = 60.0) -> live.LiveSession:
     return _live_session
 
 
+def _close_live_session_atexit() -> None:
+    """Close a live session THIS server launched, so a Godot process it
+    spawned isn't left orphaned when the server exits (uncleanly or not).
+    Reads the module global at exit time rather than closing over a captured
+    handle, so it always sees the current session. A no-op when nothing was
+    launched (attached sessions carry process=None; close() no-ops on those
+    too). Idempotent: safe to call more than once."""
+    session = _live_session
+    if session is not None:
+        session.close()
+
+
+# Registered once at import so an unclean interpreter exit (the MCP server is
+# a long-lived stdio process) still tears down a launched Godot instance. The
+# close() it eventually calls is already integration-proven (see HANDOFF's
+# _terminate write-up); this only guarantees it actually runs on exit.
+atexit.register(_close_live_session_atexit)
+
+
 def live_start(launch_timeout: float = 60.0) -> dict:
     """Connect to an already-open Material Maker, or launch it against the
     disposable live overlay if nothing's listening on the known port. Not
@@ -297,7 +317,11 @@ def live_render_node_output(node_name: str, port: int = 0, basename: str = "node
     swallowed, since a failed restore leaves the live graph wired to the
     temporary preview connection. Mirrors render_node_output's batch-path
     return shape ({ok, image, error, log_tail}), but against whatever graph
-    is currently open in the live window."""
+    is currently open in the live window. Note the shape only: log_tail is
+    always empty on this live path (live Godot output goes to
+    cfg.output_dir/mm_live.log, not captured per render), so it does NOT
+    carry the batch path's per-render diagnostics -- check mm_live.log for
+    those."""
     cfg, _ = _ensure_ready()
     session = _ensure_live_session(cfg)
     if not session.ok:

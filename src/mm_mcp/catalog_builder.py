@@ -71,6 +71,12 @@ def parse_node(mmg_path: str) -> dict | None:
     # times (e.g. mwf_mix's 'h#'/'c#'/'orm#'/'em#'/'nm#' each repeat
     # generic_size times); the default repeat count is declared on the
     # .mmg file itself and can be overridden per-instance in a .ptex.
+    #
+    # `or 1` (not `.get(..., 1)`) is deliberate: it also coerces an explicit
+    # `generic_size: 0` to 1. A 0 here would build a node with zero '#'
+    # inputs, which is a broken interface, not a valid one -- so treating a
+    # falsy value as "use the default 1" is safer than passing 0 through.
+    # No bundled .mmg declares 0; this is defensive, not load-bearing.
     generic_size = data.get("generic_size") or 1
     inputs = []
     for i in sm.get("inputs", []):

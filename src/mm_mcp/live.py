@@ -165,9 +165,23 @@ def _validation_errors(ptex: dict, cfg: Config) -> list[dict]:
     return [p for p in problems if p["severity"] == "error"]
 
 
+# Mutation ops (add_node/connect_nodes/disconnect_nodes/reposition_node/
+# set_param) default to a longer socket timeout than the read-only one-shots
+# (ping/get_graph/clear_graph, 5s): a mutation right after a fresh launch can
+# trigger shader warmup/compile of the affected node, which the 5s read-op
+# budget could spuriously time out before finishing. 30s is a ceiling (max
+# wait, not a fixed delay), half of render()'s proven-necessary 60s export
+# budget -- a genuinely stuck op still fails, just not prematurely.
+#
+# Note: the ops that pre-flight with get_graph (all but add_node) pass this
+# same timeout positionally into that internal get_graph call, so that read
+# also gets the 30s budget -- deliberate, since a read right after a cold
+# launch is subject to the same slowness. get_graph's *default* stays 5s for
+# standalone callers; only ping (used by the connect_or_launch poll loop)
+# must stay short there, and it is untouched.
 def add_node(node_type: str, parameters: dict | None = None, x: float = 0.0, y: float = 0.0,
              cfg: Config | None = None, host: str = LIVE_HOST, port: int = LIVE_PORT,
-             timeout: float = 5.0) -> LiveResult:
+             timeout: float = 30.0) -> LiveResult:
     """Validate node_type/parameters against the catalog in isolation (a
     brand-new, unconnected node has no effect on the rest of the live
     graph), then send add_node if valid. On success, LiveResult.data["name"]
@@ -187,7 +201,7 @@ def add_node(node_type: str, parameters: dict | None = None, x: float = 0.0, y: 
 
 def connect_nodes(from_name: str, from_port: int, to_name: str, to_port: int,
                    cfg: Config | None = None, host: str = LIVE_HOST, port: int = LIVE_PORT,
-                   timeout: float = 5.0) -> LiveResult:
+                   timeout: float = 30.0) -> LiveResult:
     """Fetch the current live graph, validate the proposed connection
     against it, and only send connect_nodes if that validation is clean."""
     cfg = cfg or load_config()
@@ -208,7 +222,7 @@ def connect_nodes(from_name: str, from_port: int, to_name: str, to_port: int,
 
 def disconnect_nodes(from_name: str, from_port: int, to_name: str, to_port: int,
                       cfg: Config | None = None, host: str = LIVE_HOST, port: int = LIVE_PORT,
-                      timeout: float = 5.0) -> LiveResult:
+                      timeout: float = 30.0) -> LiveResult:
     """Fetch the current live graph and confirm the exact connection exists
     before sending disconnect_nodes -- there's nothing to validate against
     the catalog here (removing a connection can't violate a port-range or
@@ -231,7 +245,7 @@ def disconnect_nodes(from_name: str, from_port: int, to_name: str, to_port: int,
 
 def reposition_node(name: str, x: float, y: float, cfg: Config | None = None,
                      host: str = LIVE_HOST, port: int = LIVE_PORT,
-                     timeout: float = 5.0) -> LiveResult:
+                     timeout: float = 30.0) -> LiveResult:
     """Fetch the current live graph and confirm the target node exists before
     sending reposition_node -- there's nothing to validate against the
     catalog here (moving a node can't violate a type/connection rule), only
@@ -256,7 +270,7 @@ def reposition_node(name: str, x: float, y: float, cfg: Config | None = None,
 
 
 def set_param(name: str, parameters: dict, cfg: Config | None = None, host: str = LIVE_HOST,
-              port: int = LIVE_PORT, timeout: float = 5.0) -> LiveResult:
+              port: int = LIVE_PORT, timeout: float = 30.0) -> LiveResult:
     """Fetch the current live graph, confirm the target node exists, merge
     the proposed parameters into a copy of its current ones, validate that,
     and only send set_param if clean."""
@@ -301,7 +315,14 @@ def render(basename: str = "material", profile: str = "Godot/Godot 4 Standard",
     """Trigger a live-window export via the addon's render command, then
     verify success the same way render.py's batch path does: by checking
     for fresh <basename>_*.png files on disk, since export_material has no
-    failure signal of its own to report over the socket."""
+    failure signal of its own to report over the socket.
+
+    Unlike render.py's batch path, the returned RenderResult.log_tail is
+    always empty here: the live Godot process's stdout/stderr goes to
+    cfg.output_dir/mm_live.log (opened once per launch, for the whole
+    process lifetime), not captured per render over the socket. Check that
+    log file for live-render diagnostics; don't expect batch-path log_tail
+    parity from this path."""
     cfg = cfg or load_config()
     outdir = cfg.output_dir
     os.makedirs(outdir, exist_ok=True)
@@ -386,8 +407,16 @@ def _launch_overlay(cfg: Config) -> subprocess.Popen:
     # Godot's stdout must not be PIPE'd without draining it -- an undrained
     # pipe fills and blocks the child (confirmed during the Phase 5
     # feasibility spike). Redirect to a file instead.
-    return subprocess.Popen(_launch_command(cfg, overlay_dir),
-                             stdout=log_file, stderr=subprocess.STDOUT)
+    #
+    # Popen dups the file descriptor for the child at spawn time, so the
+    # parent's own copy of the handle must be closed once Popen returns --
+    # otherwise every launch/relaunch leaks one fd. The finally runs even if
+    # Popen raises, so a failed spawn doesn't leak the handle either.
+    try:
+        return subprocess.Popen(_launch_command(cfg, overlay_dir),
+                                 stdout=log_file, stderr=subprocess.STDOUT)
+    finally:
+        log_file.close()
 
 
 def connect_or_launch(cfg: Config | None = None, host: str = LIVE_HOST,

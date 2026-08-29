@@ -29,6 +29,30 @@ def _isolate_server_state():
     server._reset()
 
 
+def test_close_live_session_atexit_closes_a_launched_session():
+    """The MCP server registers a cleanup that closes a live session it
+    launched, so a Godot process it spawned isn't orphaned when the server
+    exits. The handler must close a session whose process is non-None."""
+    class _FakeLaunched:
+        def __init__(self):
+            self.process = object()
+            self.closed = False
+
+        def close(self):
+            self.closed = True
+            self.process = None
+
+    fake = _FakeLaunched()
+    server._live_session = fake
+    server._close_live_session_atexit()
+    assert fake.closed is True
+
+
+def test_close_live_session_atexit_is_a_noop_when_no_session():
+    server._live_session = None
+    server._close_live_session_atexit()  # must not raise
+
+
 def test_live_start_reports_attach_when_already_running(monkeypatch):
     monkeypatch.setattr(server, "_ensure_ready", lambda: (cfg, {}))
     monkeypatch.setattr(live, "connect_or_launch",

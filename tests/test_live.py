@@ -1,4 +1,5 @@
 # tests/test_live.py
+import inspect
 import json
 import os
 import socket
@@ -493,6 +494,37 @@ class _FakeProcess:
 def test_launch_command_uses_console_binary_and_overlay_path():
     cmd = live._launch_command(cfg, r"C:\somewhere\overlay")
     assert cmd == [cfg.console_binary, "--path", r"C:\somewhere\overlay"]
+
+
+def test_launch_overlay_closes_the_parent_log_file_handle(monkeypatch, tmp_path):
+    """_launch_overlay opens mm_live.log for the child's stdout, but the
+    parent's own copy of that handle must be closed once Popen has duped the
+    fd for the child -- otherwise every launch/relaunch leaks one fd."""
+    isolated_cfg = replace(cfg, output_dir=str(tmp_path))
+    monkeypatch.setattr(live, "ensure_overlay", lambda *a, **kw: str(tmp_path / "overlay"))
+    captured = {}
+
+    class _FakePopen:
+        def __init__(self, cmd, stdout=None, stderr=None):
+            captured["stdout"] = stdout
+
+    monkeypatch.setattr(live.subprocess, "Popen", _FakePopen)
+    live._launch_overlay(isolated_cfg)
+    assert captured["stdout"] is not None
+    assert captured["stdout"].closed is True
+
+
+def test_mutation_ops_use_a_longer_default_timeout_than_read_ops():
+    """A mutation right after a fresh launch can trigger shader warmup/compile
+    of the new node, so the mutating ops must not inherit the short read-op
+    timeout that would spuriously fail before the compile finishes. Read-only
+    one-shots (ping/get_graph/clear_graph) stay short so the connect_or_launch
+    poll loop and cheap probes fail fast."""
+    for fn in (live.add_node, live.connect_nodes, live.disconnect_nodes,
+               live.reposition_node, live.set_param):
+        assert inspect.signature(fn).parameters["timeout"].default == 30.0, fn.__name__
+    for fn in (live.ping, live.get_graph, live.clear_graph):
+        assert inspect.signature(fn).parameters["timeout"].default == 5.0, fn.__name__
 
 
 def test_terminate_kills_the_process_tree_via_taskkill_when_pid_is_available(monkeypatch):

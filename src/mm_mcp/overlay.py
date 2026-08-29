@@ -151,10 +151,30 @@ def ensure_overlay(mm_project_path: str, addon_path: str, overlay_dir: str) -> s
     if os.path.isdir(overlay_dir):
         _clear_readonly(overlay_dir)
         shutil.rmtree(overlay_dir)
-    shutil.copytree(mm_project_path, overlay_dir)
 
-    addon_name = os.path.basename(os.path.normpath(addon_path))
-    shutil.copytree(addon_path, os.path.join(overlay_dir, "addons", addon_name))
-    _append_autoload(os.path.join(overlay_dir, "project.godot"), addon_name)
-    _write_marker(overlay_dir, addon_hash, mm_project_path)
+    # The rebuild below is not atomic: the checkout copy, the addon copy, the
+    # autoload edit, and the marker write happen in sequence. If any step
+    # fails partway (disk full, permission), the leftover directory is a
+    # half-built overlay with no marker -- an ambiguous state a later caller
+    # could mistake for usable. Remove the partial build on any failure and
+    # re-raise, so ensure_overlay leaves either a complete overlay or none.
+    # The marker is written last on purpose: it's the commit point that marks
+    # the build as finished and matching these inputs.
+    try:
+        shutil.copytree(mm_project_path, overlay_dir)
+        addon_name = os.path.basename(os.path.normpath(addon_path))
+        shutil.copytree(addon_path, os.path.join(overlay_dir, "addons", addon_name))
+        _append_autoload(os.path.join(overlay_dir, "project.godot"), addon_name)
+        _write_marker(overlay_dir, addon_hash, mm_project_path)
+    except BaseException:
+        # Best-effort cleanup: a cleanup failure (e.g. the same permission
+        # problem that broke the copy) must not mask the original exception,
+        # so swallow everything cleanup does and let the real error propagate.
+        try:
+            if os.path.isdir(overlay_dir):
+                _clear_readonly(overlay_dir)
+                shutil.rmtree(overlay_dir, ignore_errors=True)
+        except Exception:
+            pass
+        raise
     return overlay_dir

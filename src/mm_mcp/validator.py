@@ -59,18 +59,18 @@ def validate_graph(ptex: dict, catalog: dict) -> list[dict]:
             if src_type in catalog:
                 n_out = len(catalog[src_type]["outputs"])
                 from_port = c.get("from_port", 0)
-                if from_port >= n_out:
+                if from_port < 0 or from_port >= n_out:
                     problems.append({"severity": "error", "where": src.get("name", "?"),
                                      "message": f"from_port {from_port} out of range "
-                                                f"(node has {n_out} outputs)"})
+                                                f"(valid port indices are 0..{n_out - 1})"})
         dst = by_name.get(c.get("to"))
         if dst:
             dst_type = dst.get("type")
             if dst_type in catalog:
                 n_in = len(catalog[dst_type]["inputs"])
                 to_port = c.get("to_port", 0)
-                if to_port >= n_in:
+                if to_port < 0 or to_port >= n_in:
                     problems.append({"severity": "error", "where": dst.get("name", "?"),
                                      "message": f"to_port {to_port} out of range "
-                                                f"(node has {n_in} inputs)"})
+                                                f"(valid port indices are 0..{n_in - 1})"})
     return problems

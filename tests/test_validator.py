@@ -48,6 +48,20 @@ def test_port_out_of_range_is_error():
     assert any("port" in e["message"].lower() for e in errs)
 
 
+def test_negative_to_port_is_error():
+    g = _good()
+    g["connections"][0]["to_port"] = -1
+    errs = [p for p in validate_graph(g, CATALOG) if p["severity"] == "error"]
+    assert any("to_port" in e["message"] for e in errs)
+
+
+def test_negative_from_port_is_error():
+    g = _good()
+    g["connections"][0]["from_port"] = -1
+    errs = [p for p in validate_graph(g, CATALOG) if p["severity"] == "error"]
+    assert any("from_port" in e["message"] for e in errs)
+
+
 def test_unknown_param_is_warning():
     """Material Maker's own loader (gen_base.gd deserialize) stores any key found
     under "parameters" unconditionally and never errors on it - stray/renamed
