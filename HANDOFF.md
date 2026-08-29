@@ -1,151 +1,70 @@
 # 🧭 Session Handoff — Tool-MaterialMaker-MCP
 
-_Last updated: 2026-08-28 (late night) CT (America/Chicago)_
+_Last updated: 2026-08-28 (even later) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**Real code changed this session: proved out cross-engine export and fixed
-a dormant CLI bug it exposed.** Picked up via `pickup`, no drift (wood/stone
-cookbook session from earlier was already committed at `7f8f9f2`, in sync
-with `origin/main`). Grayson asked to prove Material Maker's export can
-produce a genuine engine-native shader/material asset for Unity or Unreal,
-not just PNGs he'd wire up by hand. Spiked it (`brainstorming`, spike
-classification): confirmed from Material Maker's own export templates that
-both Unity's `.mat` profiles and Unreal UE5's python-script profile produce
-real engine-native materials. Unreal needs a live Editor connection to run
-the generated script (Grayson's Unreal MCP bridge wasn't reachable this
-session — "Unreal is not working right now"); Unity needs no live
-connection at all, it just writes files, so that half got proven fully.
+**Two-part session: proved cross-engine export (and fixed a real CLI bug),
+then set up a real hand-edit round-trip workflow with Grayson.** Picked up
+via `pickup`, no drift. Full detail for both parts is in the Session log;
+this section covers just what's current.
 
-**While probing the export CLI directly, found a real bug in our own code:
-`render.py`'s `-t` flag has been a silent no-op since Phase 1.** Material
-Maker's arg parser (`parse_args.gd`) only recognizes the long `--target`
-flag; `-t` matches nothing and falls through to the parser's own hardcoded
-default. This was invisible because that default (`"Godot/Godot 4
-Standard"`) happens to be the exact string `render.py` was already passing
-— so every Godot render "worked" by coincidence, not because the flag did
-anything. Confirmed empirically (valid Unity target, alternate Godot
-target, and a garbage string via `-t` all produced identical default-Godot
-output; `--target` with the same values worked immediately).
+**Part 1 — Unity export proven, `render.py`'s `-t` flag fixed to
+`--target`** (committed and pushed, `82a57f0`). Material Maker's arg parser
+silently ignores `-t`, only the long flag works; this had been dormant
+since Phase 1 because the parser's own default happened to match what
+`render.py` was already sending. `render()`/`server.py`'s `render_graph`
+now take a `target` parameter (default unchanged); Unity/URP verified end
+to end producing a real `.mat` wired to Unity's actual URP Lit shader.
+Unreal UE5 confirmed real at the file-generation level but still
+unverified end to end, blocked on a live Unreal Editor + MCP bridge
+connection that wasn't reachable this session.
 
-Fixed via `test-driven-development`: extracted a pure `_build_command()` in
-`render.py` (matching `preview.py`/`live.py`'s existing command-builder
-pattern), switched to `--target`, added a `target` parameter to `render()`
-(default unchanged) and threaded it through `server.py`'s `render_graph`
-tool. 4 new tests, all written and watched fail first. Full fast suite: 187
-passed (up from 174). Verified for real through the actual MCP tool path,
-not just the raw CLI: `server.render_graph(ptex, target="Unity/URP")`
-against the bundled `bricks` example produced a genuine `.mat` referencing
-Unity's real URP Lit shader GUID with `_NORMALMAP`/`_PARALLAXMAP`/
-`_METALLICSPECGLOSSMAP` correctly wired, plus proper `.meta` files.
-Committed and pushed on Grayson's go-ahead (`82a57f0`, `origin/main` in
-sync).
+**Part 2 — Grayson hand-edited `bricks.ptex` in a real (non-overlay) GUI
+window, and this session built out the round-trip this project is actually
+for.** New convention: [saved_graphs/](../saved_graphs/) is where Grayson's
+own tweaked graphs live now, version-controlled in this repo, distinct
+from `quality/`'s Claude-authored cookbook recipes and from the pristine
+`z-Git\material-maker` checkout he'd accidentally saved his first edit
+into. Copied his edit out, then did a full human-editability pass on it
+(traced every connection, renamed all 16 top-level auto-generated node
+names like `colorize_4`/`blend_1` to role-descriptive ones like
+`RoughnessMap`/`BrickColorVariationMask`, relaid the graph left-to-right by
+topological depth) and added a moss-in-crevices layer (new `MossMask`/
+`MossColor`/`MossAlbedoComposite`/`MossRoughnessComposite` nodes). Real
+mid-task finding: the first moss threshold guess rendered solid black
+because the guess didn't match the graph's actual value range; caught it
+by rerouting the graph to isolate `MossMask` and rendering it alone, then
+retuned the threshold against the measured range. Confirmed good by
+Grayson via `SendUserFile` (flat albedo + a 3D `render_preview` pass, per
+the "judge relief in 3D" standing rule). File-side edit chosen over
+`live_apply` deliberately: live mode currently can't rename or reposition
+existing nodes, only add new ones, a real gap now logged in the backlog.
 
-Grayson also asked for a way to open an example in the real Material Maker
-GUI so he can tweak it and save a new version himself — the round-trip loop
-`docs/NORTH_STAR.md` is built around. Launched the real (non-overlay) GUI
-directly with `bricks.ptex` loaded, running in the background on his
-machine as this session ends; not verified he actually tweaked/saved
-anything, just confirmed the launch didn't crash (only cosmetic HDR-loader
-and window-transient-parent warnings in the log, both known-benign).
+**Three MCP tool-surface gaps this session actually hit, added to the
+backlog below (H/I/J):** no way to render a single intermediate node's
+output in isolation (had to work around this by hand for the moss
+threshold), `live_apply` can't rename/reposition nodes, and there's no way
+to load an existing `.ptex` into a live session. `render_node_output` is
+the recommended first pick, smallest and most likely to pay for itself.
 
-**Human-editability constraint, written into `docs/AUTHORING.md`:**
-resolves a question open since a prior session (Grayson wanted "construct
-graphs in an easy-to-human-edit way" to become an explicit written
-constraint). Added a section: prefer simple linear chains, descriptive
-non-default node names, sane `node_position` layout, prefer the simpler
-equivalent when one exists — tied back to `docs/NORTH_STAR.md`'s round-trip
-loop (step 3 only teaches Grayson something if the graph is legible).
-
-**GDScript parse-only smoke check, tested and found non-viable — a real
-finding, not just a skip.** The backlog carried an item (from a prior
-session's final review) claiming `--headless --check-only --script <path>`
-was viable hardening against GDScript parse errors. Built it, ran it for
-real against the overlay, and it fails every time: `--check-only` never
-boots the project, so it can't resolve the `mm_globals` autoload or the
-`MMGraphEdit` global `class_name`, both of which `live_server.gd` genuinely
-needs. Confirmed with a dependency-free scratch script (passes) vs. the
-real addon (fails identically with or without `--path`). Reverted rather
-than ship a permanently-failing test. No cheap parse-only substitute exists
-for this addon currently.
-
-**Cross-engine portability researched and written into
-`docs/NORTH_STAR.md`.** Grayson wants exported materials usable in Unity
-and Unreal, not just Godot. Material Maker already ships export profiles
-for both (Unity → ready `.mat` file; Unreal UE5 → PNGs + a python script
-that builds the material, UE4 → PNGs + manual assembly, a lesser tier).
-Before writing anything, surveyed the rest of Grayson's local projects (via
-a dispatched Explore agent) for prior art: `Tool-UnityQA` already scoped
-the identical problem (texture channel-packing/sRGB checks across engines)
-and deliberately deferred it — nobody in the portfolio has solved this yet,
-so this is new ground, not a reuse. Borrowed one convention worth keeping:
-`Tool-UnityQA`'s `T_<Name>`/`SM_`/`SK_` asset-naming prefixes. No code
-changed — this sets the goal; `render.py`'s hardcoded
-`-t "Godot/Godot 4 Standard"` target is still unbuilt as a parameter.
-
-**Wood and stone cookbook categories built (`quality/cookbook_wood.py`,
-`quality/cookbook_stone.py`), both went through real visual-review cycles
-with Grayson, not one-shot approvals.** Wood: `w04_driftwood_gray` /
-`w05_dark_walnut` were first-try hits (pure recolors of `wood`'s already-
-working chain). `w03_painted_wood_siding` took FOUR real passes: the first
-three cloned `wood` (no board structure) and read as abstract cow-hide
-blobs no matter how the paint mask was tuned — the fix was the DONOR
-(`wooden_floor`, which has actual plank divisions), not the mask. Then two
-more rounds fixed the paint color (was capped at 88% brightness with a
-muddy cast, read as a stain) and the mask balance (was backwards — wood
-majority, paint minority; siding should read mostly-painted). **Lesson
-written into AUTHORING.md: match a donor's underlying structure to what the
-material fundamentally is before tuning color/mask.**
-
-Stone: `s05_hex_stone_tile` (honest partial — regular hex grid, not true
-irregular cobblestone, said so plainly and left an open item) and
-`s06_river_pebbles` (rounded, tightly-packed natural stones) both needed a
-second pass after Grayson's review (mask-proportion fix; a fine-grain
-detail layer). The original `s04_raw_poured_concrete` recipe (a clean HIT)
-was explicitly REPLACED, at Grayson's request, with
-`s04_scattered_river_stones` (rounded stones sitting in a connected sand
-matrix, distinct from `s06`'s edge-to-edge packing) — hit a real bug
-building it: assumed `voronoi`'s port-0 distance field was high at cell
-centers, it's actually low at centers/high at the inter-cell network,
-producing tiny sand-dots at centers instead of rounded stones until the
-gradient direction was flipped. The old concrete approach is preserved in
-AUTHORING.md's history text, not lost, just not in the active lineup.
-
-**Two process fixes that will change how every future pass in this project
-goes, both driven directly by Grayson's feedback:**
-1. Grayson had to say "I haven't seen it" before realizing I'd only been
-   looking at rendered previews myself (via `Read`), never actually sending
-   them. Now sends `SendUserFile` every pass; saved as a standing feedback
-   memory. He also asked for a tiled contact sheet instead of loose files —
-   built `quality/contact_sheet.py`.
-2. **The 512px tracked preview thumbnail can hide real detail.** A
-   fine-grain layer added to `s05` was invisible in the downscaled preview
-   but clearly present in the real 2048px render; `s06`'s and the new
-   `s04`'s rounded-pebble relief is invisible in the flat albedo swatch
-   entirely — it only shows under real lighting via `render_preview`. Both
-   caveats are now written into memory and AUTHORING.md: judge fine detail
-   against the full-res render, and judge any relief-driven material in 3D,
-   not the flat thumbnail.
-
-**Grayson's backlog idea (image-to-material decomposition — attach
-reference photos, decompose them to understand the shader, author the
-graph from that) captured verbatim in a new
-`_agent-commons/ideas/Tool-MaterialMaker-MCP.md`** (this project had no
-ideas file yet). Not scoped or designed — explicitly deferred by Grayson.
-
-Prior sessions' detail (Phase 5, the overlay bug, `connect_or_launch`'s
-readiness race, `live_clear`, build steps 1-4) is preserved in the Session
-log below.
+**Heads-up, not yet resolved:** a new untracked file showed up during this
+session, `examples/g01-natural-stone/` (a `.ptex` + `.mmcr`, timestamped
+during this session). Not something this session created or was asked to
+create; almost certainly Grayson saved something himself in the GUI
+separately from the bricks work. Left untouched and uncommitted; ask
+Grayson at next pickup whether it should be tracked.
 
 ## 📌 Where we stopped
 
-Grayson said to push and wrap up right after the `--target` fix landed and
-was verified. Nothing left mid-fix. He also asked, in the same breath, for
-a way to open an example in the real GUI to tweak/save himself; that's
-launched and running in the background as this session ends, but not
-confirmed he actually used it yet (see Open questions).
+Grayson confirmed the renamed/moss bricks graph looked good, asked what
+MCP gaps this session surfaced, then asked to log them as backlog and wrap
+up. Nothing left mid-task. He also asked, earlier in the session, for a
+way to open an example in the real GUI to tweak/save himself; he did, and
+the rest of the session (Part 2 above) was the round-trip that came out of
+that. Nothing pending on any of it.
 
 ## ▶️ Next concrete step
 
@@ -178,16 +97,41 @@ confirmed he actually used it yet (see Open questions).
 - **F. PyPI publish** (on hold; GitHub-clone is the current route).
 - **G. Document `render_preview`** in `docs/AUTHORING.md` / README, or leave
   it as just an MCP tool.
+- **H. ⭐ `render_node_output(node_name)` MCP tool (recommended pick).**
+  Render a single intermediate node's output in isolation, so authoring a
+  mask/threshold doesn't require rerouting the graph by hand and
+  histogramming a PNG to find its real value range. Hit twice now: this
+  session's moss-mask threshold (first guess rendered solid black, had to
+  reroute + measure to find the real range), and a prior session's 512px
+  preview hiding fine detail. Smallest of the three MCP gaps below, most
+  likely to pay for itself immediately.
+- **I. `live_apply` rename/reposition ops.** Currently only
+  `add_node`/`connect_nodes`/`set_param` exist; there's no way to rename or
+  move an existing node live, so the human-editability reorganize pass this
+  session had to be file-side even though live mode exists to watch changes
+  happen. Bigger than H, needs a new op type plus a GDScript handler.
+- **J. Load an existing `.ptex` into a live session.** No `live_load`
+  equivalent exists; `live_start`/`connect_or_launch` only ever begin from
+  a default graph or whatever's already open in the attached window. Hit
+  this session trying to get a saved edit into a live-control window for
+  step-by-step viewing; worked around by staying file-side (works, just
+  slower to iterate). Lowest priority of the three.
 
 ## ❓ Open questions
 
-- **New this session:** did Grayson actually get to tweak/save the
-  `bricks.ptex` example in the GUI window launched at session end? Not
-  confirmed; check at next pickup whether the file changed
-  (`z-Git\material-maker\material_maker\examples\bricks.ptex`, though note
-  that's the pristine upstream checkout, not somewhere he'd normally want
-  to save real work; worth clarifying where he actually wants to save
-  tweaked graphs long-term, e.g. a scratch folder outside the checkout).
+- **✅ Resolved this session:** Grayson did tweak/save `bricks.ptex` in the
+  GUI window (confirmed via `git status` in the upstream checkout showing a
+  real diff). The edit was copied out to
+  [saved_graphs/bricks_grayson_edit.ptex](../saved_graphs/bricks_grayson_edit.ptex)
+  (new convention: this is where Grayson's own saved/tweaked graphs live,
+  distinct from `quality/`'s Claude-authored cookbook recipes), then
+  renamed/reorganized (human-editability pass) and given a moss-in-crevices
+  layer, rendered and confirmed good by Grayson. The upstream checkout's
+  `bricks.ptex` still has his original raw edit sitting in it, unresolved
+  whether to reset it back to pristine, see below.
+- **New this session:** should the upstream `z-Git\material-maker` checkout's
+  `bricks.ptex` be reset back to pristine now that Grayson's real edit is
+  safely copied into `saved_graphs/`? Asked, not yet answered.
 - **New this session:** the cross-engine North Star wording treats UE4's
   export path (PNGs + manual in-editor assembly) as a lesser tier, not a
   real target — Grayson said "sounds good" generally but never explicitly
@@ -204,6 +148,11 @@ confirmed he actually used it yet (see Open questions).
   possibly the specific interaction between `voronoi` port 2 (per-cell
   random) and `blend`, since `sf03`'s chips use voronoi where w03's fixed
   case used a plain perlin mask.
+- **New this session:** `examples/g01-natural-stone/` (a `.ptex` + `.mmcr`)
+  appeared untracked during this session, not something this session
+  created. Likely Grayson saved something himself in the GUI separately
+  from the bricks work; ask at next pickup whether it should be tracked or
+  was just a scratch save.
 - Still open, unchanged: is `.mcp.json` the right long-term wiring, or
   should it fold into `project-setup`'s standard kit? Not decided.
 - Still open, unchanged: should `render_preview` get documented in
@@ -215,6 +164,33 @@ confirmed he actually used it yet (see Open questions).
   available; two parked-not-fixed overlay-builder findings from a much
   earlier session (staleness marker, `_append_autoload`'s first-occurrence
   match, both verified low-priority).
+
+## 🗂️ Changed this session (Grayson's saved_graphs/ round-trip: rename + moss)
+
+- Branch: `main`. New: `saved_graphs/bricks_grayson_edit.ptex` (Grayson's
+  hand-edited bricks variant, renamed/reorganized, with a moss-in-crevices
+  layer added). Not committed yet, part of this wrap-up's commit. No plan
+  doc, no worktree; direct authoring work following this project's
+  established cookbook workflow, plus a throwaway one-off script (moved to
+  the session scratchpad afterward, not part of the repo) that did the
+  rename/reposition/moss-node insertion programmatically rather than by
+  hand-editing 500+ lines of JSON.
+- Decisions (+ why): established `saved_graphs/` as the new home for
+  Grayson's own tweaked graphs, distinct from `quality/`'s Claude-authored
+  cookbook recipes, because his first save landed inside the pristine
+  `z-Git\material-maker` checkout (which this project's own conventions say
+  not to modify) rather than anywhere version-controlled. Did the rename +
+  reposition + moss edit file-side in one pass rather than splitting moss
+  into a live-mode session, because renaming/repositioning are impossible
+  in live mode as it exists today (see the new H/I/J backlog items) and
+  doing the moss addition in a separate tool from the rename would have
+  meant two disjointed passes instead of one coherent one. Verified the
+  moss threshold empirically rather than trusting the first guess: the
+  first pass produced zero visible moss, diagnosed by temporarily rerouting
+  the graph to render `MossMask` in isolation (came back solid black),
+  measuring the real value range of the underlying `SurfaceDetailMask` via
+  a pixel histogram, and retuning the gradient thresholds to match reality
+  instead of the assumed range.
 
 ## 🗂️ Changed this session (Unity export proven, render.py --target fix)
 
@@ -644,6 +620,77 @@ that's where their full detail lives now.)
 ---
 
 ## 🕓 Session log
+
+### 2026-08-28 (even later) — saved_graphs/ round-trip: version control, rename, moss
+- Continuation of the same session, after the Unity/--target work below was
+  pushed. Grayson had tweaked `bricks.ptex` live in the GUI window launched
+  at the end of the previous thread and asked, in one rambling but clear
+  message, for four things: version control the change, a screenshot,
+  organized/labeled controls, and moss in the crevices.
+- Checked the upstream `z-Git\material-maker` checkout: Grayson's Ctrl+S
+  had saved directly into it (`git status` showed a real diff), exactly
+  the "pristine, don't modify" file this project's CLAUDE.md warns about.
+  Copied the edit out to a new `saved_graphs/` folder rather than editing
+  in place, establishing it as the convention for Grayson's own saved work
+  going forward.
+- Screenshot: tried computer-use directly. `request_access(["Material
+  Maker"])` granted at full tier (per `computer-use-tiers`, a native app's
+  own window, not the taskbar surface, so full tier was expected), but the
+  window itself never appeared in a screenshot. Diagnosed properly rather
+  than guessing: `open_application` failed (the running process was
+  launched directly by path, not through the Steam-registered app entry
+  the grant matched), then found via a PowerShell `Get-Process`/Win32 check
+  that the window was minimized (`IsIconic: True`) at an off-screen
+  position. Restored and foregrounded it via `ShowWindow`/
+  `SetForegroundWindow`, but a `computer_batch` key press then errored
+  "Godot_v4.7.1-stable_win64 is not in the allowed applications", proving
+  the raw process is a different identity than the granted Steam-app entry
+  no matter what state it's in. Tried `request_access` again with three
+  plausible raw-process names; all came back "not installed" (the request
+  wasn't even shown to Grayson). Recognized this as the tiers skill's
+  genuinely-blocked case, not a "try harder" one, and handed the actual
+  screenshot to Grayson to take himself.
+- Read the saved graph directly (17 nodes) rather than guessing at what to
+  rename: traced every connection back through `describe_node('material')`
+  and `describe_node('blend')` to get the real input port names/order
+  (`albedo_tex`/`metallic_tex`/`roughness_tex`/`normal_tex`/`ao_tex`/
+  `depth_tex`, `blend`'s `s1`/`s2`/`a` mask ports), and checked
+  `blend_type`'s enum values directly rather than assuming what mode 7
+  meant (it's "Burn"). Built a full role map for all 16 top-level nodes
+  from that (e.g. `colorize_2` → `BrickMortarMask`, `blend_1` →
+  `BrickColorVariationMask`) before touching anything.
+- Grayson clarified he wanted the offline/file-side path, not live
+  injection, after asking a genuine "how does this actually work"
+  question. Answered honestly rather than picking one silently: explained
+  both mechanisms, and surfaced that live mode currently can't rename or
+  reposition existing nodes at all (only add/wire/set-params), which ruled
+  it out for the rename half regardless of preference.
+- Wrote a one-off Python script (not part of the repo, moved to the
+  session scratchpad after use) to apply the rename map, add the moss
+  nodes/connections, and recompute node positions by topological depth,
+  rather than hand-editing ~500 lines of JSON where a missed connection
+  reference would silently break the graph.
+- First moss render came back with zero visible moss. Didn't assume the
+  wiring was wrong; diagnosed it properly (`systematic-debugging` in
+  spirit): rerouted the graph to output `MossMask` directly as albedo,
+  confirmed it was solid black, then rendered `SurfaceDetailMask` (the
+  mask's own input) the same way and histogrammed the PNG by hand (no
+  numpy in the venv, used PIL's histogram directly) to find its real value
+  range (40-231 of 255, not the 0-40 range the first threshold assumed).
+  Retuned the gradient thresholds to match, re-rendered, moss appeared
+  correctly in the crevices on the second attempt.
+- Verified in both the flat albedo and a real `render_preview` 3D pass
+  (sphere/cube/cutaway under lighting), per this project's own standing
+  rule to judge relief/detail in 3D, not the flat swatch. Sent both to
+  Grayson via `SendUserFile`, not just described.
+- Grayson confirmed it looked good, then asked directly what should improve
+  about the MCP based on everything this session surfaced. Answered with
+  three concrete, session-evidenced gaps (not a speculative wishlist): no
+  single-node-output rendering tool, `live_apply` can't rename/reposition,
+  no way to load an existing `.ptex` into a live session. Recommended the
+  first as smallest/highest-value. Grayson asked to log all three as
+  backlog rather than build any of them now; added as items H/I/J in Next
+  concrete step.
 
 ### 2026-08-28 (late night) — Unity export proven, render.py --target CLI bug found and fixed
 - Picked up via `pickup`; no drift, `main` matched the wood/stone session's
