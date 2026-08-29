@@ -1,15 +1,37 @@
 # 🧭 Session Handoff — Tool-MaterialMaker-MCP
 
-_Last updated: 2026-08-28 (later still) CT (America/Chicago)_
+_Last updated: 2026-08-29 CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**This session picked up via `pickup`, did two quick housekeeping fixes
-Grayson asked for, then built backlog item H (and part of I) end to end.**
-Committed as `b85a55f` (housekeeping) and `f891fbb` (the feature), both
-pushed to `origin/main`.
+**This session ran a full pre-release audit ahead of Grayson recruiting
+external alpha testers, then a 6-lens adversarial teardown, then fixed the
+documentation-accuracy findings from both.** No feature work. Test suite
+confirmed live at 207 passed / 9 deselected (matches this doc's existing
+216-total figure). A code review across `src/mm_mcp/*.py` +
+`addons/mm_live/live_server.gd` found 10 verified correctness bugs, none
+fixed yet — full list in Heads-up below so it isn't lost. A docs audit and
+the teardown both independently found NORTH_STAR.md and PLAN.md describing
+the fully-shipped Phase 5 live-control as "not built," and README.md
+contradicting its own quality score (said "11 of 15" in the alpha warning;
+the real number is 15/15, 11 was the ship gate). The teardown's headline
+verdict: keep the core (Phases 0-3, the `quality/` harness) almost exactly
+as-is; refactor live-control (sound design, real bugs, unproven real-world
+load — 39% of commits and 49% of test lines for a workflow used once for
+real, and bypassed that one time); refactor the docs; kill `graph.py`'s
+dead `Graph` class and the unused `list_node_types` tool. Full teardown
+delivered to Grayson as a file via `SendUserFile`, not committed to this
+repo. Fixed every concrete false/stale doc claim the teardown found
+(README, NORTH_STAR.md, PLAN.md, AUTHORING.md, `.env.example`, STATUS.md's
+internal Phase 5 table disagreement); committed `1fb0d45`, pushed this
+session.
+
+**Prior session, for context:** picked up via `pickup`, did two quick
+housekeeping fixes Grayson asked for, then built backlog item H (and part
+of I) end to end. Committed as `b85a55f` (housekeeping) and `f891fbb` (the
+feature), both pushed to `origin/main`.
 
 **Housekeeping:** reverted the upstream `z-Git\material-maker` checkout's
 `bricks.ptex` back to pristine now that Grayson's real edit is safely
@@ -51,13 +73,36 @@ branch. Zero leftover Godot processes after the integration runs.
 
 ## 📌 Where we stopped
 
-Grayson asked to push and wrap up right after the feature landed and the
-report was given. Nothing left mid-task; both commits are pushed and
-`origin/main` is in sync.
+Doc-accuracy fixes are committed (`1fb0d45`) and pushed this session,
+`origin/main` in sync. Neither remaining fix option — the two worst
+live-control correctness bugs, or the HANDOFF.md baton-hygiene cleanup this
+doc's own growth pattern was flagged for — has been started. Nothing left
+mid-task.
 
 ## ▶️ Next concrete step
 
-**Pick a direction, nothing is blocking:**
+**Two live decision points from this session, likely the actual next pick:**
+- **K. Fix the two worst live-control correctness bugs.** `live_render_node_output`
+  (`server.py`) never checks whether restoring the original wiring after a
+  preview succeeded — a failed restore reports success while the live graph
+  stays wired to the temporary preview connection. `live_apply` (`server.py`)
+  only catches `(KeyError, TypeError)` from op handlers, so a malformed op
+  (e.g. a list where a parameters dict is expected) raises an uncaught
+  `AttributeError` and discards the batch's already-succeeded results. Full
+  list of all 10 findings from today's code review is in Heads-up below.
+- **L. Adopt a HANDOFF.md trim/archive convention.** This doc is 1640+ lines /
+  110KB+ after 4 calendar days with no cap or archiving mechanism — flagged
+  by today's teardown (Maintainer lens) as a real, growing pickup cost. No
+  convention decided yet; candidates: fold session-log entries past some age
+  into a single dated summary, keep Heads-up pruned to current facts only.
+- **M. Decide whether to keep growing live-control's mutation surface before
+  it gets more real (non-demo) use.** The teardown's Economist lens flagged
+  it as the single biggest sunk-cost-vs-evidenced-value mismatch in the
+  project: 39% of commits, 49% of test lines, one real hands-on verification
+  session, and the one time Grayson did real keepable work (the moss-edit),
+  live mode was bypassed because it can't rename/reposition nodes.
+
+**Older backlog, unchanged, still open:**
 - **A. Unreal UE5 export verification** — the natural continuation of a
   prior session's work. Unity is proven end to end; Unreal's export
   mechanism is confirmed real at the file-generation level (same CLI, just
@@ -102,6 +147,11 @@ report was given. Nothing left mid-task; both commits are pushed and
 
 ## ❓ Open questions
 
+- **New this session:** whether to keep expanding live-control's mutation
+  surface before it gets more real (non-demo) use — see backlog item M above.
+- **Still open, flagged a third session running now:** `docs/images/contact-sheet-wood-stone.png`
+  is still untracked. Just decide next time `docs/images` is touched instead
+  of re-flagging it again.
 - **New this session:** the cross-engine North Star wording treats UE4's
   export path (PNGs + manual in-editor assembly) as a lesser tier, not a
   real target — Grayson said "sounds good" generally but never explicitly
@@ -114,11 +164,6 @@ report was given. Nothing left mid-task; both commits are pushed and
   possibly the specific interaction between `voronoi` port 2 (per-cell
   random) and `blend`, since `sf03`'s chips use voronoi where w03's fixed
   case used a plain perlin mask.
-- **Still open, new this session:** `docs/images/contact-sheet-wood-stone.png`
-  is untracked in the repo (flagged at this session's pickup, not addressed
-  — Grayson only asked about the bricks/natural-stone housekeeping and
-  building item H). Decide whether to track or delete it, next time
-  `docs/images` is touched.
 - Still open, unchanged: is `.mcp.json` the right long-term wiring, or
   should it fold into `project-setup`'s standard kit? Not decided.
 - Still open, unchanged: should `render_preview` get documented in
@@ -130,6 +175,34 @@ report was given. Nothing left mid-task; both commits are pushed and
   available; two parked-not-fixed overlay-builder findings from a much
   earlier session (staleness marker, `_append_autoload`'s first-occurrence
   match, both verified low-priority).
+
+## 🗂️ Changed this session (pre-release audit, teardown, doc-accuracy fixes)
+
+- Branch: `main`. Committed and pushed: `1fb0d45`. Changed:
+  `README.md`, `docs/NORTH_STAR.md`, `docs/PLAN.md`, `docs/AUTHORING.md`,
+  `.env.example`, `STATUS.md`. No `src/` code touched this session. No plan
+  doc, no worktree — a mechanical accuracy pass following the teardown's own
+  "one change worth making first" recommendation, not a design change.
+- Also wrote and pushed `_agent-commons\log\2026-08-28-claude-code-materialmaker-mcp-teardown-and-doc-fixes.md`
+  (scoped commit, not `Push-Repo`, since the commons repo had 34 other
+  agents' pending log entries and an unrelated modified `dashboard/index.html`
+  sitting uncommitted — staged and pushed only this session's own file).
+- Decisions (+ why): fixed the README self-contradiction ("11 of 15" in the
+  alpha warning vs. the real 15/15 two hundred lines later) by keeping both
+  numbers but labeling which is the live score and which is the ship gate,
+  rather than deleting one — both facts are true and useful, they were just
+  unlabeled. Promoted `overlay.py` from 🔌 to ✅ in STATUS.md's Components
+  table (reconciling its disagreement with the Phases table's Phase-5 ✅)
+  because it's a proven hard dependency already exercised in the verified
+  hands-on session, matching this project's own convention of using ✅ with
+  caveats noted inline (like `render.py`'s Unreal-unverified note) rather
+  than reserving ✅ for zero-known-issues — the two new gaps the teardown
+  found in it (no rollback on a failed rebuild, staleness check ignores the
+  checkout's own content) are recorded inline as known, low-priority instead
+  of blocking the checkmark. Did not fold today's 10 code-review findings
+  into HANDOFF.md's Heads-up as full detail during the pass itself — that's
+  done now at wrap-up instead (see below), since the fix pass was scoped to
+  docs only and the findings needed the wrap-up's fuller space anyway.
 
 ## 🗂️ Changed this session (render_node_output + live_render_node_output, backlog item H)
 
@@ -387,6 +460,47 @@ that's where their full detail lives now.)
 
 ## ⚠️ Heads-up for the next agent
 
+- **Today's 8-angle code review found 10 verified correctness bugs, NONE
+  fixed yet.** Recorded here so they aren't tribal knowledge living only in
+  a conversation transcript (a teardown finding this same session called
+  out as a real risk). Ranked most severe first:
+  1. `server.py` (`live_render_node_output`, ~line 315): the restore-original-wiring
+     call after a preview isn't checked for success — a failed restore
+     reports overall success while the live graph stays wired to the
+     temporary preview connection. CONFIRMED.
+  2. `server.py` (`live_apply`, ~line 268): only catches `(KeyError, TypeError)`
+     from op handlers; a malformed op (e.g. a list where a parameters dict
+     is expected) raises an uncaught `AttributeError`, discarding the
+     batch's already-succeeded results. CONFIRMED.
+  3. `server.py` (`main`, ~line 403): no atexit/signal handler ever calls
+     `_live_session.close()`, so a launched Godot process is orphaned if the
+     MCP server exits uncleanly. CONFIRMED.
+  4. `validator.py` (~line 62): connection port-range validation only checks
+     the upper bound, never rejects a negative port index. CONFIRMED.
+  5. `overlay.py` (`ensure_overlay`, ~line 151): the rebuild (`rmtree` then
+     `copytree`) has no rollback if the copy fails partway. CONFIRMED.
+  6. `live.py` (`render`, ~line 294): always returns an empty `log_tail` on
+     failure, contradicting `live_render_node_output`'s docstring claim that
+     it mirrors the batch path's diagnostics. CONFIRMED.
+  7. `live.py` (mutation ops, ~line 170): `add_node`/`connect_nodes`/`set_param`/
+     `disconnect_nodes` default to a 5s socket timeout vs. `render`'s 60s,
+     risking a spurious timeout right after a fresh launch (shader
+     warmup/compile). PLAUSIBLE.
+  8. `addons/mm_live/live_server.gd` (`_cmd_clear_graph`, ~line 227): only
+     checks `graph_edit == null`, unlike every sibling handler which also
+     checks `graph_edit.generator == null`. CONFIRMED.
+  9. `live.py` (`_launch_overlay`, ~line 359): the launched process's log
+     file handle is never closed — leaks one fd per launch/relaunch.
+     CONFIRMED.
+  10. `catalog_builder.py` (~line 74): `generic_size = data.get(...) or 1`
+      would silently coerce an explicit `generic_size: 0` to `1` — not
+      triggered by any currently-bundled `.mmg`, dormant until one appears.
+      PLAUSIBLE.
+  The full teardown also found real cleanup/duplication issues (a dead
+  `Graph` class in `graph.py`, three byte-for-byte-duplicated helper pairs,
+  an unused `list_node_types` tool) — see the delivered teardown file for
+  those; they were ranked below correctness bugs and not re-verified
+  individually here.
 - **`ensure_overlay`'s rebuild path now clears read-only file attributes
   before `rmtree` -- fixed this session, real and load-bearing, not
   theoretical.** The overlay is a full copy of the real git checkout at
@@ -624,6 +738,53 @@ that's where their full detail lives now.)
 ---
 
 ## 🕓 Session log
+
+### 2026-08-29 — pre-release audit, code review, adversarial teardown, doc-accuracy fixes
+- Grayson asked whether the project was ready to post for external alpha
+  testers. Ran a live test-suite check (207 passed / 9 deselected, matched
+  the existing 216 figure, no drift), then an 8-angle code review across
+  `src/mm_mcp/*.py` + `addons/mm_live/live_server.gd` (finder agents +
+  1-vote verification per candidate) via `code-review` at high effort, then
+  a docs-vs-code coherence audit (README, NORTH_STAR.md, PLAN.md, STATUS.md,
+  AUTHORING.md, CLAUDE.md against the real code). Reported 10 verified
+  correctness findings — see Heads-up above for the full list, none fixed
+  yet.
+- Answer to the readiness question: ready for a small, hand-picked Windows
+  alpha test, not a public/broad post — cross-platform is completely
+  unverified, setup is nontrivial, no PyPI, zero external users so far. Full
+  reasoning given in chat.
+- Grayson then ran `/teardown`: a 6-lens adversarial review (Architect,
+  Maintainer+6mo, Red team, Newcomer, Economist, Simplifier), each an
+  independent agent with a steelman-then-attack structure, informed by
+  fresh evidence gathered directly (git log, directory sizes, tracked vs.
+  gitignored footprint, commit-date histogram). Headline: the core (Phases
+  0-3, the `quality/` harness) is close to what a from-scratch rebuild would
+  produce; live-control absorbed 39% of commits and 49% of test lines for a
+  workflow used once for real and bypassed that once; the project's own
+  vision docs (NORTH_STAR.md, PLAN.md) misdescribed the shipped live-control
+  feature as unbuilt; STATUS.md's own two tables disagreed with each other
+  about it. Full report (Rebuild Question, all 6 lenses, verdict table, v2
+  sketch, one-change recommendation) delivered to Grayson as a file via
+  `SendUserFile` — not committed to this repo, since it's a point-in-time
+  review artifact, not project documentation.
+- Grayson said to trust my judgment and start whichever fix made sense.
+  Picked the documentation-accuracy pass over the two alternatives (fixing
+  the two worst live-control bugs, or a HANDOFF.md baton cleanup) as the
+  highest clarity-per-hour move and the one most directly tied to the
+  original readiness question — a false doc claim misleads every reader
+  today, the code bugs need specific conditions to surface. Fixed every
+  concrete false/stale claim the teardown found (see the Changed-this-session
+  block above for the full list and reasoning). Verified: fast suite still
+  207 passed after the edits (docs/config only). Committed `1fb0d45`.
+- Wrote and pushed `_agent-commons\log\2026-08-28-claude-code-materialmaker-mcp-teardown-and-doc-fixes.md`,
+  scoped to just that file (see commit note above).
+- Grayson then ran `/wrap-up + push`. Pushed `1fb0d45` directly (`git push`,
+  local session with the real working tree — the `github-push` clone-and-
+  reapply flow doesn't apply here). Confirmed `origin/main` in sync. Updated
+  project memory (`phase5-live-control-design.md`, `public-alpha-status.md`,
+  a new `teardown-2026-08-29-audit-findings.md`, `MEMORY.md` index) and this
+  handoff doc's top sections + Heads-up + a new "Changed this session" block,
+  per this skill's own convention.
 
 ### 2026-08-28 (later still) — render_node_output + live_render_node_output, backlog item H
 - Picked up via `pickup`; no drift, `main` matched the prior session's
