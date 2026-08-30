@@ -19,6 +19,32 @@ doc's window.
 
 ## Archived "Changed this session" write-ups
 
+## 🗂️ Changed this session (remaining code-review findings + teardown cleanup)
+
+- Branch: `main`. Committed and **pushed**: `c65cc83` (6 fixes + 2 documented
+  non-changes), `13c7490` (kill dead `Graph` class), `9726a59` (dedupe the
+  PNG-snapshot loop), `19427a7` (share the Godot retry loop + log-tail across
+  render/preview), `f436300` (extract `_first_albedo`). No plan doc, no
+  worktree — scoped fixes plus behavior-preserving refactors, each test-first
+  or covered by existing tests, matching this project's precedent for
+  well-scoped work this size.
+- Decisions (+ why): took the advisor's split-by-verifiability framing. Did
+  the mechanical fixes (#4 negative port, #9 fd leak, #3 atexit) and the
+  judgment calls (#7 30s mutation timeout, #5 overlay cleanup, #6 log_tail
+  docstring), but ruled out #8 and #10 as non-bugs with primary-source
+  reasons rather than forcing 8 changes for an 8-item list. #8:
+  `new_material()` creates the generator (confirmed in `graph_edit.gd:690-724`),
+  so the guard is correct as-is. #10: an explicit `generic_size: 0` would
+  build a broken input-less node, so the `or 1` coercion is the safer
+  behavior. On cleanup, killed the dead `Graph` class (only self-tested,
+  teardown Kill verdict) and deduped the three repeated helper snippets the
+  teardown flagged into `_snapshot_pngs` / `_run_godot`+`_log_tail` /
+  `_first_albedo`. The retry/timeout behavior had NO coverage before, so that
+  dedup added 4 characterization tests that also fill the gap. Process note: a
+  `git add -A` slip swept the untracked contact-sheet PNG into `c65cc83`;
+  caught and removed via `git rm --cached` + amend (both amends local,
+  pre-push). Fast suite: 226 passed (up from 214), 10 deselected.
+
 ## 🗂️ Changed this session (backlog item I: reposition_node, rename ruled out)
 
 - Branch: `main`. Committed and pushed: `352317a`. Changed:
@@ -358,6 +384,53 @@ doc's window.
 ---
 
 ## Archived session log
+
+### 2026-08-29 — pre-release audit, code review, adversarial teardown, doc-accuracy fixes
+- Grayson asked whether the project was ready to post for external alpha
+  testers. Ran a live test-suite check (207 passed / 9 deselected, matched
+  the existing 216 figure, no drift), then an 8-angle code review across
+  `src/mm_mcp/*.py` + `addons/mm_live/live_server.gd` (finder agents +
+  1-vote verification per candidate) via `code-review` at high effort, then
+  a docs-vs-code coherence audit (README, NORTH_STAR.md, PLAN.md, STATUS.md,
+  AUTHORING.md, CLAUDE.md against the real code). Reported 10 verified
+  correctness findings — see Heads-up above for the full list, none fixed
+  yet.
+- Answer to the readiness question: ready for a small, hand-picked Windows
+  alpha test, not a public/broad post — cross-platform is completely
+  unverified, setup is nontrivial, no PyPI, zero external users so far. Full
+  reasoning given in chat.
+- Grayson then ran `/teardown`: a 6-lens adversarial review (Architect,
+  Maintainer+6mo, Red team, Newcomer, Economist, Simplifier), each an
+  independent agent with a steelman-then-attack structure, informed by
+  fresh evidence gathered directly (git log, directory sizes, tracked vs.
+  gitignored footprint, commit-date histogram). Headline: the core (Phases
+  0-3, the `quality/` harness) is close to what a from-scratch rebuild would
+  produce; live-control absorbed 39% of commits and 49% of test lines for a
+  workflow used once for real and bypassed that once; the project's own
+  vision docs (NORTH_STAR.md, PLAN.md) misdescribed the shipped live-control
+  feature as unbuilt; STATUS.md's own two tables disagreed with each other
+  about it. Full report (Rebuild Question, all 6 lenses, verdict table, v2
+  sketch, one-change recommendation) delivered to Grayson as a file via
+  `SendUserFile` — not committed to this repo, since it's a point-in-time
+  review artifact, not project documentation.
+- Grayson said to trust my judgment and start whichever fix made sense.
+  Picked the documentation-accuracy pass over the two alternatives (fixing
+  the two worst live-control bugs, or a HANDOFF.md baton cleanup) as the
+  highest clarity-per-hour move and the one most directly tied to the
+  original readiness question — a false doc claim misleads every reader
+  today, the code bugs need specific conditions to surface. Fixed every
+  concrete false/stale claim the teardown found (see the Changed-this-session
+  block above for the full list and reasoning). Verified: fast suite still
+  207 passed after the edits (docs/config only). Committed `1fb0d45`.
+- Wrote and pushed `_agent-commons\log\2026-08-28-claude-code-materialmaker-mcp-teardown-and-doc-fixes.md`,
+  scoped to just that file (see commit note above).
+- Grayson then ran `/wrap-up + push`. Pushed `1fb0d45` directly (`git push`,
+  local session with the real working tree — the `github-push` clone-and-
+  reapply flow doesn't apply here). Confirmed `origin/main` in sync. Updated
+  project memory (`phase5-live-control-design.md`, `public-alpha-status.md`,
+  a new `teardown-2026-08-29-audit-findings.md`, `MEMORY.md` index) and this
+  handoff doc's top sections + Heads-up + a new "Changed this session" block,
+  per this skill's own convention.
 
 ### 2026-08-28 (later still) — render_node_output + live_render_node_output, backlog item H
 - Picked up via `pickup`; no drift, `main` matched the prior session's
