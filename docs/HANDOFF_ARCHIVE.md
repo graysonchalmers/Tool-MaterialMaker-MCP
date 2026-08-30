@@ -19,6 +19,38 @@ doc's window.
 
 ## Archived "Changed this session" write-ups
 
+## 🗂️ Changed this session (render-timeout process-tree kill fix)
+
+- Branch: **`claude/confident-tesla-ee9400`** (git worktree), committed
+  `cd1fcb9`, **merged to `main` this session**. Changed: `src/mm_mcp/render.py`
+  (new `_kill_tree` helper; `_run_godot` rebuilt on `subprocess.Popen` +
+  `communicate()`), `src/mm_mcp/live.py` (`_terminate` delegates to the shared
+  `_kill_tree`), `tests/test_render.py` (timeout test asserts the
+  `taskkill /F /T /PID` argv fires; `_kill_tree` no-pid + swallow-failure cases;
+  a hardening test that the bounded post-kill reap can't hang; retry tests
+  re-patched onto `Popen`), `tests/test_live.py` (`_terminate` tests re-patched
+  onto `render.subprocess.run`). Also updated the `render-orphan-contention`
+  project memory + `MEMORY.md` index (they said the bug was still live).
+- Decisions (+ why): the fix requires killing the tree **while the launcher is
+  still alive** — `subprocess.run` kills its direct child before re-raising, and
+  Windows `taskkill /T` walks live parent-PID links, so a dead/recycled PID
+  kills nothing. That forced the move from `subprocess.run` to `Popen` +
+  `communicate()` (which also keeps the concurrent pipe-drain that stops a
+  chatty render log from deadlocking the child). `_kill_tree` lives in
+  `render.py` and `live.py` imports it (live already depends on render, never
+  the reverse — avoids a circular import), keeping the memory's
+  "all helper pairs deduped" invariant true rather than adding a 4th copy of
+  the taskkill block. Hardened the post-kill reap with `communicate(timeout=10)`
+  + swallow, so if taskkill fails AND a grandchild keeps the pipe open, the reap
+  can't block forever. Verified against real Godot (timeout → `_GodotTimeout`,
+  zero leftover Godot, subsequent render OK) and directly observed the
+  grandchild + ~6MB single-instance-stuck process live via `tasklist`. A
+  `/code-review` pass found 2 PLAUSIBLE findings, both ruled `no_change_needed`
+  with primary-source reasons. Fast suite: 232 passed, 21 deselected. Wrote
+  `_agent-commons\log\2026-08-29-claude-code-render-timeout-killtree-fix.md`.
+  Landed via a real merge with the concurrent debug-swatch wrap-up (`e6eb4c0`),
+  which had independently trimmed the same two baton entries.
+
 ## 🗂️ Changed this session (debug diagnostic swatch gallery, both phases)
 
 - Branch: `main`. Committed (local, then pushed at wrap): `a0d7674` (phase-1
@@ -442,6 +474,33 @@ doc's window.
 ---
 
 ## Archived session log
+
+### 2026-08-29 (leather cookbook) — new leather category, 6 materials, 2 reusable levers
+- Picked up via `pickup` (clean, `main` at `969d420`, in sync). Grayson chose
+  next-move #1: author a new cookbook category. Picked leather (backlog B).
+- Built 6 leather recipes in `quality/cookbook_leather.py`, each a distinct
+  lever on the `crocodile_skin` donor. Followed the visual-iteration workflow
+  throughout: render flat + 3D `render_preview`, `SendUserFile` the previews
+  every pass, judge relief in 3D, ask before continuing.
+- Reworked three from honest misses rather than shipping them: l02's first
+  wear mask made cow-hide blobs (fixed with finer/softer/lower-contrast perlin
+  + threshold); l04's bronze was landing on the thin voronoi borders not the
+  scale bodies (albedo-polarity flip); l05's intended `shape`+`tiler` stitch
+  dashes failed (no visible dashes; isolating the tiler output timed the
+  renderer out at 180s) so it became a `pattern`-sine quilt.
+- Grayson then queued: push, tweak l04, add a 5th "stitched". Did all three,
+  plus chased real stitches into l06. l06's `pattern` Square×Square grid works
+  but its polarity is inside-out (dash rectangles are the pattern's LOW cells);
+  one reversed sharpen colorize fixed colour + flattened field at once. l06
+  dashes render raised and cream in 3D (bold, full-grid, not fine seam-lines).
+- Two general levers written into `docs/AUTHORING.md` as the real keep-value:
+  `_dome_the_cells` (voronoi-port-0 height-ramp flip; Grayson caught the
+  inside-out grain in 3D) and the stitch-generator hunt (shape+tiler trap vs.
+  pattern polarity). Captured Grayson's new "debug materials / visual
+  smoke-test swatches" idea to `_agent-commons/ideas/`.
+- 3 commits pushed (`5f1a27b`, `6915fc8`, `f55359a`); `origin/main` in sync.
+  Wrote `_agent-commons\log\2026-08-29-claude-code-materialmaker-mcp-leather-cookbook.md`.
+  No integration/gate changes (informal cookbook growth).
 
 ### 2026-08-29 (cleanup) — resolved the remaining code-review findings, then 4 teardown cleanup passes
 - Picked up via `pickup`; no drift, `main` at the prior session's `1368115`,

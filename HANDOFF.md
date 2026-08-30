@@ -1,44 +1,36 @@
 # 🧭 Session Handoff — Tool-MaterialMaker-MCP
 
-_Last updated: 2026-08-30 (Phase 4 hardening) CT (America/Chicago)_
+_Last updated: 2026-08-30 (v0.4.0 release + gallery) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**This session closed out Phase 4 hardening (path bounding + `inspect_project` +
-CI + release-please), prompted by a compare against
-`dcc-mcp/dcc-mcp-material-maker`.** That other project is a locked-down headless
-export/inspection adapter, a different product from ours (it never authors
-graphs); we borrowed its packaging/sandboxing rigor without changing our
-round-trip North Star. Three items landed via 10 TDD tasks (subagent-driven,
-whole-branch review clean, merged `d23b235`): (1) **opt-in `MM_ALLOWED_ROOTS`
-path bounding** (`src/mm_mcp/paths.py`) wired into `save_graph` (now returns a
-`{"ok","path"}` dict, not a bare str), `load_example`, and the 3 render tools,
-plus an always-on `../` traversal guard; unset = unrestricted, so daily use is
-unchanged, and `--check` reports the state. (2) **`inspect_project`** batch tool
-#10 (`src/mm_mcp/inspect.py`). (3) **CI** `.github/workflows/test.yml` and
-**release-please**, with `__version__` single-sourced via `importlib.metadata`.
-`main` is **pushed and in sync** (`origin/main` = `d23b235`); the **tests CI
-passed on its first real Windows run**. Older write-ups/log beyond the cap live
-in [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).
+**v0.4.0 is released.** This session unblocked and completed the release that
+Phase 4 hardening had set up, and enlarged the README gallery. The
+release-please blocker from last session (the repo's "Allow GitHub Actions to
+create and approve pull requests" toggle was off) is resolved: Grayson flipped
+it, I re-ran the failed workflow, it opened **PR #1: chore(main): release
+0.4.0**, and Grayson authorized the merge. release-please then tagged
+**v0.4.0**, cut the GitHub Release (now Latest), and attached the built wheel +
+sdist (`mm_mcp-0.4.0-py3-none-any.whl`, `mm_mcp-0.4.0.tar.gz`). The whole
+release loop that had been stuck now works end to end, and future release runs
+will open their PRs automatically. `main` is at `c2aa170`, clean and in sync.
+Older write-ups/log beyond the cap live in
+[docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).
 
 ## 📌 Where we stopped
 
-Everything is landed and pushed. The one open thread: **release-please's first
-run failed at the final step only** ("GitHub Actions is not permitted to create
-or approve pull requests"). It got all the way to creating the release branch and
-committing the CHANGELOG + version bump to **0.4.0**; it just could not open the
-PR because the repo setting is still off. Grayson is handling that later.
+Nothing in flight. v0.4.0 is out, the gallery is live, working tree is clean,
+`main` in sync at `c2aa170`. A natural stopping point.
 
 ## ▶️ Next concrete step
 
-**Enable the one GitHub setting, then re-run release-please.** Repo → Settings →
-Actions → General → Workflow permissions → check "Allow GitHub Actions to create
-and approve pull requests" → Save. Then `gh run rerun <release-please run id>`
-(or push any commit) opens the 0.4.0 release PR. The push credential also needed
-a one-time `gh auth refresh -s workflow` (workflow files are separately
-permissioned); that scope is now granted. Other follow-ups still open:
+**Pick from the backlog** (nothing is blocked). Good candidates, roughly in
+order of quick-win to deep-dive: a new cookbook category (glass / plastics /
+painted metal), true cobblestone via a voronoi-plate approach (backlog C), or
+the `sf03` circuit-board bleed-through bug (backlog D, one hypothesis already
+ruled out). Other follow-ups still open:
 - **More debug swatches** if wanted: blend-mask polarity, height-to-normal
   convention, colorize/ramp direction — same pattern, each tied to a real trap.
 - **More cookbook categories**: glass, plastics, painted metal still uncovered.
@@ -132,6 +124,29 @@ The older open backlog, unchanged:
   earlier session (staleness marker, `_append_autoload`'s first-occurrence
   match, both verified low-priority).
 
+## 🗂️ Changed this session (v0.4.0 release unblock + README gallery resize)
+
+- Branch: `main`. Commit `8f7f515` (gallery), plus the release merge `c2aa170` +
+  release-please's `35519b5` (CHANGELOG + version bump), all **pushed**. New
+  tracked file from release-please: `CHANGELOG.md`; `pyproject.toml` bumped to
+  0.4.0. `README.md` gallery table changed from 4-col-with-captions to
+  2-col-no-captions (~2x larger images, same 8 materials/order).
+- Decisions (+ why): the release-please blocker was a **repo setting**, not a
+  code problem. Pushing files always worked; a GitHub Actions bot opening a PR
+  is gated by "Allow GitHub Actions to create and approve pull requests" (off by
+  default). release-please was the first bot-opens-a-PR action in the repo, so it
+  was the first to hit that wall. Grayson flipped it, I re-ran the failed run
+  (`gh run rerun 33298317643`) → PR #1 opened → merged with a **merge commit**
+  (`--merge`, what release-please needs to detect the release) → v0.4.0 tagged +
+  Release cut + wheel/sdist attached. Gallery went 2-col per Grayson's "bigger
+  images, don't care about titles"; showed him a PIL-rendered preview at GitHub's
+  real content width before pushing.
+- Honest caveat: a `tests` run on the PR branch (earlier commit) failed, but the
+  post-merge `tests` run on `main` passed (1m16s) and the release built clean;
+  the PR-branch run's logs were already purged so the cause wasn't recoverable.
+  Not blocking, revisit if it recurs on a future release PR. Wrote
+  `_agent-commons\log\2026-08-30-claude-code-mm-mcp-releaseplease-unblock-gallery.md`.
+
 ## 🗂️ Changed this session (Phase 4 hardening: path bounding, inspect_project, CI + release-please)
 
 - Branch: `phase4-hardening` (off `main`), 10 TDD tasks subagent-driven, merged
@@ -190,39 +205,7 @@ The older open backlog, unchanged:
   preview** through Grayson's Chrome (that card is NOT read from the repo file,
   it must be uploaded in the web UI). Verified the README images serve HTTP 200.
 
-## 🗂️ Changed this session (render-timeout process-tree kill fix)
-
-- Branch: **`claude/confident-tesla-ee9400`** (git worktree), committed
-  `cd1fcb9`, **merged to `main` this session**. Changed: `src/mm_mcp/render.py`
-  (new `_kill_tree` helper; `_run_godot` rebuilt on `subprocess.Popen` +
-  `communicate()`), `src/mm_mcp/live.py` (`_terminate` delegates to the shared
-  `_kill_tree`), `tests/test_render.py` (timeout test asserts the
-  `taskkill /F /T /PID` argv fires; `_kill_tree` no-pid + swallow-failure cases;
-  a hardening test that the bounded post-kill reap can't hang; retry tests
-  re-patched onto `Popen`), `tests/test_live.py` (`_terminate` tests re-patched
-  onto `render.subprocess.run`). Also updated the `render-orphan-contention`
-  project memory + `MEMORY.md` index (they said the bug was still live).
-- Decisions (+ why): the fix requires killing the tree **while the launcher is
-  still alive** — `subprocess.run` kills its direct child before re-raising, and
-  Windows `taskkill /T` walks live parent-PID links, so a dead/recycled PID
-  kills nothing. That forced the move from `subprocess.run` to `Popen` +
-  `communicate()` (which also keeps the concurrent pipe-drain that stops a
-  chatty render log from deadlocking the child). `_kill_tree` lives in
-  `render.py` and `live.py` imports it (live already depends on render, never
-  the reverse — avoids a circular import), keeping the memory's
-  "all helper pairs deduped" invariant true rather than adding a 4th copy of
-  the taskkill block. Hardened the post-kill reap with `communicate(timeout=10)`
-  + swallow, so if taskkill fails AND a grandchild keeps the pipe open, the reap
-  can't block forever. Verified against real Godot (timeout → `_GodotTimeout`,
-  zero leftover Godot, subsequent render OK) and directly observed the
-  grandchild + ~6MB single-instance-stuck process live via `tasklist`. A
-  `/code-review` pass found 2 PLAUSIBLE findings, both ruled `no_change_needed`
-  with primary-source reasons. Fast suite: 232 passed, 21 deselected. Wrote
-  `_agent-commons\log\2026-08-29-claude-code-render-timeout-killtree-fix.md`.
-  Landed via a real merge with the concurrent debug-swatch wrap-up (`e6eb4c0`),
-  which had independently trimmed the same two baton entries.
-
-> 📦 **14 older "Changed this session" write-ups archived** (through
+> 📦 **15 older "Changed this session" write-ups archived** (through
 > 2026-08-29) -- the pre-release audit/teardown/doc-fix pass,
 > render_node_output/live_render_node_output (item H), saved_graphs/
 > round-trip, Unity export proof, wood/stone cookbooks, the overlay
@@ -544,6 +527,23 @@ The older open backlog, unchanged:
 > through the project's Phase 1-2 kickoff on 2026-08-25.
 
 
+### 2026-08-30 (v0.4.0 release + gallery) — unblocked release-please, shipped 0.4.0, enlarged README gallery
+- Picked up via `pickup` (clean `main` at `6b2a070`, in sync). Grayson chose
+  next-move #1: unblock release-please.
+- Confirmed the blocker was the repo's "Allow GitHub Actions to create and
+  approve pull requests" toggle (off by default). Explained pushing files (always
+  worked) vs. a bot opening a PR (gated). Grayson flipped it; re-ran the failed
+  run (`gh run rerun 33298317643`) → PR #1 opened.
+- Merged PR #1 with a merge commit (`--merge`, what release-please needs).
+  release-please tagged **v0.4.0**, cut the GitHub Release (Latest), attached the
+  built wheel + sdist. Post-merge `tests` on `main` green (1m16s); a PR-branch
+  `tests` run had failed but its logs were purged and main is green, so not
+  chased. `main` fast-forwarded to `c2aa170`.
+- Grayson then asked to enlarge the README gallery: went 4-col-with-captions →
+  2-col-no-captions (~2x larger images). Showed a PIL preview at GitHub's real
+  content width before pushing. Committed `8f7f515`, pushed.
+- Wrote `_agent-commons\log\2026-08-30-claude-code-mm-mcp-releaseplease-unblock-gallery.md`.
+
 ### 2026-08-30 (Phase 4 hardening) — path bounding + inspect_project + CI/release-please, from a project compare
 - Grayson asked to compare us against `github.com/dcc-mcp/dcc-mcp-material-maker`.
   Verdict: same name, different product (theirs is a locked-down headless
@@ -649,33 +649,6 @@ The older open backlog, unchanged:
   conflict.
 - Wrote `_agent-commons/log/2026-08-29-claude-code-materialmaker-mcp-debug-swatches.md`.
   3 commits pushed at wrap.
-
-### 2026-08-29 (leather cookbook) — new leather category, 6 materials, 2 reusable levers
-- Picked up via `pickup` (clean, `main` at `969d420`, in sync). Grayson chose
-  next-move #1: author a new cookbook category. Picked leather (backlog B).
-- Built 6 leather recipes in `quality/cookbook_leather.py`, each a distinct
-  lever on the `crocodile_skin` donor. Followed the visual-iteration workflow
-  throughout: render flat + 3D `render_preview`, `SendUserFile` the previews
-  every pass, judge relief in 3D, ask before continuing.
-- Reworked three from honest misses rather than shipping them: l02's first
-  wear mask made cow-hide blobs (fixed with finer/softer/lower-contrast perlin
-  + threshold); l04's bronze was landing on the thin voronoi borders not the
-  scale bodies (albedo-polarity flip); l05's intended `shape`+`tiler` stitch
-  dashes failed (no visible dashes; isolating the tiler output timed the
-  renderer out at 180s) so it became a `pattern`-sine quilt.
-- Grayson then queued: push, tweak l04, add a 5th "stitched". Did all three,
-  plus chased real stitches into l06. l06's `pattern` Square×Square grid works
-  but its polarity is inside-out (dash rectangles are the pattern's LOW cells);
-  one reversed sharpen colorize fixed colour + flattened field at once. l06
-  dashes render raised and cream in 3D (bold, full-grid, not fine seam-lines).
-- Two general levers written into `docs/AUTHORING.md` as the real keep-value:
-  `_dome_the_cells` (voronoi-port-0 height-ramp flip; Grayson caught the
-  inside-out grain in 3D) and the stitch-generator hunt (shape+tiler trap vs.
-  pattern polarity). Captured Grayson's new "debug materials / visual
-  smoke-test swatches" idea to `_agent-commons/ideas/`.
-- 3 commits pushed (`5f1a27b`, `6915fc8`, `f55359a`); `origin/main` in sync.
-  Wrote `_agent-commons\log\2026-08-29-claude-code-materialmaker-mcp-leather-cookbook.md`.
-  No integration/gate changes (informal cookbook growth).
 
 _(Older entries continue in [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).)_
 
