@@ -2,7 +2,11 @@ import os
 import pytest
 from mm_mcp import server
 from mm_mcp.config import load_config
-from mm_mcp.doctor import check_setup, all_ok
+from mm_mcp.doctor import check_setup, all_ok, Check
+
+# Test support imports (added for Task 4)
+from mm_mcp.doctor import check_setup as _check_setup
+from mm_mcp.config import load_config as _load_config
 
 
 def test_all_checks_pass_on_real_machine():
@@ -108,3 +112,19 @@ def test_tool_reraises_on_bad_config_not_cached(monkeypatch, tmp_path):
             server.list_node_types()
     finally:
         server._reset()
+
+
+def test_doctor_reports_allowed_roots_unset():
+    cfg = _load_config(overrides={"MM_ALLOWED_ROOTS": ""})
+    names = {c.name: c for c in _check_setup(cfg)}
+    assert "MM_ALLOWED_ROOTS" in names
+    c = names["MM_ALLOWED_ROOTS"]
+    assert c.ok is True
+    assert "unrestricted" in c.detail.lower()
+
+
+def test_doctor_reports_allowed_roots_set():
+    cfg = _load_config(overrides={"MM_ALLOWED_ROOTS": r"C:\a"})
+    c = {c.name: c for c in _check_setup(cfg)}["MM_ALLOWED_ROOTS"]
+    assert c.ok is True
+    assert r"C:\a" in c.detail
