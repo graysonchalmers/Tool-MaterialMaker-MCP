@@ -7,7 +7,7 @@ import threading
 import time
 from dataclasses import replace
 import pytest
-from mm_mcp import live
+from mm_mcp import live, render
 
 
 class _FakeLiveServer:
@@ -528,8 +528,10 @@ def test_mutation_ops_use_a_longer_default_timeout_than_read_ops():
 
 
 def test_terminate_kills_the_process_tree_via_taskkill_when_pid_is_available(monkeypatch):
+    # _terminate delegates the tree kill to render._kill_tree (shared), whose
+    # taskkill call goes through render's subprocess, not live's.
     calls = []
-    monkeypatch.setattr(live.subprocess, "run", lambda *a, **kw: calls.append(a[0]))
+    monkeypatch.setattr(render.subprocess, "run", lambda *a, **kw: calls.append(a[0]))
     process = _FakeProcess()
     process.pid = 4242
     live._terminate(process)
@@ -543,7 +545,7 @@ def test_terminate_skips_taskkill_without_a_real_pid(monkeypatch):
     def _fake_run(*a, **kw):
         called["yes"] = True
 
-    monkeypatch.setattr(live.subprocess, "run", _fake_run)
+    monkeypatch.setattr(render.subprocess, "run", _fake_run)
     process = _FakeProcess()  # no .pid attribute at all -- a test double, not a real Popen
     live._terminate(process)
     assert called["yes"] is False
@@ -554,7 +556,7 @@ def test_terminate_swallows_taskkill_failure_and_still_falls_back(monkeypatch):
     def _fake_run(*a, **kw):
         raise OSError("taskkill not found")
 
-    monkeypatch.setattr(live.subprocess, "run", _fake_run)
+    monkeypatch.setattr(render.subprocess, "run", _fake_run)
     process = _FakeProcess()
     process.pid = 4242
     live._terminate(process)  # must not raise

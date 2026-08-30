@@ -26,17 +26,65 @@ class _GodotTimeout(Exception):
     the timeout case rather than sharing one."""
 
 
+def _kill_tree(process) -> None:
+    """taskkill /F /T the whole Windows process tree rooted at `process`.
+
+    Godot's console binary is a launcher that spawns the real render/GUI
+    process as a separate child outside this Popen's own process tree, so
+    killing just the launcher (plain process.kill(), or subprocess.run's own
+    timeout behavior) leaves that grandchild orphaned. For render.py that
+    orphan keeps holding Material Maker's single-instance lock, so the NEXT
+    render launches, blocks waiting on the single instance, and also times
+    out -- cascading into every subsequent render hanging at the timeout
+    (found 2026-08-29 while rendering debug swatches; recovered by taskkill-ing
+    all Godot). taskkill's /T flag walks the live parent-PID tree from the
+    launcher's PID, reaching the grandchild too, and MUST run while the
+    launcher is still alive -- a dead (possibly recycled) PID kills nothing.
+    A test double with no real OS pid (no .pid attribute) skips this. Shared
+    with live.py's _terminate, which imports it (live already depends on
+    render, not the reverse)."""
+    pid = getattr(process, "pid", None)
+    if pid is None:
+        return
+    try:
+        subprocess.run(["taskkill", "/F", "/T", "/PID", str(pid)],
+                        capture_output=True, timeout=10)
+    except (OSError, subprocess.TimeoutExpired):
+        pass
+
+
 def _run_godot(cmd: list, timeout: int) -> subprocess.CompletedProcess:
     """Run a Godot command with capture, retrying up to 3x around the
     transient Windows crash codes above. Raises _GodotTimeout on timeout.
     Shared by render() and preview.render_preview(), which otherwise each had
-    a near-identical copy of this retry loop and the crash-code set."""
+    a near-identical copy of this retry loop and the crash-code set.
+
+    Uses Popen + communicate() (not subprocess.run) so a timeout can kill the
+    whole process tree while the launcher is still alive -- subprocess.run
+    kills only its direct child then re-raises, leaving Godot's spawned
+    render/GUI grandchild orphaned to squat Material Maker's single-instance
+    lock (see _kill_tree). communicate() drains both pipes concurrently, so
+    a chatty Godot render log can't fill a pipe buffer and deadlock the child."""
     proc = None
     for _ in range(3):
-        try:
-            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
-        except subprocess.TimeoutExpired:
-            raise _GodotTimeout
+        with subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                              text=True) as process:
+            try:
+                stdout, stderr = process.communicate(timeout=timeout)
+            except subprocess.TimeoutExpired:
+                _kill_tree(process)
+                process.kill()
+                try:
+                    process.communicate(timeout=10)  # reap after the tree kill
+                except subprocess.TimeoutExpired:
+                    # taskkill failed AND killing the launcher didn't drop the
+                    # pipe -- a surviving grandchild still holds its write end,
+                    # so this reap would block on EOF forever. Abandon it rather
+                    # than hang the render loop; the with-Popen exit only waits
+                    # on the (already-killed) launcher, not the grandchild.
+                    pass
+                raise _GodotTimeout
+            proc = subprocess.CompletedProcess(cmd, process.returncode, stdout, stderr)
         if proc.returncode not in _TRANSIENT_GODOT_CRASH_CODES:
             break
     return proc

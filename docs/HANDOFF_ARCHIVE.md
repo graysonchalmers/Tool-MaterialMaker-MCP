@@ -19,6 +19,40 @@ doc's window.
 
 ## Archived "Changed this session" write-ups
 
+## 🗂️ Changed this session (backlog item I: reposition_node, rename ruled out)
+
+- Branch: `main`. Committed and pushed: `352317a`. Changed:
+  `src/mm_mcp/live.py` (`reposition_node`), `src/mm_mcp/server.py`
+  (`reposition_node` as a 5th `live_apply` op), `addons/mm_live/live_server.gd`
+  (`_cmd_reposition_node`), `tests/test_live.py`, `tests/test_server_live.py`
+  (2 unit tests + 1 real integration test), `HANDOFF.md`, `STATUS.md`,
+  `docs/HANDOFF_ARCHIVE.md`. No plan doc, no worktree; direct TDD on `main`,
+  matching this project's precedent for well-scoped additions this size.
+- Decisions (+ why): built the reposition half of item I but deliberately
+  ruled OUT the rename half as unsupported, not just undone. Checked
+  Material Maker's own `graph_edit.gd:undoredo_command` -- the exhaustive
+  dispatcher for every graph mutation the GUI itself can perform
+  (add/remove/update/setparams/setgenericsize/setseed/setminimized/
+  move_generators/resize_comment/node_color_change) -- and found no rename
+  case at all, and no "Rename" context-menu action anywhere in the codebase
+  for an ordinary graph node (only portal links and library items get one).
+  Renaming a generator's `Node.name` directly would work in isolation, but
+  the corresponding `GraphNode` (addressed as `"node_"+name"` by
+  `connect_nodes`/`disconnect_nodes`/`set_param`) would desync, and Godot's
+  own built-in `GraphEdit` keeps its connection list keyed by node name
+  too -- reimplementing a rename by hand risks corrupting either, with no
+  upstream precedent for doing it safely. Reposition is safe by contrast:
+  it reuses `do_set_position` (`minimal.gd`), the exact call
+  `move_generators`'s own undo/redo handler makes, whose `_on_offset_changed`
+  callback already writes the new position back onto the generator (not
+  just the on-screen `GraphNode`), so `get_graph`/serialize reflects the
+  move. Proven with a real integration test (`test_live_apply_reposition_node_moves_a_real_node`)
+  that adds a node, repositions it, and reads the graph back to confirm the
+  new `node_position` -- not just that the handler was written correctly on
+  paper, matching this project's "no automated GDScript test harness, only
+  a real launch proves it" precedent. Zero leftover Godot processes after
+  the integration run. Fast suite: 214 passed (up from 211), 10 deselected.
+
 ## 🗂️ Changed this session (backlog item K: the two worst live-control bugs)
 
 - Branch: `main`. Committed and pushed: `12a4be3`. Changed: `src/mm_mcp/server.py`
@@ -324,6 +358,69 @@ doc's window.
 ---
 
 ## Archived session log
+
+### 2026-08-28 (later still) — render_node_output + live_render_node_output, backlog item H
+- Picked up via `pickup`; no drift, `main` matched the prior session's
+  `f6e3edb`, in sync with `origin/main`.
+- Grayson asked for two quick housekeeping fixes first: revert the upstream
+  `z-Git\material-maker` checkout's `bricks.ptex` back to pristine (his real
+  edit was already safely copied into `saved_graphs/`), and move his own
+  `examples/g01-natural-stone/` GUI save into `saved_graphs/` since he
+  confirmed that's the natural-stone variant he actually wants kept.
+  Renamed it to `natural_stone_grayson_edit.ptex` to match the bricks
+  convention. Committed separately (`b85a55f`) before the main feature.
+- Then built backlog item H (`render_node_output`) via `brainstorming`
+  (classified bounded — the render/validate/catalog flow it composes
+  already exists) → `test-driven-development`. Read `graph.py`/`render.py`/
+  `server.py`/`catalog_builder.py`/`validator.py` first, then confirmed the
+  real `material` node's input order (`albedo_tex` is port 0) via
+  `describe_node` and the real `bricks` example graph, rather than assuming.
+- Grayson asked for both batch and live-mode in the same pass. Checking the
+  live protocol for feasibility surfaced real hidden complexity before any
+  code was written: Material Maker's own `connect_children` (verified
+  directly in the `z-Git\material-maker` source) already disconnects
+  whatever fed a port before wiring a new one, so restoring by reconnecting
+  the original source works — but only if the port started out connected to
+  something. There was no `disconnect_nodes` primitive to restore
+  "unconnected" when it didn't. Surfaced this to Grayson as a real scope
+  question (three options: add the primitive now, refuse that one case,
+  drop live-mode from this pass) rather than silently deciding, per
+  `brainstorming`'s "hidden complexity upgrades the path" rule — he chose to
+  add it now.
+- Confirmed `do_disconnect_node` already exists in Material Maker's own
+  `graph_edit.gd`, mirroring `do_connect_node` exactly (found by reading the
+  real source, not assumed), which meant the new op was a straightforward
+  addition rather than inventing a new mechanism.
+- Presented the full design (batch path, live path, testing plan) in chat
+  per `brainstorming`'s bounded-path requirement; Grayson approved with "go
+  for it."
+- Built via strict TDD, one unit at a time, watching each fail for the
+  right reason before implementing: `graph.py`'s `find_material_node`/
+  `isolate_node_output` (pure, 8 new tests), `server.py`'s
+  `render_node_output` (5 new tests + 1 real integration test against the
+  bundled `bricks` example), `live.py`'s `disconnect_nodes` (2 new tests),
+  the GDScript `_cmd_disconnect_nodes` handler (no unit harness exists for
+  GDScript in this repo — only provable via integration test), `server.py`'s
+  `live_render_node_output` and the `disconnect_nodes` `live_apply` op (7
+  new tests) — then one dedicated real integration test, deliberately
+  designed so the preview node starts with no existing `albedo_tex`
+  connection, forcing the disconnect-restore branch specifically (the
+  actual new GDScript code), not the already-proven reconnect branch.
+- Full suite: 216 passed (up from 187), confirmed zero leftover Godot
+  processes afterward via `tasklist`.
+- Updated `README.md`'s tool tables (9 batch + 6 live tools now, was
+  stale by one entry already — `live_clear` was missing from the Live mode
+  table before this session, fixed in the same edit) and `STATUS.md`'s
+  Components rows for `server.py` and the live-control stack.
+- Committed as `f891fbb`. Wrote a `_agent-commons/log/` entry, committed and
+  pushed it directly (not via `Push-Repo`, since that helper's `git add -A`
+  would have swept in an unrelated modified `dashboard/index.html` and
+  dozens of other agents' pending log entries sitting uncommitted in that
+  repo — staged and pushed only this session's own file instead).
+- Grayson asked to push and wrap up. Pushed both commits (`git push`,
+  direct — this is a local session with the real working tree, not a
+  Cowork/cloud session, so the `github-push` skill's clone-and-reapply flow
+  doesn't apply here). Confirmed `origin/main` in sync.
 
 ### 2026-08-28 (even later) — saved_graphs/ round-trip: version control, rename, moss
 - Continuation of the same session, after the Unity/--target work below was

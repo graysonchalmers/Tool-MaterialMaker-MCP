@@ -116,17 +116,54 @@ class _FakeProc:
         self.stderr = stderr
 
 
+class _FakePopen:
+    """Stand-in for subprocess.Popen used as a context manager by _run_godot.
+
+    Each construction pulls the next scripted return code; communicate()
+    returns ("", "") unless `timeout_first` is set, in which case the first
+    communicate() raises TimeoutExpired (mirroring a real per-attempt timeout)
+    and later calls (the post-kill reap) return normally.
+    """
+
+    def __init__(self, cmd, codes, calls, timeout_first=False, pid=4321, **kw):
+        self._codes = codes
+        self._calls = calls
+        self._timeout_first = timeout_first
+        self.pid = pid
+        self.returncode = codes[calls["n"]] if codes is not None else None
+        self._comm = 0
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def communicate(self, timeout=None):
+        self._comm += 1
+        if self._timeout_first and self._comm == 1:
+            self._calls["n"] += 1
+            raise __import__("subprocess").TimeoutExpired(["godot"], timeout)
+        if not self._timeout_first:
+            self._calls["n"] += 1
+        return ("", "")
+
+    def kill(self):
+        self.returncode = -9
+
+
+def _popen_factory(codes, calls, timeout_first=False):
+    def _make(cmd, **kw):
+        return _FakePopen(cmd, codes, calls, timeout_first=timeout_first, **kw)
+    return _make
+
+
 def test_run_godot_retries_a_transient_crash_then_returns_success(monkeypatch):
     from mm_mcp import render as render_mod
     codes = [3221225477, 0]  # a transient access-violation crash, then success
     calls = {"n": 0}
 
-    def _fake_run(cmd, **kw):
-        rc = codes[calls["n"]]
-        calls["n"] += 1
-        return _FakeProc(rc)
-
-    monkeypatch.setattr(render_mod.subprocess, "run", _fake_run)
+    monkeypatch.setattr(render_mod.subprocess, "Popen", _popen_factory(codes, calls))
     proc = render_mod._run_godot(["godot"], 10)
     assert proc.returncode == 0
     assert calls["n"] == 2  # retried exactly once past the transient crash
@@ -136,26 +173,89 @@ def test_run_godot_does_not_retry_a_non_transient_returncode(monkeypatch):
     from mm_mcp import render as render_mod
     calls = {"n": 0}
 
-    def _fake_run(cmd, **kw):
-        calls["n"] += 1
-        return _FakeProc(1)  # an ordinary, non-transient failure
-
-    monkeypatch.setattr(render_mod.subprocess, "run", _fake_run)
+    monkeypatch.setattr(render_mod.subprocess, "Popen", _popen_factory([1, 1, 1], calls))
     proc = render_mod._run_godot(["godot"], 10)
     assert proc.returncode == 1
     assert calls["n"] == 1  # a normal exit code is not retried
 
 
-def test_run_godot_raises_godot_timeout_on_timeout(monkeypatch):
-    import subprocess
+def test_run_godot_raises_godot_timeout_and_kills_the_tree_on_timeout(monkeypatch):
+    """On timeout, _run_godot must taskkill /F /T the whole process tree
+    (launcher + the render/GUI grandchild Godot spawns) before raising, so no
+    orphan is left holding Material Maker's single-instance lock to cascade the
+    next render into its own timeout. Mirrors the equivalent in live.py."""
     from mm_mcp import render as render_mod
+    calls = {"n": 0}
+    killed = {}
 
     def _fake_run(cmd, **kw):
-        raise subprocess.TimeoutExpired(cmd, kw.get("timeout"))
+        killed["argv"] = cmd
+        return _FakeProc(0)
 
+    monkeypatch.setattr(render_mod.subprocess, "Popen",
+                        _popen_factory(None, calls, timeout_first=True))
     monkeypatch.setattr(render_mod.subprocess, "run", _fake_run)
     with pytest.raises(render_mod._GodotTimeout):
         render_mod._run_godot(["godot"], 10)
+    assert killed["argv"] == ["taskkill", "/F", "/T", "/PID", "4321"]
+
+
+def test_run_godot_does_not_hang_when_the_post_kill_reap_also_times_out(monkeypatch):
+    """If taskkill fails and a surviving grandchild keeps the pipe open, the
+    post-kill reap communicate() would block on EOF forever. _run_godot must
+    bound that reap and still raise _GodotTimeout rather than hang."""
+    import subprocess
+    from mm_mcp import render as render_mod
+
+    class _NeverReaps:
+        pid = 4321
+
+        def __init__(self, cmd, **kw):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+        def communicate(self, timeout=None):
+            # Every call times out: the initial run AND the post-kill reap.
+            raise subprocess.TimeoutExpired(["godot"], timeout)
+
+        def kill(self):
+            pass
+
+    monkeypatch.setattr(render_mod.subprocess, "Popen", _NeverReaps)
+    monkeypatch.setattr(render_mod.subprocess, "run", lambda *a, **kw: None)
+    with pytest.raises(render_mod._GodotTimeout):
+        render_mod._run_godot(["godot"], 10)
+
+
+def test_kill_tree_skips_taskkill_without_a_real_pid(monkeypatch):
+    """A test double with no OS pid (no .pid attribute) must skip the taskkill
+    step entirely rather than run it against a bogus/None pid."""
+    from mm_mcp import render as render_mod
+    called = {"n": 0}
+    monkeypatch.setattr(render_mod.subprocess, "run",
+                        lambda *a, **kw: called.__setitem__("n", called["n"] + 1))
+    render_mod._kill_tree(object())  # no .pid
+    assert called["n"] == 0
+
+
+def test_kill_tree_swallows_taskkill_failure(monkeypatch):
+    """taskkill being absent or erroring must not propagate out of _kill_tree."""
+    from mm_mcp import render as render_mod
+
+    def _boom(*a, **kw):
+        raise OSError("taskkill not found")
+
+    monkeypatch.setattr(render_mod.subprocess, "run", _boom)
+
+    class _P:
+        pid = 4242
+
+    render_mod._kill_tree(_P())  # must not raise
 
 
 def test_log_tail_returns_the_last_lines_of_combined_output():

@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.config import Config, load_config
 from mm_mcp.overlay import ensure_overlay
-from mm_mcp.render import RenderResult, _collect_fresh_images, _snapshot_pngs
+from mm_mcp.render import RenderResult, _collect_fresh_images, _kill_tree, _snapshot_pngs
 from mm_mcp.validator import validate_graph
 
 # Must match addons/mm_live/live_server.gd's LIVE_PORT -- no shared-constant
@@ -367,20 +367,15 @@ def _terminate(process: subprocess.Popen) -> None:
     as a separate child outside this Popen's own process tree on Windows,
     so process.terminate() alone only kills the launcher and leaves the GUI
     process running (confirmed via tasklist/wmic after a real integration
-    test run -- two orphaned Godot processes remained). taskkill's /T flag
-    kills the whole tree rooted at the launcher's PID first, reaching the
-    GUI child too; the plain terminate()/kill() sequence still runs after
-    as a fallback in case taskkill silently failed (e.g. permission denied)
-    or isn't available. A test double with no real OS pid (no .pid
-    attribute) skips the taskkill step and falls straight to the fallback.
+    test run -- two orphaned Godot processes remained). _kill_tree (shared
+    with render.py's timeout path) taskkill /T's the whole tree rooted at
+    the launcher's PID first, reaching the GUI child too; the plain
+    terminate()/kill() sequence still runs after as a fallback in case
+    taskkill silently failed (e.g. permission denied) or isn't available. A
+    test double with no real OS pid (no .pid attribute) skips the taskkill
+    step and falls straight to the fallback.
     """
-    pid = getattr(process, "pid", None)
-    if pid is not None:
-        try:
-            subprocess.run(["taskkill", "/F", "/T", "/PID", str(pid)],
-                            capture_output=True, timeout=10)
-        except (OSError, subprocess.TimeoutExpired):
-            pass
+    _kill_tree(process)
     process.terminate()
     try:
         process.wait(timeout=10)

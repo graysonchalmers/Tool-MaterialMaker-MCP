@@ -1,37 +1,46 @@
 # 🧭 Session Handoff — Tool-MaterialMaker-MCP
 
-_Last updated: 2026-08-29 (leather cookbook session) CT (America/Chicago)_
+_Last updated: 2026-08-29 (render timeout process-tree fix) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**This session grew the recipe library: a whole new `leather` cookbook
-category, 6 materials** (`quality/cookbook_leather.py` + a Leather section in
-`docs/AUTHORING.md`). All clone the `crocodile_skin` donor across distinct
-levers: l01 black oiled (recolor + grain relief), l02 distressed two-tone
-(masked worn composite), l03 suede (perlin-nap donor swap), l04 exotic reptile
-(enlarged voronoi cells), l05 quilted (pattern-sine pads + channel seams), l06
-topstitched (raised cream stitch dashes). Two reusable lessons landed in
-AUTHORING: `_dome_the_cells` (the voronoi-port-0 polarity flip that fixes the
-inside-out grain Grayson caught in 3D, same trap on l04's albedo ramp), and
-the stitch-generator hunt (`shape`+`tiler` is a trap that times the renderer
-out at 180s; `pattern` Square×Square works but its polarity is inside-out, one
-reversed colorize fixes it). **3 commits pushed** (`5f1a27b`, `6915fc8`,
-`f55359a`); `origin/main` in sync (`0 0`). This is informal cookbook growth,
-no gate, no STATUS.md change. Older history beyond the 3 write-ups / 5 log
+**This session fixed a latent process-leak bug in `src/mm_mcp/render.py`'s
+render-timeout path** (the root cause behind the `render-orphan-contention`
+cascade). `_run_godot` used `subprocess.run(..., timeout=...)`, which on
+timeout kills only the direct `_console.exe` launcher and leaves Godot's real
+`Godot_v4.7.1-stable_win64.exe` render grandchild orphaned to squat Material
+Maker's single-instance lock, so every subsequent render blocks at ~6MB and
+also times out. Now `_run_godot` uses `subprocess.Popen` + `communicate()` and
+calls a new shared `render._kill_tree(process)` (`taskkill /F /T /PID` on the
+still-alive launcher, killing the whole tree) before re-raising `_GodotTimeout`;
+the post-kill reap is bounded so a surviving grandchild can't hang the loop.
+`live.py`'s `_terminate` was refactored to call the same `_kill_tree` (dedup).
+Verified live: forced a timeout → zero leftover Godot, next render succeeds;
+the orphaned grandchild + ~6MB stuck process were directly observed via
+`tasklist` mid-render. Fast suite **232 passed** (`-m "not integration"`).
+**Work is on branch `claude/confident-tesla-ee9400` in a worktree, NOT yet
+committed or merged to `main`.** Older history beyond the 3 write-ups / 5 log
 entries kept here lives in [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).
 
 ## 📌 Where we stopped
 
-Wrapped cleanly, nothing mid-task, all 3 code commits pushed and in sync. The
-only untracked file is the long-flagged
-`docs/images/contact-sheet-wood-stone.png` (kept deliberately out of every
-commit again; see Open questions).
+Fix + tests + hardening are complete and the fast suite is green, but the
+4-file diff (`src/mm_mcp/render.py`, `src/mm_mcp/live.py`, `tests/test_render.py`,
+`tests/test_live.py`) is **uncommitted on branch `claude/confident-tesla-ee9400`**.
+A `/code-review` pass ran and found only 2 PLAUSIBLE findings, both judged
+`no_change_needed` (one's fix is ineffective — a dead launcher PID can't be
+tree-walked — and contradicted by render.py's own "re-run succeeds" evidence;
+the other is unreachable and matches stdlib `subprocess.run` behavior). The
+long-flagged untracked `docs/images/contact-sheet-wood-stone.png` is still
+untracked (unchanged, unrelated).
 
 ## ▶️ Next concrete step
 
-Nothing pending on the code side. Cookbook follow-ups surfaced this session:
+**Commit the 4-file diff on `claude/confident-tesla-ee9400`, then merge to
+`main` / open a PR.** The prior leather-cookbook backlog is otherwise
+unchanged. Cookbook follow-ups still open:
 - **Debug materials / visual smoke-test swatches** (Grayson's new idea,
   captured in `_agent-commons/ideas/Tool-MaterialMaker-MCP.md`): known-answer
   diagnostic swatches that make a wrong node wiring visually obvious (a
@@ -130,6 +139,36 @@ The older open backlog, unchanged:
   earlier session (staleness marker, `_append_autoload`'s first-occurrence
   match, both verified low-priority).
 
+## 🗂️ Changed this session (render-timeout process-tree kill fix)
+
+- Branch: **`claude/confident-tesla-ee9400`** (git worktree), **not committed
+  yet**. Changed: `src/mm_mcp/render.py` (new `_kill_tree` helper; `_run_godot`
+  rebuilt on `subprocess.Popen` + `communicate()`), `src/mm_mcp/live.py`
+  (`_terminate` delegates to the shared `_kill_tree`), `tests/test_render.py`
+  (timeout test asserts the `taskkill /F /T /PID` argv fires; `_kill_tree`
+  no-pid + swallow-failure cases; a hardening test that the bounded post-kill
+  reap can't hang; retry tests re-patched onto `Popen`), `tests/test_live.py`
+  (`_terminate` tests re-patched onto `render.subprocess.run`). Also updated
+  the `render-orphan-contention` project memory + `MEMORY.md` index (they said
+  the bug was still live).
+- Decisions (+ why): the fix requires killing the tree **while the launcher is
+  still alive** — `subprocess.run` kills its direct child before re-raising, and
+  Windows `taskkill /T` walks live parent-PID links, so a dead/recycled PID
+  kills nothing. That forced the move from `subprocess.run` to `Popen` +
+  `communicate()` (which also keeps the concurrent pipe-drain that stops a
+  chatty render log from deadlocking the child). `_kill_tree` lives in
+  `render.py` and `live.py` imports it (live already depends on render, never
+  the reverse — avoids a circular import) — this keeps the memory's
+  "all helper pairs deduped" invariant true rather than adding a 4th copy of
+  the taskkill block. Hardened the post-kill reap with `communicate(timeout=10)`
+  + swallow, so if taskkill fails AND a grandchild keeps the pipe open, the reap
+  can't block forever. Verified against real Godot (timeout → `_GodotTimeout`,
+  zero leftover Godot, subsequent render OK) and directly observed the
+  grandchild + ~6MB single-instance-stuck process live via `tasklist`. A
+  `/code-review` pass found 2 PLAUSIBLE findings, both ruled `no_change_needed`
+  with primary-source reasons. Fast suite: 232 passed (up from 231), 21
+  deselected. Wrote `_agent-commons\log\2026-08-29-claude-code-render-timeout-killtree-fix.md`.
+
 ## 🗂️ Changed this session (new leather cookbook category, 6 materials)
 
 - Branch: `main`. Committed and **pushed**: `5f1a27b` (l01-l04 + AUTHORING
@@ -184,41 +223,7 @@ The older open backlog, unchanged:
   caught and removed via `git rm --cached` + amend (both amends local,
   pre-push). Fast suite: 226 passed (up from 214), 10 deselected.
 
-## 🗂️ Changed this session (backlog item I: reposition_node, rename ruled out)
-
-- Branch: `main`. Committed and pushed: `352317a`. Changed:
-  `src/mm_mcp/live.py` (`reposition_node`), `src/mm_mcp/server.py`
-  (`reposition_node` as a 5th `live_apply` op), `addons/mm_live/live_server.gd`
-  (`_cmd_reposition_node`), `tests/test_live.py`, `tests/test_server_live.py`
-  (2 unit tests + 1 real integration test), `HANDOFF.md`, `STATUS.md`,
-  `docs/HANDOFF_ARCHIVE.md`. No plan doc, no worktree; direct TDD on `main`,
-  matching this project's precedent for well-scoped additions this size.
-- Decisions (+ why): built the reposition half of item I but deliberately
-  ruled OUT the rename half as unsupported, not just undone. Checked
-  Material Maker's own `graph_edit.gd:undoredo_command` -- the exhaustive
-  dispatcher for every graph mutation the GUI itself can perform
-  (add/remove/update/setparams/setgenericsize/setseed/setminimized/
-  move_generators/resize_comment/node_color_change) -- and found no rename
-  case at all, and no "Rename" context-menu action anywhere in the codebase
-  for an ordinary graph node (only portal links and library items get one).
-  Renaming a generator's `Node.name` directly would work in isolation, but
-  the corresponding `GraphNode` (addressed as `"node_"+name"` by
-  `connect_nodes`/`disconnect_nodes`/`set_param`) would desync, and Godot's
-  own built-in `GraphEdit` keeps its connection list keyed by node name
-  too -- reimplementing a rename by hand risks corrupting either, with no
-  upstream precedent for doing it safely. Reposition is safe by contrast:
-  it reuses `do_set_position` (`minimal.gd`), the exact call
-  `move_generators`'s own undo/redo handler makes, whose `_on_offset_changed`
-  callback already writes the new position back onto the generator (not
-  just the on-screen `GraphNode`), so `get_graph`/serialize reflects the
-  move. Proven with a real integration test (`test_live_apply_reposition_node_moves_a_real_node`)
-  that adds a node, repositions it, and reads the graph back to confirm the
-  new `node_position` -- not just that the handler was written correctly on
-  paper, matching this project's "no automated GDScript test harness, only
-  a real launch proves it" precedent. Zero leftover Godot processes after
-  the integration run. Fast suite: 214 passed (up from 211), 10 deselected.
-
-> 📦 **10 older "Changed this session" write-ups archived** (through
+> 📦 **11 older "Changed this session" write-ups archived** (through
 > 2026-08-29) -- the pre-release audit/teardown/doc-fix pass,
 > render_node_output/live_render_node_output (item H), saved_graphs/
 > round-trip, Unity export proof, wood/stone cookbooks, the overlay
@@ -535,10 +540,44 @@ The older open backlog, unchanged:
 > section past that cap, the oldest entry moves out verbatim (no
 > summarizing) into [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md)
 > instead of letting this doc grow unbounded -- flagged as a real pickup
-> cost by the 2026-08-29 teardown (Maintainer lens). **23 older entries are
+> cost by the 2026-08-29 teardown (Maintainer lens). **24 older entries are
 > now archived there**, from the 2026-08-28 Unity-export session back through
 > the project's Phase 1-2 kickoff on 2026-08-25.
 
+
+### 2026-08-29 (render timeout fix) — killed the process-tree leak behind the render-orphan cascade
+- Worktree session on branch `claude/confident-tesla-ee9400` (not `main`).
+  Task: fix the latent process-leak in `render.py`'s `_run_godot` timeout path,
+  the root cause of the `render-orphan-contention` cascade found while rendering
+  debug swatches.
+- Ran `systematic-debugging`/advisor first. Confirmed the crux with the advisor:
+  `subprocess.run`'s timeout kills only the direct child before re-raising, so a
+  later `taskkill /T` on the (now dead, possibly recycled) launcher PID can't
+  tree-walk to the orphaned grandchild — the kill MUST happen while the launcher
+  is alive, which forces `Popen` + `communicate()` over `subprocess.run`.
+- Implemented a shared `render._kill_tree(process)` (`taskkill /F /T /PID`, pid
+  guard, swallowed failure) and rebuilt `_run_godot` on `Popen`; routed
+  `live.py`'s `_terminate` through the same helper (dedup, live→render import
+  only). Hardened the post-kill reap with a 10s timeout so a surviving
+  grandchild holding the pipe can't hang the loop.
+- Verified empirically against real Godot: forced a timeout → `_GodotTimeout`,
+  zero leftover Godot, next `render()` succeeded. Then directly reproduced the
+  mechanism — `tasklist` mid-render showed two real GUI processes outside the
+  launcher, one frozen at ~6,376 K (the memory's ~6MB single-instance signature)
+  followed by a hang; recovered per the documented procedure (TaskStop +
+  taskkill all Godot). The negative-control at short timeouts didn't leak
+  because a `bricks` render finishes in ~4s; the leak needs a render that
+  outlives the timeout with a live grandchild, which the 2048 observation run
+  produced.
+- Ran `/code-review` (medium) on the diff: 2 PLAUSIBLE findings, both
+  `no_change_needed` after analysis (transient-crash-retry orphan: the proposed
+  fix is ineffective on a dead PID and contradicted by render.py's own "re-run
+  succeeds" comment; `with`-Popen `__exit__` wait() hang: unreachable, matches
+  stdlib). Added a hardening round earlier (bounded reap) with its own test.
+- Fast suite: 232 passed (`-m "not integration"`), 21 deselected. Updated the
+  `render-orphan-contention` memory + `MEMORY.md` index (was marked as still
+  buggy). Wrote `_agent-commons\log\2026-08-29-claude-code-render-timeout-killtree-fix.md`.
+- **Left uncommitted** on the worktree branch, pending commit + merge/PR.
 
 ### 2026-08-29 (leather cookbook) — new leather category, 6 materials, 2 reusable levers
 - Picked up via `pickup` (clean, `main` at `969d420`, in sync). Grayson chose
@@ -706,67 +745,4 @@ The older open backlog, unchanged:
   a new `teardown-2026-08-29-audit-findings.md`, `MEMORY.md` index) and this
   handoff doc's top sections + Heads-up + a new "Changed this session" block,
   per this skill's own convention.
-
-### 2026-08-28 (later still) — render_node_output + live_render_node_output, backlog item H
-- Picked up via `pickup`; no drift, `main` matched the prior session's
-  `f6e3edb`, in sync with `origin/main`.
-- Grayson asked for two quick housekeeping fixes first: revert the upstream
-  `z-Git\material-maker` checkout's `bricks.ptex` back to pristine (his real
-  edit was already safely copied into `saved_graphs/`), and move his own
-  `examples/g01-natural-stone/` GUI save into `saved_graphs/` since he
-  confirmed that's the natural-stone variant he actually wants kept.
-  Renamed it to `natural_stone_grayson_edit.ptex` to match the bricks
-  convention. Committed separately (`b85a55f`) before the main feature.
-- Then built backlog item H (`render_node_output`) via `brainstorming`
-  (classified bounded — the render/validate/catalog flow it composes
-  already exists) → `test-driven-development`. Read `graph.py`/`render.py`/
-  `server.py`/`catalog_builder.py`/`validator.py` first, then confirmed the
-  real `material` node's input order (`albedo_tex` is port 0) via
-  `describe_node` and the real `bricks` example graph, rather than assuming.
-- Grayson asked for both batch and live-mode in the same pass. Checking the
-  live protocol for feasibility surfaced real hidden complexity before any
-  code was written: Material Maker's own `connect_children` (verified
-  directly in the `z-Git\material-maker` source) already disconnects
-  whatever fed a port before wiring a new one, so restoring by reconnecting
-  the original source works — but only if the port started out connected to
-  something. There was no `disconnect_nodes` primitive to restore
-  "unconnected" when it didn't. Surfaced this to Grayson as a real scope
-  question (three options: add the primitive now, refuse that one case,
-  drop live-mode from this pass) rather than silently deciding, per
-  `brainstorming`'s "hidden complexity upgrades the path" rule — he chose to
-  add it now.
-- Confirmed `do_disconnect_node` already exists in Material Maker's own
-  `graph_edit.gd`, mirroring `do_connect_node` exactly (found by reading the
-  real source, not assumed), which meant the new op was a straightforward
-  addition rather than inventing a new mechanism.
-- Presented the full design (batch path, live path, testing plan) in chat
-  per `brainstorming`'s bounded-path requirement; Grayson approved with "go
-  for it."
-- Built via strict TDD, one unit at a time, watching each fail for the
-  right reason before implementing: `graph.py`'s `find_material_node`/
-  `isolate_node_output` (pure, 8 new tests), `server.py`'s
-  `render_node_output` (5 new tests + 1 real integration test against the
-  bundled `bricks` example), `live.py`'s `disconnect_nodes` (2 new tests),
-  the GDScript `_cmd_disconnect_nodes` handler (no unit harness exists for
-  GDScript in this repo — only provable via integration test), `server.py`'s
-  `live_render_node_output` and the `disconnect_nodes` `live_apply` op (7
-  new tests) — then one dedicated real integration test, deliberately
-  designed so the preview node starts with no existing `albedo_tex`
-  connection, forcing the disconnect-restore branch specifically (the
-  actual new GDScript code), not the already-proven reconnect branch.
-- Full suite: 216 passed (up from 187), confirmed zero leftover Godot
-  processes afterward via `tasklist`.
-- Updated `README.md`'s tool tables (9 batch + 6 live tools now, was
-  stale by one entry already — `live_clear` was missing from the Live mode
-  table before this session, fixed in the same edit) and `STATUS.md`'s
-  Components rows for `server.py` and the live-control stack.
-- Committed as `f891fbb`. Wrote a `_agent-commons/log/` entry, committed and
-  pushed it directly (not via `Push-Repo`, since that helper's `git add -A`
-  would have swept in an unrelated modified `dashboard/index.html` and
-  dozens of other agents' pending log entries sitting uncommitted in that
-  repo — staged and pushed only this session's own file instead).
-- Grayson asked to push and wrap up. Pushed both commits (`git push`,
-  direct — this is a local session with the real working tree, not a
-  Cowork/cloud session, so the `github-push` skill's clone-and-reapply flow
-  doesn't apply here). Confirmed `origin/main` in sync.
 
