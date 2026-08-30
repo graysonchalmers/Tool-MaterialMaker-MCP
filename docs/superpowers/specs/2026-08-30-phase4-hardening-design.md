@@ -226,11 +226,27 @@ version there.
 - Runner: `windows-latest` (our only end-to-end-verified platform; adding
   ubuntu is deferred until a cross-platform pass actually verifies the
   off-Windows render fallback).
-- Steps: checkout, `actions/setup-python` (3.13), `pip install -e .[dev]`,
+- Provision the toolchain the fast suite needs. `_ensure_ready` calls
+  `require_valid`, which requires a real Material Maker checkout (project path,
+  node defs, examples) AND a Godot binary *file that exists*. No fast test
+  actually launches Godot (that is the `integration` marker), so the binary can
+  be a zero-byte stub. Steps:
+  1. `git clone --depth 1 https://github.com/RodZill4/material-maker mm-checkout`
+     (MIT, redistribution-free to clone in CI).
+  2. Write `4110830` to `mm-checkout/steam_appid.txt`.
+  3. Create a stub Godot binary file, e.g. `godot-stub/Godot_v4.7.1_win64.exe`
+     containing a single byte (only its existence is checked).
+  4. Set env for the test step: `MM_PROJECT_PATH=<...>/mm-checkout`,
+     `MM_GODOT_BINARY=<...>/godot-stub/Godot_v4.7.1_win64.exe`,
+     `MM_OUTPUT_DIR=<...>/output`, and `MM_DOTENV=<nonexistent path>` so a
+     stray `.env` can never leak in.
+- Then: checkout, `actions/setup-python` (3.13), `pip install -e .[dev]`,
   `pytest -q -m "not integration"`.
-- No Material Maker checkout or `steam_appid.txt` needed: the fast suite
-  (232 passed) is fully self-contained with no `MM_*` config. Verified by
-  running it with all `MM_*` vars unset before writing this spec.
+- **Verified locally before writing this plan:** the exact recipe above (real MM
+  checkout + a stub Godot binary + `.env` neutralized via `MM_DOTENV`) runs
+  `232 passed, 21 deselected`. An earlier probe that only unset the `MM_*` vars
+  was misleading because the repo `.env` still fed real paths; neutralizing
+  `.env` is what reproduces a bare runner.
 
 ### release-please
 
