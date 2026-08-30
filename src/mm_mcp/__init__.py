@@ -11,4 +11,9 @@ to PBR texture maps. Units:
   server.py           the MCP server (seven tools + catalog resource)
 """
 
-__version__ = "0.3.0"
+from importlib.metadata import version as _pkg_version, PackageNotFoundError
+
+try:
+    __version__ = _pkg_version("mm-mcp")
+except PackageNotFoundError:  # not pip-installed (tests import via pythonpath=src)
+    __version__ = "0.0.0+unknown"
