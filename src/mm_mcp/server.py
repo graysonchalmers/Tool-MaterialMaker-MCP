@@ -6,6 +6,7 @@ import sys
 from mcp.server.mcpserver import MCPServer
 from mm_mcp import __version__, live
 from mm_mcp.config import load_config, require_valid
+from mm_mcp.paths import ensure_within_roots, reject_path_fragment, PathNotAllowed
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.graph import find_material_node, isolate_node_output
 from mm_mcp.validator import validate_graph
@@ -77,6 +78,10 @@ def validate(ptex: dict) -> list:
 def render_graph(ptex: dict, size: int = 512, basename: str = "material",
                   target: str = "Godot/Godot 4 Standard") -> dict:
     cfg, catalog = _ensure_ready()
+    try:
+        reject_path_fragment(basename)
+    except PathNotAllowed as exc:
+        return {"ok": False, "images": [], "error": str(exc)}
     problems = validate_graph(ptex, catalog)
     errors = [p for p in problems if p["severity"] == "error"]
     if errors:
@@ -100,6 +105,10 @@ def render_node_output(ptex: dict, node_name: str, port: int = 0, size: int = 51
     intermediate node (e.g. a mask) during authoring.
     """
     cfg, catalog = _ensure_ready()
+    try:
+        reject_path_fragment(basename)
+    except PathNotAllowed as exc:
+        return {"ok": False, "image": None, "error": str(exc)}
     try:
         isolated = isolate_node_output(ptex, node_name, port)
     except ValueError as exc:
@@ -135,17 +144,27 @@ def render_preview(albedo_path: str, normal_path: str, orm_path: str,
     at a smaller physical scale, e.g. tiled across a large surface.
     """
     cfg, _ = _ensure_ready()
+    try:
+        reject_path_fragment(basename)
+        for p in (albedo_path, normal_path, orm_path):
+            ensure_within_roots(p, cfg.allowed_roots)
+    except PathNotAllowed as exc:
+        return {"ok": False, "image": None, "error": str(exc)}
     result = _render_preview(albedo_path, normal_path, orm_path,
                               basename=basename, tile=tile, cfg=cfg)
     return {"ok": result.ok, "image": result.image,
             "error": result.error, "log_tail": result.log_tail}
 
 
-def save_graph(ptex: dict, path: str) -> str:
+def save_graph(ptex: dict, path: str) -> dict:
+    try:
+        path = ensure_within_roots(path, load_config().allowed_roots)
+    except PathNotAllowed as exc:
+        return {"ok": False, "error": str(exc)}
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
     with open(path, "w", encoding="utf-8") as fh:
         json.dump(ptex, fh, indent=1)
-    return path
+    return {"ok": True, "path": path}
 
 
 def list_examples() -> list:
@@ -156,6 +175,10 @@ def list_examples() -> list:
 
 def load_example(name: str) -> dict:
     cfg, _ = _ensure_ready()
+    try:
+        name = reject_path_fragment(name)
+    except PathNotAllowed as exc:
+        return {"ok": False, "error": str(exc)}
     path = os.path.join(cfg.examples_dir, name + ".ptex")
     with open(path, encoding="utf-8") as fh:
         return json.load(fh)
