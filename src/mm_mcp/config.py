@@ -14,6 +14,7 @@ _DEFAULTS = {
     "MM_PROJECT_PATH": "",
     "MM_OUTPUT_DIR": "",
     "MM_LIVE_OVERLAY_DIR": "",
+    "MM_ALLOWED_ROOTS": "",
 }
 
 
@@ -33,6 +34,7 @@ class Config:
     nodes_dir: str
     examples_dir: str
     live_overlay_dir: str
+    allowed_roots: list[str]
 
 
 def _resolve_console(godot_binary: str) -> str:
@@ -81,6 +83,7 @@ def load_config(overrides: dict | None = None) -> Config:
     project_path = env["MM_PROJECT_PATH"]
     output_dir = env["MM_OUTPUT_DIR"] or os.path.join(os.getcwd(), "output")
     live_overlay_dir = env["MM_LIVE_OVERLAY_DIR"] or os.path.join(os.getcwd(), "mm_live_overlay")
+    allowed_roots = [p for p in env["MM_ALLOWED_ROOTS"].split(os.pathsep) if p]
     return Config(
         godot_binary=env["MM_GODOT_BINARY"],
         console_binary=_resolve_console(env["MM_GODOT_BINARY"]),
@@ -89,4 +92,5 @@ def load_config(overrides: dict | None = None) -> Config:
         nodes_dir=os.path.join(project_path, "addons", "material_maker", "nodes"),
         examples_dir=os.path.join(project_path, "material_maker", "examples"),
         live_overlay_dir=live_overlay_dir,
+        allowed_roots=allowed_roots,
     )
