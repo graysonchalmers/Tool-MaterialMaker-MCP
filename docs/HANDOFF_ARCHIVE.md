@@ -19,6 +19,34 @@ doc's window.
 
 ## Archived "Changed this session" write-ups
 
+## 🗂️ Changed this session (new leather cookbook category, 6 materials)
+
+- Branch: `main`. Committed and **pushed**: `5f1a27b` (l01-l04 + AUTHORING
+  section), `6915fc8` (l04 albedo-polarity fix + l05 quilted), `f55359a` (l06
+  topstitched). New file `quality/cookbook_leather.py`; new AUTHORING Leather
+  section; 6 tracked albedo thumbnails under `docs/images/cookbook-leather/`.
+  Also appended the debug-materials idea to
+  `_agent-commons/ideas/Tool-MaterialMaker-MCP.md`. No plan doc, no worktree,
+  no gate: informal cookbook growth per `quality/README.md`, same pattern as
+  the fabrics/wood/stone cookbooks.
+- Decisions (+ why): followed the visual-iteration workflow (render + 3D
+  preview + send to Grayson each pass; judge relief in 3D, not the flat
+  swatch). Reworked three materials from honest misses rather than shipping
+  them: l02's first wear mask made cow-hide blobs (finer/softer/lower-contrast
+  fixed it), l04's bronze was on the wrong voronoi region (albedo-polarity
+  flip), l05's intended stitch dashes via `shape`+`tiler` failed so it became
+  a `pattern`-based quilt. Two general levers came out of it and are the real
+  keep-value, both written into AUTHORING: **`_dome_the_cells`** (reverse
+  `colorize_0` so voronoi cell BODIES dome up and seams recess; the stock
+  crocodile ramp is inside-out because voronoi port 0 is low at centers, high
+  at borders) and the **stitch-generator hunt** (`shape`+`tiler` degenerate
+  shader → 180s timeout when isolated; `pattern` Square×Square grid works but
+  its "on" region is the connected field, so the dash rectangles are its LOW
+  cells → one reversed sharpen colorize fixes colour + flattened field at
+  once). Also learned: isolating a node's output to albedo for a quick
+  diagnostic reliably timed the renderer out here twice; prefer reading the
+  full render over an isolate-to-albedo pass.
+
 ## 🗂️ Changed this session (remaining code-review findings + teardown cleanup)
 
 - Branch: `main`. Committed and **pushed**: `c65cc83` (6 fixes + 2 documented
@@ -384,6 +412,65 @@ doc's window.
 ---
 
 ## Archived session log
+
+### 2026-08-29 (later) — fixed the top 2 code-review bugs, trimmed HANDOFF.md, closed backlog item I
+- Picked up via `pickup`. No drift: `main` matched the prior session's
+  `d0df55b`, `origin/main` in sync, working tree clean except the
+  long-flagged untracked `docs/images/contact-sheet-wood-stone.png`.
+- Grayson said he liked all three of the prior session's proposed next
+  moves (K, L, M) and was fine with any order, so this session did all
+  three. Also raised a new, unscoped idea: a simplified "Material Maker for
+  dummies" interface, since the real node graph can be intimidating to a
+  non-technical viewer. Logged it as backlog item N in
+  `_agent-commons/ideas/Tool-MaterialMaker-MCP.md` verbatim rather than
+  designing anything, since it's explicit backlog wanting its own
+  `brainstorming` session, and flagged a possible tension with
+  `docs/NORTH_STAR.md`'s round-trip-learning-tool framing worth checking
+  first.
+- **K:** fixed the two worst live-control correctness bugs via direct TDD
+  on `main` (both already diagnosed with line numbers from the prior
+  session's code review). `live_render_node_output` now checks whether
+  restoring the original wiring after a preview actually succeeded, instead
+  of silently reporting success while the live graph stayed wired to the
+  temporary connection. `live_apply` now also catches `AttributeError` from
+  a malformed op (alongside the existing `KeyError`/`TypeError`), since a
+  list where a parameters dict was expected could raise uncaught deep
+  inside `validate_graph`. 4 new tests, all written and confirmed red
+  before the fix. Committed `12a4be3`.
+- **L:** adopted a HANDOFF.md trim/archive convention. The doc had grown to
+  1840 lines with no cap, flagged by the prior session's teardown. Moved 8
+  older "Changed this session" write-ups and 22 older session-log entries
+  verbatim into a new `docs/HANDOFF_ARCHIVE.md`; this doc now keeps only
+  the 3 most recent write-ups and 5 most recent log entries, documented as
+  a standing convention in both this doc and `CLAUDE.md`. Also fixed a
+  stale `-t`-vs-`--target` flag in `CLAUDE.md`'s manual render example
+  while in there. Committed `cb47010`.
+- **M:** asked Grayson directly (via a structured question, not a coin
+  flip) whether to keep growing live-control's mutation surface given the
+  teardown's sunk-cost flag. He said keep building it, so picked up backlog
+  item I. Investigated Material Maker's own source before writing any
+  GDScript: its undo/redo command dispatcher
+  (`graph_edit.gd:undoredo_command`) has a `move_generators` case (reuses
+  `do_set_position`, which also writes the new position back onto the
+  generator, not just the on-screen node) but genuinely no rename case
+  anywhere for an ordinary node -- confirmed this isn't a gap in the addon,
+  it's unsupported by Material Maker itself, since faking a rename by hand
+  would risk desyncing the addon's `"node_"+name` addressing and Godot's
+  own built-in connection bookkeeping. Built `reposition_node` as a new
+  `live_apply` op reusing the same verified-safe call, proven with a real
+  integration test that adds a node, moves it, and confirms the new
+  position via `get_graph`. Ruled the rename half out explicitly rather
+  than leaving it as a silent gap. Committed `352317a`.
+- Pushed all three commits after confirming `origin/main` sync
+  (`git rev-list --left-right --count` → `0  0`).
+- Wrote and pushed the required `_agent-commons\log\` entry
+  (`2026-08-29-claude-code-materialmaker-mcp-bugfix-trim-reposition.md`),
+  scoped to just this session's own new files since the commons repo had
+  other agents' pending work sitting uncommitted.
+- Fast suite: 214 passed (up from 207 at pickup), 10 deselected. Zero
+  leftover Godot processes after the two real integration runs (item K's
+  restore-failure tests were unit-level; item I's reposition test launched
+  a real overlay).
 
 ### 2026-08-29 — pre-release audit, code review, adversarial teardown, doc-accuracy fixes
 - Grayson asked whether the project was ready to post for external alpha

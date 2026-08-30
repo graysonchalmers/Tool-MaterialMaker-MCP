@@ -1,42 +1,34 @@
 # 🧭 Session Handoff — Tool-MaterialMaker-MCP
 
-_Last updated: 2026-08-29 (render timeout process-tree fix) CT (America/Chicago)_
+_Last updated: 2026-08-29 (README front-page images) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**This session fixed the latent process-leak in `src/mm_mcp/render.py`'s
-render-timeout path** (the `render-orphan-contention` root cause the prior
-debug-swatch session flagged and spawned `task_93dccd69` for; this is that
-task, now landed). `_run_godot` used `subprocess.run(..., timeout=...)`, which
-on timeout kills only the direct `_console.exe` launcher and leaves Godot's
-real `Godot_v4.7.1-stable_win64.exe` render grandchild orphaned to squat
-Material Maker's single-instance lock, so every subsequent render blocks at
-~6MB and also times out. Now `_run_godot` uses `subprocess.Popen` +
-`communicate()` and calls a new shared `render._kill_tree(process)`
-(`taskkill /F /T /PID` on the still-alive launcher, killing the whole tree)
-before re-raising `_GodotTimeout`; the post-kill reap is bounded so a surviving
-grandchild can't hang the loop. `live.py`'s `_terminate` was deduped onto the
-same helper. Verified live: forced a timeout → zero leftover Godot, next render
-succeeds; the orphaned grandchild + ~6MB stuck process were directly observed
-via `tasklist` mid-render. Fast suite **232 passed**. A `/code-review` pass
-found 2 PLAUSIBLE findings, both `no_change_needed`. **Merged into `main` this
-session** (branch `claude/confident-tesla-ee9400`, worktree). The immediately
-prior session was the debug diagnostic swatch gallery (`quality/debug_swatches.py`,
-`docs/DEBUG_SWATCHES.md`). Older write-ups/log beyond the cap live in
+**This session gave the GitHub front page real visuals.** The README now leads
+with a **3D-preview hero triptych** (Grayson's hand-finished cobblestone / moss
+/ ceramic hex), a **4-column, 8-cell 3D gallery** (materials composited onto the
+`render_preview` sphere+cube+cutaway scene instead of shown as flat swatches),
+and a collapsible **"Material cookbook"** section with a 4×7 contact sheet of all
+28 cookbook materials. Grayson's own `saved_graphs/bricks_grayson_edit.ptex`
+(an irregular mossy cobblestone) is featured as a round-trip example in place of
+the stock red brick. The GitHub topic/search **social card** was fixed too (its
+title was being cropped) and the corrected `docs/social-preview.png` was uploaded
+via repo Settings. Two commits pushed (`d7f2659`, `738e10b`); `origin/main` in
+sync. The immediately prior session landed the `render.py` render-timeout
+process-tree fix (now merged). Older write-ups/log beyond the cap live in
 [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).
 
 ## 📌 Where we stopped
 
-Wrapped cleanly. The render-timeout fix (4 code files + doc updates) is
-committed as `cd1fcb9` and merged to `main`. The only untracked file is the
-long-flagged `docs/images/contact-sheet-wood-stone.png`.
+Wrapped cleanly, nothing mid-task. Front-page work is committed, pushed, and
+verified (README images serve HTTP 200; the new social preview is live in repo
+Settings). Working tree clean.
 
 ## ▶️ Next concrete step
 
-Nothing pending on the render fix; it's landed. Follow-ups carried from the
-prior debug-swatch session:
+Nothing pending on the README work; it's landed and live. Follow-ups still open:
 - **More debug swatches** if wanted: blend-mask polarity, height-to-normal
   convention, colorize/ramp direction — same pattern, each tied to a real trap.
 - **More cookbook categories**: glass, plastics, painted metal still uncovered.
@@ -49,7 +41,6 @@ The older open backlog, unchanged:
 - **`list_node_types` tool decision** — the teardown flagged it as redundant
   with the `catalog://nodes` resource + `describe_node`. It's a live, tested
   MCP tool, so removing it is a product call, not dead code. Undecided.
-- **The untracked contact-sheet PNG** — add it or gitignore it, still open.
 - **N. "Material Maker for dummies" — a simplified interface, unscoped.**
   New backlog idea from Grayson this session (captured in full in
   `_agent-commons/ideas/Tool-MaterialMaker-MCP.md`): the real node graph can
@@ -103,9 +94,10 @@ The older open backlog, unchanged:
 - **Resolved this session:** whether to keep expanding live-control's
   mutation surface. Grayson said keep building it (see item I above) —
   no longer open.
-- **Still open, flagged a fourth session running now:** `docs/images/contact-sheet-wood-stone.png`
-  is still untracked. Just decide next time `docs/images` is touched instead
-  of re-flagging it again.
+- **Resolved this session:** the long-flagged untracked
+  `docs/images/contact-sheet-wood-stone.png` is gone — superseded by the new
+  tracked `docs/images/cookbook-contact-sheet.png` (4×7, all categories) and
+  removed. No longer an open item.
 - **New this session:** the cross-engine North Star wording treats UE4's
   export path (PNGs + manual in-editor assembly) as a lesser tier, not a
   real target — Grayson said "sounds good" generally but never explicitly
@@ -129,6 +121,32 @@ The older open backlog, unchanged:
   available; two parked-not-fixed overlay-builder findings from a much
   earlier session (staleness marker, `_append_autoload`'s first-occurrence
   match, both verified low-priority).
+
+## 🗂️ Changed this session (README front-page 3D previews + social-preview fix)
+
+- Branch: `main`. Committed and **pushed**: `d7f2659` (hero + 3D gallery +
+  cookbook section), `738e10b` (social-preview title-crop fix + brick swap).
+  New tracked assets: `docs/images/hero.png`, `docs/images/gallery/*.png` (8),
+  `docs/images/cookbook-contact-sheet.png`; edited `README.md` and
+  `docs/social-preview.png`. Removed the superseded/long-untracked
+  `docs/images/contact-sheet-wood-stone.png`. Also fast-forwarded local `main`
+  past the render-timeout fix that had merged upstream after the prior wrap.
+- Decisions (+ why): ran `brainstorming` → bounded (README already had a
+  gallery). Grayson chose "hero + 3D gallery" and "keep 4 columns." Reworked
+  the gallery from flat swatches to **3D previews** (the `render_preview`
+  sphere+cube+cutaway scene) rendered strictly sequentially, one Godot at a
+  time, per the render-orphan rule. **Pure metals (copper, steel) render dark**
+  in that scene (dark backdrop + metals reflect environment; they also emit no
+  normal map), so Grayson had them swapped out for tree bark + dark walnut.
+  Grayson's own hand-finished `saved_graphs/bricks_grayson_edit.ptex` replaced
+  the stock red brick in both the hero triptych and the gallery, as a
+  round-trip showcase. New collapsible "Material cookbook" section holds a 4×7
+  contact sheet of all 28 cookbook materials. The GitHub topic/search **social
+  card** crops the 1280×640 image to ~2.74:1, which was chopping off the title;
+  lifted the title+subtitle into the crop-safe zone and swapped the brick tile,
+  then **uploaded the new `docs/social-preview.png` via repo Settings → Social
+  preview** through Grayson's Chrome (that card is NOT read from the repo file,
+  it must be uploaded in the web UI). Verified the README images serve HTTP 200.
 
 ## 🗂️ Changed this session (render-timeout process-tree kill fix)
 
@@ -192,35 +210,7 @@ The older open backlog, unchanged:
   Recovered by killing all Godot and rendering strictly sequentially. Captured
   in the `render-orphan-contention` project memory.
 
-## 🗂️ Changed this session (new leather cookbook category, 6 materials)
-
-- Branch: `main`. Committed and **pushed**: `5f1a27b` (l01-l04 + AUTHORING
-  section), `6915fc8` (l04 albedo-polarity fix + l05 quilted), `f55359a` (l06
-  topstitched). New file `quality/cookbook_leather.py`; new AUTHORING Leather
-  section; 6 tracked albedo thumbnails under `docs/images/cookbook-leather/`.
-  Also appended the debug-materials idea to
-  `_agent-commons/ideas/Tool-MaterialMaker-MCP.md`. No plan doc, no worktree,
-  no gate: informal cookbook growth per `quality/README.md`, same pattern as
-  the fabrics/wood/stone cookbooks.
-- Decisions (+ why): followed the visual-iteration workflow (render + 3D
-  preview + send to Grayson each pass; judge relief in 3D, not the flat
-  swatch). Reworked three materials from honest misses rather than shipping
-  them: l02's first wear mask made cow-hide blobs (finer/softer/lower-contrast
-  fixed it), l04's bronze was on the wrong voronoi region (albedo-polarity
-  flip), l05's intended stitch dashes via `shape`+`tiler` failed so it became
-  a `pattern`-based quilt. Two general levers came out of it and are the real
-  keep-value, both written into AUTHORING: **`_dome_the_cells`** (reverse
-  `colorize_0` so voronoi cell BODIES dome up and seams recess; the stock
-  crocodile ramp is inside-out because voronoi port 0 is low at centers, high
-  at borders) and the **stitch-generator hunt** (`shape`+`tiler` degenerate
-  shader → 180s timeout when isolated; `pattern` Square×Square grid works but
-  its "on" region is the connected field, so the dash rectangles are its LOW
-  cells → one reversed sharpen colorize fixes colour + flattened field at
-  once). Also learned: isolating a node's output to albedo for a quick
-  diagnostic reliably timed the renderer out here twice; prefer reading the
-  full render over an isolate-to-albedo pass.
-
-> 📦 **12 older "Changed this session" write-ups archived** (through
+> 📦 **13 older "Changed this session" write-ups archived** (through
 > 2026-08-29) -- the pre-release audit/teardown/doc-fix pass,
 > render_node_output/live_render_node_output (item H), saved_graphs/
 > round-trip, Unity export proof, wood/stone cookbooks, the overlay
@@ -542,6 +532,28 @@ The older open backlog, unchanged:
 > through the project's Phase 1-2 kickoff on 2026-08-25.
 
 
+### 2026-08-29 (README images) — 3D-preview hero + gallery + cookbook sheet, social-preview fix
+- Picked up via `pickup` with Grayson's ask: nicer front-page images. Found
+  drift: `origin/main` was 2 commits ahead (the render-timeout fix had merged
+  after the prior wrap); fast-forwarded local cleanly first.
+- Ran `brainstorming` → bounded. Grayson chose "hero + 3D gallery," "keep 4
+  columns," "render hero finalists I choose," and "swap the dark metals for
+  other mats." Rendered 8 gallery previews + 2 replacements sequentially via a
+  scratch script against `mm_mcp.render`/`preview`; sent contact sheets each
+  pass and iterated. Learned pure metals render near-black in the preview scene.
+- Grayson asked to feature his own brick: rendered
+  `saved_graphs/bricks_grayson_edit.ptex` (an irregular mossy cobblestone) and
+  swapped it into both the hero triptych and the gallery as a round-trip example.
+- Wired README: hero at top, 4-col 3D gallery, collapsible "Material cookbook"
+  section with a 4×7 sheet of all 28 cookbook materials. Committed `d7f2659`,
+  pushed, verified images serve HTTP 200.
+- Grayson flagged the GitHub topic-card social preview showed cropped title.
+  Root cause: topic cards crop the 1280×640 to ~2.74:1. Lifted the text into
+  the safe zone and swapped his brick into the tile grid (`738e10b`), then
+  uploaded the new `docs/social-preview.png` via repo Settings → Social preview
+  through his Chrome (the card is set in the web UI, not from the repo file).
+- Wrote `_agent-commons\log\2026-08-29-claude-code-materialmaker-mcp-readme-front-page-images.md`.
+
 ### 2026-08-29 (render timeout fix) — killed the process-tree leak behind the render-orphan cascade
 - Worktree session on branch `claude/confident-tesla-ee9400`. Task: fix the
   latent process-leak in `render.py`'s `_run_godot` timeout path, the root cause
@@ -665,62 +677,5 @@ The older open backlog, unchanged:
 - Wrote/updated the `_agent-commons\log\` entry
   (`2026-08-29-claude-code-materialmaker-mcp-remaining-review-findings.md`).
 
-### 2026-08-29 (later) — fixed the top 2 code-review bugs, trimmed HANDOFF.md, closed backlog item I
-- Picked up via `pickup`. No drift: `main` matched the prior session's
-  `d0df55b`, `origin/main` in sync, working tree clean except the
-  long-flagged untracked `docs/images/contact-sheet-wood-stone.png`.
-- Grayson said he liked all three of the prior session's proposed next
-  moves (K, L, M) and was fine with any order, so this session did all
-  three. Also raised a new, unscoped idea: a simplified "Material Maker for
-  dummies" interface, since the real node graph can be intimidating to a
-  non-technical viewer. Logged it as backlog item N in
-  `_agent-commons/ideas/Tool-MaterialMaker-MCP.md` verbatim rather than
-  designing anything, since it's explicit backlog wanting its own
-  `brainstorming` session, and flagged a possible tension with
-  `docs/NORTH_STAR.md`'s round-trip-learning-tool framing worth checking
-  first.
-- **K:** fixed the two worst live-control correctness bugs via direct TDD
-  on `main` (both already diagnosed with line numbers from the prior
-  session's code review). `live_render_node_output` now checks whether
-  restoring the original wiring after a preview actually succeeded, instead
-  of silently reporting success while the live graph stayed wired to the
-  temporary connection. `live_apply` now also catches `AttributeError` from
-  a malformed op (alongside the existing `KeyError`/`TypeError`), since a
-  list where a parameters dict was expected could raise uncaught deep
-  inside `validate_graph`. 4 new tests, all written and confirmed red
-  before the fix. Committed `12a4be3`.
-- **L:** adopted a HANDOFF.md trim/archive convention. The doc had grown to
-  1840 lines with no cap, flagged by the prior session's teardown. Moved 8
-  older "Changed this session" write-ups and 22 older session-log entries
-  verbatim into a new `docs/HANDOFF_ARCHIVE.md`; this doc now keeps only
-  the 3 most recent write-ups and 5 most recent log entries, documented as
-  a standing convention in both this doc and `CLAUDE.md`. Also fixed a
-  stale `-t`-vs-`--target` flag in `CLAUDE.md`'s manual render example
-  while in there. Committed `cb47010`.
-- **M:** asked Grayson directly (via a structured question, not a coin
-  flip) whether to keep growing live-control's mutation surface given the
-  teardown's sunk-cost flag. He said keep building it, so picked up backlog
-  item I. Investigated Material Maker's own source before writing any
-  GDScript: its undo/redo command dispatcher
-  (`graph_edit.gd:undoredo_command`) has a `move_generators` case (reuses
-  `do_set_position`, which also writes the new position back onto the
-  generator, not just the on-screen node) but genuinely no rename case
-  anywhere for an ordinary node -- confirmed this isn't a gap in the addon,
-  it's unsupported by Material Maker itself, since faking a rename by hand
-  would risk desyncing the addon's `"node_"+name` addressing and Godot's
-  own built-in connection bookkeeping. Built `reposition_node` as a new
-  `live_apply` op reusing the same verified-safe call, proven with a real
-  integration test that adds a node, moves it, and confirms the new
-  position via `get_graph`. Ruled the rename half out explicitly rather
-  than leaving it as a silent gap. Committed `352317a`.
-- Pushed all three commits after confirming `origin/main` sync
-  (`git rev-list --left-right --count` → `0  0`).
-- Wrote and pushed the required `_agent-commons\log\` entry
-  (`2026-08-29-claude-code-materialmaker-mcp-bugfix-trim-reposition.md`),
-  scoped to just this session's own new files since the commons repo had
-  other agents' pending work sitting uncommitted.
-- Fast suite: 214 passed (up from 207 at pickup), 10 deselected. Zero
-  leftover Godot processes after the two real integration runs (item K's
-  restore-failure tests were unit-level; item I's reposition test launched
-  a real overlay).
+_(Older entries continue in [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).)_
 
