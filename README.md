@@ -1,5 +1,9 @@
 # Material Maker MCP
 
+<p align="center">
+  <img src="docs/images/hero.png" alt="Cobblestone, moss, and ceramic-tile materials authored by the server and rendered in 3D" width="100%">
+</p>
+
 An [MCP](https://modelcontextprotocol.io) server that lets an AI assistant
 author [Material Maker](https://github.com/RodZill4/material-maker) node graphs
 from natural language, render them headlessly to PBR texture maps, and hand back
@@ -41,15 +45,35 @@ Why this project exists and what it's actually optimizing for is in
 
 ## Gallery
 
-Each of these was authored by the server from the one-line prompt beside it, then
-rendered headlessly. Full graphs and previews are in [`examples/`](examples/).
+Each material below was authored by the server from the one-line prompt beside
+it, then its rendered maps were composited onto a sphere, a cube, and a cutaway
+ball on a lit ground plane, so the normal-map relief reads under real lighting
+instead of as a flat swatch. The bottom-right one is a round-trip example: the
+server drafted the graph, then I finished it by hand in Material Maker. Full
+graphs and flat swatches are in [`examples/`](examples/).
 
 | | | | |
 |:--:|:--:|:--:|:--:|
-| ![polished gray granite](examples/images/s02_gray_granite.png) | ![woven denim](examples/images/f01_woven_denim.png) | ![weathered copper](examples/images/m01_weathered_copper.png) | ![rusted painted steel](examples/images/combo01_rusted_painted_steel.png) |
-| "polished gray granite" | "blue denim fabric" | "weathered copper" | "rusted painted steel, peeling" |
-| ![ceramic hex tiles](examples/images/man02_ceramic_hex_tiles.png) | ![brushed aluminum](examples/images/m02_brushed_aluminum.png) | ![mossy forest floor](examples/images/o01_mossy_forest_floor.png) | ![red brick wall](examples/images/s01_red_brick_wall.png) |
-| "white ceramic hexagon tiles" | "brushed aluminum" | "mossy forest floor" | "red brick wall" |
+| ![polished gray granite](docs/images/gallery/s02_gray_granite.png) | ![blue denim fabric](docs/images/gallery/f01_woven_denim.png) | ![tree bark](docs/images/gallery/o03_tree_bark.png) | ![dark walnut wood](docs/images/gallery/w05_dark_walnut.png) |
+| "polished gray granite" | "blue denim fabric" | "tree bark" | "dark walnut wood" |
+| ![white ceramic hexagon tiles](docs/images/gallery/man02_ceramic_hex_tiles.png) | ![brushed aluminum](docs/images/gallery/m02_brushed_aluminum.png) | ![mossy forest floor](docs/images/gallery/o01_mossy_forest_floor.png) | ![mossy cobblestone, hand-finished in Material Maker](docs/images/gallery/bricks_grayson_edit.png) |
+| "white ceramic hexagon tiles" | "brushed aluminum" | "mossy forest floor" | mossy cobblestone _(hand-finished)_ |
+
+## Material cookbook
+
+Beyond the frozen gallery above, the [`quality/`](quality/) cookbook builds a
+wider spread of materials across seven categories. These are the flat rendered
+swatches; the full recipes and the levers behind them are in
+[docs/AUTHORING.md](docs/AUTHORING.md).
+
+<details>
+<summary><b>Show the cookbook contact sheet</b> (28 materials: fabrics, leather, organics, sci-fi, stone, terrain, wood)</summary>
+
+<p align="center">
+  <img src="docs/images/cookbook-contact-sheet.png" alt="Contact sheet of 28 cookbook materials across seven categories" width="100%">
+</p>
+
+</details>
 
 ## How it works
 
