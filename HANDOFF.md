@@ -1,34 +1,44 @@
 # 🧭 Session Handoff — Tool-MaterialMaker-MCP
 
-_Last updated: 2026-08-29 (README front-page images) CT (America/Chicago)_
+_Last updated: 2026-08-30 (Phase 4 hardening) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**This session gave the GitHub front page real visuals.** The README now leads
-with a **3D-preview hero triptych** (Grayson's hand-finished cobblestone / moss
-/ ceramic hex), a **4-column, 8-cell 3D gallery** (materials composited onto the
-`render_preview` sphere+cube+cutaway scene instead of shown as flat swatches),
-and a collapsible **"Material cookbook"** section with a 4×7 contact sheet of all
-28 cookbook materials. Grayson's own `saved_graphs/bricks_grayson_edit.ptex`
-(an irregular mossy cobblestone) is featured as a round-trip example in place of
-the stock red brick. The GitHub topic/search **social card** was fixed too (its
-title was being cropped) and the corrected `docs/social-preview.png` was uploaded
-via repo Settings. Two commits pushed (`d7f2659`, `738e10b`); `origin/main` in
-sync. The immediately prior session landed the `render.py` render-timeout
-process-tree fix (now merged). Older write-ups/log beyond the cap live in
-[docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).
+**This session closed out Phase 4 hardening (path bounding + `inspect_project` +
+CI + release-please), prompted by a compare against
+`dcc-mcp/dcc-mcp-material-maker`.** That other project is a locked-down headless
+export/inspection adapter, a different product from ours (it never authors
+graphs); we borrowed its packaging/sandboxing rigor without changing our
+round-trip North Star. Three items landed via 10 TDD tasks (subagent-driven,
+whole-branch review clean, merged `d23b235`): (1) **opt-in `MM_ALLOWED_ROOTS`
+path bounding** (`src/mm_mcp/paths.py`) wired into `save_graph` (now returns a
+`{"ok","path"}` dict, not a bare str), `load_example`, and the 3 render tools,
+plus an always-on `../` traversal guard; unset = unrestricted, so daily use is
+unchanged, and `--check` reports the state. (2) **`inspect_project`** batch tool
+#10 (`src/mm_mcp/inspect.py`). (3) **CI** `.github/workflows/test.yml` and
+**release-please**, with `__version__` single-sourced via `importlib.metadata`.
+`main` is **pushed and in sync** (`origin/main` = `d23b235`); the **tests CI
+passed on its first real Windows run**. Older write-ups/log beyond the cap live
+in [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).
 
 ## 📌 Where we stopped
 
-Wrapped cleanly, nothing mid-task. Front-page work is committed, pushed, and
-verified (README images serve HTTP 200; the new social preview is live in repo
-Settings). Working tree clean.
+Everything is landed and pushed. The one open thread: **release-please's first
+run failed at the final step only** ("GitHub Actions is not permitted to create
+or approve pull requests"). It got all the way to creating the release branch and
+committing the CHANGELOG + version bump to **0.4.0**; it just could not open the
+PR because the repo setting is still off. Grayson is handling that later.
 
 ## ▶️ Next concrete step
 
-Nothing pending on the README work; it's landed and live. Follow-ups still open:
+**Enable the one GitHub setting, then re-run release-please.** Repo → Settings →
+Actions → General → Workflow permissions → check "Allow GitHub Actions to create
+and approve pull requests" → Save. Then `gh run rerun <release-please run id>`
+(or push any commit) opens the 0.4.0 release PR. The push credential also needed
+a one-time `gh auth refresh -s workflow` (workflow files are separately
+permissioned); that scope is now granted. Other follow-ups still open:
 - **More debug swatches** if wanted: blend-mask polarity, height-to-normal
   convention, colorize/ramp direction — same pattern, each tied to a real trap.
 - **More cookbook categories**: glass, plastics, painted metal still uncovered.
@@ -122,6 +132,38 @@ The older open backlog, unchanged:
   earlier session (staleness marker, `_append_autoload`'s first-occurrence
   match, both verified low-priority).
 
+## 🗂️ Changed this session (Phase 4 hardening: path bounding, inspect_project, CI + release-please)
+
+- Branch: `phase4-hardening` (off `main`), 10 TDD tasks subagent-driven, merged
+  `--no-ff` as `d23b235`, **pushed to `origin/main`**. New: `src/mm_mcp/paths.py`,
+  `src/mm_mcp/inspect.py`, `.github/workflows/test.yml`,
+  `.github/workflows/release-please.yml`, `release-please-config.json`,
+  `.release-please-manifest.json`, `tests/test_paths.py`, `tests/test_inspect.py`,
+  and the spec + plan under `docs/superpowers/`. Edited: `config.py`
+  (`allowed_roots`), `server.py` (guards on 5 tools + `inspect_project`),
+  `__init__.py` (version via `importlib.metadata`), `doctor.py`, `README.md`,
+  `STATUS.md`. Fast suite 260 passed; first real Windows CI run green.
+- Decisions (+ why): prompted by a compare against
+  `dcc-mcp/dcc-mcp-material-maker` (a headless export/inspection adapter, a
+  different product). Borrowed its packaging/sandboxing rigor only where it
+  serves our North Star. **Path bounding is opt-in** (`MM_ALLOWED_ROOTS` unset =
+  unrestricted) so daily use is frictionless; the `../` traversal guard on
+  name/basename fragments is always on. `save_graph` now returns a
+  `{"ok","path"}` dict (was a bare str) to match every other tool's shape; no
+  internal consumer depended on the old return. **CI provisioning was corrected
+  mid-flight:** a bare runner needs the MM checkout + a stub Godot binary (the
+  fast suite calls `require_valid`), not "no clone" as first specced; verified
+  locally (260 passed) before writing the workflow. Version single-sourced to
+  `pyproject.toml` only (release-please owns it), `__init__.py` derives it with a
+  `0.0.0+unknown` fallback that is load-bearing for `pythonpath=src` test runs.
+- Push friction worth remembering: the commit adds workflow files, which need a
+  **`workflow`-scoped** credential. The default git/OAuth and gh tokens lacked
+  it; fixed with a one-time `gh auth refresh -h github.com -s workflow`, then
+  pushed via `git -c credential.helper='!gh auth git-credential'`. release-please
+  then ran but failed only at "open the PR" because the repo's "Allow GitHub
+  Actions to create and approve pull requests" setting is still off (see Next
+  concrete step). Wrote two `_agent-commons\log\` entries (spec + implementation).
+
 ## 🗂️ Changed this session (README front-page 3D previews + social-preview fix)
 
 - Branch: `main`. Committed and **pushed**: `d7f2659` (hero + 3D gallery +
@@ -180,37 +222,7 @@ The older open backlog, unchanged:
   Landed via a real merge with the concurrent debug-swatch wrap-up (`e6eb4c0`),
   which had independently trimmed the same two baton entries.
 
-## 🗂️ Changed this session (debug diagnostic swatch gallery, both phases)
-
-- Branch: `main`. Committed (local, then pushed at wrap): `a0d7674` (phase-1
-  visual gallery + `docs/DEBUG_SWATCHES.md`), `ba3d968` (phase-2 automated
-  checks + vendored `quality/pngread.py` + `tests/test_debug_swatches.py`),
-  `ab688e6` (relief `relief_*` family: circle/polygon/star/rays + "UP" glyph).
-  New files: `quality/debug_swatches.py`, `quality/pngread.py`,
-  `tests/test_debug_swatches.py`, `docs/DEBUG_SWATCHES.md`. No plan doc, no
-  worktree; informal harness growth, no gate. Outputs (`quality/authored`,
-  `quality/cookbook`) gitignored.
-- Decisions (+ why): ran `brainstorming` → classified bounded, then Grayson's
-  "both, phased" call (build the visual gallery now, add the automated
-  assertion layer). Chose a vendored ~60-line stdlib PNG reader over adding
-  Pillow (his call, keeps deps clean). Calibrated every check threshold against
-  real renders rather than guessing — which corrected two of my assumptions on
-  sight: MM's +V points DOWN (not up), and the polarity swatch's red centers
-  OUT-area the blue seams (so `red > blue` is the flip detector, not the
-  reverse). Two assertion styles because voronoi layout is random: deterministic
-  point-samples where geometry is fixed (UV corners, relief dome-out), full-
-  buffer statistical scans where it isn't (the glyph's thin strokes need the
-  full scan, a sparse grid walks past them). For "text", MM has no text node, so
-  `relief_glyph` spells "UP" from two `sixteen_segment` glyphs scaled/translated
-  via `transform` and unioned with `blend` Lighten. Left `render.py` untouched
-  despite finding its orphan bug, since a separate session is fixing it.
-- Process note: mid-session hit a render death-spiral from OVERLAPPING render
-  jobs (a timed-out foreground render kept running in the background while I
-  started another), which root-caused the `render.py` orphan-on-timeout bug.
-  Recovered by killing all Godot and rendering strictly sequentially. Captured
-  in the `render-orphan-contention` project memory.
-
-> 📦 **13 older "Changed this session" write-ups archived** (through
+> 📦 **14 older "Changed this session" write-ups archived** (through
 > 2026-08-29) -- the pre-release audit/teardown/doc-fix pass,
 > render_node_output/live_render_node_output (item H), saved_graphs/
 > round-trip, Unity export proof, wood/stone cookbooks, the overlay
@@ -532,6 +544,28 @@ The older open backlog, unchanged:
 > through the project's Phase 1-2 kickoff on 2026-08-25.
 
 
+### 2026-08-30 (Phase 4 hardening) — path bounding + inspect_project + CI/release-please, from a project compare
+- Grayson asked to compare us against `github.com/dcc-mcp/dcc-mcp-material-maker`.
+  Verdict: same name, different product (theirs is a locked-down headless
+  export/inspection adapter; ours authors graphs). Borrowed three of its rigors.
+- Ran `brainstorming` → architectural. Grayson chose opt-in path bounding, full
+  release-please, `inspect_project` as path-in/metrics-out. Wrote spec + plan,
+  then executed 10 tasks via `subagent-driven-development` (per-task spec+quality
+  review, whole-branch final review on Opus = APPROVE FOR MERGE).
+- Probed two blowup risks before writing YAML: fast suite needs the MM checkout +
+  a stub Godot binary on a bare runner (first "no clone" read was wrong, the repo
+  `.env` masked it); `main` was already clean with the render-timeout fix merged.
+- Items: opt-in `MM_ALLOWED_ROOTS` bounding + always-on traversal guard;
+  `inspect_project` tool #10; `test.yml` CI (green first run); release-please
+  (seeded to cut 0.4.0); `__version__` via `importlib.metadata`. Fast suite 260.
+- Merged `phase4-hardening` → `main` (`d23b235`), verified merged tree, pushed.
+  Push needed a one-time `gh auth refresh -s workflow` (workflow files are
+  separately permissioned). CI passed; release-please got to the 0.4.0 release
+  branch + version-bump commit but failed to open the PR (repo "Actions may
+  create PRs" setting still off — Grayson handling later).
+- Wrote `_agent-commons\log\2026-08-30-claude-code-mm-mcp-phase4-hardening-spec.md`
+  and `...-phase4-hardening-implemented.md`.
+
 ### 2026-08-29 (README images) — 3D-preview hero + gallery + cookbook sheet, social-preview fix
 - Picked up via `pickup` with Grayson's ask: nicer front-page images. Found
   drift: `origin/main` was 2 commits ahead (the render-timeout fix had merged
@@ -642,40 +676,6 @@ The older open backlog, unchanged:
 - 3 commits pushed (`5f1a27b`, `6915fc8`, `f55359a`); `origin/main` in sync.
   Wrote `_agent-commons\log\2026-08-29-claude-code-materialmaker-mcp-leather-cookbook.md`.
   No integration/gate changes (informal cookbook growth).
-
-### 2026-08-29 (cleanup) — resolved the remaining code-review findings, then 4 teardown cleanup passes
-- Picked up via `pickup`; no drift, `main` at the prior session's `1368115`,
-  `origin/main` in sync, 214 passing (only untracked file the long-flagged
-  contact-sheet PNG).
-- Grayson picked next-move #1: fix the 8 remaining code-review findings
-  (3-10). Ran an advisor consult first; it recommended splitting by
-  verifiability and flagged #7/#5/#6 as judgment calls and #8/#10 as likely
-  non-bugs. Followed that.
-- Answered the two blocking file questions before touching code: `live_apply`
-  passes no timeout (so mutations inherit the 5s default — #7 is real), and
-  `new_material()` CREATES the generator via `clear_material()`→`create_gen`
-  (so #8's suggested guard is wrong — read `graph_edit.gd:690-724`).
-- Fixed 6 findings test-first (red confirmed): #4 negative port index, #9
-  `_launch_overlay` fd leak, #3 atexit handler (verified it fires at real
-  interpreter shutdown), #7 30s mutation timeout, #5 overlay cleanup-on-fail,
-  #6 log_tail docstring accuracy. Documented #8 and #10 as deliberate
-  non-changes with in-code reasons. Committed `c65cc83` — and caught a
-  `git add -A` slip that swept the untracked PNG in, removed it via
-  `git rm --cached` + amend (both amends local, pre-push).
-- Then, on Grayson's "keep going", ran the teardown's cleanup theme across 3
-  more rounds: killed the dead `Graph` class (`13c7490`, only self-tested,
-  rebuilt its test fixture as a plain dict), deduped the PNG-snapshot loop
-  (`9726a59`, dup pair 1), and shared the Godot retry loop + log-tail across
-  render/preview (`19427a7`, dup pair 2 — added 4 characterization tests for
-  the previously-untested retry/timeout behavior). On "one more cycle then
-  wrap up", extracted `_first_albedo` (`f436300`, dup pair 3).
-- All 5 commits (plus the wrap-up doc commit) were pushed at end of session
-  once Grayson said "push + /wrap". Fast suite ended at 226 passed (up from
-  214), 10 deselected. No integration runs this session (all changes
-  unit-level or behavior-preserving refactors), so zero Godot processes
-  spawned.
-- Wrote/updated the `_agent-commons\log\` entry
-  (`2026-08-29-claude-code-materialmaker-mcp-remaining-review-findings.md`).
 
 _(Older entries continue in [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).)_
 

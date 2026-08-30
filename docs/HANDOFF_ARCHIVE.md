@@ -19,6 +19,36 @@ doc's window.
 
 ## Archived "Changed this session" write-ups
 
+## 🗂️ Changed this session (debug diagnostic swatch gallery, both phases)
+
+- Branch: `main`. Committed (local, then pushed at wrap): `a0d7674` (phase-1
+  visual gallery + `docs/DEBUG_SWATCHES.md`), `ba3d968` (phase-2 automated
+  checks + vendored `quality/pngread.py` + `tests/test_debug_swatches.py`),
+  `ab688e6` (relief `relief_*` family: circle/polygon/star/rays + "UP" glyph).
+  New files: `quality/debug_swatches.py`, `quality/pngread.py`,
+  `tests/test_debug_swatches.py`, `docs/DEBUG_SWATCHES.md`. No plan doc, no
+  worktree; informal harness growth, no gate. Outputs (`quality/authored`,
+  `quality/cookbook`) gitignored.
+- Decisions (+ why): ran `brainstorming` → classified bounded, then Grayson's
+  "both, phased" call (build the visual gallery now, add the automated
+  assertion layer). Chose a vendored ~60-line stdlib PNG reader over adding
+  Pillow (his call, keeps deps clean). Calibrated every check threshold against
+  real renders rather than guessing — which corrected two of my assumptions on
+  sight: MM's +V points DOWN (not up), and the polarity swatch's red centers
+  OUT-area the blue seams (so `red > blue` is the flip detector, not the
+  reverse). Two assertion styles because voronoi layout is random: deterministic
+  point-samples where geometry is fixed (UV corners, relief dome-out), full-
+  buffer statistical scans where it isn't (the glyph's thin strokes need the
+  full scan, a sparse grid walks past them). For "text", MM has no text node, so
+  `relief_glyph` spells "UP" from two `sixteen_segment` glyphs scaled/translated
+  via `transform` and unioned with `blend` Lighten. Left `render.py` untouched
+  despite finding its orphan bug, since a separate session is fixing it.
+- Process note: mid-session hit a render death-spiral from OVERLAPPING render
+  jobs (a timed-out foreground render kept running in the background while I
+  started another), which root-caused the `render.py` orphan-on-timeout bug.
+  Recovered by killing all Godot and rendering strictly sequentially. Captured
+  in the `render-orphan-contention` project memory.
+
 ## 🗂️ Changed this session (new leather cookbook category, 6 materials)
 
 - Branch: `main`. Committed and **pushed**: `5f1a27b` (l01-l04 + AUTHORING
@@ -412,6 +442,40 @@ doc's window.
 ---
 
 ## Archived session log
+
+### 2026-08-29 (cleanup) — resolved the remaining code-review findings, then 4 teardown cleanup passes
+- Picked up via `pickup`; no drift, `main` at the prior session's `1368115`,
+  `origin/main` in sync, 214 passing (only untracked file the long-flagged
+  contact-sheet PNG).
+- Grayson picked next-move #1: fix the 8 remaining code-review findings
+  (3-10). Ran an advisor consult first; it recommended splitting by
+  verifiability and flagged #7/#5/#6 as judgment calls and #8/#10 as likely
+  non-bugs. Followed that.
+- Answered the two blocking file questions before touching code: `live_apply`
+  passes no timeout (so mutations inherit the 5s default — #7 is real), and
+  `new_material()` CREATES the generator via `clear_material()`→`create_gen`
+  (so #8's suggested guard is wrong — read `graph_edit.gd:690-724`).
+- Fixed 6 findings test-first (red confirmed): #4 negative port index, #9
+  `_launch_overlay` fd leak, #3 atexit handler (verified it fires at real
+  interpreter shutdown), #7 30s mutation timeout, #5 overlay cleanup-on-fail,
+  #6 log_tail docstring accuracy. Documented #8 and #10 as deliberate
+  non-changes with in-code reasons. Committed `c65cc83` — and caught a
+  `git add -A` slip that swept the untracked PNG in, removed it via
+  `git rm --cached` + amend (both amends local, pre-push).
+- Then, on Grayson's "keep going", ran the teardown's cleanup theme across 3
+  more rounds: killed the dead `Graph` class (`13c7490`, only self-tested,
+  rebuilt its test fixture as a plain dict), deduped the PNG-snapshot loop
+  (`9726a59`, dup pair 1), and shared the Godot retry loop + log-tail across
+  render/preview (`19427a7`, dup pair 2 — added 4 characterization tests for
+  the previously-untested retry/timeout behavior). On "one more cycle then
+  wrap up", extracted `_first_albedo` (`f436300`, dup pair 3).
+- All 5 commits (plus the wrap-up doc commit) were pushed at end of session
+  once Grayson said "push + /wrap". Fast suite ended at 226 passed (up from
+  214), 10 deselected. No integration runs this session (all changes
+  unit-level or behavior-preserving refactors), so zero Godot processes
+  spawned.
+- Wrote/updated the `_agent-commons\log\` entry
+  (`2026-08-29-claude-code-materialmaker-mcp-remaining-review-findings.md`).
 
 ### 2026-08-29 (later) — fixed the top 2 code-review bugs, trimmed HANDOFF.md, closed backlog item I
 - Picked up via `pickup`. No drift: `main` matched the prior session's
