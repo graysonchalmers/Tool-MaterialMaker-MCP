@@ -1,0 +1,42 @@
+# .github/workflows/test.yml
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  fast-tests:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Clone Material Maker (node defs + examples the suite reads)
+        run: git clone --depth 1 https://github.com/RodZill4/material-maker mm-checkout
+
+      - name: Write steam_appid.txt
+        run: Set-Content -Path mm-checkout/steam_appid.txt -Value 4110830 -NoNewline
+        shell: pwsh
+
+      - name: Create stub Godot binary (existence is all the suite checks)
+        run: |
+          New-Item -ItemType Directory -Force -Path godot-stub | Out-Null
+          Set-Content -Path godot-stub/Godot_v4.7.1_win64.exe -Value x -NoNewline
+        shell: pwsh
+
+      - name: Install
+        run: pip install -e .[dev]
+
+      - name: Run fast suite
+        env:
+          MM_PROJECT_PATH: ${{ github.workspace }}\mm-checkout
+          MM_GODOT_BINARY: ${{ github.workspace }}\godot-stub\Godot_v4.7.1_win64.exe
+          MM_OUTPUT_DIR: ${{ github.workspace }}\output
+          MM_DOTENV: ${{ github.workspace }}\no-such.env
+        run: pytest -q -m "not integration"
