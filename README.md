@@ -52,12 +52,12 @@ instead of as a flat swatch. The bottom-right one is a round-trip example: the
 server drafted the graph, then I finished it by hand in Material Maker. Full
 graphs and flat swatches are in [`examples/`](examples/).
 
-| | | | |
-|:--:|:--:|:--:|:--:|
-| ![polished gray granite](docs/images/gallery/s02_gray_granite.png) | ![blue denim fabric](docs/images/gallery/f01_woven_denim.png) | ![tree bark](docs/images/gallery/o03_tree_bark.png) | ![dark walnut wood](docs/images/gallery/w05_dark_walnut.png) |
-| "polished gray granite" | "blue denim fabric" | "tree bark" | "dark walnut wood" |
-| ![white ceramic hexagon tiles](docs/images/gallery/man02_ceramic_hex_tiles.png) | ![brushed aluminum](docs/images/gallery/m02_brushed_aluminum.png) | ![mossy forest floor](docs/images/gallery/o01_mossy_forest_floor.png) | ![mossy cobblestone, hand-finished in Material Maker](docs/images/gallery/bricks_grayson_edit.png) |
-| "white ceramic hexagon tiles" | "brushed aluminum" | "mossy forest floor" | mossy cobblestone _(hand-finished)_ |
+| | |
+|:--:|:--:|
+| ![polished gray granite](docs/images/gallery/s02_gray_granite.png) | ![blue denim fabric](docs/images/gallery/f01_woven_denim.png) |
+| ![tree bark](docs/images/gallery/o03_tree_bark.png) | ![dark walnut wood](docs/images/gallery/w05_dark_walnut.png) |
+| ![white ceramic hexagon tiles](docs/images/gallery/man02_ceramic_hex_tiles.png) | ![brushed aluminum](docs/images/gallery/m02_brushed_aluminum.png) |
+| ![mossy forest floor](docs/images/gallery/o01_mossy_forest_floor.png) | ![mossy cobblestone, hand-finished in Material Maker](docs/images/gallery/bricks_grayson_edit.png) |
 
 ## Material cookbook
 
