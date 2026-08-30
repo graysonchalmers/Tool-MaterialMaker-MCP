@@ -33,7 +33,7 @@ jobs:
           python-version: "3.13"
       - name: Build wheel + sdist
         run: |
-          pip install build
+          pip install .[release]
           python -m build
         shell: pwsh
       - name: Attach to the GitHub Release
