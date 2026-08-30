@@ -13,6 +13,7 @@ from mm_mcp.validator import validate_graph
 from mm_mcp.render import render
 from mm_mcp.preview import render_preview as _render_preview
 from mm_mcp.doctor import run_check
+from mm_mcp.inspect import inspect_ptex
 
 # Startup is lazy: importing this module must NOT validate config or build the
 # catalog, so `mm-mcp --check` / `--version` work even when config is broken
@@ -165,6 +166,27 @@ def save_graph(ptex: dict, path: str) -> dict:
     with open(path, "w", encoding="utf-8") as fh:
         json.dump(ptex, fh, indent=1)
     return {"ok": True, "path": path}
+
+
+def inspect_project(path: str) -> dict:
+    """Read-only metrics for a .ptex file on disk: file sha256, node and
+    connection counts, a node-type histogram, and the material-output node
+    names. For inspecting a hand-edited graph coming back through the round
+    trip. Bounded by MM_ALLOWED_ROOTS when set."""
+    try:
+        path = ensure_within_roots(path, load_config().allowed_roots)
+    except PathNotAllowed as exc:
+        return {"ok": False, "error": str(exc)}
+    try:
+        with open(path, "rb") as fh:
+            raw = fh.read()
+    except OSError as exc:
+        return {"ok": False, "error": f"cannot read '{path}': {exc}"}
+    try:
+        ptex = json.loads(raw.decode("utf-8"))
+    except (ValueError, UnicodeDecodeError) as exc:
+        return {"ok": False, "error": f"'{path}' is not valid UTF-8 JSON: {exc}"}
+    return {"ok": True, **inspect_ptex(ptex, file_bytes=raw)}
 
 
 def list_examples() -> list:
@@ -429,6 +451,7 @@ mcp.tool()(render_preview)
 mcp.tool()(save_graph)
 mcp.tool()(list_examples)
 mcp.tool()(load_example)
+mcp.tool()(inspect_project)
 mcp.tool()(live_start)
 mcp.tool()(live_get_graph)
 mcp.tool()(live_apply)

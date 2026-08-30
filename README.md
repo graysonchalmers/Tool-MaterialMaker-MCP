@@ -210,7 +210,7 @@ through a render.
 
 ## Tools
 
-The server exposes nine batch-mode tools and one resource (plus six more in Live mode, below):
+The server exposes ten batch-mode tools and one resource (plus six more in Live mode, below):
 
 | Tool | What it does |
 |---|---|
@@ -223,6 +223,7 @@ The server exposes nine batch-mode tools and one resource (plus six more in Live
 | `save_graph` | Write a `.ptex` graph to a path |
 | `list_examples` | List the bundled Material Maker examples |
 | `load_example` | Load a bundled example as a `.ptex` graph |
+| `inspect_project` | Read-only metrics for a `.ptex` on disk (hash, node/connection counts, type histogram, material outputs) |
 
 Resource `catalog://nodes` exposes the full node catalog.
 

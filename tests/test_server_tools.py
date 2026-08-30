@@ -219,3 +219,32 @@ def test_render_graph_rejects_traversal_basename():
     res = _server.render_graph(ptex, basename="../../evil")
     assert res["ok"] is False
     assert "error" in res
+
+
+def test_inspect_project_on_real_example(tmp_path):
+    ptex = _server.load_example("bricks")
+    out = os.path.join(str(tmp_path), "b.ptex")
+    _server.save_graph(ptex, out)
+    res = _server.inspect_project(out)
+    assert res["ok"] is True
+    assert res["node_count"] > 0
+    assert isinstance(res["node_types"], dict)
+    assert len(res["sha256"]) == 64
+
+
+def test_inspect_project_missing_file(tmp_path):
+    res = _server.inspect_project(os.path.join(str(tmp_path), "nope.ptex"))
+    assert res["ok"] is False
+
+
+def test_inspect_project_bad_json(tmp_path):
+    bad = os.path.join(str(tmp_path), "bad.ptex")
+    with open(bad, "w", encoding="utf-8") as fh:
+        fh.write("{not json")
+    res = _server.inspect_project(bad)
+    assert res["ok"] is False
+
+
+def test_inspect_project_registered_as_tool():
+    # inspect_project must be in the registered tool set, not just importable.
+    assert hasattr(_server, "inspect_project")
