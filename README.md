@@ -133,6 +133,12 @@ path in `MM_DOTENV` if set). Config can also be supplied via `MM_*` environment
 variables, which take precedence over `.env`. `MM_OUTPUT_DIR` is optional and
 defaults to an `output/` folder in the working directory.
 
+`MM_ALLOWED_ROOTS` is optional. When set (an `os.pathsep`-separated list of
+directories), the server refuses to read or write paths outside those roots.
+When unset (the default), paths are unrestricted. Either way, node/example
+`name` and `basename` arguments are always rejected if they contain a path
+separator or `..`.
+
 Either way you get an `mm-mcp` command on your PATH. (A `pip install mm-mcp`
 from PyPI is packaged and ready but not yet published; the clone above is the
 current route.)
@@ -204,7 +210,7 @@ through a render.
 
 ## Tools
 
-The server exposes nine batch-mode tools and one resource (plus six more in Live mode, below):
+The server exposes ten batch-mode tools and one resource (plus six more in Live mode, below):
 
 | Tool | What it does |
 |---|---|
@@ -217,6 +223,7 @@ The server exposes nine batch-mode tools and one resource (plus six more in Live
 | `save_graph` | Write a `.ptex` graph to a path |
 | `list_examples` | List the bundled Material Maker examples |
 | `load_example` | Load a bundled example as a `.ptex` graph |
+| `inspect_project` | Read-only metrics for a `.ptex` on disk (hash, node/connection counts, type histogram, material outputs) |
 
 Resource `catalog://nodes` exposes the full node catalog.
 

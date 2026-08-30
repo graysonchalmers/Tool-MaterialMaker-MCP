@@ -70,3 +70,24 @@ def test_live_overlay_dir_defaults_to_cwd_subfolder():
 def test_live_overlay_dir_respects_override():
     cfg = load_config(overrides={"MM_LIVE_OVERLAY_DIR": r"C:\somewhere\overlay"})
     assert cfg.live_overlay_dir == r"C:\somewhere\overlay"
+
+
+import os as _os
+from mm_mcp.config import load_config as _load_config
+
+
+def test_allowed_roots_defaults_empty():
+    cfg = _load_config(overrides={"MM_ALLOWED_ROOTS": ""})
+    assert cfg.allowed_roots == []
+
+
+def test_allowed_roots_parses_pathsep_list():
+    raw = _os.pathsep.join([r"C:\a", r"C:\b"])
+    cfg = _load_config(overrides={"MM_ALLOWED_ROOTS": raw})
+    assert cfg.allowed_roots == [r"C:\a", r"C:\b"]
+
+
+def test_allowed_roots_drops_empty_segments():
+    raw = _os.pathsep.join([r"C:\a", "", r"C:\b"])
+    cfg = _load_config(overrides={"MM_ALLOWED_ROOTS": raw})
+    assert cfg.allowed_roots == [r"C:\a", r"C:\b"]

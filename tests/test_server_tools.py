@@ -166,3 +166,85 @@ def test_render_node_output_bundled_example_produces_a_real_image():
     assert result["ok"], result["error"] or result.get("log_tail")
     assert result["image"].endswith("_albedo.png")
     assert os.path.getsize(result["image"]) > 0
+
+
+import os as _os
+from mm_mcp import server as _server
+
+
+def _with_roots(monkeypatch, roots):
+    monkeypatch.setenv("MM_ALLOWED_ROOTS", _os.pathsep.join(roots))
+    _server._reset()
+
+
+def test_save_graph_returns_ok_dict(tmp_path):
+    ptex = {"type": "graph", "nodes": [], "connections": []}
+    out = os.path.join(str(tmp_path), "mat.ptex")
+    res = _server.save_graph(ptex, out)
+    assert res["ok"] is True
+    assert os.path.exists(out)
+
+
+def test_save_graph_blocks_path_outside_roots(tmp_path, monkeypatch):
+    allowed = tmp_path / "allowed"
+    allowed.mkdir()
+    _with_roots(monkeypatch, [str(allowed)])
+    outside = os.path.join(str(tmp_path), "elsewhere.ptex")
+    res = _server.save_graph({"type": "graph", "nodes": [], "connections": []}, outside)
+    assert res["ok"] is False
+    assert not os.path.exists(outside)
+    monkeypatch.delenv("MM_ALLOWED_ROOTS", raising=False)
+    _server._reset()
+
+
+def test_save_graph_allows_path_inside_roots(tmp_path, monkeypatch):
+    allowed = tmp_path / "allowed"
+    allowed.mkdir()
+    _with_roots(monkeypatch, [str(allowed)])
+    inside = os.path.join(str(allowed), "mat.ptex")
+    res = _server.save_graph({"type": "graph", "nodes": [], "connections": []}, inside)
+    assert res["ok"] is True
+    assert os.path.exists(inside)
+    monkeypatch.delenv("MM_ALLOWED_ROOTS", raising=False)
+    _server._reset()
+
+
+def test_load_example_rejects_traversal_name():
+    res = _server.load_example("../../etc/passwd")
+    assert isinstance(res, dict) and res.get("ok") is False
+
+
+def test_render_graph_rejects_traversal_basename():
+    ptex = _server.load_example("bricks")
+    res = _server.render_graph(ptex, basename="../../evil")
+    assert res["ok"] is False
+    assert "error" in res
+
+
+def test_inspect_project_on_real_example(tmp_path):
+    ptex = _server.load_example("bricks")
+    out = os.path.join(str(tmp_path), "b.ptex")
+    _server.save_graph(ptex, out)
+    res = _server.inspect_project(out)
+    assert res["ok"] is True
+    assert res["node_count"] > 0
+    assert isinstance(res["node_types"], dict)
+    assert len(res["sha256"]) == 64
+
+
+def test_inspect_project_missing_file(tmp_path):
+    res = _server.inspect_project(os.path.join(str(tmp_path), "nope.ptex"))
+    assert res["ok"] is False
+
+
+def test_inspect_project_bad_json(tmp_path):
+    bad = os.path.join(str(tmp_path), "bad.ptex")
+    with open(bad, "w", encoding="utf-8") as fh:
+        fh.write("{not json")
+    res = _server.inspect_project(bad)
+    assert res["ok"] is False
+
+
+def test_inspect_project_registered_as_tool():
+    # inspect_project must be in the registered tool set, not just importable.
+    assert hasattr(_server, "inspect_project")

@@ -102,6 +102,13 @@ def check_setup(cfg: Config) -> list[Check]:
     else:
         checks.append(Check("node catalog", False, "skipped (node definitions missing)"))
 
+    if cfg.allowed_roots:
+        checks.append(Check("MM_ALLOWED_ROOTS", True, os.pathsep.join(cfg.allowed_roots)))
+    else:
+        checks.append(Check("MM_ALLOWED_ROOTS", True,
+                            "unset. Writes and reads are unrestricted; set it "
+                            "(os.pathsep-separated dirs) to bound client paths."))
+
     return checks
 
 
