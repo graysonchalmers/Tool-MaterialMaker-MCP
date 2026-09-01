@@ -19,6 +19,32 @@ doc's window.
 
 ## Archived "Changed this session" write-ups
 
+## 🗂️ Changed this session (README front-page 3D previews + social-preview fix)
+
+- Branch: `main`. Committed and **pushed**: `d7f2659` (hero + 3D gallery +
+  cookbook section), `738e10b` (social-preview title-crop fix + brick swap).
+  New tracked assets: `docs/images/hero.png`, `docs/images/gallery/*.png` (8),
+  `docs/images/cookbook-contact-sheet.png`; edited `README.md` and
+  `docs/social-preview.png`. Removed the superseded/long-untracked
+  `docs/images/contact-sheet-wood-stone.png`. Also fast-forwarded local `main`
+  past the render-timeout fix that had merged upstream after the prior wrap.
+- Decisions (+ why): ran `brainstorming` → bounded (README already had a
+  gallery). Grayson chose "hero + 3D gallery" and "keep 4 columns." Reworked
+  the gallery from flat swatches to **3D previews** (the `render_preview`
+  sphere+cube+cutaway scene) rendered strictly sequentially, one Godot at a
+  time, per the render-orphan rule. **Pure metals (copper, steel) render dark**
+  in that scene (dark backdrop + metals reflect environment; they also emit no
+  normal map), so Grayson had them swapped out for tree bark + dark walnut.
+  Grayson's own hand-finished `saved_graphs/bricks_grayson_edit.ptex` replaced
+  the stock red brick in both the hero triptych and the gallery, as a
+  round-trip showcase. New collapsible "Material cookbook" section holds a 4×7
+  contact sheet of all 28 cookbook materials. The GitHub topic/search **social
+  card** crops the 1280×640 image to ~2.74:1, which was chopping off the title;
+  lifted the title+subtitle into the crop-safe zone and swapped the brick tile,
+  then **uploaded the new `docs/social-preview.png` via repo Settings → Social
+  preview** through Grayson's Chrome (that card is NOT read from the repo file,
+  it must be uploaded in the web UI). Verified the README images serve HTTP 200.
+
 ## 🗂️ Changed this session (render-timeout process-tree kill fix)
 
 - Branch: **`claude/confident-tesla-ee9400`** (git worktree), committed
@@ -474,6 +500,38 @@ doc's window.
 ---
 
 ## Archived session log
+
+### 2026-08-29 (debug swatch gallery) — built both phases + a relief shapes/text family
+- Picked up via `pickup` (clean, `main` at `c9934a7`, in sync). Grayson chose
+  next-move #1: his own backlog "debug materials / visual smoke-test swatches"
+  idea.
+- Ran `brainstorming` → bounded. Grayson's "both, phased" call: build the
+  visual gallery now, add the automated-assertion layer as phase 2. Picked all
+  four candidate diagnostics for the first cut.
+- **Phase 1** (`a0d7674`): `quality/debug_swatches.py` — 6 single-node swatches
+  (voronoi port0 polarity, port0/1/2 fields+random, UV direction, relief dome)
+  + `docs/DEBUG_SWATCHES.md`. Followed visual-iteration: render, `SendUserFile`,
+  judge relief in 3D. The UV swatch corrected my guess — MM's +V points DOWN.
+- **Phase 2** (`ba3d968`): `PIXEL_CHECKS` + `tests/test_debug_swatches.py`
+  render each swatch live and assert calibrated pixel invariants. Grayson chose
+  a vendored ~60-line stdlib PNG reader (`quality/pngread.py`) over Pillow.
+  Calibration corrected a second assumption: red centers out-area blue seams, so
+  `red > blue` is the polarity-flip detector.
+- Grayson then asked for more relief shapes AND text. **Relief family**
+  (`ab688e6`): `relief_circle` (strict dome-out check kept), polygon, star,
+  rays, and `relief_glyph` spelling "UP" from two `sixteen_segment` glyphs
+  (MM has no text node) scaled/translated/unioned. The glyph's thin strokes
+  needed a full-buffer scan (a sparse grid walked past them). All 14
+  debug-swatch tests pass (93s), fast suite 229.
+- **Detour:** hit a render death-spiral from overlapping render jobs; root-
+  caused a real latent `render.py` bug — it leaks a Material Maker self-relaunch
+  child on a 180s timeout, cascading into hangs (same class `live.py` already
+  fixed). Recovered by killing all Godot and rendering sequentially; captured
+  in the `render-orphan-contention` memory; spawned `task_93dccd69` to fix it
+  (running in its own session). Left `render.py` untouched here to avoid a
+  conflict.
+- Wrote `_agent-commons/log/2026-08-29-claude-code-materialmaker-mcp-debug-swatches.md`.
+  3 commits pushed at wrap.
 
 ### 2026-08-29 (leather cookbook) — new leather category, 6 materials, 2 reusable levers
 - Picked up via `pickup` (clean, `main` at `969d420`, in sync). Grayson chose

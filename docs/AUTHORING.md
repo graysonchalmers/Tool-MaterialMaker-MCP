@@ -474,6 +474,11 @@ brick coursing or crack network.
 | ![](images/cookbook-stone/s04_scattered_river_stones.png) | Scattered river stones in sand | HIT (after fixing an inverted mask) |
 | ![](images/cookbook-stone/s05_hex_stone_tile.png) | Hex stone tile / mosaic | Partial (not true cobblestone) |
 | ![](images/cookbook-stone/s06_river_pebbles.png) | Natural river pebbles | HIT (judge in 3D, not the albedo) |
+| ![](images/cookbook-stone/s07_cobblestone.png) | True irregular cobblestone | HIT (closes the s05 "true cobblestone" gap) |
+| ![](images/cookbook-stone/s08_dry_stone_wall.png) | Dry-stone / fieldstone wall | HIT (random packing, no coursing) |
+| ![](images/cookbook-stone/s09_ashlar_wall.png) | Ashlar / castle block wall | HIT (coursed cut blocks) |
+| ![](images/cookbook-stone/s10_flagstone.png) | Flagstone / slate paving | HIT (large flat slabs) |
+| ![](images/cookbook-stone/s11_marble.png) | Polished marble | HIT (gloss undersold by the dark preview scene) |
 
 - **Scattered river stones in sand (HIT, after fixing a genuinely inverted
   mask):** originally this slot was a raw-poured-concrete recipe (CLONE
@@ -545,6 +550,84 @@ brick coursing or crack network.
   `render_preview`, not the albedo thumbnail. It's closer to a packed
   gravel/fieldstone bed than perfectly smooth individual river stones (the
   cells are still voronoi-angular), but reads clearly as natural stone.
+
+### Masonry expansion (2026-09-01): cobblestone, fieldstone, ashlar, flagstone, marble
+
+Five more, added in one pass. s07/s08/s10/s11 all CLONE `dry_earth` (its
+`voronoi_0` port-1 crack network warped by `perlin_1` into `blend_0`); s09
+clones `stone_wall` (a `Bricks`-node donor) instead. The single biggest lever
+across the dry_earth four is `warp_0.amount`, and it cuts both ways: on paving
+it is haze to suppress, on marble it is the whole effect.
+
+- **True irregular cobblestone (HIT — closes the s05 gap):** the voronoi-plate
+  approach s05's docstring flagged as untried. CLONE `dry_earth`, `voronoi_0`
+  scale 4→6 (cobble-sized plates), feed **`voronoi_0` port 2** (per-cell random)
+  through a multi-tone stone gradient and REWIRE it into `blend_0` port 1 in
+  place of the flat perlin earth base — each plate now a distinct stone, and the
+  existing warped-crack Multiply overlay reads as recessed mortar. **Two traps,
+  both cost a pass:** (1) the first tone gradient was too narrow (0.30–0.55
+  muted) so plates looked uniform — widen it hard across value AND hue. (2) the
+  broad gray HAZE inside plates was NOT the gradient: it is `dry_earth`'s stock
+  `warp_0.amount` of 0.4 smearing the crack shadows into washes across the
+  plates. **Diagnostic that split the two:** re-render once with a maximally
+  high-contrast test gradient on the per-cell colorize — if each plate goes a
+  distinct flat colour and the haze remains, the haze is the warp, not the
+  ramp. Fix: drop `warp_0.amount` to **0.12** (clean thin mortar, slight organic
+  wobble). Judge in 3D (`render_preview`) — the cobbles bulge, the mortar
+  recesses.
+- **Dry-stone / fieldstone wall (HIT):** same `dry_earth` clone, retuned to read
+  as a different material, not a recolor. `voronoi_0` scale 6→8 (smaller, denser
+  stones), cool weathered-GRAY palette (vs cobblestone's warm tan), thin dark
+  dry-stack gaps. **`warp_0.amount` stays at the haze-free 0.12** — a pass at
+  0.20 chasing more angular edges just brought the haze back WITHOUT sharpening
+  corners (warp displaces, it does not bevel; voronoi cells are already
+  polygonal, so the angular fieldstone read comes from the cell shape). Keep the
+  mossy-green stop restrained: pushed further it tips into a camo grid (the same
+  trap s05 hit). Honest limit: pure voronoi has no horizontal coursing, so this
+  is random rubble/fieldstone, not neatly coursed drystone.
+- **Ashlar / castle block wall (HIT):** the REGULAR, quarried counterpart to
+  s08's random fieldstone — and the one material that leaves the voronoi cluster,
+  because a `Bricks` node gives true coursed rectangular blocks that voronoi
+  never can. CLONE `stone_wall` (already a Bricks-driven stone wall).
+  **`Bricks` port 1 is the per-brick random — the brick analogue of voronoi port
+  2** — and stone_wall already routes it into the per-block tone colorize
+  (`colorize_1`). Retune: `Bricks` columns/rows 3×6 → 4×4 (squarer, larger
+  ashlar blocks), keep `row_offset` 0.5 (coursed/broken joints) and the 0.15
+  bevel (chamfered cut-stone edge), fine mortar 0.06; recolor the per-block ramp
+  to dressed limestone/sandstone and temper stone_wall's rustic orange block.
+  The pale lime joints deliberately contrast s08's dark gaps in the set.
+- **Flagstone / slate paving (HIT):** `dry_earth` clone tuned the OPPOSITE of
+  cobblestone on every axis. `voronoi_0` scale 4 (few big slabs), **`normal_map`
+  `param1` 0.99 → 0.5 for FLAT slab tops** (cobbles bulge; sawn flagstones are
+  flat, relief lives only in the recessed joints), `warp_0` at the haze-free
+  0.12, and a cool blue-gray / green-gray slate palette with LOW per-slab
+  variation (slate slabs are fairly uniform, so a subtle tonal shift, not the
+  strong hue spread cobbles want).
+- **Polished marble (HIT — but the preview scene undersells the gloss):** the
+  one non-paving recipe. Same `dry_earth` donor used for its VEIN STRUCTURE, not
+  its plates. Every lever inverts the paving recipes: `voronoi_0` scale 3 (few
+  large sweeping veins), **`warp_0.amount` 0.12 → 0.5 (HIGH)** — on paving this
+  smear was haze to kill; on marble the flow IS the look, soft cloudy veins
+  wandering across the slab. **NO per-cell tone** (marble is one uniform stone,
+  not a mosaic): base is a near-white cream on `colorize_0`, veins a soft gray
+  from the crack Multiply eased to 0.5. Polish setup: metallic zeroed by setting
+  `colorize_3` (→ Material metallic) to all black, and roughness dropped to 0.15
+  on the **Material node's own `roughness` param** (its port 2 is unconnected, so
+  the param applies); `normal_map` `param1` → 0.1 (veins a whisper of relief, not
+  joints). Caveat: the material IS glossy, but `render_preview`'s dark backdrop
+  gives a low-roughness dielectric nothing to reflect, so it reads honed/matte in
+  the preview — the same reason pure metals render dark there. Scope: soft
+  Carrara veining, not the angular fragments of breccia marble (which the
+  UN-warped voronoi cells would actually suit).
+
+**Tooling note (2026-09-01):** render these via `quality/render_one.py <label>
+<case>` (a single-case renderer added this session) or `render_cookbook.py`, run
+as a script FILE. Do NOT drive a Godot render from `python -c "..."`: launching
+the console binary that way leaves the launcher process not exiting, which reads
+as a bogus 180s render timeout (it is a console/handle quirk of the `-c`
+invocation, not a pipeline bug). A real latent `render.py` hang was also fixed
+this session (temp-file redirect replacing a `communicate()` pipe-EOF block); see
+the session log.
 
 ## Leather cookbook (cookbook growth, informal — 2026-08-29)
 

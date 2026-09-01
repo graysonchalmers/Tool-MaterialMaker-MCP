@@ -42,3 +42,9 @@ graph-surgery helpers, imported from `author.py`) writes variants to
 validates + renders them to `quality/cookbook/<label>/` for eyeballing — no
 `test_set.json` entry, no scorecard, no gate. Recipes that pan out get written
 up in `docs/AUTHORING.md`; both output dirs are gitignored (regenerable).
+
+While iterating on ONE material, use `render_one.py <label> <case>` (renders a
+single case, one Godot at a time) instead of `render_cookbook.py` (which renders
+every case under the label). Run either as a script FILE, never `python -c` —
+driving a Godot render from `python -c` leaves the launcher process not exiting
+and reads as a bogus 180s timeout.

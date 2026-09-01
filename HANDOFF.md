@@ -1,39 +1,44 @@
 # 🧭 Session Handoff — Tool-MaterialMaker-MCP
 
-_Last updated: 2026-08-30 (v0.4.0 release + gallery) CT (America/Chicago)_
+_Last updated: 2026-09-01 (masonry cookbook + render pipe-hang fix) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**v0.4.0 is released.** This session unblocked and completed the release that
-Phase 4 hardening had set up, and enlarged the README gallery. The
-release-please blocker from last session (the repo's "Allow GitHub Actions to
-create and approve pull requests" toggle was off) is resolved: Grayson flipped
-it, I re-ran the failed workflow, it opened **PR #1: chore(main): release
-0.4.0**, and Grayson authorized the merge. release-please then tagged
-**v0.4.0**, cut the GitHub Release (now Latest), and attached the built wheel +
-sdist (`mm_mcp-0.4.0-py3-none-any.whl`, `mm_mcp-0.4.0.tar.gz`). The whole
-release loop that had been stuck now works end to end, and future release runs
-will open their PRs automatically. `main` is at `c2aa170`, clean and in sync.
-Older write-ups/log beyond the cap live in
-[docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).
+**Masonry cookbook expanded from 3 to 8 materials, and a real latent render
+hang is fixed.** This session added five stone materials to
+`quality/cookbook_stone.py` — s07 true cobblestone (closes the long-open s05
+"true cobblestone" gap, backlog C), s08 dry-stone/fieldstone wall, s09
+ashlar/castle block wall, s10 flagstone/slate paving, s11 polished marble —
+each authored, rendered, 3D-previewed, and written up in `docs/AUTHORING.md`.
+Along the way a genuine `render.py` bug surfaced: `_run_godot` used
+`communicate()`, which blocks on stdout/stderr pipe EOF, and Material Maker's
+lingering child inherits those pipes, so a render could hang to the 180s
+timeout despite finishing in ~8s. Fixed by redirecting to temp FILES + waiting
+on the process (2 new real-subprocess regression tests; fast suite 262 green).
+New `quality/render_one.py` single-case renderer. Older write-ups/log beyond
+the cap live in [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).
 
 ## 📌 Where we stopped
 
-Nothing in flight. v0.4.0 is out, the gallery is live, working tree is clean,
-`main` in sync at `c2aa170`. A natural stopping point.
+All 5 materials locked and the render fix landed + tested. This wrap-up wrote
+the docs (AUTHORING.md recipes, quality/README note), STATUS/HANDOFF/memory,
+and committed + pushed (builders, render.py fix + tests, render_one.py, doc
+recipe thumbnails). The renders and authored `.ptex` variants stay gitignored
+(regenerable). A natural stopping point.
 
 ## ▶️ Next concrete step
 
-**Pick from the backlog** (nothing is blocked). Good candidates, roughly in
-order of quick-win to deep-dive: a new cookbook category (glass / plastics /
-painted metal), true cobblestone via a voronoi-plate approach (backlog C), or
-the `sf03` circuit-board bleed-through bug (backlog D, one hypothesis already
-ruled out). Other follow-ups still open:
+**Pick from the backlog** (nothing is blocked). The obvious next candidate is
+the **`sf03` circuit-board bleed-through bug (backlog D)** — it was this
+session's planned "then" item but the render-hang investigation ate the time.
+One hypothesis is already ruled out; next suspect is the voronoi-port-2 ×
+`blend` interaction (see Open questions). Other good candidates:
+- **More cookbook categories**: glass, plastics, painted metal are still
+  uncovered (masonry is now well-covered with 8 materials).
 - **More debug swatches** if wanted: blend-mask polarity, height-to-normal
   convention, colorize/ramp direction — same pattern, each tied to a real trap.
-- **More cookbook categories**: glass, plastics, painted metal still uncovered.
 
 The older open backlog, unchanged:
 - **2 findings ruled out, not fixed** (deliberate): #8 (`_cmd_clear_graph`'s
@@ -124,6 +129,37 @@ The older open backlog, unchanged:
   earlier session (staleness marker, `_append_autoload`'s first-occurrence
   match, both verified low-priority).
 
+## 🗂️ Changed this session (masonry cookbook +5, render pipe-hang fix)
+
+- Branch: `main`. Files: `quality/cookbook_stone.py` (+5 builders s07–s11),
+  `src/mm_mcp/render.py` (`_run_godot` pipe-hang fix), `tests/test_render.py`
+  (+2 real-subprocess regression tests, fakes updated communicate→wait),
+  `quality/render_one.py` (new single-case renderer), `docs/AUTHORING.md` (the
+  5 recipes + tooling note), `quality/README.md` (render_one note), and 5 new
+  tracked doc thumbnails under `docs/images/cookbook-stone/`. Authored `.ptex`
+  variants and renders stay gitignored (regenerable via the builders).
+- Materials (each authored → rendered → 3D-previewed → locked): **s07
+  cobblestone** (dry_earth voronoi-plate, closes backlog C), **s08 dry-stone
+  wall** (denser/grayer/angular), **s09 ashlar wall** (stone_wall Bricks donor,
+  coursed cut blocks), **s10 flagstone** (big flat slate slabs), **s11 marble**
+  (dry_earth veins, high warp, polished). Key levers + traps written up in
+  AUTHORING.md's "Masonry expansion" subsection.
+- Decisions (+ why): the biggest cross-material lever is `warp_0.amount` and it
+  cuts both ways — on paving it's haze to suppress (drop 0.4→0.12), on marble
+  it IS the effect (push to 0.5). The per-cobble-tone haze was diagnosed with a
+  high-contrast test gradient (splits "muted ramp" from "warp smear"). Ashlar
+  needed a different donor (Bricks node) because voronoi can't do coursed
+  rectangles. render_one.py + the "render via a script FILE, never `python -c`"
+  rule came out of the debugging (see below).
+- **The render.py investigation reversed once:** the 180s hangs I first hit were
+  a `python -c` harness artifact (launching Godot's console binary from
+  `python -c` leaves the launcher not exiting), NOT a pipeline bug — proven by
+  the identical `render()` running in 7.4s from a script file. But the detour
+  found a REAL latent bug: `communicate()` blocking on a pipe held by MM's
+  lingering child. That fix is test-backed and kept; it hardens the long-running
+  MCP server (where a 180s stall is worst), even though it wasn't today's
+  symptom. Full reasoning in the session log.
+
 ## 🗂️ Changed this session (v0.4.0 release unblock + README gallery resize)
 
 - Branch: `main`. Commit `8f7f515` (gallery), plus the release merge `c2aa170` +
@@ -179,34 +215,9 @@ The older open backlog, unchanged:
   Actions to create and approve pull requests" setting is still off (see Next
   concrete step). Wrote two `_agent-commons\log\` entries (spec + implementation).
 
-## 🗂️ Changed this session (README front-page 3D previews + social-preview fix)
-
-- Branch: `main`. Committed and **pushed**: `d7f2659` (hero + 3D gallery +
-  cookbook section), `738e10b` (social-preview title-crop fix + brick swap).
-  New tracked assets: `docs/images/hero.png`, `docs/images/gallery/*.png` (8),
-  `docs/images/cookbook-contact-sheet.png`; edited `README.md` and
-  `docs/social-preview.png`. Removed the superseded/long-untracked
-  `docs/images/contact-sheet-wood-stone.png`. Also fast-forwarded local `main`
-  past the render-timeout fix that had merged upstream after the prior wrap.
-- Decisions (+ why): ran `brainstorming` → bounded (README already had a
-  gallery). Grayson chose "hero + 3D gallery" and "keep 4 columns." Reworked
-  the gallery from flat swatches to **3D previews** (the `render_preview`
-  sphere+cube+cutaway scene) rendered strictly sequentially, one Godot at a
-  time, per the render-orphan rule. **Pure metals (copper, steel) render dark**
-  in that scene (dark backdrop + metals reflect environment; they also emit no
-  normal map), so Grayson had them swapped out for tree bark + dark walnut.
-  Grayson's own hand-finished `saved_graphs/bricks_grayson_edit.ptex` replaced
-  the stock red brick in both the hero triptych and the gallery, as a
-  round-trip showcase. New collapsible "Material cookbook" section holds a 4×7
-  contact sheet of all 28 cookbook materials. The GitHub topic/search **social
-  card** crops the 1280×640 image to ~2.74:1, which was chopping off the title;
-  lifted the title+subtitle into the crop-safe zone and swapped the brick tile,
-  then **uploaded the new `docs/social-preview.png` via repo Settings → Social
-  preview** through Grayson's Chrome (that card is NOT read from the repo file,
-  it must be uploaded in the web UI). Verified the README images serve HTTP 200.
-
-> 📦 **15 older "Changed this session" write-ups archived** (through
-> 2026-08-29) -- the pre-release audit/teardown/doc-fix pass,
+> 📦 **16 older "Changed this session" write-ups archived** (through
+> 2026-08-29, incl. the README front-page 3D-preview/social-card session) --
+> the pre-release audit/teardown/doc-fix pass,
 > render_node_output/live_render_node_output (item H), saved_graphs/
 > round-trip, Unity export proof, wood/stone cookbooks, the overlay
 > read-only `rmtree` fix, Phase 5 hands-on verification + `live_clear`, the
@@ -527,6 +538,35 @@ The older open backlog, unchanged:
 > through the project's Phase 1-2 kickoff on 2026-08-25.
 
 
+### 2026-09-01 (masonry cookbook + render pipe-hang fix) — +5 stone materials, fixed a latent render hang
+- Picked up via `pickup` (clean `main` at `d946942`, in sync). Grayson chose to
+  do all 5 masonry materials; ran `brainstorming` (bounded, extends the existing
+  `cookbook_stone.py`), locked the set (cobblestone anchor + 4 he picked).
+- **s07 cobblestone** first: built + rendered, hit the render hang (below),
+  then two visual passes — widened the muted per-cobble tone gradient and
+  dropped `warp_0` 0.4→0.12 to kill a crack-smear haze (a high-contrast test
+  gradient was the diagnostic that proved the haze was the warp, not the ramp).
+  3D-previewed, locked. Closes backlog C (true irregular cobblestone).
+- **s08–s11** each authored → rendered → 3D-previewed → locked, one Godot at a
+  time: s08 fieldstone (grayer/denser, warp kept 0.12 after 0.20 re-introduced
+  haze without adding angularity), s09 ashlar (switched donor to `stone_wall`'s
+  Bricks node — voronoi can't do coursed rectangles; Bricks port 1 = per-brick
+  random), s10 flagstone (big flat slabs, normal `param1` 0.99→0.5 for flat
+  tops), s11 marble (dry_earth veins, `warp` pushed to 0.5 — the one place the
+  smear IS the look — metallic zeroed, roughness 0.15).
+- **Render-hang investigation (reversed once):** first blamed `render.py`; a
+  clean A/B proved the 180s hangs were a `python -c` harness artifact (the same
+  `render()` runs in 7.4s from a script FILE). But the detour found a REAL
+  latent bug — `_run_godot`'s `communicate()` blocks on a pipe held by MM's
+  lingering child. Fixed via temp-file redirect + `process.wait()` (TDD: a
+  real-subprocess RED test that the old mocks couldn't catch, + a
+  timeout-teardown test). Kept as MCP-server hardening. Added
+  `quality/render_one.py` and the "render via a script file, never `python -c`"
+  rule. Fast suite 262 green.
+- Docs: 5 recipes + a tooling note in `docs/AUTHORING.md`, a `render_one` note
+  in `quality/README.md`, 5 doc thumbnails, STATUS/HANDOFF/memory. Committed +
+  pushed.
+
 ### 2026-08-30 (v0.4.0 release + gallery) — unblocked release-please, shipped 0.4.0, enlarged README gallery
 - Picked up via `pickup` (clean `main` at `6b2a070`, in sync). Grayson chose
   next-move #1: unblock release-please.
@@ -617,38 +657,6 @@ The older open backlog, unchanged:
   debug-swatch wrap-up `e6eb4c0` (which had independently trimmed the same two
   baton entries — reconciled by hand so both sessions survive). Pushed to
   `origin/main`.
-
-### 2026-08-29 (debug swatch gallery) — built both phases + a relief shapes/text family
-- Picked up via `pickup` (clean, `main` at `c9934a7`, in sync). Grayson chose
-  next-move #1: his own backlog "debug materials / visual smoke-test swatches"
-  idea.
-- Ran `brainstorming` → bounded. Grayson's "both, phased" call: build the
-  visual gallery now, add the automated-assertion layer as phase 2. Picked all
-  four candidate diagnostics for the first cut.
-- **Phase 1** (`a0d7674`): `quality/debug_swatches.py` — 6 single-node swatches
-  (voronoi port0 polarity, port0/1/2 fields+random, UV direction, relief dome)
-  + `docs/DEBUG_SWATCHES.md`. Followed visual-iteration: render, `SendUserFile`,
-  judge relief in 3D. The UV swatch corrected my guess — MM's +V points DOWN.
-- **Phase 2** (`ba3d968`): `PIXEL_CHECKS` + `tests/test_debug_swatches.py`
-  render each swatch live and assert calibrated pixel invariants. Grayson chose
-  a vendored ~60-line stdlib PNG reader (`quality/pngread.py`) over Pillow.
-  Calibration corrected a second assumption: red centers out-area blue seams, so
-  `red > blue` is the polarity-flip detector.
-- Grayson then asked for more relief shapes AND text. **Relief family**
-  (`ab688e6`): `relief_circle` (strict dome-out check kept), polygon, star,
-  rays, and `relief_glyph` spelling "UP" from two `sixteen_segment` glyphs
-  (MM has no text node) scaled/translated/unioned. The glyph's thin strokes
-  needed a full-buffer scan (a sparse grid walked past them). All 14
-  debug-swatch tests pass (93s), fast suite 229.
-- **Detour:** hit a render death-spiral from overlapping render jobs; root-
-  caused a real latent `render.py` bug — it leaks a Material Maker self-relaunch
-  child on a 180s timeout, cascading into hangs (same class `live.py` already
-  fixed). Recovered by killing all Godot and rendering sequentially; captured
-  in the `render-orphan-contention` memory; spawned `task_93dccd69` to fix it
-  (running in its own session). Left `render.py` untouched here to avoid a
-  conflict.
-- Wrote `_agent-commons/log/2026-08-29-claude-code-materialmaker-mcp-debug-swatches.md`.
-  3 commits pushed at wrap.
 
 _(Older entries continue in [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).)_
 

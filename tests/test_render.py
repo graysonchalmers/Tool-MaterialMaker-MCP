@@ -119,10 +119,12 @@ class _FakeProc:
 class _FakePopen:
     """Stand-in for subprocess.Popen used as a context manager by _run_godot.
 
-    Each construction pulls the next scripted return code; communicate()
-    returns ("", "") unless `timeout_first` is set, in which case the first
-    communicate() raises TimeoutExpired (mirroring a real per-attempt timeout)
-    and later calls (the post-kill reap) return normally.
+    Each construction pulls the next scripted return code; wait() returns the
+    return code unless `timeout_first` is set, in which case the first wait()
+    raises TimeoutExpired (mirroring a real per-attempt timeout) and later calls
+    (the post-kill reap) return normally. _run_godot reads output from the temp
+    files it opens, which this fake never writes to, so stdout/stderr come back
+    empty -- the scripted tests assert on return code and call count, not output.
     """
 
     def __init__(self, cmd, codes, calls, timeout_first=False, pid=4321, **kw):
@@ -131,22 +133,16 @@ class _FakePopen:
         self._timeout_first = timeout_first
         self.pid = pid
         self.returncode = codes[calls["n"]] if codes is not None else None
-        self._comm = 0
+        self._waits = 0
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *exc):
-        return False
-
-    def communicate(self, timeout=None):
-        self._comm += 1
-        if self._timeout_first and self._comm == 1:
+    def wait(self, timeout=None):
+        self._waits += 1
+        if self._timeout_first and self._waits == 1:
             self._calls["n"] += 1
             raise __import__("subprocess").TimeoutExpired(["godot"], timeout)
         if not self._timeout_first:
             self._calls["n"] += 1
-        return ("", "")
+        return self.returncode
 
     def kill(self):
         self.returncode = -9
@@ -156,6 +152,71 @@ def _popen_factory(codes, calls, timeout_first=False):
     def _make(cmd, **kw):
         return _FakePopen(cmd, codes, calls, timeout_first=timeout_first, **kw)
     return _make
+
+
+def test_run_godot_returns_at_process_exit_even_if_a_grandchild_holds_the_output():
+    """Regression for the 180s render hang: a Godot export leaves a lingering
+    child (Material Maker's Steam/relaunch process) that inherited the
+    launcher's stdout/stderr. _run_godot must return when the LAUNCHER exits,
+    not block until that grandchild also closes the output. communicate() waits
+    for pipe EOF, so the grandchild kept every render blocked to the full
+    timeout despite the export finishing in seconds. Uses a real subprocess
+    (the mock-based tests all reap cleanly and cannot catch this)."""
+    import subprocess
+    import sys
+    import textwrap
+    from mm_mcp import render as render_mod
+
+    # launcher spawns a grandchild that inherits its stdout/stderr and sleeps,
+    # writes one line, then exits -- mirroring MM's lingering child holding the
+    # inherited output open long after the export process is done.
+    script = textwrap.dedent("""
+        import subprocess, sys, time
+        subprocess.Popen([sys.executable, "-c", "import time; time.sleep(15)"])
+        sys.stdout.write("launcher done\\n")
+        sys.stdout.flush()
+    """)
+    cmd = [sys.executable, "-c", script]
+
+    start = time.time()
+    proc = render_mod._run_godot(cmd, 10)   # 10s >> launcher's ~0.2s, < grandchild's 15s
+    elapsed = time.time() - start
+
+    assert elapsed < 8, f"_run_godot hung {elapsed:.0f}s on a grandchild holding the output"
+    assert proc.returncode == 0
+    assert "launcher done" in (proc.stdout or "")
+
+
+def test_run_godot_raises_cleanly_on_real_timeout_with_a_detached_grandchild_on_the_output():
+    """The timeout path tears down its temp files while a grandchild may still
+    hold the inherited fd -- taskkill /T on the launcher misses a DETACHED child.
+    Closing an O_TEMPORARY temp file a surviving process still holds must not
+    hang or error: _run_godot must raise _GodotTimeout promptly (timeout + reap),
+    not block. Real subprocess -- the mock paths can't exercise temp-file
+    teardown against a live fd holder."""
+    import subprocess
+    import sys
+    import textwrap
+    from mm_mcp import render as render_mod
+
+    # launcher spawns a DETACHED grandchild that inherits its stdout and sleeps
+    # (escaping the launcher's taskkill /T tree), then the launcher itself sleeps
+    # past the timeout so wait() genuinely times out.
+    script = textwrap.dedent("""
+        import subprocess, sys, time
+        DETACHED = 0x00000008  # DETACHED_PROCESS: escapes taskkill /T on the launcher
+        subprocess.Popen([sys.executable, "-c", "import time; time.sleep(20)"],
+                         creationflags=DETACHED)
+        time.sleep(20)
+    """)
+    cmd = [sys.executable, "-c", script]
+
+    start = time.time()
+    with pytest.raises(render_mod._GodotTimeout):
+        render_mod._run_godot(cmd, 3)
+    elapsed = time.time() - start
+
+    assert elapsed < 18, f"timeout path took {elapsed:.0f}s -- temp-file teardown may be blocking"
 
 
 def test_run_godot_retries_a_transient_crash_then_returns_success(monkeypatch):
@@ -213,13 +274,7 @@ def test_run_godot_does_not_hang_when_the_post_kill_reap_also_times_out(monkeypa
         def __init__(self, cmd, **kw):
             pass
 
-        def __enter__(self):
-            return self
-
-        def __exit__(self, *exc):
-            return False
-
-        def communicate(self, timeout=None):
+        def wait(self, timeout=None):
             # Every call times out: the initial run AND the post-kill reap.
             raise subprocess.TimeoutExpired(["godot"], timeout)
 

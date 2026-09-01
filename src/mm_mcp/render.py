@@ -1,6 +1,7 @@
 import json
 import os
 import subprocess
+import tempfile
 from dataclasses import dataclass, field
 from mm_mcp.config import Config, load_config
 
@@ -59,31 +60,42 @@ def _run_godot(cmd: list, timeout: int) -> subprocess.CompletedProcess:
     Shared by render() and preview.render_preview(), which otherwise each had
     a near-identical copy of this retry loop and the crash-code set.
 
-    Uses Popen + communicate() (not subprocess.run) so a timeout can kill the
+    Uses Popen + process.wait() (not subprocess.run) so a timeout can kill the
     whole process tree while the launcher is still alive -- subprocess.run
     kills only its direct child then re-raises, leaving Godot's spawned
     render/GUI grandchild orphaned to squat Material Maker's single-instance
-    lock (see _kill_tree). communicate() drains both pipes concurrently, so
-    a chatty Godot render log can't fill a pipe buffer and deadlock the child."""
+    lock (see _kill_tree).
+
+    Redirects Godot's stdout/stderr to temp FILES rather than pipes. Material
+    Maker's export leaves a lingering child (its Steam/relaunch process) that
+    inherits the launcher's output handles; a PIPE stays un-closed until that
+    grandchild also exits, so communicate() -- which blocks on pipe EOF, not
+    process exit -- kept every render hung to the full timeout despite the
+    export finishing in seconds. A file has no EOF dependency: wait() returns
+    the instant the launcher exits, and the grandchild can hold the file
+    harmlessly. This is what the working raw-console path always did."""
     proc = None
     for _ in range(3):
-        with subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                              text=True) as process:
+        with tempfile.TemporaryFile() as out_f, tempfile.TemporaryFile() as err_f:
+            process = subprocess.Popen(cmd, stdout=out_f, stderr=err_f)
             try:
-                stdout, stderr = process.communicate(timeout=timeout)
+                process.wait(timeout=timeout)
             except subprocess.TimeoutExpired:
                 _kill_tree(process)
                 process.kill()
                 try:
-                    process.communicate(timeout=10)  # reap after the tree kill
+                    process.wait(timeout=10)  # reap the launcher after the tree kill
                 except subprocess.TimeoutExpired:
-                    # taskkill failed AND killing the launcher didn't drop the
-                    # pipe -- a surviving grandchild still holds its write end,
-                    # so this reap would block on EOF forever. Abandon it rather
-                    # than hang the render loop; the with-Popen exit only waits
-                    # on the (already-killed) launcher, not the grandchild.
+                    # taskkill failed AND the launcher itself won't die -- abandon
+                    # the reap rather than hang the render loop. (Unlike a pipe, a
+                    # lingering grandchild on the temp file never blocks this wait;
+                    # only a genuinely unkillable launcher could reach here.)
                     pass
                 raise _GodotTimeout
+            out_f.seek(0)
+            err_f.seek(0)
+            stdout = out_f.read().decode("utf-8", "replace")
+            stderr = err_f.read().decode("utf-8", "replace")
             proc = subprocess.CompletedProcess(cmd, process.returncode, stdout, stderr)
         if proc.returncode not in _TRANSIENT_GODOT_CRASH_CODES:
             break
