@@ -810,7 +810,10 @@ therefore built around a distinct STRUCTURAL read, not just a roughness value.
   base to bare steel, then composite a flat green paint coat over it through
   ONE hard chip mask. **The mask polarity is the whole lesson here, and it bit
   twice:** empirically, a MM `blend` shows its **port-1 input where the port-2
-  mask is 0**, and port-0 where the mask is 1. So the green paint must go on
+  mask is 0**, and port-0 where the mask is 1. (This and the `opacity = amount ×
+  mask` formula are now memorialized as known-answer diagnostic swatches —
+  `blend_mask_polarity` and `blend_opacity_ramp` — see
+  [DEBUG_SWATCHES.md](DEBUG_SWATCHES.md).) So the green paint must go on
   port 1 as the MAJORITY, with `mask_chip` = 1 only in the minority worn spots
   (perlin < ~0.30) so the bare metal (port 0) shows there. The SAME hard mask
   also drives metallic (Material port 1: metal chips = 1, paint = 0) and a

@@ -249,6 +249,72 @@ def build_uv_direction() -> str:
     return save_variant(_graph(nodes, conns), _LABEL, "uv_direction", 1)
 
 
+# ---- 5. blend port identity + opacity formula -----------------------------
+# Memorializes the trap that cost real debugging twice (sf03 circuit board,
+# pm03 chipped paint): a `blend`'s output for the Normal mode is
+#   opacity*s1 + (1-opacity)*s2,  with  opacity = amount * mask * s1.alpha
+# (verified against blend.mmg: port 0 = s1 "Foreground", port 1 = s2
+# "Background", port 2 = a "Mask"; the .mmg's default blend_type is 13/AddSub,
+# so both swatches set blend_type=0 EXPLICITLY or the red/blue answers are wrong).
+# The durable facts, made unmistakable: port-0 (foreground) shows where the mask
+# is 1, port-1 (background) shows where the mask is 0, and a MID-value mask gives
+# a PARTIAL blend, not a switch (that partiality IS the sf03 bleed-through).
+
+# solid colors via flat colorize gradients (input value irrelevant -> uniform);
+# _grad hardcodes alpha=1, so s1.alpha=1 and opacity reduces to amount*mask --
+# don't swap in a source with alpha < 1 here or the known-answer shifts.
+_FG_RED = [(0.0, 0.9, 0.12, 0.12), (1.0, 0.9, 0.12, 0.12)]
+_BG_BLUE = [(0.0, 0.12, 0.22, 0.9), (1.0, 0.12, 0.22, 0.9)]
+
+
+def _blend_swatch(case: str, mask_points, amount: float) -> str:
+    """Foreground RED (port 0) blended over background BLUE (port 1) through a
+    left->right MASK (port 2), Normal mode. `mask_points` sets the mask shape,
+    `amount` the global opacity multiplier."""
+    nodes = [
+        {"name": "mask", "type": "gradient", "node_position": {"x": 0, "y": 0},
+         "parameters": {"repeat": 1, "rotate": 0, "mirror": False,
+                        "gradient": _grad(mask_points)}},
+        {"name": "col_fg", "type": "colorize", "node_position": {"x": 300, "y": -120},
+         "parameters": {"gradient": _grad(_FG_RED)}},
+        {"name": "col_bg", "type": "colorize", "node_position": {"x": 300, "y": 120},
+         "parameters": {"gradient": _grad(_BG_BLUE)}},
+        {"name": "blend_0", "type": "blend", "node_position": {"x": 560, "y": 0},
+         "parameters": {"blend_type": 0, "amount": amount}},  # 0 = Normal (NOT the .mmg default 13)
+    ]
+    conns = [
+        {"from": "mask", "from_port": 0, "to": "col_fg", "to_port": 0},
+        {"from": "mask", "from_port": 0, "to": "col_bg", "to_port": 0},
+        {"from": "col_fg", "from_port": 0, "to": "blend_0", "to_port": 0},   # port 0 = foreground
+        {"from": "col_bg", "from_port": 0, "to": "blend_0", "to_port": 1},   # port 1 = background
+        {"from": "mask", "from_port": 0, "to": "blend_0", "to_port": 2},     # port 2 = opacity mask
+        {"from": "blend_0", "from_port": 0, "to": "Material", "to_port": 0},
+    ]
+    return save_variant(_graph(nodes, conns), _LABEL, case, 1)
+
+
+def build_blend_mask_polarity() -> str:
+    """HARD mask (left 0, right 1) at amount=1: the clean polarity case. Known
+    answer -- LEFT half BLUE, RIGHT half RED, a hard vertical seam. Proves
+    port-0 (foreground, RED) shows where the mask is 1 and port-1 (background,
+    BLUE) shows where the mask is 0. Red on the LEFT would mean the ports are
+    swapped in your head; this is the pm03 lesson (put the majority layer on
+    port 1)."""
+    return _blend_swatch("blend_mask_polarity",
+                         [(0.499, 0, 0, 0), (0.5, 1, 1, 1)], amount=1.0)
+
+
+def build_blend_opacity_ramp() -> str:
+    """RAMP mask (0->1 left to right) at amount=0.5: proves opacity = amount x
+    mask. Known answer -- LEFT pure BLUE (mask 0 -> opacity 0), RIGHT 50/50
+    PURPLE (mask 1 x amount 0.5 -> opacity 0.5, so the foreground NEVER fully
+    shows), a smooth crossfade between. The mid-mask partiality is the exact
+    shape of the sf03 bug (a 0.65 mask fed as opacity left the layer 65%
+    transparent and the layer below bled through)."""
+    return _blend_swatch("blend_opacity_ramp",
+                         [(0.0, 0, 0, 0), (1.0, 1, 1, 1)], amount=0.5)
+
+
 # ---- phase 2: known-answer pixel checks -----------------------------------
 # Each entry: swatch name -> (which rendered map to sample, check function). A
 # check takes a pngread.Sampler (0-255 rgb, v points down) and returns a list of
@@ -359,7 +425,40 @@ def _check_relief_present(s):
     return []
 
 
+def _check_blend_polarity(s):
+    """Deterministic point-samples (gradient geometry is fixed, unlike voronoi):
+    left half must be blue (mask 0 -> background/port 1), right half red (mask 1
+    -> foreground/port 0). Sampled at 0.2/0.8, well clear of the center seam."""
+    left, right = s.at(0.2, 0.5), s.at(0.8, 0.5)
+    out = []
+    if not (left[2] > 140 and left[0] < 110):
+        out.append(f"left should be blue (mask 0 -> background/port 1), got {left}")
+    if not (right[0] > 140 and right[2] < 110):
+        out.append(f"right should be red (mask 1 -> foreground/port 0), got {right}")
+    if left[0] >= right[0]:
+        out.append(f"polarity flip? port-0(red) must win on the RIGHT: left R={left[0]} right R={right[0]}")
+    return out
+
+
+def _check_blend_opacity(s):
+    """amount=0.5 ramp: left pure blue (opacity 0), right a red/blue MIX not pure
+    red (opacity caps at 0.5). The right-edge mix is the whole point -- it proves
+    opacity = amount x mask, so a mid factor gives partial coverage (the sf03
+    bleed-through), never a hard switch."""
+    left, right = s.at(0.12, 0.5), s.at(0.88, 0.5)
+    out = []
+    if not (left[2] > 140 and left[0] < 110):
+        out.append(f"left should be pure blue (opacity 0), got {left}")
+    if not (right[0] > 90 and right[2] > 90):
+        out.append(f"right should be a red+blue MIX (amount caps opacity at 0.5), got {right}")
+    if right[0] > 210 and right[2] < 70:
+        out.append(f"right looks like pure foreground -- amount x mask not applied? got {right}")
+    return out
+
+
 PIXEL_CHECKS = {
+    "blend_mask_polarity": ("albedo", _check_blend_polarity),
+    "blend_opacity_ramp": ("albedo", _check_blend_opacity),
     "voronoi_port0_polarity": ("albedo", _check_polarity),
     "voronoi_port0_field": ("albedo", _check_port0_field),
     "voronoi_port1_field": ("albedo", _check_port1_field),
@@ -374,6 +473,8 @@ PIXEL_CHECKS = {
 
 
 BUILDERS = {
+    "blend_mask_polarity": build_blend_mask_polarity,
+    "blend_opacity_ramp": build_blend_opacity_ramp,
     "voronoi_port0_polarity": build_voronoi_port0_polarity,
     "voronoi_port0_field": build_voronoi_port0_field,
     "voronoi_port1_field": build_voronoi_port1_field,

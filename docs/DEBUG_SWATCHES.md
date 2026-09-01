@@ -36,6 +36,28 @@ If a render disagrees with the "should look like" column, that's a caught bug.
 | `voronoi_port2_random` | voronoi port 2 (rgb) → albedo | **Flat, solid random color per cell**, no gradient inside a cell. This is `rand3`, the fleck/speckle source. If it looks like a smooth field, something is feeding the wrong port. |
 | `uv_direction` | UV axes as R (U) and G (V) | A 2×2 grid (repeat=2). **+U points RIGHT** (R rises left→right), **+V points DOWN** (G rises top→bottom — Godot/MM texture convention, row 0 at top). Corners: top-left BLACK, top-right RED, bottom-left GREEN, bottom-right YELLOW. The hard color cross down the middle is the tiling seam. |
 
+### The blend family (`blend_*`)
+
+The `blend` node is the workhorse of every masked two-layer material, and its
+port/opacity semantics caused real, repeated debugging (the sf03 circuit-board
+trace-bleed-through and the pm03 chipped-paint polarity flip). These two swatches
+make the semantics unmistakable. From `blend.mmg`, the Normal-mode output is:
+
+```
+out = opacity * s1 + (1 - opacity) * s2      opacity = amount * mask * s1.alpha
+```
+
+where **port 0 = `s1` (Foreground)**, **port 1 = `s2` (Background)**, **port 2 =
+`a` (Mask)**. Both swatches set `blend_type=0` (Normal) explicitly — the `.mmg`
+default is `13` (AddSub), which would give a different formula and wrong colors.
+
+| Swatch | Isolates | Should look like |
+|---|---|---|
+| `blend_mask_polarity` | which port shows where the mask is 0 vs 1 (`amount=1`, hard mask) | A hard vertical split: **LEFT half BLUE**, **RIGHT half RED**. Foreground RED is on port 0 and shows where the **mask is 1** (right); background BLUE is on port 1 and shows where the **mask is 0** (left). Red on the LEFT = the ports are swapped in your head. This is the pm03 lesson: put the **majority** layer on port 1 and mask in the minority. |
+| `blend_opacity_ramp` | `opacity = amount × mask` (`amount=0.5`, ramp mask 0→1) | A smooth crossfade: **LEFT pure BLUE** (mask 0 → opacity 0), fading to a **PURPLE right edge that never reaches pure red** (mask 1 × amount 0.5 → opacity 0.5, so the foreground caps at half-strength). A *mid* mask gives a *partial* blend, not a switch — that partiality is exactly the sf03 bug (a 0.65-valued mask fed as opacity left the top layer 65% opaque and the layer below bled through the other 35%). |
+
+Both are albedo-only (no relief), so no 3D preview is needed — eyeball the albedo.
+
 ### The relief family (`relief_*`)
 
 All five feed a height source through the same `normal_map(param4=0)` chain onto
