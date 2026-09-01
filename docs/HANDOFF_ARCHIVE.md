@@ -19,6 +19,38 @@ doc's window.
 
 ## Archived "Changed this session" write-ups
 
+## 🗂️ Changed this session (Phase 4 hardening: path bounding, inspect_project, CI + release-please)
+
+- Branch: `phase4-hardening` (off `main`), 10 TDD tasks subagent-driven, merged
+  `--no-ff` as `d23b235`, **pushed to `origin/main`**. New: `src/mm_mcp/paths.py`,
+  `src/mm_mcp/inspect.py`, `.github/workflows/test.yml`,
+  `.github/workflows/release-please.yml`, `release-please-config.json`,
+  `.release-please-manifest.json`, `tests/test_paths.py`, `tests/test_inspect.py`,
+  and the spec + plan under `docs/superpowers/`. Edited: `config.py`
+  (`allowed_roots`), `server.py` (guards on 5 tools + `inspect_project`),
+  `__init__.py` (version via `importlib.metadata`), `doctor.py`, `README.md`,
+  `STATUS.md`. Fast suite 260 passed; first real Windows CI run green.
+- Decisions (+ why): prompted by a compare against
+  `dcc-mcp/dcc-mcp-material-maker` (a headless export/inspection adapter, a
+  different product). Borrowed its packaging/sandboxing rigor only where it
+  serves our North Star. **Path bounding is opt-in** (`MM_ALLOWED_ROOTS` unset =
+  unrestricted) so daily use is frictionless; the `../` traversal guard on
+  name/basename fragments is always on. `save_graph` now returns a
+  `{"ok","path"}` dict (was a bare str) to match every other tool's shape; no
+  internal consumer depended on the old return. **CI provisioning was corrected
+  mid-flight:** a bare runner needs the MM checkout + a stub Godot binary (the
+  fast suite calls `require_valid`), not "no clone" as first specced; verified
+  locally (260 passed) before writing the workflow. Version single-sourced to
+  `pyproject.toml` only (release-please owns it), `__init__.py` derives it with a
+  `0.0.0+unknown` fallback that is load-bearing for `pythonpath=src` test runs.
+- Push friction worth remembering: the commit adds workflow files, which need a
+  **`workflow`-scoped** credential. The default git/OAuth and gh tokens lacked
+  it; fixed with a one-time `gh auth refresh -h github.com -s workflow`, then
+  pushed via `git -c credential.helper='!gh auth git-credential'`. release-please
+  then ran but failed only at "open the PR" because the repo's "Allow GitHub
+  Actions to create and approve pull requests" setting is still off. Wrote two
+  `_agent-commons\log\` entries (spec + implementation).
+
 ## 🗂️ Changed this session (README front-page 3D previews + social-preview fix)
 
 - Branch: `main`. Committed and **pushed**: `d7f2659` (hero + 3D gallery +
@@ -500,6 +532,36 @@ doc's window.
 ---
 
 ## Archived session log
+
+### 2026-08-29 (render timeout fix) — killed the process-tree leak behind the render-orphan cascade
+- Worktree session on branch `claude/confident-tesla-ee9400`. Task: fix the
+  latent process-leak in `render.py`'s `_run_godot` timeout path, the root cause
+  of the `render-orphan-contention` cascade the debug-swatch session had flagged
+  and spawned `task_93dccd69` for (this is that task).
+- Ran `systematic-debugging`/advisor first. Confirmed the crux: `subprocess.run`'s
+  timeout kills only the direct child before re-raising, so a later `taskkill /T`
+  on the (now dead, possibly recycled) launcher PID can't tree-walk to the
+  orphaned grandchild — the kill MUST happen while the launcher is alive, which
+  forces `Popen` + `communicate()` over `subprocess.run`.
+- Implemented a shared `render._kill_tree(process)` (`taskkill /F /T /PID`, pid
+  guard, swallowed failure) and rebuilt `_run_godot` on `Popen`; routed
+  `live.py`'s `_terminate` through the same helper (dedup, live→render import
+  only). Hardened the post-kill reap with a 10s timeout so a surviving
+  grandchild holding the pipe can't hang the loop.
+- Verified empirically against real Godot: forced a timeout → `_GodotTimeout`,
+  zero leftover Godot, next `render()` succeeded. Directly reproduced the
+  mechanism — `tasklist` mid-render showed two real GUI processes outside the
+  launcher, one frozen at ~6,376 K (the memory's ~6MB single-instance signature)
+  followed by a hang; recovered via TaskStop + taskkill all Godot.
+- Ran `/code-review` (medium): 2 PLAUSIBLE findings, both `no_change_needed`
+  after analysis. Added a hardening round earlier (bounded reap) with its own
+  test. Fast suite: 232 passed, 21 deselected.
+- Updated the `render-orphan-contention` memory + `MEMORY.md` index (was marked
+  still buggy). Wrote `_agent-commons\log\2026-08-29-claude-code-render-timeout-killtree-fix.md`.
+- Committed `cd1fcb9`, then merged to `main` alongside the concurrent
+  debug-swatch wrap-up `e6eb4c0` (which had independently trimmed the same two
+  baton entries — reconciled by hand so both sessions survive). Pushed to
+  `origin/main`.
 
 ### 2026-08-29 (debug swatch gallery) — built both phases + a relief shapes/text family
 - Picked up via `pickup` (clean, `main` at `c9934a7`, in sync). Grayson chose

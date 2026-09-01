@@ -1,45 +1,47 @@
 # 🧭 Session Handoff — Tool-MaterialMaker-MCP
 
-_Last updated: 2026-09-01 (masonry cookbook + render pipe-hang fix + sf03 fix) CT (America/Chicago)_
+_Last updated: 2026-09-01 (painted-metal cookbook +5) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**Masonry cookbook expanded from 3 to 8 materials, a real latent render hang
-fixed, and the long-standing sf03 circuit-board bleed-through bug resolved.**
-This session added five stone materials to `quality/cookbook_stone.py` (s07
-true cobblestone [closes backlog C], s08 dry-stone/fieldstone wall, s09
-ashlar/castle block wall, s10 flagstone/slate paving, s11 polished marble),
-each authored, rendered, 3D-previewed, written up. It fixed a genuine
-`render.py` bug (`_run_godot`'s `communicate()` blocked on stdout/stderr pipe
-EOF held by MM's lingering child, hanging to the 180s timeout; now temp-file
-redirect + `process.wait()`, 2 regression tests, fast suite 262). And it closed
-**sf03** (backlog D): the trace stripes bled through the chips because the
-recipe fed the chips' albedo colorize (gray 0.65) as the blend's opacity mask,
-so chips rendered at 65% opacity. Split the opacity mask off from the albedo
-(hard 0/1 mask), same fix on the traces. New `quality/render_one.py`
-single-case renderer. Older write-ups/log beyond the cap live in
+**New painted-metal cookbook category shipped: 5 materials, all HIT, committed
+and pushed.** Built `quality/cookbook_painted_metal.py` (pm01 powder coat, pm02
+automotive enamel, pm03 paint chipped to bare metal, pm04 hammertone, pm05
+scuffed panel), each around a distinct STRUCTURAL read so the surface-finish
+family doesn't collapse into five gray panels (advisor's steer). Each was
+authored, validated, rendered, 3D-previewed, and iterated with Grayson's review
+before locking. Two PBR rules held throughout: metallic is a paint-vs-metal
+decision (never global), and every chip/wear mask is a hard 0/1 fed to `blend`
+port 2 (the sf03 trap). The session pinned down MM `blend` port semantics the
+hard way (pm03's polarity inverted twice): a blend shows **port-1 where its
+port-2 mask is 0** and port-0 where it's 1. Recipes in `docs/AUTHORING.md`,
+tracked thumbnails under `docs/images/cookbook-painted-metal/`. This is a
+docs/quality-only session, no `src/` change, so no gate/phase state moved.
+Older write-ups/log beyond the cap live in
 [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).
 
 ## 📌 Where we stopped
 
-Everything landed and pushed: masonry commit `4c14f8f`, sf03 fix `6667b4b`,
-plus this wrap-up's baton commit. `main` clean and in sync. A natural stopping
-point.
+Everything landed and pushed: painted-metal commit `4d72c8b` on `origin/main`
+(CI triggered), plus this wrap-up's baton commit. `main` clean and in sync. A
+natural stopping point.
 
 ## ▶️ Next concrete step
 
-**Pick from the backlog** (nothing is blocked). Good candidates now that
-masonry is well-covered (8 materials) and sf03 is closed:
-- **New cookbook category**: glass, plastics, or painted metal are still
-  uncovered. Quick-win, well-trodden pattern.
-- **Remaining honest partial (backlog D)**: `w03`/wool loop-knit approximation
-  is the last flagged partial (sf03's bleed-through, the other half of D, is now
-  fixed).
-- **More debug swatches** if wanted: blend-mask polarity, height-to-normal
-  convention, colorize/ramp direction, same pattern, each tied to a real trap.
-  (A blend-opacity swatch would now be apt: it was the sf03 root cause.)
+**Pick from the backlog** (nothing is blocked). Good candidates now that the
+cookbook covers 9 categories (fabrics, leather, organics, scifi, terrain, wood,
+stone, and now painted metal) and sf03 is closed:
+- **Blend-opacity debug swatch**: a known-answer diagnostic swatch would
+  memorialize today's pm03 polarity lesson (which blend port shows at mask 0 vs
+  1) and the sf03 root cause. Apt and small.
+- **Remaining honest partial (backlog D)**: wool loop-knit approximation is the
+  last flagged partial.
+- **Another cookbook category**: glass and plastics are still uncovered.
+  Quick-win, well-trodden pattern.
+- **`list_node_types` keep-or-remove**: a small open product decision the
+  teardown flagged (redundant with `catalog://nodes` + `describe_node`).
 
 The older open backlog, unchanged:
 - **2 findings ruled out, not fixed** (deliberate): #8 (`_cmd_clear_graph`'s
@@ -131,6 +133,37 @@ The older open backlog, unchanged:
   earlier session (staleness marker, `_append_autoload`'s first-occurrence
   match, both verified low-priority).
 
+## 🗂️ Changed this session (painted-metal cookbook +5)
+
+- Branch: `main`. Commit `4d72c8b`, **pushed** to `origin/main` (CI triggered).
+  Files: `quality/cookbook_painted_metal.py` (new, 5 builders pm01-pm05),
+  `docs/AUTHORING.md` (new painted-metal section), 5 tracked albedo thumbnails
+  under `docs/images/cookbook-painted-metal/`. Authored `.ptex` + rendered
+  maps/previews stay gitignored (regenerable via the builder). No `src/` change,
+  so no gate/phase state moved. Memory (`authoring-recipes`, `MEMORY.md`) updated.
+- Materials (each authored -> validated -> rendered -> 3D-previewed -> iterated
+  with Grayson -> locked): **pm01 powder coat** (rock clone, warp flattened for
+  fine orange-peel pebbling), **pm02 automotive enamel** (near-mirror red +
+  per-cell flake), **pm03 chipped paint** (green majority chipped to bare metal,
+  masked metallic; distinct from the frozen combo01 which chips to rust), **pm04
+  hammertone** (medium dimple field, deepest relief, the strongest structural
+  read), **pm05 scuffed panel** (directional brushed scuffs, faded utility blue).
+- Decisions (+ why): the advisor's steer was the whole frame -- painted metal's
+  variation is surface finish, so five materials that differ only in gloss read
+  as one gray panel five times; the fix is a distinct STRUCTURAL read per
+  material (bump scale, dimple field, chip mask, directional axis), color only
+  reinforcing. Two correctness rules held: metallic masked not global (a
+  globally-metallic painted panel renders near-black in the preview), and every
+  wear mask a hard 0/1 into blend port 2.
+- **Durable lesson pinned this session:** a MM `blend` shows its **port-1 input
+  where the port-2 mask is 0** and port-0 where the mask is 1. pm03's chip mask
+  polarity was inverted twice (metal-majority, then near-all-metal) before this
+  landed empirically. Put the MAJORITY layer on port 1; make the hard mask 1 only
+  in the minority spots. Recorded in AUTHORING.md + the `authoring-recipes` memory.
+- Two per-material fixes worth remembering: pm01's wormy-crackle first render was
+  `rock`'s `warp_0` (amount 0.3) smearing cells -- flatten to 0.03; pm05's grainy
+  scuffs were 8 perlin octaves -- drop `iterations` to 2 for clean brushed lines.
+
 ## 🗂️ Changed this session (masonry cookbook +5, render pipe-hang fix, sf03 fix)
 
 - **sf03 circuit-board fix** (commit `6667b4b`, pushed): `quality/cookbook_scifi.py`
@@ -200,39 +233,7 @@ The older open backlog, unchanged:
   Not blocking, revisit if it recurs on a future release PR. Wrote
   `_agent-commons\log\2026-08-30-claude-code-mm-mcp-releaseplease-unblock-gallery.md`.
 
-## 🗂️ Changed this session (Phase 4 hardening: path bounding, inspect_project, CI + release-please)
-
-- Branch: `phase4-hardening` (off `main`), 10 TDD tasks subagent-driven, merged
-  `--no-ff` as `d23b235`, **pushed to `origin/main`**. New: `src/mm_mcp/paths.py`,
-  `src/mm_mcp/inspect.py`, `.github/workflows/test.yml`,
-  `.github/workflows/release-please.yml`, `release-please-config.json`,
-  `.release-please-manifest.json`, `tests/test_paths.py`, `tests/test_inspect.py`,
-  and the spec + plan under `docs/superpowers/`. Edited: `config.py`
-  (`allowed_roots`), `server.py` (guards on 5 tools + `inspect_project`),
-  `__init__.py` (version via `importlib.metadata`), `doctor.py`, `README.md`,
-  `STATUS.md`. Fast suite 260 passed; first real Windows CI run green.
-- Decisions (+ why): prompted by a compare against
-  `dcc-mcp/dcc-mcp-material-maker` (a headless export/inspection adapter, a
-  different product). Borrowed its packaging/sandboxing rigor only where it
-  serves our North Star. **Path bounding is opt-in** (`MM_ALLOWED_ROOTS` unset =
-  unrestricted) so daily use is frictionless; the `../` traversal guard on
-  name/basename fragments is always on. `save_graph` now returns a
-  `{"ok","path"}` dict (was a bare str) to match every other tool's shape; no
-  internal consumer depended on the old return. **CI provisioning was corrected
-  mid-flight:** a bare runner needs the MM checkout + a stub Godot binary (the
-  fast suite calls `require_valid`), not "no clone" as first specced; verified
-  locally (260 passed) before writing the workflow. Version single-sourced to
-  `pyproject.toml` only (release-please owns it), `__init__.py` derives it with a
-  `0.0.0+unknown` fallback that is load-bearing for `pythonpath=src` test runs.
-- Push friction worth remembering: the commit adds workflow files, which need a
-  **`workflow`-scoped** credential. The default git/OAuth and gh tokens lacked
-  it; fixed with a one-time `gh auth refresh -h github.com -s workflow`, then
-  pushed via `git -c credential.helper='!gh auth git-credential'`. release-please
-  then ran but failed only at "open the PR" because the repo's "Allow GitHub
-  Actions to create and approve pull requests" setting is still off (see Next
-  concrete step). Wrote two `_agent-commons\log\` entries (spec + implementation).
-
-> 📦 **16 older "Changed this session" write-ups archived** (through
+> 📦 **17 older "Changed this session" write-ups archived** (through
 > 2026-08-29, incl. the README front-page 3D-preview/social-card session) --
 > the pre-release audit/teardown/doc-fix pass,
 > render_node_output/live_render_node_output (item H), saved_graphs/
@@ -550,10 +551,30 @@ The older open backlog, unchanged:
 > section past that cap, the oldest entry moves out verbatim (no
 > summarizing) into [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md)
 > instead of letting this doc grow unbounded -- flagged as a real pickup
-> cost by the 2026-08-29 teardown (Maintainer lens). **26 older entries are
+> cost by the 2026-08-29 teardown (Maintainer lens). **27 older entries are
 > now archived there**, from the 2026-08-29 pre-release-audit session back
 > through the project's Phase 1-2 kickoff on 2026-08-25.
 
+
+### 2026-09-01 (painted-metal cookbook) — new category, +5 materials, all HIT
+- Picked up via `pickup` (clean `main` at `a849784`, in sync). Grayson chose the
+  pick: a new cookbook category. Ran `brainstorming` (bounded), he chose painted
+  metal, 5 materials.
+- Called `advisor` before committing to the set. Key steer: painted metal's
+  variation is surface finish, so five gloss-only variants read as one gray panel
+  five times; design each around a distinct STRUCTURAL read. Presented the set
+  (pm01-pm05, each with its structural read named), Grayson approved.
+- Built `quality/cookbook_painted_metal.py`, validated all 5 against the catalog
+  (fast, no Godot), then rendered + 3D-previewed each one Godot at a time via
+  `render_one.py` + a scratchpad preview helper. pm01 needed a warp-flatten pass
+  (wormy crackle -> fine pebbling); pm03 needed two mask-polarity passes before
+  the blend port-1/port-0 semantics were pinned; pm05 needed octaves dropped 8->2
+  for clean directional scuffs. Sent Grayson all 5 previews; he locked them.
+- Finalized: 5 tracked albedo thumbnails to `docs/images/cookbook-painted-metal/`,
+  the 5 recipes into `docs/AUTHORING.md`, memory (`authoring-recipes` + index)
+  updated with the blend-port fact. Committed `4d72c8b`, pushed to `origin/main`
+  (CI triggered), confirmed in sync.
+- Wrote `_agent-commons\log\2026-09-01-claude-code-mm-mcp-painted-metal-cookbook.md`.
 
 ### 2026-09-01 (masonry cookbook + render pipe-hang fix) — +5 stone materials, fixed a latent render hang
 - Picked up via `pickup` (clean `main` at `d946942`, in sync). Grayson chose to
@@ -651,36 +672,6 @@ The older open backlog, unchanged:
   uploaded the new `docs/social-preview.png` via repo Settings → Social preview
   through his Chrome (the card is set in the web UI, not from the repo file).
 - Wrote `_agent-commons\log\2026-08-29-claude-code-materialmaker-mcp-readme-front-page-images.md`.
-
-### 2026-08-29 (render timeout fix) — killed the process-tree leak behind the render-orphan cascade
-- Worktree session on branch `claude/confident-tesla-ee9400`. Task: fix the
-  latent process-leak in `render.py`'s `_run_godot` timeout path, the root cause
-  of the `render-orphan-contention` cascade the debug-swatch session had flagged
-  and spawned `task_93dccd69` for (this is that task).
-- Ran `systematic-debugging`/advisor first. Confirmed the crux: `subprocess.run`'s
-  timeout kills only the direct child before re-raising, so a later `taskkill /T`
-  on the (now dead, possibly recycled) launcher PID can't tree-walk to the
-  orphaned grandchild — the kill MUST happen while the launcher is alive, which
-  forces `Popen` + `communicate()` over `subprocess.run`.
-- Implemented a shared `render._kill_tree(process)` (`taskkill /F /T /PID`, pid
-  guard, swallowed failure) and rebuilt `_run_godot` on `Popen`; routed
-  `live.py`'s `_terminate` through the same helper (dedup, live→render import
-  only). Hardened the post-kill reap with a 10s timeout so a surviving
-  grandchild holding the pipe can't hang the loop.
-- Verified empirically against real Godot: forced a timeout → `_GodotTimeout`,
-  zero leftover Godot, next `render()` succeeded. Directly reproduced the
-  mechanism — `tasklist` mid-render showed two real GUI processes outside the
-  launcher, one frozen at ~6,376 K (the memory's ~6MB single-instance signature)
-  followed by a hang; recovered via TaskStop + taskkill all Godot.
-- Ran `/code-review` (medium): 2 PLAUSIBLE findings, both `no_change_needed`
-  after analysis. Added a hardening round earlier (bounded reap) with its own
-  test. Fast suite: 232 passed, 21 deselected.
-- Updated the `render-orphan-contention` memory + `MEMORY.md` index (was marked
-  still buggy). Wrote `_agent-commons\log\2026-08-29-claude-code-render-timeout-killtree-fix.md`.
-- Committed `cd1fcb9`, then merged to `main` alongside the concurrent
-  debug-swatch wrap-up `e6eb4c0` (which had independently trimmed the same two
-  baton entries — reconciled by hand so both sessions survive). Pushed to
-  `origin/main`.
 
 _(Older entries continue in [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).)_
 
