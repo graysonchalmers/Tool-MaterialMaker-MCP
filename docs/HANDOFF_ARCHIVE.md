@@ -19,6 +19,29 @@ doc's window.
 
 ## Archived "Changed this session" write-ups
 
+## 🗂️ Changed this session (v0.4.0 release unblock + README gallery resize)
+
+- Branch: `main`. Commit `8f7f515` (gallery), plus the release merge `c2aa170` +
+  release-please's `35519b5` (CHANGELOG + version bump), all **pushed**. New
+  tracked file from release-please: `CHANGELOG.md`; `pyproject.toml` bumped to
+  0.4.0. `README.md` gallery table changed from 4-col-with-captions to
+  2-col-no-captions (~2x larger images, same 8 materials/order).
+- Decisions (+ why): the release-please blocker was a **repo setting**, not a
+  code problem. Pushing files always worked; a GitHub Actions bot opening a PR
+  is gated by "Allow GitHub Actions to create and approve pull requests" (off by
+  default). release-please was the first bot-opens-a-PR action in the repo, so it
+  was the first to hit that wall. Grayson flipped it, I re-ran the failed run
+  (`gh run rerun 33298317643`) → PR #1 opened → merged with a **merge commit**
+  (`--merge`, what release-please needs to detect the release) → v0.4.0 tagged +
+  Release cut + wheel/sdist attached. Gallery went 2-col per Grayson's "bigger
+  images, don't care about titles"; showed him a PIL-rendered preview at GitHub's
+  real content width before pushing.
+- Honest caveat: a `tests` run on the PR branch (earlier commit) failed, but the
+  post-merge `tests` run on `main` passed (1m16s) and the release built clean;
+  the PR-branch run's logs were already purged so the cause wasn't recoverable.
+  Not blocking, revisit if it recurs on a future release PR. Wrote
+  `_agent-commons\log\2026-08-30-claude-code-mm-mcp-releaseplease-unblock-gallery.md`.
+
 ## 🗂️ Changed this session (Phase 4 hardening: path bounding, inspect_project, CI + release-please)
 
 - Branch: `phase4-hardening` (off `main`), 10 TDD tasks subagent-driven, merged
@@ -532,6 +555,28 @@ doc's window.
 ---
 
 ## Archived session log
+
+### 2026-08-29 (README images) — 3D-preview hero + gallery + cookbook sheet, social-preview fix
+- Picked up via `pickup` with Grayson's ask: nicer front-page images. Found
+  drift: `origin/main` was 2 commits ahead (the render-timeout fix had merged
+  after the prior wrap); fast-forwarded local cleanly first.
+- Ran `brainstorming` → bounded. Grayson chose "hero + 3D gallery," "keep 4
+  columns," "render hero finalists I choose," and "swap the dark metals for
+  other mats." Rendered 8 gallery previews + 2 replacements sequentially via a
+  scratch script against `mm_mcp.render`/`preview`; sent contact sheets each
+  pass and iterated. Learned pure metals render near-black in the preview scene.
+- Grayson asked to feature his own brick: rendered
+  `saved_graphs/bricks_grayson_edit.ptex` (an irregular mossy cobblestone) and
+  swapped it into both the hero triptych and the gallery as a round-trip example.
+- Wired README: hero at top, 4-col 3D gallery, collapsible "Material cookbook"
+  section with a 4×7 sheet of all 28 cookbook materials. Committed `d7f2659`,
+  pushed, verified images serve HTTP 200.
+- Grayson flagged the GitHub topic-card social preview showed cropped title.
+  Root cause: topic cards crop the 1280×640 to ~2.74:1. Lifted the text into
+  the safe zone and swapped his brick into the tile grid (`738e10b`), then
+  uploaded the new `docs/social-preview.png` via repo Settings → Social preview
+  through his Chrome (the card is set in the web UI, not from the repo file).
+- Wrote `_agent-commons\log\2026-08-29-claude-code-materialmaker-mcp-readme-front-page-images.md`.
 
 ### 2026-08-29 (render timeout fix) — killed the process-tree leak behind the render-orphan cascade
 - Worktree session on branch `claude/confident-tesla-ee9400`. Task: fix the

@@ -1,30 +1,33 @@
 # 🧭 Session Handoff — Tool-MaterialMaker-MCP
 
-_Last updated: 2026-09-01 (painted-metal cookbook +5) CT (America/Chicago)_
+_Last updated: 2026-09-01 (blend-opacity debug swatches +2) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**New painted-metal cookbook category shipped: 5 materials, all HIT, committed
-and pushed.** Built `quality/cookbook_painted_metal.py` (pm01 powder coat, pm02
-automotive enamel, pm03 paint chipped to bare metal, pm04 hammertone, pm05
-scuffed panel), each around a distinct STRUCTURAL read so the surface-finish
-family doesn't collapse into five gray panels (advisor's steer). Each was
-authored, validated, rendered, 3D-previewed, and iterated with Grayson's review
-before locking. Two PBR rules held throughout: metallic is a paint-vs-metal
-decision (never global), and every chip/wear mask is a hard 0/1 fed to `blend`
-port 2 (the sf03 trap). The session pinned down MM `blend` port semantics the
-hard way (pm03's polarity inverted twice): a blend shows **port-1 where its
-port-2 mask is 0** and port-0 where it's 1. Recipes in `docs/AUTHORING.md`,
-tracked thumbnails under `docs/images/cookbook-painted-metal/`. This is a
-docs/quality-only session, no `src/` change, so no gate/phase state moved.
-Older write-ups/log beyond the cap live in
+**Two new blend-opacity debug swatches shipped, tested, committed and pushed.**
+Built `blend_mask_polarity` and `blend_opacity_ramp` in
+`quality/debug_swatches.py`, known-answer diagnostics that memorialize the
+`blend` node port/opacity trap which cost real debugging twice (sf03
+circuit-board bleed-through, pm03 chipped-paint polarity flip). Verified against
+`blend.mmg` first: Normal-mode output is `opacity*s1 + (1-opacity)*s2`,
+`opacity = amount × mask × s1.alpha`, port 0 = Foreground, port 1 = Background,
+port 2 = Mask. Swatch 1 (amount=1, hard mask) proves which port shows at mask 0
+vs 1; swatch 2 (amount=0.5, ramp mask) proves the `amount × mask` multiply so a
+mid mask gives a PARTIAL blend (the sf03 shape), not a switch. Advisor caught two
+would-be bugs before they shipped: the `.mmg` `blend_type` default is 13
+(AddSub) so both builders set 0 (Normal) explicitly, and swatch 2 now varies
+`amount` so the formula is asserted, not just documented. Pixel checks
+auto-parametrize into the live integration test; new blend family section in
+`docs/DEBUG_SWATCHES.md` + AUTHORING.md cross-ref. Fast suite 262; the 2 new
+blend integration checks pass live. Docs/quality-only, no `src/` change, so no
+gate/phase state moved. Older write-ups/log beyond the cap live in
 [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).
 
 ## 📌 Where we stopped
 
-Everything landed and pushed: painted-metal commit `4d72c8b` on `origin/main`
+Everything landed and pushed: blend-swatch commit `80256d0` on `origin/main`
 (CI triggered), plus this wrap-up's baton commit. `main` clean and in sync. A
 natural stopping point.
 
@@ -32,10 +35,8 @@ natural stopping point.
 
 **Pick from the backlog** (nothing is blocked). Good candidates now that the
 cookbook covers 9 categories (fabrics, leather, organics, scifi, terrain, wood,
-stone, and now painted metal) and sf03 is closed:
-- **Blend-opacity debug swatch**: a known-answer diagnostic swatch would
-  memorialize today's pm03 polarity lesson (which blend port shows at mask 0 vs
-  1) and the sf03 root cause. Apt and small.
+stone, painted metal), sf03 is closed, and the blend-port lesson is
+memorialized as a diagnostic swatch:
 - **Remaining honest partial (backlog D)**: wool loop-knit approximation is the
   last flagged partial.
 - **Another cookbook category**: glass and plastics are still uncovered.
@@ -133,6 +134,30 @@ The older open backlog, unchanged:
   earlier session (staleness marker, `_append_autoload`'s first-occurrence
   match, both verified low-priority).
 
+## 🗂️ Changed this session (blend-opacity debug swatches +2)
+
+- Branch: `main`. Commit `80256d0`, **pushed** to `origin/main` (CI triggered),
+  plus this wrap-up baton commit. Files: `quality/debug_swatches.py` (2 builders
+  + 2 pixel checks + 2 registry entries), `docs/DEBUG_SWATCHES.md` (new blend
+  family section), `docs/AUTHORING.md` (cross-ref from the pm03 writeup). Rendered
+  outputs under `quality/cookbook/debug-swatches/blend_*/` stay gitignored/
+  regenerable, matching the existing debug-swatch convention (no tracked
+  thumbnails, the doc is the reference). No `src/` change, no gate/phase moved.
+- Swatches: `blend_mask_polarity` (amount=1, hard left/right mask -> LEFT blue
+  /port-1/background, RIGHT red/port-0/foreground; proves which port shows at
+  mask 0 vs 1) and `blend_opacity_ramp` (amount=0.5, ramp mask -> pure blue at
+  left, purple that never reaches full red at right; proves opacity = amount ×
+  mask, the partial-opacity shape of the sf03 bug).
+- Process (+ why): read `blend.mmg` before designing, so the known-answers are
+  derived from source, not guessed. Called `advisor` before writing the checks;
+  it caught two would-be-shipped bugs: (1) the `.mmg` `blend_type` default is 13
+  (AddSub), not 0, so a swatch omitting it would render wrong colors and ship as
+  a bogus known-answer, both builders now set `blend_type=0` explicitly; (2) both
+  swatches at amount=1 would leave the `amount` factor of `opacity = amount ×
+  mask` documented-but-unasserted, so swatch 2 moved to amount=0.5 to assert the
+  multiply. Calibrated the check thresholds against the real rendered pixels
+  (polarity: left `(30,56,229)`, right `(229,30,30)`; ramp right `(118,44,141)`).
+
 ## 🗂️ Changed this session (painted-metal cookbook +5)
 
 - Branch: `main`. Commit `4d72c8b`, **pushed** to `origin/main` (CI triggered).
@@ -210,31 +235,8 @@ The older open backlog, unchanged:
   MCP server (where a 180s stall is worst), even though it wasn't today's
   symptom. Full reasoning in the session log.
 
-## 🗂️ Changed this session (v0.4.0 release unblock + README gallery resize)
-
-- Branch: `main`. Commit `8f7f515` (gallery), plus the release merge `c2aa170` +
-  release-please's `35519b5` (CHANGELOG + version bump), all **pushed**. New
-  tracked file from release-please: `CHANGELOG.md`; `pyproject.toml` bumped to
-  0.4.0. `README.md` gallery table changed from 4-col-with-captions to
-  2-col-no-captions (~2x larger images, same 8 materials/order).
-- Decisions (+ why): the release-please blocker was a **repo setting**, not a
-  code problem. Pushing files always worked; a GitHub Actions bot opening a PR
-  is gated by "Allow GitHub Actions to create and approve pull requests" (off by
-  default). release-please was the first bot-opens-a-PR action in the repo, so it
-  was the first to hit that wall. Grayson flipped it, I re-ran the failed run
-  (`gh run rerun 33298317643`) → PR #1 opened → merged with a **merge commit**
-  (`--merge`, what release-please needs to detect the release) → v0.4.0 tagged +
-  Release cut + wheel/sdist attached. Gallery went 2-col per Grayson's "bigger
-  images, don't care about titles"; showed him a PIL-rendered preview at GitHub's
-  real content width before pushing.
-- Honest caveat: a `tests` run on the PR branch (earlier commit) failed, but the
-  post-merge `tests` run on `main` passed (1m16s) and the release built clean;
-  the PR-branch run's logs were already purged so the cause wasn't recoverable.
-  Not blocking, revisit if it recurs on a future release PR. Wrote
-  `_agent-commons\log\2026-08-30-claude-code-mm-mcp-releaseplease-unblock-gallery.md`.
-
-> 📦 **17 older "Changed this session" write-ups archived** (through
-> 2026-08-29, incl. the README front-page 3D-preview/social-card session) --
+> 📦 **18 older "Changed this session" write-ups archived** (through
+> 2026-08-30, incl. the v0.4.0 release-unblock + README gallery session) --
 > the pre-release audit/teardown/doc-fix pass,
 > render_node_output/live_render_node_output (item H), saved_graphs/
 > round-trip, Unity export proof, wood/stone cookbooks, the overlay
@@ -551,10 +553,31 @@ The older open backlog, unchanged:
 > section past that cap, the oldest entry moves out verbatim (no
 > summarizing) into [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md)
 > instead of letting this doc grow unbounded -- flagged as a real pickup
-> cost by the 2026-08-29 teardown (Maintainer lens). **27 older entries are
-> now archived there**, from the 2026-08-29 pre-release-audit session back
+> cost by the 2026-08-29 teardown (Maintainer lens). **28 older entries are
+> now archived there**, from the 2026-08-29 README-images session back
 > through the project's Phase 1-2 kickoff on 2026-08-25.
 
+
+### 2026-09-01 (blend-opacity debug swatches) — +2 known-answer diagnostics, all pass
+- Picked up via `pickup`; Grayson pre-picked the move in the args (build the
+  blend-opacity debug swatch). Clean `main` at `c0b96d7`, in sync.
+- Read `blend.mmg` FIRST to derive the known-answers from source: Normal-mode
+  output `opacity*s1 + (1-opacity)*s2`, `opacity = amount × mask × s1.alpha`,
+  port 0 = Foreground, port 1 = Background, port 2 = Mask.
+- Called `advisor` before writing the checks. It caught two would-be-shipped
+  bugs: (1) `.mmg` `blend_type` default is 13 (AddSub), so a swatch omitting it
+  renders wrong colors and ships a bogus known-answer, both builders now set
+  `blend_type=0` explicitly; (2) both swatches at amount=1 would leave the
+  `amount` factor unasserted, so swatch 2 moved to amount=0.5.
+- Built `blend_mask_polarity` (hard mask, polarity case) + `blend_opacity_ramp`
+  (ramp mask, amount=0.5, the partial-opacity/sf03 shape) in
+  `quality/debug_swatches.py` + their pixel checks + registry entries. Rendered
+  both via `render_one.py` (one Godot at a time), eyeballed, sampled real pixels
+  to calibrate thresholds, sent both previews to Grayson.
+- Tests: the 2 new blend integration checks pass live (auto-parametrized), fast
+  suite 262. Docs: new blend family section in `docs/DEBUG_SWATCHES.md` +
+  AUTHORING.md cross-ref. Committed `80256d0`, pushed to `origin/main`, in sync.
+- Wrote `_agent-commons\log\2026-09-01-claude-code-mm-mcp-blend-opacity-debug-swatch.md`.
 
 ### 2026-09-01 (painted-metal cookbook) — new category, +5 materials, all HIT
 - Picked up via `pickup` (clean `main` at `a849784`, in sync). Grayson chose the
@@ -650,28 +673,6 @@ The older open backlog, unchanged:
   create PRs" setting still off — Grayson handling later).
 - Wrote `_agent-commons\log\2026-08-30-claude-code-mm-mcp-phase4-hardening-spec.md`
   and `...-phase4-hardening-implemented.md`.
-
-### 2026-08-29 (README images) — 3D-preview hero + gallery + cookbook sheet, social-preview fix
-- Picked up via `pickup` with Grayson's ask: nicer front-page images. Found
-  drift: `origin/main` was 2 commits ahead (the render-timeout fix had merged
-  after the prior wrap); fast-forwarded local cleanly first.
-- Ran `brainstorming` → bounded. Grayson chose "hero + 3D gallery," "keep 4
-  columns," "render hero finalists I choose," and "swap the dark metals for
-  other mats." Rendered 8 gallery previews + 2 replacements sequentially via a
-  scratch script against `mm_mcp.render`/`preview`; sent contact sheets each
-  pass and iterated. Learned pure metals render near-black in the preview scene.
-- Grayson asked to feature his own brick: rendered
-  `saved_graphs/bricks_grayson_edit.ptex` (an irregular mossy cobblestone) and
-  swapped it into both the hero triptych and the gallery as a round-trip example.
-- Wired README: hero at top, 4-col 3D gallery, collapsible "Material cookbook"
-  section with a 4×7 sheet of all 28 cookbook materials. Committed `d7f2659`,
-  pushed, verified images serve HTTP 200.
-- Grayson flagged the GitHub topic-card social preview showed cropped title.
-  Root cause: topic cards crop the 1280×640 to ~2.74:1. Lifted the text into
-  the safe zone and swapped his brick into the tile grid (`738e10b`), then
-  uploaded the new `docs/social-preview.png` via repo Settings → Social preview
-  through his Chrome (the card is set in the web UI, not from the repo file).
-- Wrote `_agent-commons\log\2026-08-29-claude-code-materialmaker-mcp-readme-front-page-images.md`.
 
 _(Older entries continue in [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).)_
 
