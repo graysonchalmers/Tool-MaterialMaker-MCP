@@ -1,44 +1,45 @@
 # 🧭 Session Handoff — Tool-MaterialMaker-MCP
 
-_Last updated: 2026-09-01 (masonry cookbook + render pipe-hang fix) CT (America/Chicago)_
+_Last updated: 2026-09-01 (masonry cookbook + render pipe-hang fix + sf03 fix) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**Masonry cookbook expanded from 3 to 8 materials, and a real latent render
-hang is fixed.** This session added five stone materials to
-`quality/cookbook_stone.py` — s07 true cobblestone (closes the long-open s05
-"true cobblestone" gap, backlog C), s08 dry-stone/fieldstone wall, s09
-ashlar/castle block wall, s10 flagstone/slate paving, s11 polished marble —
-each authored, rendered, 3D-previewed, and written up in `docs/AUTHORING.md`.
-Along the way a genuine `render.py` bug surfaced: `_run_godot` used
-`communicate()`, which blocks on stdout/stderr pipe EOF, and Material Maker's
-lingering child inherits those pipes, so a render could hang to the 180s
-timeout despite finishing in ~8s. Fixed by redirecting to temp FILES + waiting
-on the process (2 new real-subprocess regression tests; fast suite 262 green).
-New `quality/render_one.py` single-case renderer. Older write-ups/log beyond
-the cap live in [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).
+**Masonry cookbook expanded from 3 to 8 materials, a real latent render hang
+fixed, and the long-standing sf03 circuit-board bleed-through bug resolved.**
+This session added five stone materials to `quality/cookbook_stone.py` (s07
+true cobblestone [closes backlog C], s08 dry-stone/fieldstone wall, s09
+ashlar/castle block wall, s10 flagstone/slate paving, s11 polished marble),
+each authored, rendered, 3D-previewed, written up. It fixed a genuine
+`render.py` bug (`_run_godot`'s `communicate()` blocked on stdout/stderr pipe
+EOF held by MM's lingering child, hanging to the 180s timeout; now temp-file
+redirect + `process.wait()`, 2 regression tests, fast suite 262). And it closed
+**sf03** (backlog D): the trace stripes bled through the chips because the
+recipe fed the chips' albedo colorize (gray 0.65) as the blend's opacity mask,
+so chips rendered at 65% opacity. Split the opacity mask off from the albedo
+(hard 0/1 mask), same fix on the traces. New `quality/render_one.py`
+single-case renderer. Older write-ups/log beyond the cap live in
+[docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).
 
 ## 📌 Where we stopped
 
-All 5 materials locked and the render fix landed + tested. This wrap-up wrote
-the docs (AUTHORING.md recipes, quality/README note), STATUS/HANDOFF/memory,
-and committed + pushed (builders, render.py fix + tests, render_one.py, doc
-recipe thumbnails). The renders and authored `.ptex` variants stay gitignored
-(regenerable). A natural stopping point.
+Everything landed and pushed: masonry commit `4c14f8f`, sf03 fix `6667b4b`,
+plus this wrap-up's baton commit. `main` clean and in sync. A natural stopping
+point.
 
 ## ▶️ Next concrete step
 
-**Pick from the backlog** (nothing is blocked). The obvious next candidate is
-the **`sf03` circuit-board bleed-through bug (backlog D)** — it was this
-session's planned "then" item but the render-hang investigation ate the time.
-One hypothesis is already ruled out; next suspect is the voronoi-port-2 ×
-`blend` interaction (see Open questions). Other good candidates:
-- **More cookbook categories**: glass, plastics, painted metal are still
-  uncovered (masonry is now well-covered with 8 materials).
+**Pick from the backlog** (nothing is blocked). Good candidates now that
+masonry is well-covered (8 materials) and sf03 is closed:
+- **New cookbook category**: glass, plastics, or painted metal are still
+  uncovered. Quick-win, well-trodden pattern.
+- **Remaining honest partial (backlog D)**: `w03`/wool loop-knit approximation
+  is the last flagged partial (sf03's bleed-through, the other half of D, is now
+  fixed).
 - **More debug swatches** if wanted: blend-mask polarity, height-to-normal
-  convention, colorize/ramp direction — same pattern, each tied to a real trap.
+  convention, colorize/ramp direction, same pattern, each tied to a real trap.
+  (A blend-opacity swatch would now be apt: it was the sf03 root cause.)
 
 The older open backlog, unchanged:
 - **2 findings ruled out, not fixed** (deliberate): #8 (`_cmd_clear_graph`'s
@@ -76,10 +77,11 @@ The older open backlog, unchanged:
   (regular hex grid, not irregular). A voronoi-plate approach (like
   `dry_earth`'s cracked-plate network, recolored to stone tones with
   per-plate variation) is untried and would likely get real irregularity.
-- **D. The two remaining honest partials** (wool loop-knit, sf03's
-  circuit-board trace-bleed-through; a prior session ruled OUT one
-  hypothesis for the circuit-board bug, see Open questions, but didn't find
-  the real cause).
+- **D. One remaining honest partial** (wool loop-knit). **sf03's
+  circuit-board trace-bleed-through is FIXED (2026-09-01)** — root cause was
+  the chips' albedo colorize being reused as the blend's opacity mask (65%
+  opacity), fixed by a dedicated hard 0/1 mask; see the Changed-this-session
+  block and AUTHORING.md.
 - **E. Image-to-material decomposition** — Grayson's own backlog idea,
   captured in `_agent-commons/ideas/Tool-MaterialMaker-MCP.md`. Explicitly
   deferred; likely wants its own `brainstorming` session before any design
@@ -110,13 +112,13 @@ The older open backlog, unchanged:
   real target — Grayson said "sounds good" generally but never explicitly
   confirmed that specific framing. Worth a quick check before it drives
   real scope decisions.
-- **New this session:** `sf03_circuit_board`'s trace-bleed-through bug is
-  STILL unresolved, but one hypothesis is ruled OUT (from a prior session):
-  widening a razor-thin mask threshold band (w03's fix) does not fix
-  `sf03`'s bleed-through. Whoever picks this up next should look elsewhere,
-  possibly the specific interaction between `voronoi` port 2 (per-cell
-  random) and `blend`, since `sf03`'s chips use voronoi where w03's fixed
-  case used a plain perlin mask.
+- **Resolved 2026-09-01:** `sf03_circuit_board`'s trace-bleed-through bug is
+  FIXED. It was never a mask-threshold problem (that hypothesis was correctly
+  ruled out earlier). Real cause: the chips' albedo colorize (gray 0.65) was
+  fed as the `blend`'s port-2 opacity, and a blend's opacity is `amount * a`
+  (`blend.mmg`), so chips were 65% opaque and the traces bled through the other
+  35%. Fixed by splitting a dedicated hard 0/1 opacity mask off the albedo
+  (same on the traces). No longer open.
 - Still open, unchanged: is `.mcp.json` the right long-term wiring, or
   should it fold into `project-setup`'s standard kit? Not decided.
 - Still open, unchanged: should `render_preview` get documented in
@@ -129,7 +131,22 @@ The older open backlog, unchanged:
   earlier session (staleness marker, `_append_autoload`'s first-occurrence
   match, both verified low-priority).
 
-## 🗂️ Changed this session (masonry cookbook +5, render pipe-hang fix)
+## 🗂️ Changed this session (masonry cookbook +5, render pipe-hang fix, sf03 fix)
+
+- **sf03 circuit-board fix** (commit `6667b4b`, pushed): `quality/cookbook_scifi.py`
+  + `docs/AUTHORING.md` (rewritten from "partial/unresolved" to resolved) + the
+  regenerated `docs/images/cookbook-scifi/sf03_circuit_board.png` thumbnail. Root
+  cause was a type confusion, not the razor-thin-threshold hypothesis an earlier
+  session had already ruled out: a `blend`'s opacity is `amount * a` (`blend.mmg`)
+  where `a` is the port-2 input, and the recipe fed the chips' ALBEDO colorize
+  (gray 0.65) as that opacity, so chips were 65% opaque and ~35% of the traces
+  bled through. Fix: split the opacity mask off from the albedo (a dedicated hard
+  0/1 mask on the same threshold), the pattern `cookbook_stone` s04 already used.
+  Same latent bug + fix on the traces (were ~57% opaque, muted olive; now solid
+  gold). Durable lesson recorded in AUTHORING.md + the `authoring-recipes` memory:
+  a MM blend's opacity = amount × port-2 mask; never feed a mid-value albedo
+  colorize as opacity, and for a flat per-cell mask use a near-hard step.
+
 
 - Branch: `main`. Files: `quality/cookbook_stone.py` (+5 builders s07–s11),
   `src/mm_mcp/render.py` (`_run_godot` pipe-hang fix), `tests/test_render.py`
@@ -565,7 +582,14 @@ The older open backlog, unchanged:
   rule. Fast suite 262 green.
 - Docs: 5 recipes + a tooling note in `docs/AUTHORING.md`, a `render_one` note
   in `quality/README.md`, 5 doc thumbnails, STATUS/HANDOFF/memory. Committed +
-  pushed.
+  pushed (`4c14f8f`).
+- **Then closed sf03 (backlog D)** via `systematic-debugging`. Reproduced the
+  trace-bleed-through, root-caused it from `blend.mmg` (opacity = `amount * a`,
+  port 2 = the mask) + the wiring + a render matching the predicted 65% opacity:
+  the chips' albedo colorize (0.65) was reused as the opacity mask. Fixed by
+  splitting a hard 0/1 mask off the albedo; same fix on the traces (Grayson
+  asked to make them solid gold too). AUTHORING.md + memory updated to resolved.
+  Committed + pushed (`6667b4b`).
 
 ### 2026-08-30 (v0.4.0 release + gallery) — unblocked release-please, shipped 0.4.0, enlarged README gallery
 - Picked up via `pickup` (clean `main` at `6b2a070`, in sync). Grayson chose
