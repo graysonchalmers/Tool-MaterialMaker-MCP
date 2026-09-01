@@ -129,14 +129,42 @@ def build_sf03_circuit_board() -> str:
         (0.0, 0, 0, 0), (0.48, 0, 0, 0),
         (0.52, 0.72, 0.55, 0.20), (1.0, 0.72, 0.55, 0.20),
     ])
+    # Same split-mask fix as the chips (below): colorize_traces' "on" value is
+    # gold (luminance ~0.57), so reusing it as the port-2 opacity made the
+    # traces only ~57% opaque and the dark base bled ~43% through them (muted
+    # olive traces). A hard 0/1 mask on the SAME pattern threshold makes the
+    # gold traces solid. The 0.48->0.52 band is kept (not razor-thin) because
+    # the `pattern` wave IS continuous at stripe edges, so the band gives real
+    # edge anti-aliasing here (unlike the flat-per-cell voronoi chip mask).
+    add_node(g, "colorize_traces_mask", "colorize", {})
+    set_gradient(g, "colorize_traces_mask", [
+        (0.0, 0, 0, 0), (0.48, 0, 0, 0),
+        (0.52, 1, 1, 1), (1.0, 1, 1, 1),
+    ])
     add_node(g, "blend_traces", "blend", {"blend_type": 0, "amount": 1})
     add_node(g, "voronoi_chips", "voronoi",
              {"scale_x": 18, "scale_y": 18, "randomness": 1, "intensity": 1,
               "stretch_x": 1, "stretch_y": 1})
     add_node(g, "colorize_chips", "colorize", {})
     set_gradient(g, "colorize_chips", [    # smaller/sparser cells this time
-        (0.0, 0, 0, 0), (0.70, 0, 0, 0),
+        # near-hard step (was a 0.70->0.74 ramp): voronoi port 2 is FLAT per
+        # cell, so a wide ramp doesn't anti-alias edges, it just leaves cells
+        # whose random lands mid-band as faint partial chips. Same tight
+        # threshold on the mask below keeps colour and opacity in lockstep.
+        (0.0, 0, 0, 0), (0.735, 0, 0, 0),
         (0.74, 0.65, 0.66, 0.68), (1.0, 0.65, 0.66, 0.68),
+    ])
+    # ROOT-CAUSE FIX for the long-standing trace-bleed-through bug: blend's
+    # opacity is `amount * a($uv)` (see blend.mmg), where `a` is the port-2
+    # mask. This recipe used to feed colorize_chips (the CHIP ALBEDO, whose
+    # "on" value is 0.65 gray) as that mask, so chips rendered at only ~0.65
+    # opacity and ~35% of the trace stripes bled straight through them. Split
+    # the mask off from the albedo: a hard 0/1 mask on the same voronoi
+    # threshold drives opacity, colorize_chips still drives colour.
+    add_node(g, "colorize_chips_mask", "colorize", {})
+    set_gradient(g, "colorize_chips_mask", [
+        (0.0, 0, 0, 0), (0.735, 0, 0, 0),
+        (0.74, 1, 1, 1), (1.0, 1, 1, 1),
     ])
     add_node(g, "blend_chips", "blend", {"blend_type": 0, "amount": 1})
     add_node(g, "colorize_rgh", "colorize", {})
@@ -150,13 +178,15 @@ def build_sf03_circuit_board() -> str:
     g["connections"] += [
         {"from": "perlin_0", "from_port": 0, "to": "colorize_base", "to_port": 0},
         {"from": "pattern_traces", "from_port": 0, "to": "colorize_traces", "to_port": 0},
+        {"from": "pattern_traces", "from_port": 0, "to": "colorize_traces_mask", "to_port": 0},
         {"from": "colorize_traces", "from_port": 0, "to": "blend_traces", "to_port": 0},
         {"from": "colorize_base", "from_port": 0, "to": "blend_traces", "to_port": 1},
-        {"from": "colorize_traces", "from_port": 0, "to": "blend_traces", "to_port": 2},
+        {"from": "colorize_traces_mask", "from_port": 0, "to": "blend_traces", "to_port": 2},
         {"from": "voronoi_chips", "from_port": 2, "to": "colorize_chips", "to_port": 0},
+        {"from": "voronoi_chips", "from_port": 2, "to": "colorize_chips_mask", "to_port": 0},
         {"from": "colorize_chips", "from_port": 0, "to": "blend_chips", "to_port": 0},
         {"from": "blend_traces", "from_port": 0, "to": "blend_chips", "to_port": 1},
-        {"from": "colorize_chips", "from_port": 0, "to": "blend_chips", "to_port": 2},
+        {"from": "colorize_chips_mask", "from_port": 0, "to": "blend_chips", "to_port": 2},
         {"from": "blend_chips", "from_port": 0, "to": "Material", "to_port": 0},
         {"from": "blend_chips", "from_port": 0, "to": "colorize_rgh", "to_port": 0},
         {"from": "colorize_rgh", "from_port": 0, "to": "Material", "to_port": 2},

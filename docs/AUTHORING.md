@@ -310,7 +310,7 @@ instead.
 |---|---|---|
 | ![](images/cookbook-scifi/sf01_hull_plating.png) | Diamond-plate hull panel | HIT |
 | ![](images/cookbook-scifi/sf02_hazard_stripe_panel.png) | Hazard stripe panel | HIT |
-| ![](images/cookbook-scifi/sf03_circuit_board.png) | Circuit board | Partial -- see bug below |
+| ![](images/cookbook-scifi/sf03_circuit_board.png) | Circuit board | HIT (bleed-through root-caused + fixed 2026-09-01) |
 | ![](images/cookbook-scifi/sf04_vent_grille_panel.png) | Vent grille panel | HIT |
 
 - **Hull plating:** clone `metal_pattern_2` (a bundled example with a
@@ -333,27 +333,43 @@ instead.
   single node (Min of two square waves = their intersection). Distinct
   from `man01`'s hexagonal grating (beehive-based) -- a square punch
   pattern instead.
-- **Circuit board (partial, unresolved bug):** dark PCB base + fine bright
-  traces (`pattern` Square wave, hard-thresholded, reused as its own mask)
-  worked cleanly on its own. Adding scattered "chip" blocks on top did not:
+- **Circuit board (HIT — the bleed-through bug is root-caused and fixed,
+  2026-09-01):** dark PCB base + fine bright traces + scattered "chip" blocks.
   - v1 used a SECOND `pattern` node with `mix=Xor` of two Square waves for
     the chip mask -- rendered as pure stripes, chip layer completely
-    invisible at every threshold tried (checked the normal map: only the
-    trace lines show). `pattern`'s mix modes aren't documented beyond the
-    enum names, and Xor's actual numeric behavior for continuous wave
-    values isn't obvious. Not worth reverse-engineering for a one-off.
+    invisible at every threshold tried. `pattern`'s Xor mix mode isn't
+    documented beyond the enum name; not worth reverse-engineering.
   - v2 swapped to the PROVEN granite-speckle lever (voronoi port 2, flat
-    per-cell random) instead -- predictable 0..1 range, no guessing. This
-    got chip blocks appearing, but at scale 6 they were huge, amorphous,
-    camo-pattern blobs covering ~40% of the surface, not small ICs.
-  - v3 raised voronoi scale to 18 for small, sparse, genuinely chip-sized
-    blocks. Better size/distribution, but a real bug remains: the
-    underlying trace stripes faintly bleed through the chip shapes even
-    where the mask should be fully opaque (`blend_type=0` "Normal" at
-    `amount=1`). Root cause not identified -- possibly the per-cell mask
-    value isn't as flat/saturated as assumed inside a cell. Kept as a
-    documented partial ("camo-patched circuit board" is still a usable
-    sci-fi texture) rather than sunk into a 4th iteration.
+    per-cell random). Chips appeared, but at scale 6 they were huge camo
+    blobs; v3 raised voronoi scale to 18 for small, sparse, chip-sized blocks.
+  - **The bleed-through bug, RESOLVED.** For several sessions the trace stripes
+    faintly bled through the chip shapes even with `blend_type=0` "Normal" at
+    `amount=1`. The root cause was a **type confusion, not a mask-threshold
+    problem** (an earlier session had ruled out the razor-thin-threshold
+    hypothesis). `blend`'s opacity is `amount * a($uv)` (see
+    `addons/material_maker/nodes/blend.mmg`), where `a` is the **port-2**
+    input. The recipe fed the chips' ALBEDO colorize (whose "on" value is gray
+    **0.65**) as that opacity input, so chips rendered at `1 × 0.65 = 65%`
+    opacity and ~35% of the trace layer bled through. Confirmed three ways: the
+    wiring, the shader source, and the render matching the predicted 65%.
+    **Fix: split the mask off from the albedo** — a separate hard-`1.0` mask
+    colorize on the SAME voronoi threshold drives opacity; the albedo colorize
+    still drives colour. This is exactly the pattern `cookbook_stone`'s s04
+    already used (a dedicated `colorize_gap` 0/1 mask), which this recipe had
+    violated. The traces had the identical latent issue (their gold colorize,
+    luminance ~0.57, doubled as their own mask, so the base bled ~43% through
+    them and they read muted olive); the same split-mask fix makes them solid
+    bright gold.
+  - **General lesson (the durable one):** in Material Maker a `blend`'s opacity
+    is `amount × port-2 mask`. If you feed a mid-value COLOUR into port 2, the
+    layer is partly transparent no matter what `amount` is. Port 2 wants a hard
+    **0/1** mask; never reuse the layer's albedo colorize as its own opacity
+    unless that colorize's "on" value is genuinely 1.0. Also: for a FLAT
+    per-cell mask (voronoi port 2), use a near-hard threshold step — a wide
+    colorize ramp doesn't anti-alias edges there (the input is constant across
+    a cell), it just leaves borderline-value cells as faint partial ghosts; the
+    ramp only buys AA when the mask input is continuous (like a `pattern` wave
+    at a stripe edge).
 
 ## Terrain cookbook (cookbook growth, informal, 2026-08-26)
 
