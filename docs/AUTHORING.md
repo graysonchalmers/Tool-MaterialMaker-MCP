@@ -760,3 +760,84 @@ chain (`voronoi_0` → `colorize_0` → `normal_map_0` → Material.normal).
   This is the same "isolating a node to albedo can time the renderer out"
   gotcha the diagnosis hit twice; when a mask needs checking, prefer reading
   the full render's channels over an isolate-to-albedo pass here.
+
+## Painted-metal cookbook (cookbook growth, informal, 2026-09-01)
+
+`quality/cookbook_painted_metal.py`. Ids are `pm01`-`pm05` (the frozen test
+set already owns `m01`-`m03`, so the `m` prefix is off-limits). This whole
+family is surface-finish, whose natural variation is roughness plus a faint
+normal, which risks five gray panels differing only in gloss. Each material is
+therefore built around a distinct STRUCTURAL read, not just a roughness value.
+
+| Preview | Material | Verdict |
+|---|---|---|
+| ![](images/cookbook-painted-metal/pm01_powder_coat.png) | Powder coat, safety yellow | HIT (fine orange-peel pebbling) |
+| ![](images/cookbook-painted-metal/pm02_automotive_enamel.png) | Automotive enamel, deep red | HIT (near-mirror clearcoat + flake) |
+| ![](images/cookbook-painted-metal/pm03_chipped_paint.png) | Paint chipped to bare metal | HIT (masked metallic; not combo01's rust) |
+| ![](images/cookbook-painted-metal/pm04_hammertone.png) | Hammertone, bronze-gray | HIT (dimple field, strongest structure) |
+| ![](images/cookbook-painted-metal/pm05_scuffed_panel.png) | Scuffed panel, utility blue | HIT (directional brushed scuffs) |
+
+**Two PBR-correctness rules held throughout this family:**
+1. **Metallic is a dielectric-vs-metal DECISION, never a global scalar.** Paint
+   is a dielectric, so metallic = 0 wherever paint covers; only pm03's exposed
+   bare metal is metallic 1, driven by the chip mask. A globally-metallic
+   painted panel renders near-black in the preview scene.
+2. **Every chip/wear mask fed to a `blend`'s port 2 is a HARD 0/1 step**, never
+   a mid-value albedo colorize. A blend's opacity is `amount * port2`, so a
+   mid-value mask makes the top layer semi-transparent (the sf03 bug). This bit
+   pm03 during authoring (see its note).
+
+- **Powder coat (HIT):** CLONE `rock` for its isotropic voronoi-warp-normal
+  chain, but the first render read as a wormy crackle/foil, not orange peel.
+  Root cause: `rock`'s `warp_0` (amount 0.3, coarse scale-4 perlin) smears the
+  voronoi cells into ridges. **Fix: flatten the warp hard (`amount` 0.03) and
+  push the cells fine (`voronoi_1`/`voronoi_0` scale 44)** so they stay round
+  and dense. Low relief (`normal_map_0` `param1` 0.12, `param4=0`), matte
+  roughness, flat safety-yellow albedo, metallic 0. Reads as tight even
+  pebbling under real lighting.
+- **Automotive enamel (HIT):** CLONE `rock`. Drive albedo off `voronoi_0`'s
+  per-cell random (port 2 = rand3) at a very fine scale (60) so each tiny cell
+  is a slightly different red, the faint metallic-flake sparkle. Very low
+  roughness (0.07-0.11) gives the near-mirror clearcoat (sharp specular
+  highlight on the sphere), near-flat normal (`param1` 0.04) for the glassy
+  coat, metallic 0 (the dielectric clearcoat dominates the surface response).
+  Honest note: the flake speckle reads a touch sandy on the matte faces; drop
+  the albedo spread or the fleck scale if a cleaner enamel is wanted.
+- **Paint chipped to bare metal (HIT, distinct from the frozen `combo01`):**
+  `combo01_rusted_painted_steel` chips paint to RUST; this chips to BARE METAL,
+  and the writeup says so on purpose so the two are never read as duplicates.
+  CLONE `rusted_metal` for its ready-made two-layer metal base, recolor that
+  base to bare steel, then composite a flat green paint coat over it through
+  ONE hard chip mask. **The mask polarity is the whole lesson here, and it bit
+  twice:** empirically, a MM `blend` shows its **port-1 input where the port-2
+  mask is 0**, and port-0 where the mask is 1. So the green paint must go on
+  port 1 as the MAJORITY, with `mask_chip` = 1 only in the minority worn spots
+  (perlin < ~0.30) so the bare metal (port 0) shows there. The SAME hard mask
+  also drives metallic (Material port 1: metal chips = 1, paint = 0) and a
+  chip-edge normal step so the paint sits physically proud of the chips. First
+  attempt was inverted (metal majority, green in the pits, reading as corroded
+  metal); a second over-correction went nearly all-metal before the port-1/
+  port-0 semantics were pinned down. Metallic being masked, not global, is what
+  makes the exposed chips read as real bright steel.
+- **Hammertone (HIT, strongest structural read):** CLONE `rock`, same normal
+  chain as pm01 but at a MEDIUM cell size (`voronoi_1` scale 14) so the rounded
+  cells read as hammer-blow dimples, bigger than pm01's orange peel and smaller
+  than `rock`'s native lumps, with the DEEPEST relief in the family (`param1`
+  0.42, `param4=0`), because the dimples are the whole point. Bronze-gray
+  albedo with per-cell tonal variation so dimples catch the light, semi-gloss
+  roughness for the metallic-looking sheen, metallic 0 (it is paint). Honest
+  note: runs a little dark in the preview scene; lift the bronze albedo stops
+  if a brighter finish is wanted.
+- **Scuffed panel (HIT):** CLONE `wood` for its directional grain plus working
+  normal chain, the same donor `m02` brushed aluminum uses, but keep it PAINT.
+  Straighten the grain into parallel scuffs (rewire `blend_0:1` from the
+  straight `perlin_2`, killing `wood`'s knot warp), stretch long and fine
+  (`scale_x` 48, `scale_y` 2). **The key fix over the first pass was octave
+  count:** 8 iterations rendered a grainy fbm noise with only a weak axis;
+  dropping to **2 iterations** made the streaks read as smooth brushed lines
+  with a clear directional axis. Faded utility-blue albedo with brighter worn
+  streaks, metallic 0 (drop the grain-driven metallic map AND set the scalar to
+  0), `param4=0` normal at `param1` 0.30 for the directional scuff grooves.
+  Honest note: the streaks are quite regular, closer to a brushed finish than
+  random scuffing; add a low-frequency perlin break-up if true random scuffs
+  are wanted.
