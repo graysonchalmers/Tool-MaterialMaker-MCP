@@ -1,57 +1,72 @@
 # 🧭 Session Handoff — Tool-MaterialMaker-MCP
 
-_Last updated: 2026-09-01 (blend-opacity debug swatches +2) CT (America/Chicago)_
+_Last updated: 2026-09-01 (noise-vocab gallery + 2 backlog items + wool take-two) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**Two new blend-opacity debug swatches shipped, tested, committed and pushed.**
-Built `blend_mask_polarity` and `blend_opacity_ramp` in
-`quality/debug_swatches.py`, known-answer diagnostics that memorialize the
-`blend` node port/opacity trap which cost real debugging twice (sf03
-circuit-board bleed-through, pm03 chipped-paint polarity flip). Verified against
-`blend.mmg` first: Normal-mode output is `opacity*s1 + (1-opacity)*s2`,
-`opacity = amount × mask × s1.alpha`, port 0 = Foreground, port 1 = Background,
-port 2 = Mask. Swatch 1 (amount=1, hard mask) proves which port shows at mask 0
-vs 1; swatch 2 (amount=0.5, ramp mask) proves the `amount × mask` multiply so a
-mid mask gives a PARTIAL blend (the sf03 shape), not a switch. Advisor caught two
-would-be bugs before they shipped: the `.mmg` `blend_type` default is 13
-(AddSub) so both builders set 0 (Normal) explicitly, and swatch 2 now varies
-`amount` so the formula is asserted, not just documented. Pixel checks
-auto-parametrize into the live integration test; new blend family section in
-`docs/DEBUG_SWATCHES.md` + AUTHORING.md cross-ref. Fast suite 262; the 2 new
-blend integration checks pass live. Docs/quality-only, no `src/` change, so no
-gate/phase state moved. Older write-ups/log beyond the cap live in
+**Closed two backlog items, shipped a noise-vocabulary reference gallery, took a
+second crack at wool loop-knit.** Batch committed + pushed (`20e485d`).
+- **#3 `list_node_types`: resolved KEEP.** ~5KB name list vs ~260KB full catalog,
+  it's the cheap discovery lever, not redundant. Advisor caught a real doc bug:
+  the `category` arg is a plain NAME substring, not a taxonomy (no category field
+  anywhere), so `list_node_types("noise")` misses perlin/fbm*/truchet. Docstring
+  (server.py) + README corrected to "name substring."
+- **#4 `render_preview`: documented.** New "judge in 3D, not off the flat albedo"
+  step in AUTHORING.md's workflow, with the dark-backdrop + `tile` caveats.
+- **Noise vocabulary (the main event).** Diagnosed the "everything looks similar"
+  complaint with a number: 38 cookbook builders, 69% clone 3 donors
+  (crocodile_skin x12, rock x7, wood x5), and the only base noise added by hand
+  is perlin (x9) + voronoi (x1). Zero fbm/anisotropic/shard/wavelet/truchet out
+  of 47 noise nodes. Built `quality/noise_gallery.py` (fbm all-8-bases sweep +
+  cross-family row), 2 tracked contact sheets under `docs/images/noise-gallery/`,
+  a new AUTHORING.md "Noise vocabulary" section with reach-for-X tables. Kept as a
+  REFERENCE, deliberately NOT a pixel-checked debug swatch (noise has no
+  known-answer). Fast suite 262 green.
+- **Wool loop-knit (take two, still open).** pattern-Bounce (Bounce x Bounce,
+  Multiply) is a real discovery but reads as tufted/quilted upholstery, a square
+  bump lattice, not interlocking knit loops (the square grid is inherent to
+  `pattern` multiplying two axis-aligned waves). Reverted f04 to the committed
+  weave partial to keep main clean and avoid mislabeling quilted-as-knit; the full
+  recipe + finding + next-steps are below. `main` clean, in sync.
+
+Older write-ups/log beyond the cap live in
 [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).
 
 ## 📌 Where we stopped
 
-Everything landed and pushed: blend-swatch commit `80256d0` on `origin/main`
-(CI triggered), plus this wrap-up's baton commit. `main` clean and in sync. A
-natural stopping point.
+Wool take-two authored, rendered, and judged in 3D (quilted, not knit); f04
+reverted to the committed weave partial; `main` clean and in sync at `20e485d`
+plus this wrap-up baton commit. Natural stopping point.
 
 ## ▶️ Next concrete step
 
-**Pick from the backlog** (nothing is blocked). Good candidates now that the
-cookbook covers 9 categories (fabrics, leather, organics, scifi, terrain, wood,
-stone, painted metal), sf03 is closed, and the blend-port lesson is
-memorialized as a diagnostic swatch:
-- **Remaining honest partial (backlog D)**: wool loop-knit approximation is the
-  last flagged partial.
-- **Another cookbook category**: glass and plastics are still uncovered.
-  Quick-win, well-trodden pattern.
-- **`list_node_types` keep-or-remove**: a small open product decision the
-  teardown flagged (redundant with `catalog://nodes` + `describe_node`).
+**Wool loop-knit is still the open item, now with two untried leads from this
+session** (the pattern-Bounce recipe that got us to "pillowy but square" is in
+the Changed-this-session block below):
+1. **Offset alternate rows** of the pattern-Bounce lattice into true V-columns.
+   Needs a per-row phase shift `pattern` alone can't do (a transform/tile/offset
+   trick, or a second offset pattern blended in). This is the most likely path to
+   real knit.
+2. **`truchet` Circle** interlocking arcs (the gallery's loop-interlock geometry)
+   as the fallback second attempt.
+3. **Accept the quilted result as a NEW slot** (e.g. `f07_quilted`): it's a
+   genuinely good tufted-upholstery material, just not knit. Deferred here because
+   Grayson asked to take a break from making new materials.
+
+Other backlog (nothing blocked):
+- **Another cookbook category**: glass and plastics still uncovered (quick-win).
 
 The older open backlog, unchanged:
 - **2 findings ruled out, not fixed** (deliberate): #8 (`_cmd_clear_graph`'s
   guard is correct — `new_material()` creates the generator, doesn't read
   one) and #10 (`generic_size or 1` coercion is safer than passing an
   explicit 0). Both annotated in-code. Findings 3-7 and 9 are fixed.
-- **`list_node_types` tool decision** — the teardown flagged it as redundant
-  with the `catalog://nodes` resource + `describe_node`. It's a live, tested
-  MCP tool, so removing it is a product call, not dead code. Undecided.
+- **`list_node_types` tool decision — RESOLVED this session: KEEP.** ~5KB name
+  list vs the ~260KB full `catalog://nodes` resource, so it's the cheap discovery
+  lever, not redundant with the resource + `describe_node`. Docstring + README
+  corrected: the `category` arg is a name substring, not a taxonomy.
 - **N. "Material Maker for dummies" — a simplified interface, unscoped.**
   New backlog idea from Grayson this session (captured in full in
   `_agent-commons/ideas/Tool-MaterialMaker-MCP.md`): the real node graph can
@@ -90,8 +105,8 @@ The older open backlog, unchanged:
   deferred; likely wants its own `brainstorming` session before any design
   work, not a cold start here.
 - **F. PyPI publish** (on hold; GitHub-clone is the current route).
-- **G. Document `render_preview`** in `docs/AUTHORING.md` / README, or leave
-  it as just an MCP tool.
+- **G. Document `render_preview` — DONE this session** (AUTHORING.md workflow
+  step 5). It was already in the README tool table; the gap was the workflow doc.
 - **H and I are done** (`render_node_output`/`live_render_node_output` and
   `reposition_node`, respectively) — see the Session log's 2026-08-28 and
   2026-08-29 (later) entries. Renaming an existing node live is a ruled-out
@@ -133,6 +148,40 @@ The older open backlog, unchanged:
   available; two parked-not-fixed overlay-builder findings from a much
   earlier session (staleness marker, `_append_autoload`'s first-occurrence
   match, both verified low-priority).
+
+## 🗂️ Changed this session (noise-vocab gallery + 2 backlog items + wool take-two)
+
+- Branch: `main`. Commit `20e485d`, **pushed** to `origin/main` (CI triggered).
+  Files: `quality/noise_gallery.py` (new), `docs/AUTHORING.md` (new "Noise
+  vocabulary" section + a render_preview workflow step), `src/mm_mcp/server.py`
+  (list_node_types docstring), `README.md` (tool-table wording), 2 tracked
+  contact sheets under `docs/images/noise-gallery/`. Rendered outputs under
+  `quality/cookbook/noise-gallery/` + `quality/authored/noise-gallery/` are
+  gitignored by the existing cookbook convention. No gate/phase state moved.
+- **The noise diagnosis (why the materials look alike), quantified:** 38 cookbook
+  builders, 69% clone 3 donors (crocodile_skin x12, rock x7, wood x5), only base
+  noise added by hand is perlin x9 + voronoi x1, zero fbm/anisotropic/shard/
+  wavelet/truchet out of 47 noise nodes. The fix is a wider base-noise vocabulary,
+  not more recolors. Biggest lever: `fbm`'s `noise` enum (8 bases; Value/Perlin
+  are close cousins, Cellular 2-7 are the untapped multi-octave range that plain
+  voronoi can't do). Cross-family: anisotropic (directional), truchet Line/Circle
+  (circuits/pipes), voronoi_triangle (scales/gems), wavelet (fine grain).
+  Caveats: `shard_fbm` reads soft at defaults (push `sharp`/`folds`);
+  `fbm_variations` has unresolved `$?1..$?4` enum labels, check its `.mmg` first.
+- **Wool take-two recipe (kept for next session, NOT committed):** retype
+  crocodile_skin's `voronoi_0` to `pattern` with `mix=0` (Multiply), `x_wave=5`
+  (Bounce), `y_wave=5` (Bounce), `x_scale=8`, `y_scale=8`; normal_map `param1=0.5
+  param4=0`; heathered-oatmeal albedo. Result: pillowy TUFTED/QUILTED upholstery
+  (a square bump lattice), not interlocking knit loops. The square grid is
+  inherent to `pattern` multiplying two axis-aligned waves. Reverted f04 to the
+  committed weave partial. Next-steps: offset alternate rows into V-columns, or
+  `truchet` Circle, or keep the quilted look as its own new slot. The
+  pattern-Bounce lever DOES produce real pillow relief, worth reusing for any
+  padded/tufted/cushioned material.
+- Process: `advisor` before rendering shaped the noise work (diagnose with a
+  histogram first, ship a reference gallery not a pixel-checked swatch, lead with
+  the fbm sweep, watch the param4=0 flat-normal trap). `brainstorming` (bounded)
+  locked the wool approach before authoring.
 
 ## 🗂️ Changed this session (blend-opacity debug swatches +2)
 
@@ -189,53 +238,7 @@ The older open backlog, unchanged:
   `rock`'s `warp_0` (amount 0.3) smearing cells -- flatten to 0.03; pm05's grainy
   scuffs were 8 perlin octaves -- drop `iterations` to 2 for clean brushed lines.
 
-## 🗂️ Changed this session (masonry cookbook +5, render pipe-hang fix, sf03 fix)
-
-- **sf03 circuit-board fix** (commit `6667b4b`, pushed): `quality/cookbook_scifi.py`
-  + `docs/AUTHORING.md` (rewritten from "partial/unresolved" to resolved) + the
-  regenerated `docs/images/cookbook-scifi/sf03_circuit_board.png` thumbnail. Root
-  cause was a type confusion, not the razor-thin-threshold hypothesis an earlier
-  session had already ruled out: a `blend`'s opacity is `amount * a` (`blend.mmg`)
-  where `a` is the port-2 input, and the recipe fed the chips' ALBEDO colorize
-  (gray 0.65) as that opacity, so chips were 65% opaque and ~35% of the traces
-  bled through. Fix: split the opacity mask off from the albedo (a dedicated hard
-  0/1 mask on the same threshold), the pattern `cookbook_stone` s04 already used.
-  Same latent bug + fix on the traces (were ~57% opaque, muted olive; now solid
-  gold). Durable lesson recorded in AUTHORING.md + the `authoring-recipes` memory:
-  a MM blend's opacity = amount × port-2 mask; never feed a mid-value albedo
-  colorize as opacity, and for a flat per-cell mask use a near-hard step.
-
-
-- Branch: `main`. Files: `quality/cookbook_stone.py` (+5 builders s07–s11),
-  `src/mm_mcp/render.py` (`_run_godot` pipe-hang fix), `tests/test_render.py`
-  (+2 real-subprocess regression tests, fakes updated communicate→wait),
-  `quality/render_one.py` (new single-case renderer), `docs/AUTHORING.md` (the
-  5 recipes + tooling note), `quality/README.md` (render_one note), and 5 new
-  tracked doc thumbnails under `docs/images/cookbook-stone/`. Authored `.ptex`
-  variants and renders stay gitignored (regenerable via the builders).
-- Materials (each authored → rendered → 3D-previewed → locked): **s07
-  cobblestone** (dry_earth voronoi-plate, closes backlog C), **s08 dry-stone
-  wall** (denser/grayer/angular), **s09 ashlar wall** (stone_wall Bricks donor,
-  coursed cut blocks), **s10 flagstone** (big flat slate slabs), **s11 marble**
-  (dry_earth veins, high warp, polished). Key levers + traps written up in
-  AUTHORING.md's "Masonry expansion" subsection.
-- Decisions (+ why): the biggest cross-material lever is `warp_0.amount` and it
-  cuts both ways — on paving it's haze to suppress (drop 0.4→0.12), on marble
-  it IS the effect (push to 0.5). The per-cobble-tone haze was diagnosed with a
-  high-contrast test gradient (splits "muted ramp" from "warp smear"). Ashlar
-  needed a different donor (Bricks node) because voronoi can't do coursed
-  rectangles. render_one.py + the "render via a script FILE, never `python -c`"
-  rule came out of the debugging (see below).
-- **The render.py investigation reversed once:** the 180s hangs I first hit were
-  a `python -c` harness artifact (launching Godot's console binary from
-  `python -c` leaves the launcher not exiting), NOT a pipeline bug — proven by
-  the identical `render()` running in 7.4s from a script file. But the detour
-  found a REAL latent bug: `communicate()` blocking on a pipe held by MM's
-  lingering child. That fix is test-backed and kept; it hardens the long-running
-  MCP server (where a 180s stall is worst), even though it wasn't today's
-  symptom. Full reasoning in the session log.
-
-> 📦 **18 older "Changed this session" write-ups archived** (through
+> 📦 **19 older "Changed this session" write-ups archived** (through
 > 2026-08-30, incl. the v0.4.0 release-unblock + README gallery session) --
 > the pre-release audit/teardown/doc-fix pass,
 > render_node_output/live_render_node_output (item H), saved_graphs/
@@ -558,6 +561,27 @@ The older open backlog, unchanged:
 > through the project's Phase 1-2 kickoff on 2026-08-25.
 
 
+### 2026-09-01 (noise-vocab gallery + 2 backlog + wool take-two) — closed #3/#4, quantified the sameness, wool still open
+- Picked up via `pickup` (clean `main` at `198e2ad`, in sync). Grayson batched
+  4 items: #2 wool, #3 list_node_types, #4 render_preview, plus "test different
+  noise, a lot of the stuff is looking kind of similar." Ran cheapest-first.
+- **#3 list_node_types: KEEP** (5KB names vs 260KB catalog). Advisor caught the
+  real doc bug: `category` is a name substring, not a taxonomy. Fixed docstring +
+  README. **#4 render_preview: documented** (AUTHORING.md workflow step 5).
+- **Noise vocabulary:** `advisor` steered it (histogram first, reference gallery
+  not a pixel-checked swatch, lead with the fbm sweep). Diagnosis: 38 builders,
+  69% clone 3 donors, only base noise added by hand is perlin/voronoi, zero of the
+  other 45 noise nodes. Built `quality/noise_gallery.py` (fbm 8-basis sweep +
+  cross-family row), 14 renders, 2 tracked contact sheets, AUTHORING.md section.
+  Fast suite 262. Committed + pushed `20e485d`.
+- **Wool take-two** (bounded `brainstorming` → pattern-Bounce approach, approved):
+  authored + rendered + 3D-previewed. Result reads tufted/quilted (square bump
+  lattice), not knit loops — the square grid is inherent to `pattern` multiplying
+  two axis-aligned waves. Reverted f04 to the committed weave partial; recipe +
+  next-steps (offset rows / truchet Circle / keep-as-quilted-slot) captured in the
+  Changed-this-session block. Then wrapped.
+- Wrote `_agent-commons\log\2026-09-01-claude-code-mm-mcp-noise-vocab-backlog-batch.md`.
+
 ### 2026-09-01 (blend-opacity debug swatches) — +2 known-answer diagnostics, all pass
 - Picked up via `pickup`; Grayson pre-picked the move in the args (build the
   blend-opacity debug swatch). Clean `main` at `c0b96d7`, in sync.
@@ -651,28 +675,6 @@ The older open backlog, unchanged:
   2-col-no-captions (~2x larger images). Showed a PIL preview at GitHub's real
   content width before pushing. Committed `8f7f515`, pushed.
 - Wrote `_agent-commons\log\2026-08-30-claude-code-mm-mcp-releaseplease-unblock-gallery.md`.
-
-### 2026-08-30 (Phase 4 hardening) — path bounding + inspect_project + CI/release-please, from a project compare
-- Grayson asked to compare us against `github.com/dcc-mcp/dcc-mcp-material-maker`.
-  Verdict: same name, different product (theirs is a locked-down headless
-  export/inspection adapter; ours authors graphs). Borrowed three of its rigors.
-- Ran `brainstorming` → architectural. Grayson chose opt-in path bounding, full
-  release-please, `inspect_project` as path-in/metrics-out. Wrote spec + plan,
-  then executed 10 tasks via `subagent-driven-development` (per-task spec+quality
-  review, whole-branch final review on Opus = APPROVE FOR MERGE).
-- Probed two blowup risks before writing YAML: fast suite needs the MM checkout +
-  a stub Godot binary on a bare runner (first "no clone" read was wrong, the repo
-  `.env` masked it); `main` was already clean with the render-timeout fix merged.
-- Items: opt-in `MM_ALLOWED_ROOTS` bounding + always-on traversal guard;
-  `inspect_project` tool #10; `test.yml` CI (green first run); release-please
-  (seeded to cut 0.4.0); `__version__` via `importlib.metadata`. Fast suite 260.
-- Merged `phase4-hardening` → `main` (`d23b235`), verified merged tree, pushed.
-  Push needed a one-time `gh auth refresh -s workflow` (workflow files are
-  separately permissioned). CI passed; release-please got to the 0.4.0 release
-  branch + version-bump commit but failed to open the PR (repo "Actions may
-  create PRs" setting still off — Grayson handling later).
-- Wrote `_agent-commons\log\2026-08-30-claude-code-mm-mcp-phase4-hardening-spec.md`
-  and `...-phase4-hardening-implemented.md`.
 
 _(Older entries continue in [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).)_
 

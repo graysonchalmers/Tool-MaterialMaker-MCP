@@ -19,6 +19,52 @@ doc's window.
 
 ## Archived "Changed this session" write-ups
 
+## 🗂️ Changed this session (masonry cookbook +5, render pipe-hang fix, sf03 fix)
+
+- **sf03 circuit-board fix** (commit `6667b4b`, pushed): `quality/cookbook_scifi.py`
+  + `docs/AUTHORING.md` (rewritten from "partial/unresolved" to resolved) + the
+  regenerated `docs/images/cookbook-scifi/sf03_circuit_board.png` thumbnail. Root
+  cause was a type confusion, not the razor-thin-threshold hypothesis an earlier
+  session had already ruled out: a `blend`'s opacity is `amount * a` (`blend.mmg`)
+  where `a` is the port-2 input, and the recipe fed the chips' ALBEDO colorize
+  (gray 0.65) as that opacity, so chips were 65% opaque and ~35% of the traces
+  bled through. Fix: split the opacity mask off from the albedo (a dedicated hard
+  0/1 mask on the same threshold), the pattern `cookbook_stone` s04 already used.
+  Same latent bug + fix on the traces (were ~57% opaque, muted olive; now solid
+  gold). Durable lesson recorded in AUTHORING.md + the `authoring-recipes` memory:
+  a MM blend's opacity = amount × port-2 mask; never feed a mid-value albedo
+  colorize as opacity, and for a flat per-cell mask use a near-hard step.
+
+
+- Branch: `main`. Files: `quality/cookbook_stone.py` (+5 builders s07–s11),
+  `src/mm_mcp/render.py` (`_run_godot` pipe-hang fix), `tests/test_render.py`
+  (+2 real-subprocess regression tests, fakes updated communicate→wait),
+  `quality/render_one.py` (new single-case renderer), `docs/AUTHORING.md` (the
+  5 recipes + tooling note), `quality/README.md` (render_one note), and 5 new
+  tracked doc thumbnails under `docs/images/cookbook-stone/`. Authored `.ptex`
+  variants and renders stay gitignored (regenerable via the builders).
+- Materials (each authored → rendered → 3D-previewed → locked): **s07
+  cobblestone** (dry_earth voronoi-plate, closes backlog C), **s08 dry-stone
+  wall** (denser/grayer/angular), **s09 ashlar wall** (stone_wall Bricks donor,
+  coursed cut blocks), **s10 flagstone** (big flat slate slabs), **s11 marble**
+  (dry_earth veins, high warp, polished). Key levers + traps written up in
+  AUTHORING.md's "Masonry expansion" subsection.
+- Decisions (+ why): the biggest cross-material lever is `warp_0.amount` and it
+  cuts both ways — on paving it's haze to suppress (drop 0.4→0.12), on marble
+  it IS the effect (push to 0.5). The per-cobble-tone haze was diagnosed with a
+  high-contrast test gradient (splits "muted ramp" from "warp smear"). Ashlar
+  needed a different donor (Bricks node) because voronoi can't do coursed
+  rectangles. render_one.py + the "render via a script FILE, never `python -c`"
+  rule came out of the debugging (see below).
+- **The render.py investigation reversed once:** the 180s hangs I first hit were
+  a `python -c` harness artifact (launching Godot's console binary from
+  `python -c` leaves the launcher not exiting), NOT a pipeline bug — proven by
+  the identical `render()` running in 7.4s from a script file. But the detour
+  found a REAL latent bug: `communicate()` blocking on a pipe held by MM's
+  lingering child. That fix is test-backed and kept; it hardens the long-running
+  MCP server (where a 180s stall is worst), even though it wasn't today's
+  symptom. Full reasoning in the session log.
+
 ## 🗂️ Changed this session (v0.4.0 release unblock + README gallery resize)
 
 - Branch: `main`. Commit `8f7f515` (gallery), plus the release merge `c2aa170` +
@@ -555,6 +601,28 @@ doc's window.
 ---
 
 ## Archived session log
+
+### 2026-08-30 (Phase 4 hardening) — path bounding + inspect_project + CI/release-please, from a project compare
+- Grayson asked to compare us against `github.com/dcc-mcp/dcc-mcp-material-maker`.
+  Verdict: same name, different product (theirs is a locked-down headless
+  export/inspection adapter; ours authors graphs). Borrowed three of its rigors.
+- Ran `brainstorming` → architectural. Grayson chose opt-in path bounding, full
+  release-please, `inspect_project` as path-in/metrics-out. Wrote spec + plan,
+  then executed 10 tasks via `subagent-driven-development` (per-task spec+quality
+  review, whole-branch final review on Opus = APPROVE FOR MERGE).
+- Probed two blowup risks before writing YAML: fast suite needs the MM checkout +
+  a stub Godot binary on a bare runner (first "no clone" read was wrong, the repo
+  `.env` masked it); `main` was already clean with the render-timeout fix merged.
+- Items: opt-in `MM_ALLOWED_ROOTS` bounding + always-on traversal guard;
+  `inspect_project` tool #10; `test.yml` CI (green first run); release-please
+  (seeded to cut 0.4.0); `__version__` via `importlib.metadata`. Fast suite 260.
+- Merged `phase4-hardening` → `main` (`d23b235`), verified merged tree, pushed.
+  Push needed a one-time `gh auth refresh -s workflow` (workflow files are
+  separately permissioned). CI passed; release-please got to the 0.4.0 release
+  branch + version-bump commit but failed to open the PR (repo "Actions may
+  create PRs" setting still off — Grayson handling later).
+- Wrote `_agent-commons\log\2026-08-30-claude-code-mm-mcp-phase4-hardening-spec.md`
+  and `...-phase4-hardening-implemented.md`.
 
 ### 2026-08-29 (README images) — 3D-preview hero + gallery + cookbook sheet, social-preview fix
 - Picked up via `pickup` with Grayson's ask: nicer front-page images. Found
