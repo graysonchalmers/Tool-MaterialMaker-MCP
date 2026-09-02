@@ -47,7 +47,77 @@ open. Concretely:
    `describe_node`, or the `catalog://nodes` resource) for exact ports/params.
 3. `validate` each variant; fix every error-severity problem.
 4. Render via the harness (`quality/run_case.py`) or `render_graph`.
-5. Judge the maps against the rubric; log why any miss missed.
+5. **Judge in 3D, not off the flat albedo.** Feed the render's output paths
+   into `render_preview(albedo_path, normal_path, orm_path)` to composite the
+   maps onto a sphere, a cube, and a cutaway ball on a tiled ground plane. This
+   is where relief actually reads: a normal map that looks like noise on a flat
+   swatch shows its real bump under lighting here, and it is the only reliable
+   check for a flat-normal miss. `render_preview` does not render a graph, it
+   only visualizes maps that already exist, so always call `render_graph` (or
+   the harness) first. Two standing caveats, both seen in the recipes below:
+   the preview scene's dark backdrop undersells gloss and reads pure metals as
+   near-black (see the marble and painted-metal notes), and `tile` raises the
+   UV repeat if you want to check how the material reads at a smaller physical
+   scale.
+6. Judge the maps against the rubric; log why any miss missed.
+
+## Noise vocabulary (reach past voronoi + perlin)
+
+_Added 2026-09-01 after "a lot of the stuff is looking kind of similar."_
+
+**The problem, measured.** A histogram of the 38 cookbook builders found 69%
+clone just three donors (`crocodile_skin` x12, `rock` x7, `wood` x5, all
+voronoi-cellular or wood-grain), and the only base noise ever ADDED by hand is
+`perlin` (x9) and `voronoi` (x1). The catalog carries 47 noise/pattern nodes;
+the cookbook effectively used two. Same structural DNA recolored = materials
+that read alike. The fix is a wider base-noise vocabulary, not more recolors.
+
+Gallery source: `quality/noise_gallery.py` (single node -> grey ramp -> albedo,
+so you see the raw field). Render with `python quality/render_cookbook.py
+noise-gallery`. Tracked contact sheets:
+
+![fbm bases](images/noise-gallery/fbm-bases.png)
+![cross-family](images/noise-gallery/cross-family.png)
+
+**Biggest single lever: `fbm`'s `noise` enum.** One node, 8 bases, and they are
+NOT interchangeable:
+
+| `noise` | Reads as | Reach for it when |
+|---|---|---|
+| 0 Value | soft low-freq blobs | broad tonal drift, underlays |
+| 1 Perlin | classic soft cloud | gentle variation (its only close cousin is Value) |
+| 2 Cellular 1 | worley cells, dark centers | pores, stippling, scattered spots |
+| 3 Cellular 2 | cracked-plate network | dry earth, marble veining, crazing |
+| 4 Cellular 3 | woven crosshatch grid | plaid, coarse fabric, basketry |
+| 5 Cellular 4 | crystalline shard mesh | shattered / faceted stone |
+| 6 Cellular 5 | soft diagonal weave | brushed cloth, quilted softness |
+| 7 Cellular 6 | bright-cell network (inverse of C2) | raised mortar, cell walls |
+
+Value and Perlin ARE close cousins (honest finding: don't expect variety
+between those two). The Cellular family (2-7) is the untapped range, and it is
+multi-octave, which plain `voronoi` is not: `fbm` noise=3 is the dry-earth /
+marble vein look the stone cookbook built by hand from a `voronoi` donor, in one
+node with `folds` and `iterations` to push it further.
+
+**Cross-family characters `fbm` cannot make:**
+
+| Node | Reads as | Reach for it when |
+|---|---|---|
+| `noise_anisotropic` | directional streaks (`scale_y` >> `scale_x`) | brushed metal, wood/fabric grain direction, hair |
+| `truchet` (Line) | bold maze / chevron / circuit lines | circuit boards, mazes, woven tape, greebles |
+| `truchet` (Circle) | interlocking pipes / worms | cables, tubing, organic interlock |
+| `voronoi_triangle` | hex-ish faceted cells | scales, honeycomb, gems, foam |
+| `wavelet_noise` | fine grainy salt-and-pepper | sand grain, static, sensor noise, fine tooth |
+| `shard_fbm` | turbulent cloud AT DEFAULTS | NOT plug-and-play: push `sharp` up and `folds` for the crystalline look the name implies; at `sharp=0.7 folds=0` it reads soft |
+
+**Two traps when auditing noise variety:**
+- **Judge relief with `normal_map` `param4=0`.** With the default `param4=1`
+  every analytic generator's normal comes back FLAT (the Phase 3C flat-normal
+  blocker), so you would wrongly conclude the noise choice does not matter. It
+  bites hardest in exactly this kind of comparison.
+- **`fbm_variations` is not usable as-is.** Its enum labels come back as
+  unresolved `$?1..$?4` placeholders in the catalog. Lead with `fbm` (whose
+  enum resolves cleanly); check `fbm_variations`'s `.mmg` before featuring it.
 
 ## Node & pattern recipes
 

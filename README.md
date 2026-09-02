@@ -214,7 +214,7 @@ The server exposes ten batch-mode tools and one resource (plus six more in Live 
 
 | Tool | What it does |
 |---|---|
-| `list_node_types` | List catalog node types, optionally filtered by category |
+| `list_node_types` | List catalog node types, optionally filtered by a name substring |
 | `describe_node` | Full typed inputs/outputs/parameters for one node type |
 | `validate` | Validate a `.ptex` graph against the catalog; returns problems as data |
 | `render_graph` | Render a `.ptex` to PBR maps at a given size |

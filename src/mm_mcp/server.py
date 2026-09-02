@@ -57,6 +57,12 @@ mcp = MCPServer("material-maker")
 
 
 def list_node_types(category: str = "") -> list:
+    """Sorted node-type names from the catalog. `category` is a case-sensitive
+    substring match on the NAME, not a real taxonomy (the catalog carries no
+    category field), so it groups only what the naming already groups:
+    `"voronoi"` catches `voronoi`/`voronoi2`/`voronoi_triangle` but `"noise"`
+    misses `perlin`, every `fbm*`, `truchet`, and `shard_fbm`. Cheap discovery
+    lever: ~5KB of names vs the ~260KB full `catalog://nodes` resource."""
     _, catalog = _ensure_ready()
     names = sorted(catalog.keys())
     if category:
