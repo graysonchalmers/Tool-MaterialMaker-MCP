@@ -263,6 +263,7 @@ git since they're documentation, not renders.
 | ![](images/cookbook-fabrics/f04_wool_knit.png) | Wool/chunky knit | Partial (basket-weave, not true loops) |
 | ![](images/cookbook-fabrics/f05_silk_satin.png) | Silk/satin | HIT |
 | ![](images/cookbook-fabrics/f06_velvet.png) | Velvet | HIT |
+| ![](images/cookbook-fabrics/f07_herringbone_tweed.png) | Herringbone tweed | HIT |
 
 - **Canvas/burlap (HIT):** retype the generator to `weave` (plain over/under,
   one output) at a coarse scale (`columns`/`rows` ~10) with `width` ~0.6 so
@@ -276,6 +277,25 @@ git since they're documentation, not renders.
   almost-touching ribs) reads as chunky blocky yarn rows, not fine thread —
   closer to a basket/chunky-weave textile than true knit loops, but a
   reasonable substitute. Don't oversell it as "knit" in user-facing copy.
+  **FORMALLY CLOSED (2026-09-03):** an isolation-render probe tested the four
+  most plausible knit leads and confirmed none produce stockinette (upright V's
+  in aligned wales, which is the knit tell, NOT offset rows): `pattern`-Bounce
+  and `bricks` Running Bond both make a staggered pillow honeycomb; `weave2`
+  stitch=1 is a basket weave; `weave2` stitch=3 is the only one with chevrons,
+  but they reverse band-to-band, i.e. herringbone tweed, not knit. The lesson:
+  "offset alternate rows" and "V-columns" are independent properties, and only
+  the second is knit. The probe's silver lining shipped as `f07` below.
+- **Herringbone tweed (HIT — the material the knit probe found):** retype the
+  generator to `weave2` with `stitch=3` for the classic herringbone chevron
+  (diagonal ribbons reversing per band). `columns`/`rows` ~8, `width_x`/
+  `width_y` ~0.8. Warm brown Harris-tweed three-stop albedo (espresso / tan /
+  cream) for a woven two-tone heather, very matte wool roughness (~0.86–0.96),
+  soft `normal_map` `param1` ~0.35 with `param4=0` (directly-fed analytic
+  generator) so the chevron reads as pressed-tweed relief, not sharp thread
+  crossings. Honest limit: `weave2` emits one grayscale, so the tone comes from
+  shading a single ribbon shape, not two real thread colors — it reads as a
+  warm one-tone weave. A true two-color tweed would need two colorizes blended
+  through the weave's over/under mask.
 - **Silk/satin (HIT):** retype to `diagonal_weave` at a FINE scale (~48, vs
   denim's ~20) so the weave is nearly invisible — the differentiator from
   denim/canvas isn't visible thread texture, it's LOW roughness (glossy) +

@@ -117,11 +117,44 @@ def build_f06_velvet() -> str:
     return save_variant(g, _LABEL, "f06_velvet", 1)
 
 
+def build_f07_herringbone_tweed() -> str:
+    """Herringbone tweed: retype the generator to `weave2` with stitch=3, which
+    renders the classic herringbone chevron (diagonal ribbons that reverse
+    direction band to band). This slot came out of a geometry probe for wool
+    loop-knit: isolation renders proved the catalog has NO stockinette-knit
+    generator (bricks running-bond -> staggered pillow honeycomb; weave2 stitch=1
+    -> plain basket weave; only weave2 stitch=3 shows the chevron the knit look
+    needs, but the chevrons reverse per band, which is herringbone tweed, not
+    upright-V stockinette). So knit-loop stays the honest limit and this ships the
+    genuinely good material the probe found instead. Warm brown Harris-tweed
+    three-tone (espresso / tan / cream) for the woven two-color heather, very
+    matte wool roughness, soft rounded-ribbon normal (param1 low so the chevron
+    reads as pressed tweed relief, not sharp thread crossings). Directly-fed
+    analytic generator -> normal_map param4=0 fix."""
+    g = load_example("crocodile_skin")
+    retype(g, "voronoi_0", "weave2",
+           {"columns": 8, "rows": 8, "width_x": 0.8, "width_y": 0.8, "stitch": 3})
+    set_gradient(g, "colorize_1", [    # warm brown tweed, dark-to-cream heather
+        (0.0, 0.18, 0.14, 0.10),
+        (0.5, 0.42, 0.34, 0.24),
+        (1.0, 0.72, 0.65, 0.52),
+    ])
+    set_gradient(g, "colorize_3", [    # very matte wool
+        (0.0, 0.86, 0.86, 0.86),
+        (1.0, 0.96, 0.96, 0.96),
+    ])
+    set_gradient(g, "colorize_0", [(0.0, 0, 0, 0), (1.0, 1, 1, 1)])
+    node(g, "normal_map_0")["parameters"] = {
+        "param0": 11, "param1": 0.35, "param2": 0, "param4": 0}
+    return save_variant(g, _LABEL, "f07_herringbone_tweed", 1)
+
+
 BUILDERS = {
     "f03_canvas_burlap": build_f03_canvas_burlap,
     "f04_wool_knit": build_f04_wool_knit,
     "f05_silk_satin": build_f05_silk_satin,
     "f06_velvet": build_f06_velvet,
+    "f07_herringbone_tweed": build_f07_herringbone_tweed,
 }
 
 
