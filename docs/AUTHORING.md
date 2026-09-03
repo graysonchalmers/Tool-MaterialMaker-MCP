@@ -464,8 +464,9 @@ instead.
 ## Terrain cookbook (cookbook growth, informal, 2026-08-26)
 
 Ground/landscape materials beyond `o01` moss / `o02` mud (organic-growth
-focused). Builders: `quality/cookbook_terrain.py`. 4/4 HIT, one after a
-one-shot empirical fix.
+focused). Builders: `quality/cookbook_terrain.py`. 8/8 HIT. The t05-t08
+natural-surface batch (2026-09-03) added a hard-won lesson: see the
+**topology, not donor** note below the table.
 
 | Preview | Material | Verdict |
 |---|---|---|
@@ -473,6 +474,10 @@ one-shot empirical fix.
 | ![](images/cookbook-terrain/t02_fresh_snow.png) | Fresh snow | HIT |
 | ![](images/cookbook-terrain/t03_gravel.png) | Gravel | HIT |
 | ![](images/cookbook-terrain/t04_grass_field.png) | Grass field | HIT (after 1 fix) |
+| ![](images/cookbook-terrain/t05_cracked_ice.png) | Cracked ice | HIT |
+| ![](images/cookbook-terrain/t06_cooled_lava.png) | Cooled lava | HIT |
+| ![](images/cookbook-terrain/t07_forest_floor.png) | Forest floor | HIT |
+| ![](images/cookbook-terrain/t08_riverbed_pebbles.png) | Riverbed pebbles | HIT |
 
 - **Sand dunes:** clone `wood` UNMODIFIED structurally (like `o03` bark) --
   dune ripples are organic and wavy, so KEEP the knot-warp chain rather
@@ -513,6 +518,59 @@ one-shot empirical fix.
     look on the first try. **Lesson: don't trust mask-threshold direction
     by analogy across different cases -- render and look, the direction
     isn't reliably predictable from another recipe's stated behavior.**
+
+### Natural surfaces t05-t08 (2026-09-03) + the topology-not-donor lesson
+
+**The lesson first, because it's the reusable part.** The first pass built all
+four (ice, lava, forest floor, pebbles) by cloning ONE donor, `dry_earth`'s
+voronoi-plate crack network, and recoloring it. They all looked like siblings
+-- the exact "everything looks similar" trap the noise-vocabulary session
+quantified. The fix was to pick the base by **surface TOPOLOGY, not by grabbing
+a familiar donor**. Three topologies were in play:
+- **Connected crack network** (ice, lava): `dry_earth`'s voronoi-plate chain is
+  correct -- these surfaces genuinely crack into a joined network. They stay
+  legitimate siblings; lava's emission glow makes it unmistakable anyway.
+- **Discrete packed cells** (pebbles): voronoi cells are right, but the joints
+  must read as recessed CONTACT shadow, not warped crack lines -- so drop
+  `warp_0` to ~0.02. That one change separates pebbles from the ice plates.
+- **Scattered overlapping pieces** (forest floor): NO connected network at all.
+  This one had to leave `dry_earth` entirely and re-base onto `fbm` with
+  noise=Cellular 4, the scattered clumpy-blob base from the noise gallery
+  (`docs/images/noise-gallery/fbm-bases.png`). Cellular 2 and 6 are the
+  connected-crack look to AVOID; Cellular 1 and 4 give overlapping clumps.
+
+Shared helper `_dry_earth_plates()` in `cookbook_terrain.py` factors the
+plate-material setup (per-plate tone from voronoi_0 port 2 into `blend_0`'s base,
+warp for crack cleanliness, non-metal, and a FLAT roughness texture so an ORM map
+exports -- `dry_earth` leaves the roughness input unconnected, so a scalar
+roughness renders no ORM and the 3D preview can't show a wet/glossy sheen).
+
+- **Cracked ice (HIT):** `_dry_earth_plates` at scale 5, glassy blue-white
+  per-plate tint, warp 0.12 (clean sharp cracks), roughness 0.12. The key move
+  is the smoothness pass: feed the crack-only signal (`colorize_4`, from
+  `warp_0`) into the normal-prep `colorize` instead of `dry_earth`'s
+  perlin-grain height (`blend_1`), so plate FACES are smooth and only the cracks
+  carry relief. Without it the plates read as frosted/sandy concrete. Judge
+  smoothness on the normal map and plate faces; the low-roughness gloss is real
+  but the preview's dark backdrop can't show it (same caveat as lava's emission).
+- **Cooled lava (HIT):** `_dry_earth_plates` at scale 5, near-black basalt
+  per-plate, warp 0.2. The glow taps `warp_0` (the crack signal, LOW at cracks):
+  a `colorize_glow` maps the crack lows to bright ember-orange and plate
+  interiors to black, fed into the Material's emission input (port 3) with
+  `emission_energy` 1.0. Polarity was correct on the first try; if the glow ever
+  lands on plate faces instead of cracks, flip the `colorize_glow` gradient.
+  Note: the bundled `render_preview` scene has no emission slot, so judge the
+  glow on the exported emission map, not the preview sphere.
+- **Forest floor (HIT, re-based):** `crocodile_skin` donor, retype `voronoi_0`
+  to `fbm` noise=5 (Cellular 4), scale 6, iterations 5. Brown-dominant leaf
+  palette with a muted olive accent, high matte roughness, `param4=0` medium
+  relief. The re-base OFF the plate donor is the whole point -- leaf litter has
+  no crack network, and on `dry_earth` it read as cracked-mud camo no matter the
+  palette.
+- **Riverbed pebbles (HIT):** `_dry_earth_plates` at scale 8, river-tumbled
+  multicolor palette (gray/tan/slate/brown/cream), warp 0.02 (recessed contact
+  joints, NOT crack lines -- the differentiator from ice), roughness 0.2 for a
+  damp sheen.
 
 ## Wood cookbook (cookbook growth, informal — 2026-08-28)
 
