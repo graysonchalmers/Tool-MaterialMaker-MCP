@@ -19,6 +19,37 @@ doc's window.
 
 ## Archived "Changed this session" write-ups
 
+## 🗂️ Changed this session (painted-metal cookbook +5)
+
+- Branch: `main`. Commit `4d72c8b`, **pushed** to `origin/main` (CI triggered).
+  Files: `quality/cookbook_painted_metal.py` (new, 5 builders pm01-pm05),
+  `docs/AUTHORING.md` (new painted-metal section), 5 tracked albedo thumbnails
+  under `docs/images/cookbook-painted-metal/`. Authored `.ptex` + rendered
+  maps/previews stay gitignored (regenerable via the builder). No `src/` change,
+  so no gate/phase state moved. Memory (`authoring-recipes`, `MEMORY.md`) updated.
+- Materials (each authored -> validated -> rendered -> 3D-previewed -> iterated
+  with Grayson -> locked): **pm01 powder coat** (rock clone, warp flattened for
+  fine orange-peel pebbling), **pm02 automotive enamel** (near-mirror red +
+  per-cell flake), **pm03 chipped paint** (green majority chipped to bare metal,
+  masked metallic; distinct from the frozen combo01 which chips to rust), **pm04
+  hammertone** (medium dimple field, deepest relief, the strongest structural
+  read), **pm05 scuffed panel** (directional brushed scuffs, faded utility blue).
+- Decisions (+ why): the advisor's steer was the whole frame -- painted metal's
+  variation is surface finish, so five materials that differ only in gloss read
+  as one gray panel five times; the fix is a distinct STRUCTURAL read per
+  material (bump scale, dimple field, chip mask, directional axis), color only
+  reinforcing. Two correctness rules held: metallic masked not global (a
+  globally-metallic painted panel renders near-black in the preview), and every
+  wear mask a hard 0/1 into blend port 2.
+- **Durable lesson pinned this session:** a MM `blend` shows its **port-1 input
+  where the port-2 mask is 0** and port-0 where the mask is 1. pm03's chip mask
+  polarity was inverted twice (metal-majority, then near-all-metal) before this
+  landed empirically. Put the MAJORITY layer on port 1; make the hard mask 1 only
+  in the minority spots. Recorded in AUTHORING.md + the `authoring-recipes` memory.
+- Two per-material fixes worth remembering: pm01's wormy-crackle first render was
+  `rock`'s `warp_0` (amount 0.3) smearing cells -- flatten to 0.03; pm05's grainy
+  scuffs were 8 perlin octaves -- drop `iterations` to 2 for clean brushed lines.
+
 ## 🗂️ Changed this session (masonry cookbook +5, render pipe-hang fix, sf03 fix)
 
 - **sf03 circuit-board fix** (commit `6667b4b`, pushed): `quality/cookbook_scifi.py`
@@ -601,6 +632,23 @@ doc's window.
 ---
 
 ## Archived session log
+
+### 2026-08-30 (v0.4.0 release + gallery) — unblocked release-please, shipped 0.4.0, enlarged README gallery
+- Picked up via `pickup` (clean `main` at `6b2a070`, in sync). Grayson chose
+  next-move #1: unblock release-please.
+- Confirmed the blocker was the repo's "Allow GitHub Actions to create and
+  approve pull requests" toggle (off by default). Explained pushing files (always
+  worked) vs. a bot opening a PR (gated). Grayson flipped it; re-ran the failed
+  run (`gh run rerun 33298317643`) → PR #1 opened.
+- Merged PR #1 with a merge commit (`--merge`, what release-please needs).
+  release-please tagged **v0.4.0**, cut the GitHub Release (Latest), attached the
+  built wheel + sdist. Post-merge `tests` on `main` green (1m16s); a PR-branch
+  `tests` run had failed but its logs were purged and main is green, so not
+  chased. `main` fast-forwarded to `c2aa170`.
+- Grayson then asked to enlarge the README gallery: went 4-col-with-captions →
+  2-col-no-captions (~2x larger images). Showed a PIL preview at GitHub's real
+  content width before pushing. Committed `8f7f515`, pushed.
+- Wrote `_agent-commons\log\2026-08-30-claude-code-mm-mcp-releaseplease-unblock-gallery.md`.
 
 ### 2026-08-30 (Phase 4 hardening) — path bounding + inspect_project + CI/release-please, from a project compare
 - Grayson asked to compare us against `github.com/dcc-mcp/dcc-mcp-material-maker`.

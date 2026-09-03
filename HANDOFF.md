@@ -1,62 +1,56 @@
 # 🧭 Session Handoff — Tool-MaterialMaker-MCP
 
-_Last updated: 2026-09-01 (noise-vocab gallery + 2 backlog items + wool take-two) CT (America/Chicago)_
+_Last updated: 2026-09-03 (wool-knit closed, f07 herringbone tweed, +4 terrain via topology-not-donor) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**Closed two backlog items, shipped a noise-vocabulary reference gallery, took a
-second crack at wool loop-knit.** Batch committed + pushed (`20e485d`).
-- **#3 `list_node_types`: resolved KEEP.** ~5KB name list vs ~260KB full catalog,
-  it's the cheap discovery lever, not redundant. Advisor caught a real doc bug:
-  the `category` arg is a plain NAME substring, not a taxonomy (no category field
-  anywhere), so `list_node_types("noise")` misses perlin/fbm*/truchet. Docstring
-  (server.py) + README corrected to "name substring."
-- **#4 `render_preview`: documented.** New "judge in 3D, not off the flat albedo"
-  step in AUTHORING.md's workflow, with the dark-backdrop + `tile` caveats.
-- **Noise vocabulary (the main event).** Diagnosed the "everything looks similar"
-  complaint with a number: 38 cookbook builders, 69% clone 3 donors
-  (crocodile_skin x12, rock x7, wood x5), and the only base noise added by hand
-  is perlin (x9) + voronoi (x1). Zero fbm/anisotropic/shard/wavelet/truchet out
-  of 47 noise nodes. Built `quality/noise_gallery.py` (fbm all-8-bases sweep +
-  cross-family row), 2 tracked contact sheets under `docs/images/noise-gallery/`,
-  a new AUTHORING.md "Noise vocabulary" section with reach-for-X tables. Kept as a
-  REFERENCE, deliberately NOT a pixel-checked debug swatch (noise has no
-  known-answer). Fast suite 262 green.
-- **Wool loop-knit (take two, still open).** pattern-Bounce (Bounce x Bounce,
-  Multiply) is a real discovery but reads as tufted/quilted upholstery, a square
-  bump lattice, not interlocking knit loops (the square grid is inherent to
-  `pattern` multiplying two axis-aligned waves). Reverted f04 to the committed
-  weave partial to keep main clean and avoid mislabeling quilted-as-knit; the full
-  recipe + finding + next-steps are below. `main` clean, in sync.
+**Closed wool loop-knit as unreachable, shipped f07 herringbone tweed, then added
+4 natural-terrain materials via a new "topology-not-donor" lesson.** Two commits,
+both pushed (`8ca2c2b` f07, `6ed5773` terrain).
+- **Wool loop-knit CLOSED.** An isolation-render probe (each candidate generator's
+  raw pattern through a gray ramp) tested the 4 best leads: pattern-Bounce and
+  `bricks` Running Bond = staggered pillow honeycomb; `weave2` stitch=1 = basket
+  weave; `weave2` stitch=3 = herringbone chevrons but they reverse band-to-band =
+  herringbone, not knit. No bundled generator makes upright-V stockinette. The
+  reframe: "offset rows" and "V-columns in aligned wales" are INDEPENDENT and only
+  the second is the knit tell.
+- **`f07_herringbone_tweed` shipped** (the probe's silver lining): `weave2`
+  stitch=3, warm Harris-tweed 3-tone, soft `param1` 0.35 `param4=0`. Honest limit:
+  weave2 emits one grayscale so it reads one-tone; true two-color tweed needs two
+  colorizes blended through the weave over/under mask.
+- **Terrain t05-t08 (the main event): cracked ice, cooled lava, forest floor,
+  riverbed pebbles.** First pass cloned `dry_earth` 4x and they read as siblings;
+  Grayson caught it. Advisor reframe: pick base by surface TOPOLOGY, not donor.
+  Connected crack network (ice, lava) = dry_earth plates; lava glow via `warp_0`
+  crack signal -> colorize -> Material emission port 3. Discrete packed cells
+  (pebbles) = voronoi + `warp_0` ~0.02 for recessed contact joints. Scattered
+  pieces (forest floor) = re-based OFF dry_earth onto `fbm` noise=Cellular 4.
+  Ice got a smoothness pass (crack-only signal into the normal). All 4 authored ->
+  rendered -> 3D-previewed -> locked.
 
 Older write-ups/log beyond the cap live in
 [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).
 
 ## 📌 Where we stopped
 
-Wool take-two authored, rendered, and judged in 3D (quilted, not knit); f04
-reverted to the committed weave partial; `main` clean and in sync at `20e485d`
-plus this wrap-up baton commit. Natural stopping point.
+All four terrain materials + f07 locked, finalized (thumbnails, AUTHORING.md
+recipes, memory), and pushed. `main` clean and in sync at `6ed5773` plus this
+wrap-up baton commit. Natural stopping point.
 
 ## ▶️ Next concrete step
 
-**Wool loop-knit is still the open item, now with two untried leads from this
-session** (the pattern-Bounce recipe that got us to "pillowy but square" is in
-the Changed-this-session block below):
-1. **Offset alternate rows** of the pattern-Bounce lattice into true V-columns.
-   Needs a per-row phase shift `pattern` alone can't do (a transform/tile/offset
-   trick, or a second offset pattern blended in). This is the most likely path to
-   real knit.
-2. **`truchet` Circle** interlocking arcs (the gallery's loop-interlock geometry)
-   as the fallback second attempt.
-3. **Accept the quilted result as a NEW slot** (e.g. `f07_quilted`): it's a
-   genuinely good tufted-upholstery material, just not knit. Deferred here because
-   Grayson asked to take a break from making new materials.
-
-Other backlog (nothing blocked):
-- **Another cookbook category**: glass and plastics still uncovered (quick-win).
+Nothing blocked; pick a quick-win:
+1. **New cookbook category: glass or plastics** (still uncovered). The
+   topology-not-donor lesson from this session applies directly: glass wants a
+   continuous/smooth base (perlin/fbm), not a cell donor.
+2. **Two-color herringbone tweed** as an f07 follow-up: blend two colorizes through
+   the weave over/under mask for a real Harris-tweed two-thread read (deferred as a
+   nicety this session).
+3. **Unreal UE5 export verification** (backlog A): still blocked on a live Unreal
+   Editor + the `mcp__unreal-engine__*` bridge; check whether that's connectable
+   before trying.
 
 The older open backlog, unchanged:
 - **2 findings ruled out, not fixed** (deliberate): #8 (`_cmd_clear_graph`'s
@@ -87,19 +81,18 @@ The older open backlog, unchanged:
   paths (one-time setup, documented upstream). Grayson said Unreal "is not
   working right now" as of that session; check whether that's fixed before
   trying again.
-- **B. More cookbook categories** — wood and stone are both represented (5
-  categories total: fabrics, organics, sci-fi, terrain, wood, stone).
-  Leather beyond `f02`, glass, plastics, painted metal beyond `combo01` are
-  uncovered.
-- **C. True cobblestone** — `s05_hex_stone_tile` is an honest partial
-  (regular hex grid, not irregular). A voronoi-plate approach (like
-  `dry_earth`'s cracked-plate network, recolored to stone tones with
-  per-plate variation) is untried and would likely get real irregularity.
-- **D. One remaining honest partial** (wool loop-knit). **sf03's
-  circuit-board trace-bleed-through is FIXED (2026-09-01)** — root cause was
-  the chips' albedo colorize being reused as the blend's opacity mask (65%
-  opacity), fixed by a dedicated hard 0/1 mask; see the Changed-this-session
-  block and AUTHORING.md.
+- **B. More cookbook categories** — fabrics, organics, sci-fi, terrain, wood,
+  stone, leather, painted-metal are all represented; terrain now includes the
+  natural-surface set (ice/lava/forest floor/pebbles). **Glass and plastics are
+  the remaining uncovered quick-wins.**
+- **C. True cobblestone — DONE.** `s07_cobblestone` (voronoi-plate `dry_earth`
+  approach) closed this in a prior session; the `s05` hex-grid partial is
+  superseded.
+- **D. Wool loop-knit — CLOSED as unreachable (2026-09-03).** An isolation-render
+  probe confirmed no bundled generator makes upright-V stockinette (see the
+  Changed-this-session block); `f04` stays the honest coarse-weave stand-in and
+  `f07_herringbone_tweed` shipped as the probe's byproduct. sf03's
+  circuit-board bleed-through was fixed 2026-09-01 (hard 0/1 opacity mask).
 - **E. Image-to-material decomposition** — Grayson's own backlog idea,
   captured in `_agent-commons/ideas/Tool-MaterialMaker-MCP.md`. Explicitly
   deferred; likely wants its own `brainstorming` session before any design
@@ -141,13 +134,47 @@ The older open backlog, unchanged:
   should it fold into `project-setup`'s standard kit? Not decided.
 - Still open, unchanged: should `render_preview` get documented in
   `docs/AUTHORING.md` / README, or is it enough as just an MCP tool?
-- Still open, unchanged: true cobblestone (a voronoi-plate approach,
-  untried, vs. `s05`'s honest hex-grid partial); wool's loop-knit
-  approximation; PyPI vs. GitHub-clone-only (leaning GitHub-only);
+- **Resolved 2026-09-03:** wool loop-knit (closed as unreachable) and true
+  cobblestone (`s07` done) are both off the open list now.
+- Still open, unchanged: PyPI vs. GitHub-clone-only (leaning GitHub-only);
   cross-platform (macOS/Linux) verification, still untested, no machine
   available; two parked-not-fixed overlay-builder findings from a much
   earlier session (staleness marker, `_append_autoload`'s first-occurrence
   match, both verified low-priority).
+
+## 🗂️ Changed this session (wool-knit closed, f07 herringbone tweed, +4 terrain)
+
+- Branches/commits: `main`, `8ca2c2b` (f07 herringbone tweed + wool-knit closure)
+  and `6ed5773` (terrain t05-t08), both **pushed** to `origin/main` (CI triggered).
+  Files: `quality/cookbook_fabrics.py` (f07 builder), `quality/cookbook_terrain.py`
+  (`_dry_earth_plates` helper + t05-t08 builders), `docs/AUTHORING.md` (f07 recipe
+  + wool-knit closure; terrain topology-not-donor section + 4 recipes), 5 tracked
+  thumbnails (`docs/images/cookbook-fabrics/f07_herringbone_tweed.png`,
+  `docs/images/cookbook-terrain/t05-t08.png`). Authored `.ptex` + renders (incl.
+  throwaway `scratch-knit/`) stay gitignored. No `src/` change, no gate/phase moved.
+- **Wool loop-knit CLOSED as unreachable.** Isolation-render probe (each candidate
+  generator's raw pattern through a gray ramp, look for the knit tell) tested 4
+  leads: pattern-Bounce + `bricks` Running Bond = staggered pillow honeycomb;
+  `weave2` stitch=1 = basket weave; `weave2` stitch=3 = herringbone chevrons that
+  reverse band-to-band = herringbone, not knit. **Reframe: "offset rows" and
+  "V-columns in aligned wales" are INDEPENDENT; only the second is the knit tell.**
+- **`f07_herringbone_tweed`** = weave2 stitch=3, warm Harris-tweed 3-tone, soft
+  `param1` 0.35 `param4=0`. One-tone limit noted (weave2 emits one grayscale).
+- **Terrain t05-t08 + the topology-not-donor lesson (the durable takeaway).** First
+  pass cloned `dry_earth` 4x -> siblings; Grayson caught it. Fix: pick base by
+  surface TOPOLOGY. Connected crack network (ice, lava) = dry_earth plates (lava
+  glow: `warp_0` crack signal -> `colorize_glow` -> Material emission port 3,
+  `emission_energy` 1.0). Discrete packed cells (pebbles) = voronoi + `warp_0`
+  ~0.02 (recessed contact joints, not crack lines). Scattered pieces (forest floor)
+  = re-based OFF dry_earth onto `fbm` noise=Cellular 4 (the scattered-clump base
+  from the noise gallery). Ice smoothness pass: feed the crack-only signal
+  (`colorize_4`) into the normal instead of the grainy `blend_1` height. New
+  `_dry_earth_plates` helper feeds a FLAT roughness texture so an ORM map exports
+  for the preview (dry_earth leaves the roughness input unconnected otherwise).
+- Process: `brainstorming` (bounded) + `advisor` twice (the chevron reframe on
+  wool, the topology reframe on terrain). Judged every material in 3D via
+  `render_preview` and sent previews to Grayson each pass. `render_preview` has no
+  emission slot, so lava's glow was judged on the exported emission map.
 
 ## 🗂️ Changed this session (noise-vocab gallery + 2 backlog items + wool take-two)
 
@@ -207,39 +234,9 @@ The older open backlog, unchanged:
   multiply. Calibrated the check thresholds against the real rendered pixels
   (polarity: left `(30,56,229)`, right `(229,30,30)`; ramp right `(118,44,141)`).
 
-## 🗂️ Changed this session (painted-metal cookbook +5)
-
-- Branch: `main`. Commit `4d72c8b`, **pushed** to `origin/main` (CI triggered).
-  Files: `quality/cookbook_painted_metal.py` (new, 5 builders pm01-pm05),
-  `docs/AUTHORING.md` (new painted-metal section), 5 tracked albedo thumbnails
-  under `docs/images/cookbook-painted-metal/`. Authored `.ptex` + rendered
-  maps/previews stay gitignored (regenerable via the builder). No `src/` change,
-  so no gate/phase state moved. Memory (`authoring-recipes`, `MEMORY.md`) updated.
-- Materials (each authored -> validated -> rendered -> 3D-previewed -> iterated
-  with Grayson -> locked): **pm01 powder coat** (rock clone, warp flattened for
-  fine orange-peel pebbling), **pm02 automotive enamel** (near-mirror red +
-  per-cell flake), **pm03 chipped paint** (green majority chipped to bare metal,
-  masked metallic; distinct from the frozen combo01 which chips to rust), **pm04
-  hammertone** (medium dimple field, deepest relief, the strongest structural
-  read), **pm05 scuffed panel** (directional brushed scuffs, faded utility blue).
-- Decisions (+ why): the advisor's steer was the whole frame -- painted metal's
-  variation is surface finish, so five materials that differ only in gloss read
-  as one gray panel five times; the fix is a distinct STRUCTURAL read per
-  material (bump scale, dimple field, chip mask, directional axis), color only
-  reinforcing. Two correctness rules held: metallic masked not global (a
-  globally-metallic painted panel renders near-black in the preview), and every
-  wear mask a hard 0/1 into blend port 2.
-- **Durable lesson pinned this session:** a MM `blend` shows its **port-1 input
-  where the port-2 mask is 0** and port-0 where the mask is 1. pm03's chip mask
-  polarity was inverted twice (metal-majority, then near-all-metal) before this
-  landed empirically. Put the MAJORITY layer on port 1; make the hard mask 1 only
-  in the minority spots. Recorded in AUTHORING.md + the `authoring-recipes` memory.
-- Two per-material fixes worth remembering: pm01's wormy-crackle first render was
-  `rock`'s `warp_0` (amount 0.3) smearing cells -- flatten to 0.03; pm05's grainy
-  scuffs were 8 perlin octaves -- drop `iterations` to 2 for clean brushed lines.
-
-> 📦 **19 older "Changed this session" write-ups archived** (through
-> 2026-08-30, incl. the v0.4.0 release-unblock + README gallery session) --
+> 📦 **20 older "Changed this session" write-ups archived** (through
+> 2026-09-01, incl. the painted-metal cookbook, and the v0.4.0 release-unblock
+> + README gallery session) --
 > the pre-release audit/teardown/doc-fix pass,
 > render_node_output/live_render_node_output (item H), saved_graphs/
 > round-trip, Unity export proof, wood/stone cookbooks, the overlay
@@ -561,6 +558,22 @@ The older open backlog, unchanged:
 > through the project's Phase 1-2 kickoff on 2026-08-25.
 
 
+### 2026-09-03 (wool-knit closed, f07 herringbone tweed, +4 terrain) — topology-not-donor
+- Picked up via `pickup` (clean `main` at `e7bb420`). Grayson chose wool loop-knit
+  lead #1 (offset rows). `brainstorming` + `advisor` reframed it: stockinette's
+  tell is chevron/V in ALIGNED wales, not offset rows. Cheap isolation-render probe
+  (raw generator through a gray ramp) tested 4 leads and confirmed the catalog has
+  NO stockinette-knit generator. Closed wool-knit as unreachable; shipped the
+  probe's byproduct as `f07_herringbone_tweed`. Finalized + pushed (`8ca2c2b`).
+- Grayson: "more natural surfaces." Built terrain t05-t08 (ice/lava/forest floor/
+  pebbles). First pass cloned `dry_earth` 4x -> siblings; Grayson caught it.
+  `advisor` reframe -> pick base by TOPOLOGY not donor. Re-based (crack-network vs
+  packed-cells vs scattered-pieces); lava glow via emission port 3; forest floor
+  onto `fbm` Cellular 4; ice smoothness pass; flat-roughness-texture for ORM export.
+  All 4 authored -> rendered -> 3D-previewed -> locked. Finalized + pushed (`6ed5773`).
+- Wrote `_agent-commons/log/2026-09-03-claude-code-mm-mcp-herringbone-tweed-knit-probe.md`.
+  Then this wrap-up (HANDOFF/STATUS baton).
+
 ### 2026-09-01 (noise-vocab gallery + 2 backlog + wool take-two) — closed #3/#4, quantified the sameness, wool still open
 - Picked up via `pickup` (clean `main` at `198e2ad`, in sync). Grayson batched
   4 items: #2 wool, #3 list_node_types, #4 render_preview, plus "test different
@@ -658,23 +671,6 @@ The older open backlog, unchanged:
   splitting a hard 0/1 mask off the albedo; same fix on the traces (Grayson
   asked to make them solid gold too). AUTHORING.md + memory updated to resolved.
   Committed + pushed (`6667b4b`).
-
-### 2026-08-30 (v0.4.0 release + gallery) — unblocked release-please, shipped 0.4.0, enlarged README gallery
-- Picked up via `pickup` (clean `main` at `6b2a070`, in sync). Grayson chose
-  next-move #1: unblock release-please.
-- Confirmed the blocker was the repo's "Allow GitHub Actions to create and
-  approve pull requests" toggle (off by default). Explained pushing files (always
-  worked) vs. a bot opening a PR (gated). Grayson flipped it; re-ran the failed
-  run (`gh run rerun 33298317643`) → PR #1 opened.
-- Merged PR #1 with a merge commit (`--merge`, what release-please needs).
-  release-please tagged **v0.4.0**, cut the GitHub Release (Latest), attached the
-  built wheel + sdist. Post-merge `tests` on `main` green (1m16s); a PR-branch
-  `tests` run had failed but its logs were purged and main is green, so not
-  chased. `main` fast-forwarded to `c2aa170`.
-- Grayson then asked to enlarge the README gallery: went 4-col-with-captions →
-  2-col-no-captions (~2x larger images). Showed a PIL preview at GitHub's real
-  content width before pushing. Committed `8f7f515`, pushed.
-- Wrote `_agent-commons\log\2026-08-30-claude-code-mm-mcp-releaseplease-unblock-gallery.md`.
 
 _(Older entries continue in [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).)_
 
