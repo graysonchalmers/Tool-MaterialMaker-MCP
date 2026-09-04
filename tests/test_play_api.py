@@ -43,11 +43,18 @@ def test_render_request_applies_values_and_calls_renderer(tmp_path):
         perlin = next(n for n in sub["nodes"] if n.get("name") == "perlin_2")
         assert perlin["parameters"]["scale_x"] == 12.0
         assert {"node": "perlin_2", "widget": "scale_x", "value": 12.0} in changes
+        assert changes == [{"node": "perlin_2", "widget": "scale_x", "value": 12.0}]
+        # the sibling subgraph's own "param0" (a different id) must be untouched
+        sand_finish = next(n for n in applied_graph["nodes"]
+                            if n.get("type") == "graph" and n.get("label") == "Sand Finish")
+        colorize = next(n for n in sand_finish["nodes"] if n.get("name") == "colorize_2")
+        assert colorize["parameters"].get("gradient") != 12.0
         p = os.path.join(outdir, "play_albedo.png")
         open(p, "wb").close()
         return {"ok": True, "path": "headless", "images": [p], "error": None}
 
-    body = {"material_id": "t01_sand_dunes", "values": {"param0": 12.0}, "size": 256}
+    body = {"material_id": "t01_sand_dunes", "values": {"dune_ripples/param0": 12.0},
+            "size": 256}
     out = api.render_request(cfg, _catalog(cfg), body, str(tmp_path),
                              render_fn=fake_render)
     assert out["ok"] and out["path"] == "headless"

@@ -30,19 +30,18 @@ def get_material(cfg, catalog, name) -> dict:
 
 
 def _changes_for(graph, catalog, values):
-    """Map slot_id->value to per-node live changes, using the derived bindings.
-    slot_id is only unique within a subgraph (multiple subgraphs can each
-    expose "param0"), and apply_values() already fans a value out to every
-    matching subgraph on the headless graph, so this mirrors that fan-out for
-    the live path rather than picking one. This is a real cross-subgraph
-    collision inherited from derive_sliders/apply_values (Tasks 2-3), not
-    something fixed here; see the task-5 report."""
+    """Map id->value to per-node live changes, using the derived bindings.
+    `values` is keyed by each slider's unique `id` (f"{subgraph_node_name}/
+    {slot_id}", see sliders.derive_sliders), so each change is addressed to
+    exactly the one subgraph/node/widget it belongs to. No fan-out to other
+    subgraphs that happen to share the same slot_id."""
+    by_id = {s["id"]: s for s in sliders.derive_sliders(graph, catalog)}
     changes = []
-    for s in sliders.derive_sliders(graph, catalog):
-        slot_id = s["slot_id"]
-        if slot_id in values:
+    for sid, value in values.items():
+        s = by_id.get(sid)
+        if s:
             changes.append({"node": s["binding"]["node"],
-                            "widget": s["binding"]["widget"], "value": values[slot_id]})
+                            "widget": s["binding"]["widget"], "value": value})
     return changes
 
 
