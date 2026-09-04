@@ -28,6 +28,31 @@ no ORM map. Fixed the same way `gl01_frosted_glass` and the `dry_earth`-derived
 terrain materials are, a flat constant-gray roughness texture (`rough_const`)
 wired into `Material` port 2, so an ORM map exports for the preview.
 
+## Subgraph structure
+
+Grouped per the "Grouping into subgraphs" lever in `docs/AUTHORING.md`.
+Opening the graph shows 3 top-level nodes (two groups plus `Material`)
+instead of the raw 5-node perlin/colorize/normal_map/rough_const tangle:
+
+- **Surface Color** — the sole noise generator (`perlin_0`) plus the albedo
+  colorize (`colorize_0`). Exposed: `Color` (the albedo gradient), `Pattern
+  scale` (the perlin's `scale_x`).
+- **Surface Finish** — the normal-map chain plus the flat-roughness constant
+  (`normal_map_0`, `rough_const`). Exposed: `Roughness`, `Surface relief`
+  (the normal map's strength).
+
+Unlike `gl01_frosted_glass` (which left its two shared noise generators
+top-level since each fed both groups), `perlin_0` here is folded into
+`Surface Color` rather than kept top-level: it is the single noise source
+feeding all three downstream nodes (`colorize_0`, `normal_map_0`,
+`rough_const`), so the only way to leave it top-level would still need
+boundary ports into both groups, and the alternative -- a `Surface Color`
+group containing only `colorize_0` -- would be a degenerate single-node
+"group" that doesn't actually simplify anything. `Surface Finish`'s noise
+input arrives as a plain boundary port from `Surface Color`; that's an
+artifact of one generator feeding two visually distinct concerns (color and
+relief/roughness), not a modeling error.
+
 ## See also
 
 The invariant guide (`guide://authoring` resource, or `docs/AUTHORING.md`) for

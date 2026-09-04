@@ -10,7 +10,12 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
-from author_helpers import _from_scratch_noise_material, set_param, save_variant, add_node, _grad
+from author_helpers import (_from_scratch_noise_material, set_param, save_variant,
+                     add_node, _grad, group_into_subgraph)
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+from mm_mcp.catalog_builder import build_catalog
+from mm_mcp.config import load_config
 
 _LABEL = "cookbook-plastics"
 
@@ -47,6 +52,33 @@ def build_p01_glossy_plastic() -> str:
         {"from": "perlin_0", "from_port": 0, "to": "rough_const", "to_port": 0})
     g["connections"].append(
         {"from": "rough_const", "from_port": 0, "to": "Material", "to_port": 2})
+
+    # Group the flat 5-node from-scratch graph into two named subgraphs so
+    # opening it in Material Maker shows 3 top-level nodes (two groups plus
+    # Material) instead of the raw perlin/colorize/normal_map/rough_const
+    # tangle. perlin_0 is the sole noise source feeding all three downstream
+    # nodes (colorize_0, normal_map_0, rough_const), so it has to live inside
+    # one of the two groups; folding it into surface_color (rather than
+    # leaving it top-level, as the shared perlin/voronoi pair was left in
+    # gl01_frosted_glass) actually reduces node count here because the
+    # alternative group -- colorize_0 alone -- would be a degenerate
+    # single-node "group" that doesn't simplify anything. surface_finish's
+    # noise input then arrives as a plain boundary port from surface_color;
+    # that's an artifact of one generator feeding two visually distinct
+    # concerns (color and relief/roughness), not a modeling error.
+    catalog = build_catalog(load_config().nodes_dir)
+    group_into_subgraph(
+        g, ["perlin_0", "colorize_0"], "surface_color", "Surface Color",
+        [("colorize_0", "gradient", "param0", "Color"),
+         ("perlin_0", "scale_x", "param1", "Pattern scale")],
+        catalog,
+    )
+    group_into_subgraph(
+        g, ["normal_map_0", "rough_const"], "surface_finish", "Surface Finish",
+        [("rough_const", "gradient", "param0", "Roughness"),
+         ("normal_map_0", "param1", "param1", "Surface relief")],
+        catalog,
+    )
     return save_variant(g, _LABEL, "p01_glossy_plastic", 1)
 
 
