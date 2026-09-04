@@ -10,6 +10,35 @@ Reuses beehive's hex relief chain (the same lever as `man01`/`man02`), keeping t
 
 Pitfall specific to this material: beehive's hex grid is perfectly regular, and real cobblestone or crazy paving has irregular, variously sized stones, which this recipe does not have, so do not oversell it as cobblestone in user-facing copy. Separately, the tracked 512px preview thumbnail hid the fine detail-pass grain almost completely; it only became visible cropping the real 2048px render, so any "is this detailed enough" judgment on a fine high-frequency effect should check the full-resolution render, not just the docs preview.
 
+## Subgraph structure
+
+Grouped per the "Grouping into subgraphs" lever in `docs/AUTHORING.md`.
+Beehive's own `blend` (the hex distance + per-cell-random composite that
+fans out to all four downstream channels) and the two new grain-multiply
+`blend`s carry no port2 mask (unconnected -> a uniform 1.0), so there is no
+spatial-mask polarity to trace here, just plain full-strength mixes.
+`uniform_greyscale` (the metallic=0 constant) is left top-level, matching
+the convention for a single donor-default scalar feeding one Material port
+directly. Opening the graph shows 3 top-level groups (plus `Material` and
+`uniform_greyscale`) instead of the raw 10-node graph:
+
+- **Hex Pattern** -- `beehive_2`, `colorize_2`, `colorize`, `blend`,
+  `colorize_3`, `normal_map` (the depth/normal chain, never separately
+  tuned by this builder, folded in here since it consumes `blend`
+  directly). Exposed: `Tile width` (`beehive_2.sx`), `Tile height`
+  (`beehive_2.sy`).
+- **Stone Color & Roughness** -- `colorize_5`, `colorize_4`. Exposed:
+  `Stone color`, `Roughness`.
+- **Surface Grain** -- `perlin_grain`, `colorize_grain_alb`,
+  `colorize_grain_rgh`, `blend_grain_alb`, `blend_grain_rgh` (the detail
+  pass this material's own pitfall note flags as easy to miss at 512px).
+  Exposed: `Grain scale` (`perlin_grain.scale_x`), `Grain detail`
+  (`perlin_grain.iterations`).
+
+Verified after building: `renders_match` against this material's own
+pre-retrofit baseline came back at an exact `grid_mean_abs_diff` of `0.0` on
+all four exported maps (albedo, heightmap, normal, orm).
+
 ## See also
 
 The invariant guide (`guide://authoring` resource, or `docs/AUTHORING.md`) for
