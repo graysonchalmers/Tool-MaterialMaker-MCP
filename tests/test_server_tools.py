@@ -66,10 +66,24 @@ def test_list_examples_unknown_source_is_data_not_exception():
     assert res["ok"] is False and "nope" in res["error"]
 
 
+def _has_node_type(nodes, type_name):
+    """True if any node in `nodes` (recursing into collapsed `graph`-type
+    subgraph nodes) has type `type_name`. f07_herringbone_tweed's `weave2`
+    generator moved from top-level into its "Herringbone Pattern" subgraph
+    during the 2026-09-04 cookbook subgraph retrofit, so the structural
+    fingerprint check below has to look inside nested subgraphs too."""
+    for n in nodes:
+        if n.get("type") == type_name:
+            return True
+        if n.get("type") == "graph" and _has_node_type(n.get("nodes", []), type_name):
+            return True
+    return False
+
+
 def test_load_example_finds_cookbook_graph_by_default():
     d = server.load_example("f07_herringbone_tweed")
     assert d["type"] == "graph"
-    assert any(n.get("type") == "weave2" for n in d["nodes"])
+    assert _has_node_type(d["nodes"], "weave2")
 
 
 def test_load_example_source_restricts_lookup():

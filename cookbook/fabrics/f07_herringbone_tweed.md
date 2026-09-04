@@ -21,6 +21,25 @@ single ribbon shape, not two real thread colors, and it reads as a warm
 one-tone weave. A true two-color tweed would need two colorizes blended
 through the weave's own over/under mask.
 
+## Subgraph structure
+
+Grouped per the "Grouping into subgraphs" lever in `docs/AUTHORING.md`.
+Same `crocodile_skin` donor shape as `f03_canvas_burlap` (no `blend` node,
+no mask wiring to trace). Opening the graph shows 2 top-level groups
+(plus `Material` and the untouched metallic `uniform_0`) instead of the
+raw 6-node graph:
+
+- **Herringbone Pattern** — `voronoi_0` (retyped to `weave2`, `stitch=3`)
+  and `colorize_1` (albedo). `voronoi_0` also feeds **Surface Finish**'s
+  normal and roughness colorizes directly, the expected shared-upstream-
+  node shape. Exposed: `Weave scale`, `Tweed color`.
+- **Surface Finish** — `colorize_0` (normal source), `colorize_3`
+  (roughness), `normal_map_0`. Exposed: `Roughness`, `Relief strength`.
+
+Verified after building: `renders_match` against this material's own
+pre-retrofit baseline came back at an exact `grid_mean_abs_diff` of `0.0`
+on all three exported maps (albedo, normal, orm).
+
 ## See also
 
 The invariant guide (`guide://authoring` resource, or `docs/AUTHORING.md`) for

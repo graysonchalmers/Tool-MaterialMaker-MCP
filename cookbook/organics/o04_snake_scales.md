@@ -19,6 +19,26 @@ default. The faceted per-cell relief this produces is a better tell for
 own design, and for this material that's fine: the read comes through the
 normal, not the color.
 
+## Subgraph structure
+
+Grouped per the "Grouping into subgraphs" lever in `docs/AUTHORING.md`,
+sharing a helper (`_group_crocodile_skin_pattern` in
+`quality/cookbook_organics.py`) with `o05_coral` since both clone
+`crocodile_skin`'s identical 6-node graph unmodified structurally. Opening
+the graph shows 4 top-level nodes instead of the raw 6-node `crocodile_skin`
+tangle:
+
+- **Surface Pattern** — `voronoi_0` (the scale-cell generator) plus
+  `colorize_1` (its albedo colorize). Exposed: `Scale size` (the
+  denser/smaller scale-cell scale) and `Scale color` (the olive-to-khaki
+  gradient).
+- **Surface Finish** — `colorize_0` (untouched donor default, feeds the
+  normal chain), `colorize_3` (the roughness colorize), and `normal_map_0`.
+  Exposed: `Sheen` (the roughness gradient) and `Scale relief` (the
+  `normal_map_0` strength driving the proactive `param4=0` fix above).
+- `uniform_0` (Material's metallic scalar, an untouched donor default
+  feeding one port directly) is left top-level, ungrouped.
+
 ## See also
 
 The invariant guide (`guide://authoring` resource, or `docs/AUTHORING.md`) for

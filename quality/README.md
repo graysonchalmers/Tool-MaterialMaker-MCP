@@ -44,7 +44,10 @@ validates + renders them to `quality/cookbook/<label>/` for eyeballing, no
 across materials belong in `docs/AUTHORING.md` (the lean guide, also served
 as the `guide://authoring` resource); a recipe that pans out for one material
 gets written up in that graph's own card, `cookbook/<category>/<id>.md`.
-Both output dirs are gitignored (regenerable).
+Both output dirs are gitignored (regenerable). A new `build_*` function
+should call `group_into_subgraph` (from `quality/author_helpers.py`) before
+`save_variant` returns — see "Grouping into subgraphs" in
+`docs/AUTHORING.md` — so future categories don't need a second retrofit pass.
 
 When a material is locked (rendered, 3D-previewed, written up), promote it:
 `python quality/promote_cookbook.py` copies each `v1.ptex` into the tracked

@@ -34,6 +34,48 @@ different fiber, so they'd carry a faint texture difference too. Not
 attempted here, a deliberate scope cut for a color-differentiated variant
 of an already-solved weave.
 
+## Subgraph structure
+
+Grouped per the "Grouping into subgraphs" lever in `docs/AUTHORING.md`.
+This is the material the fleck/blend caution for this category is
+specifically about: it carries one `blend` node, and its port0/port1/
+port2 sources were traced from the serialized connections before any
+grouping was decided. Opening the graph shows 4 top-level groups (plus
+`Material` and the untouched metallic `uniform_0`) instead of the raw
+11-node graph:
+
+- **Base Weave** — `voronoi_0` (retyped to `weave2`, `stitch=1`) and
+  `colorize_1` (the base weave's albedo). `voronoi_0` also feeds
+  **Surface Finish**'s normal and roughness colorizes directly, the
+  same shared-upstream-node shape as the rest of this category's
+  materials. Exposed: `Weave scale`, `Tweed color`.
+- **Fleck Pattern** — `voronoi_fleck` (the SEPARATE voronoi node used
+  purely for the fleck source, deliberately kept out of `Base Weave` so
+  the "how sparse are the flecks" knob stays independently tunable
+  rather than disappearing into the same group as the weave it sits
+  over), `colorize_fleck_mask` (the hard 0/1 threshold), and
+  `colorize_fleck_color` (the cream/rust fleck color ramp). Exposed:
+  `Fleck density` (`voronoi_fleck.scale_x`), `Fleck color`
+  (`colorize_fleck_color.gradient`). The mask's own threshold band is
+  NOT exposed, matching this project's standing rule for hard 0/1 masks.
+- **Fleck Composite** — `blend_fleck` alone, in its own group rather than
+  folded into either side, since all three of its inputs are external:
+  port0 (minority, shows where the mask is 1) ← `colorize_fleck_color`
+  from `Fleck Pattern`, port1 (majority, shows where the mask is 0) ←
+  `colorize_1` from `Base Weave`, port2 (mask) ← `colorize_fleck_mask`
+  from `Fleck Pattern`. `group_into_subgraph` preserves each incoming
+  connection's own target port independently when rehoming it, so
+  grouping cannot swap which source lands on which port — confirmed by
+  reading back the collapsed subgraph's own internal connections after
+  building, not assumed from this description alone. Exposed: `Fleck
+  strength` (`blend_fleck.amount`).
+- **Surface Finish** — `colorize_0` (normal source), `colorize_3`
+  (roughness), `normal_map_0`. Exposed: `Roughness`, `Relief strength`.
+
+Verified after building: `renders_match` against this material's own
+pre-retrofit baseline came back at an exact `grid_mean_abs_diff` of `0.0`
+on all three exported maps (albedo, normal, orm).
+
 ## See also
 
 The invariant guide (`guide://authoring` resource, or `docs/AUTHORING.md`) for

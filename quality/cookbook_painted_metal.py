@@ -34,12 +34,56 @@ import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
 from author_helpers import (load_example, set_gradient, set_param, save_variant,
-                    add_node, rewire, drop_conn, node, _grad)
+                    add_node, rewire, drop_conn, node, _grad, group_into_subgraph)
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+from mm_mcp.catalog_builder import build_catalog
+from mm_mcp.config import load_config
 
 _LABEL = "cookbook-painted-metal"
 
 
-def build_pm01_powder_coat(iter_label: str) -> list[str]:
+def _group_rock_family(g, catalog, *, pattern_name, pattern_label, density_label,
+                        finish_roughness_label, relief_label):
+    """Shared grouping for pm01/pm02/pm04: all three clone `rock` and keep
+    its identical voronoi->warp->normal chain untouched structurally (only
+    scale/gradient/param values differ). All three also carry `rock`'s own
+    `blend_0` node, which is NOT a paint-over-metal composite (that pattern
+    is pm03's) -- it is the donor's own noise-mix step, combining two
+    channels of `voronoi_0` through a `perlin_0`-driven mask, entirely
+    untouched by any of these three builders. Per the task's blend caution,
+    its port sources were traced from each material's serialized
+    connections before grouping:
+      pm01/pm04: port0 <- voronoi_0:0, port1 <- voronoi_0:1,
+                 port2(mask) <- perlin_0:0, output -> colorize_0 (albedo).
+      pm02:      same port0/1/2 sources, but colorize_0 was rewired to read
+                 voronoi_0:2 directly instead, so blend_0's output feeds
+                 NOTHING (a harmless dead end, not a wiring bug introduced
+                 here -- see build_pm02_automotive_enamel's docstring).
+    In every case all three of blend_0's inputs (voronoi_0, perlin_0) are
+    placed in the SAME group as blend_0 itself, so port0/port1/port2 are
+    all internal to the collapsed subgraph -- only blend_0's single output
+    edge crosses the group boundary, which is the safe shape the caution
+    is about (no partial-input grouping that could straddle a mask
+    boundary)."""
+    group_into_subgraph(
+        g, ["voronoi_0", "voronoi_1", "warp_0", "perlin_0", "perlin_1", "blend_0",
+            "colorize_0"],
+        pattern_name, pattern_label,
+        [("colorize_0", "gradient", "param0", "Paint color"),
+         ("voronoi_0", "scale_x", "param1", density_label)],
+        catalog,
+    )
+    group_into_subgraph(
+        g, ["colorize_1", "colorize_2", "normal_map_0"], "surface_finish",
+        "Surface Finish",
+        [("colorize_2", "gradient", "param0", finish_roughness_label),
+         ("normal_map_0", "param1", "param1", relief_label)],
+        catalog,
+    )
+
+
+def build_pm01_powder_coat(catalog: dict) -> str:
     """Safety-yellow powder coat: matte paint with a fine, dense orange-peel
     micro-bump. CLONE rock (isotropic voronoi->warp->normal chain). Make the
     NORMAL voronoi (voronoi_1) fine and dense so the bumps read as orange-peel
@@ -64,10 +108,16 @@ def build_pm01_powder_coat(iter_label: str) -> list[str]:
         (0.0, 0.62, 0.62, 0.62), (1.0, 0.72, 0.72, 0.72)])
     set_param(g, "normal_map_0", "param4", 0)  # raw edge_detect -> real relief
     set_param(g, "normal_map_0", "param1", 0.12)  # shallow orange-peel skin
-    return [save_variant(g, iter_label, "pm01_powder_coat", 1)]
+
+    _group_rock_family(
+        g, catalog, pattern_name="orange_peel_pattern",
+        pattern_label="Orange Peel Pattern", density_label="Peel density",
+        finish_roughness_label="Roughness", relief_label="Relief strength",
+    )
+    return save_variant(g, _LABEL, "pm01_powder_coat", 1)
 
 
-def build_pm02_automotive_enamel(iter_label: str) -> list[str]:
+def build_pm02_automotive_enamel(catalog: dict) -> str:
     """Deep automotive red enamel: near-mirror clearcoat over a faint metallic
     fleck. CLONE rock. The albedo is driven off voronoi_0's per-cell random
     (port 2 = rand3) at a fine scale so each tiny cell is a slightly different
@@ -88,10 +138,22 @@ def build_pm02_automotive_enamel(iter_label: str) -> list[str]:
         (0.0, 0.07, 0.07, 0.07), (1.0, 0.11, 0.11, 0.11)])
     set_param(g, "normal_map_0", "param4", 0)
     set_param(g, "normal_map_0", "param1", 0.04)  # near-flat glassy coat
-    return [save_variant(g, iter_label, "pm02_automotive_enamel", 1)]
+
+    # rewire() above redirected colorize_0's albedo source from blend_0's
+    # output to voronoi_0:2 directly, so blend_0 (still present, still
+    # carrying rock's own voronoi_0/perlin_0-driven mix) now feeds nothing
+    # at all -- a harmless dead end, not introduced by this retrofit. It
+    # still rides into the pattern group below with its full port0/port1/
+    # port2 sources internal (see _group_rock_family's docstring).
+    _group_rock_family(
+        g, catalog, pattern_name="flake_pattern", pattern_label="Flake Pattern",
+        density_label="Fleck density", finish_roughness_label="Clearcoat gloss",
+        relief_label="Coat smoothness",
+    )
+    return save_variant(g, _LABEL, "pm02_automotive_enamel", 1)
 
 
-def build_pm03_chipped_paint(iter_label: str) -> list[str]:
+def build_pm03_chipped_paint(catalog: dict) -> str:
     """Faded appliance-green paint chipped to BARE METAL (distinct from the
     frozen combo01, which chips to RUST). CLONE rusted_metal for its ready-made
     two-layer metal base, recolor that base to bare steel, then composite a flat
@@ -152,10 +214,75 @@ def build_pm03_chipped_paint(iter_label: str) -> list[str]:
     rewire(g, "Material", 1, "mask_chip", 0)     # metallic <- chip mask (metal=1)
     rewire(g, "Material", 2, "blend_rgh", 0)     # roughness <- paint-over-metal
     rewire(g, "Material", 4, "normal_chip", 0)   # normal <- chip-edge step
-    return [save_variant(g, iter_label, "pm03_chipped_paint", 1)]
+
+    # This is the material the task's blend caution is specifically about.
+    # THREE blend nodes exist here; every one had its port0/port1/port2
+    # sources traced from the serialized connections before deciding a
+    # grouping (not assumed from the docstring/comments above, which
+    # predate this retrofit):
+    #   blend_0  (donor rusted_metal's own two-tone metal mix, untouched
+    #             structurally): port0 <- colorize_2 (steel base),
+    #             port1 <- colorize_1 (darker steel), port2(mask)
+    #             <- colorize_3 (perlin_2-driven). Output -> blend_alb:0.
+    #   blend_1  (donor's second metal-layer mix, untouched structurally,
+    #             constant amount=0.5, no port2 connection -> uses the
+    #             node's own default mask=1.0): port0 <- colorize_4
+    #             (<- colorize_3), port1 <- colorize_0 (<- perlin_0).
+    #             Output -> blend_rgh:0.
+    #   blend_alb/blend_rgh (the actual paint-over-metal composite, per
+    #             the module docstring's PBR rule 2): port0 <- blend_0/
+    #             blend_1 (bare metal side), port1 <- paint_alb/paint_rgh
+    #             (paint side, the MAJORITY), port2(mask) <- mask_chip
+    #             (1 only in the minority chip spots, per the pinned
+    #             blend-port rule: mask=1 shows port0/metal, mask=0 shows
+    #             port1/paint).
+    #
+    # bare_metal_base groups blend_0 AND blend_1 together with every one of
+    # their port0/port1/port2 sources (colorize_0-4, perlin_0-2), so both
+    # blends are fully self-contained -- only their single output edges
+    # (-> blend_alb:0, -> blend_rgh:0) cross the group boundary. chip_mask
+    # and paint_layer each hold one side of the paint/metal composite's
+    # remaining two inputs. paint_metal_composite then holds blend_alb and
+    # blend_rgh themselves, with ALL THREE of each one's inputs external
+    # (from bare_metal_base, paint_layer, and chip_mask respectively) --
+    # group_into_subgraph preserves each incoming connection's own to_port
+    # independently, so this cannot swap which external source lands on
+    # port0 vs port1 vs port2. Neither mask_chip's gradient nor the
+    # perlin_chip threshold band is exposed as a friendly parameter
+    # anywhere (only perlin_chip's scale and the two ALBEDO/roughness
+    # paint colorizes are), so no end-user knob can touch the hard 0/1
+    # mask the chip-vs-paint split depends on. Verified after building via
+    # renders_match against this material's own pre-retrofit baseline
+    # (see the task report), not assumed from this reasoning alone.
+    group_into_subgraph(
+        g, ["perlin_0", "perlin_1", "perlin_2", "colorize_0", "colorize_1",
+            "colorize_2", "colorize_3", "colorize_4", "blend_0", "blend_1"],
+        "bare_metal_base", "Bare Metal Base",
+        [("colorize_2", "gradient", "param0", "Bare metal color"),
+         ("colorize_1", "gradient", "param1", "Metal shadow tone")],
+        catalog,
+    )
+    group_into_subgraph(
+        g, ["perlin_chip", "mask_chip"], "chip_mask", "Chip Mask",
+        [("perlin_chip", "scale_x", "param0", "Chip pattern scale")],
+        catalog,
+    )
+    group_into_subgraph(
+        g, ["paint_alb", "paint_rgh"], "paint_layer", "Paint Layer",
+        [("paint_alb", "gradient", "param0", "Paint color"),
+         ("paint_rgh", "gradient", "param1", "Paint sheen")],
+        catalog,
+    )
+    group_into_subgraph(
+        g, ["blend_alb", "blend_rgh", "normal_chip"], "paint_metal_composite",
+        "Paint/Metal Composite",
+        [("normal_chip", "param1", "param0", "Chip edge relief")],
+        catalog,
+    )
+    return save_variant(g, _LABEL, "pm03_chipped_paint", 1)
 
 
-def build_pm04_hammertone(iter_label: str) -> list[str]:
+def build_pm04_hammertone(catalog: dict) -> str:
     """Hammered bronze-gray 'hammertone' paint: the classic dimpled hammer-blow
     finish. CLONE rock and use its voronoi->warp->normal chain, but at a MEDIUM
     cell size so the rounded cells read as hammer dimples (bigger than pm01's
@@ -177,10 +304,16 @@ def build_pm04_hammertone(iter_label: str) -> list[str]:
         (0.0, 0.26, 0.26, 0.26), (1.0, 0.36, 0.36, 0.36)])
     set_param(g, "normal_map_0", "param4", 0)
     set_param(g, "normal_map_0", "param1", 0.42)  # deep hammer dimples
-    return [save_variant(g, iter_label, "pm04_hammertone", 1)]
+
+    _group_rock_family(
+        g, catalog, pattern_name="hammer_dimple_pattern",
+        pattern_label="Hammer Dimple Pattern", density_label="Dimple size",
+        finish_roughness_label="Sheen", relief_label="Dimple depth",
+    )
+    return save_variant(g, _LABEL, "pm04_hammertone", 1)
 
 
-def build_pm05_scuffed_panel(iter_label: str) -> list[str]:
+def build_pm05_scuffed_panel(catalog: dict) -> str:
     """Faded utility-blue painted panel, scuffed along a clear horizontal axis.
     CLONE wood (directional grain -> working normal chain), the same donor m02
     brushed aluminum used, but keep it PAINT: straighten the grain into parallel
@@ -206,7 +339,37 @@ def build_pm05_scuffed_panel(iter_label: str) -> list[str]:
     node(g, "Material")["parameters"]["metallic"] = 0   # ...and scalar 0 (paint)
     set_param(g, "normal_map_0", "param4", 0)
     set_param(g, "normal_map_0", "param1", 0.30)  # deeper directional scuffs
-    return [save_variant(g, iter_label, "pm05_scuffed_panel", 1)]
+
+    # blend_0 here is `wood`'s own node (blend_type=2/Multiply, amount=1,
+    # port2 unconnected -> uses the node's own default mask=1.0): port0
+    # <- perlin_2, port1 <- perlin_2 (the rewire() above pointed BOTH
+    # blend_0 inputs at the same straightened perlin, killing the donor's
+    # knot-warp branch -- see the docstring above). With mask=1.0 constant,
+    # blend_type=Multiply computes port0*port1 = perlin_2 squared, a real
+    # (if degenerate) content transform, not a masked paint-over-metal
+    # composite -- there is no "which layer is on top" question here since
+    # both content inputs are the same source. Its old knot-warp inputs
+    # (perlin_0, perlin_1, warp_0, voronoi_0, colorize_1, warp_1) are now a
+    # dead branch with no path to Material at all (an existing donor-derived
+    # quirk from the rewire, not introduced by this retrofit) -- folded into
+    # the same pattern group as scuff_pattern rather than left as loose
+    # top-level nodes, matching cookbook_organics.py's o03_tree_bark
+    # precedent for this identical wood-donor member set.
+    group_into_subgraph(
+        g, ["perlin_0", "perlin_1", "warp_0", "voronoi_0", "colorize_1",
+            "warp_1", "perlin_2", "blend_0", "colorize_2"],
+        "scuff_pattern", "Scuff Pattern",
+        [("colorize_2", "gradient", "param0", "Paint color"),
+         ("perlin_2", "scale_x", "param1", "Scuff length")],
+        catalog,
+    )
+    group_into_subgraph(
+        g, ["colorize_0", "normal_map_0"], "surface_finish", "Surface Finish",
+        [("colorize_0", "gradient", "param0", "Roughness contrast"),
+         ("normal_map_0", "param1", "param1", "Scuff depth")],
+        catalog,
+    )
+    return save_variant(g, _LABEL, "pm05_scuffed_panel", 1)
 
 
 BUILDERS = {
@@ -220,11 +383,13 @@ BUILDERS = {
 
 def main() -> int:
     targets = sys.argv[1:] or list(BUILDERS.keys())
+    # Loaded once per script run (not once per builder), same as
+    # cookbook_scifi.py/cookbook_organics.py -- all 5 materials need it for
+    # group_into_subgraph.
+    catalog = build_catalog(load_config().nodes_dir)
     for case in targets:
-        paths = BUILDERS[case](_LABEL)
-        print(f"{case}: {len(paths)} variant(s)")
-        for p in paths:
-            print("  ", p)
+        path = BUILDERS[case](catalog)
+        print(f"{case}: {path}")
     return 0
 
 

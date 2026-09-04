@@ -13,12 +13,69 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
-from author_helpers import load_example, set_gradient, set_param, save_variant, add_node, rewire, _grad
+from author_helpers import (load_example, set_gradient, set_param, save_variant,
+                             add_node, rewire, _grad, group_into_subgraph)
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+from mm_mcp.catalog_builder import build_catalog
+from mm_mcp.config import load_config
 
 _LABEL = "cookbook-stone"
 
 
-def build_s04_scattered_river_stones() -> str:
+def _group_paving_stone(g: dict, catalog: dict, *, relief_label: str = None) -> None:
+    """Shared grouping for the dry_earth-voronoi-plate paving stones
+    (s07_cobblestone, s08_dry_stone_wall, s10_flagstone), which all clone
+    `dry_earth` and add the same `colorize_cobble` (per-plate tone,
+    replacing `colorize_0` as `blend_0`'s port1/background) plus a
+    `perlin_grain` surface-detail overlay (`blend_grain`, Multiply, over the
+    final albedo).
+
+    `warp_0` is kept in the Stone Color group with `blend_0`, the thing it
+    most directly and visibly feeds (the crack/joint pattern that reads as
+    mortar). Its `amount` is never exposed as a friendly parameter here --
+    per the category-wide caution, this donor's `warp_0.amount` is the
+    single most render-sensitive knob in the whole category (haze vs. clean
+    joints on these paving mats, or the flowing-vein look on s11_marble), so
+    it stays a build-time tuning constant baked into the recipe, not
+    something opened up for casual retuning.
+
+    dry_earth's original `colorize_0` (fed by `perlin_0`) is orphaned once
+    `blend_0`'s port1 is rewired onto `colorize_cobble` -- still present in
+    the graph with no consumer, so it is folded into the relief chain here
+    since it shares `perlin_0` with `blend_1`. That relief/roughness chain
+    (`perlin_1`, `colorize_3`, `perlin_0`, `colorize_0`, `colorize_4`,
+    `blend_1`, `colorize`, `normal_map_0`) carries no builder-set parameter
+    of its own unless `relief_label` is given (only s10 tunes
+    `normal_map_0.param1`) -- for s07/s08 it is folded into the Stone Color
+    group instead of standing alone with zero exposed parameters, per the
+    standing rule that every group needs at least one."""
+    stone_members = ["voronoi_0", "colorize_1", "colorize_cobble", "warp_0", "blend_0"]
+    relief_members = ["perlin_1", "colorize_3", "perlin_0", "colorize_0",
+                       "colorize_4", "blend_1", "colorize", "normal_map_0"]
+    stone_exposed = [
+        ("voronoi_0", "scale_x", "param0", "Stone size"),
+        ("colorize_cobble", "gradient", "param1", "Stone color"),
+        ("blend_0", "amount", "param2", "Joint depth"),
+    ]
+    if relief_label:
+        group_into_subgraph(g, stone_members, "stone_color", "Stone Color",
+                             stone_exposed, catalog)
+        group_into_subgraph(g, relief_members, "relief", "Relief",
+                             [("normal_map_0", "param1", "param0", relief_label)],
+                             catalog)
+    else:
+        group_into_subgraph(g, stone_members + relief_members,
+                             "stone_and_relief", "Stone & Relief",
+                             stone_exposed, catalog)
+    group_into_subgraph(g, ["perlin_grain", "colorize_grain", "blend_grain"],
+                         "surface_grain", "Surface Grain",
+                         [("perlin_grain", "scale_x", "param0", "Grain scale"),
+                          ("colorize_grain", "gradient", "param1", "Grain contrast")],
+                         catalog)
+
+
+def build_s04_scattered_river_stones(catalog: dict) -> str:
     """Scattered river stones / pebble bed: rounded stones sitting IN a sand
     matrix with visible gaps between them, not edge-to-edge packed. This is
     the softer, more organic sibling to s06_river_pebbles (which is a solid
@@ -95,10 +152,36 @@ def build_s04_scattered_river_stones() -> str:
     set_param(g, "warp_0", "amount", 0.12)
     set_param(g, "normal_map_0", "param4", 0)
     set_param(g, "normal_map_0", "param1", 0.35)   # gentler bulge than s06's 0.6
+
+    # Subgraph grouping. colorize_gap is the stone/sand SPATIAL MASK feeding
+    # both blend_stones and blend_rgh's port2 -- per the sf03/pm03 precedent,
+    # a mask gradient stays internal, not exposed as a friendly parameter.
+    # blend_stones/blend_rgh's own "amount" is pinned at 1 (a pure mask-driven
+    # split, not a dimmer) so it isn't exposed either.
+    group_into_subgraph(g, ["voronoi_0", "colorize_gap"], "mask_pattern",
+                         "Stone/Sand Mask",
+                         [("voronoi_0", "scale_x", "param0", "Stone size")],
+                         catalog)
+    group_into_subgraph(g, ["colorize_stone", "colorize_sand", "blend_stones",
+                             "colorize_0", "colorize_2", "blend_0"],
+                         "stone_sand_color", "Stone & Sand Color",
+                         [("colorize_stone", "gradient", "param0", "Stone color"),
+                          ("colorize_sand", "gradient", "param1", "Sand color")],
+                         catalog)
+    group_into_subgraph(g, ["colorize_1", "colorize_rgh_stone", "colorize_rgh_sand",
+                             "blend_rgh", "perlin_0"],
+                         "material_finish", "Material Finish",
+                         [("colorize_rgh_stone", "gradient", "param0", "Stone roughness"),
+                          ("colorize_rgh_sand", "gradient", "param1", "Sand roughness")],
+                         catalog)
+    group_into_subgraph(g, ["perlin_1", "voronoi_1", "warp_0", "normal_map_0"],
+                         "relief", "Relief",
+                         [("normal_map_0", "param1", "param0", "Relief strength")],
+                         catalog)
     return save_variant(g, _LABEL, "s04_scattered_river_stones", 1)
 
 
-def build_s05_hex_stone_tile() -> str:
+def build_s05_hex_stone_tile(catalog: dict) -> str:
     """Natural-toned hex stone tile / mosaic paving: reuse beehive's hex
     relief chain, same lever as man01_metal_grating/man02_ceramic_hex_tiles,
     keeping the DEFAULT per-cell-random blend (man02 rewired it away for
@@ -161,10 +244,34 @@ def build_s05_hex_stone_tile() -> str:
     ]
     rewire(g, "Material", 0, "blend_grain_alb", 0)   # albedo <- grain-multiplied stone
     rewire(g, "Material", 2, "blend_grain_rgh", 0)   # roughness <- grain-multiplied
+
+    # Subgraph grouping. blend/blend_grain_alb/blend_grain_rgh carry no
+    # port2 mask (unconnected -> default 1.0), so their "amount"s are plain
+    # uniform mixes -- blend/blend_grain_* stay at their donor default
+    # amount (untouched by this builder), no polarity trap to trace.
+    # uniform_greyscale (metallic=0, explicit) is left top-level, same as
+    # other categories' untouched single-scalar metallic nodes.
+    group_into_subgraph(g, ["beehive_2", "colorize_2", "colorize", "blend",
+                             "colorize_3", "normal_map"],
+                         "hex_pattern", "Hex Pattern",
+                         [("beehive_2", "sx", "param0", "Tile width"),
+                          ("beehive_2", "sy", "param1", "Tile height")],
+                         catalog)
+    group_into_subgraph(g, ["colorize_5", "colorize_4"],
+                         "stone_finish", "Stone Color & Roughness",
+                         [("colorize_5", "gradient", "param0", "Stone color"),
+                          ("colorize_4", "gradient", "param1", "Roughness")],
+                         catalog)
+    group_into_subgraph(g, ["perlin_grain", "colorize_grain_alb", "colorize_grain_rgh",
+                             "blend_grain_alb", "blend_grain_rgh"],
+                         "surface_grain", "Surface Grain",
+                         [("perlin_grain", "scale_x", "param0", "Grain scale"),
+                          ("perlin_grain", "iterations", "param1", "Grain detail")],
+                         catalog)
     return save_variant(g, _LABEL, "s05_hex_stone_tile", 1)
 
 
-def build_s06_river_pebbles() -> str:
+def build_s06_river_pebbles(catalog: dict) -> str:
     """Natural river stones / pebbles: rounded, tightly-packed smooth stones
     in varied natural tones, the organic counterpart to s05's regular hex
     tile. CLONE `rock` (same donor as s02 granite -- it already has a voronoi
@@ -225,10 +332,35 @@ def build_s06_river_pebbles() -> str:
         {"from": "colorize_grain", "from_port": 0, "to": "blend_grain", "to_port": 1},
     ]
     rewire(g, "Material", 0, "blend_grain", 0)   # albedo <- grain-multiplied pebbles
+
+    # Subgraph grouping. blend_0 (rock donor's original albedo composite,
+    # voronoi_0 ports 0/1 + perlin_0 mask) was orphaned by the rewire above
+    # (colorize_0 now reads voronoi_0 port2 directly, not blend_0's output)
+    # -- still present with no consumer, folded in with voronoi_0/colorize_0
+    # since it shares that same source. blend_grain carries no port2 mask
+    # (unconnected -> uniform 1.0), a plain full-strength Multiply.
+    group_into_subgraph(g, ["voronoi_0", "colorize_0", "blend_0"],
+                         "pebble_pattern", "Pebble Pattern",
+                         [("voronoi_0", "scale_x", "param0", "Pebble size"),
+                          ("colorize_0", "gradient", "param1", "Pebble color")],
+                         catalog)
+    group_into_subgraph(g, ["perlin_grain", "colorize_grain", "blend_grain"],
+                         "surface_grain", "Surface Grain",
+                         [("perlin_grain", "scale_x", "param0", "Grain scale"),
+                          ("perlin_grain", "iterations", "param1", "Grain detail")],
+                         catalog)
+    group_into_subgraph(g, ["colorize_1", "colorize_2", "perlin_0"],
+                         "material_finish", "Material Finish",
+                         [("colorize_2", "gradient", "param0", "Roughness")],
+                         catalog)
+    group_into_subgraph(g, ["perlin_1", "voronoi_1", "warp_0", "normal_map_0"],
+                         "relief", "Relief",
+                         [("normal_map_0", "param1", "param0", "Relief strength")],
+                         catalog)
     return save_variant(g, _LABEL, "s06_river_pebbles", 1)
 
 
-def build_s07_cobblestone() -> str:
+def build_s07_cobblestone(catalog: dict) -> str:
     """True irregular cobblestone -- the voronoi-plate approach the
     s05_hex_stone_tile docstring flagged as untried (backlog C). CLONE
     `dry_earth`, whose voronoi crack-network gives genuinely irregular,
@@ -295,10 +427,11 @@ def build_s07_cobblestone() -> str:
         {"from": "colorize_grain", "from_port": 0, "to": "blend_grain", "to_port": 1},
     ]
     rewire(g, "Material", 0, "blend_grain", 0)   # albedo <- grain-multiplied cobbles
+    _group_paving_stone(g, catalog)
     return save_variant(g, _LABEL, "s07_cobblestone", 1)
 
 
-def build_s08_dry_stone_wall() -> str:
+def build_s08_dry_stone_wall(catalog: dict) -> str:
     """Dry-stone / fieldstone wall: irregular stones tightly packed with thin
     dark dry-stack gaps (no mortar), weathered gray. Same voronoi-plate donor
     as s07 cobblestone, deliberately retuned to read as a different material,
@@ -345,10 +478,11 @@ def build_s08_dry_stone_wall() -> str:
         {"from": "colorize_grain", "from_port": 0, "to": "blend_grain", "to_port": 1},
     ]
     rewire(g, "Material", 0, "blend_grain", 0)
+    _group_paving_stone(g, catalog)
     return save_variant(g, _LABEL, "s08_dry_stone_wall", 1)
 
 
-def build_s09_ashlar_wall() -> str:
+def build_s09_ashlar_wall(catalog: dict) -> str:
     """Ashlar / castle block wall: neatly cut rectangular stone blocks laid in
     courses with fine recessed joints -- the REGULAR, quarried counterpart to
     s08's random fieldstone. This is where the masonry set leaves the
@@ -382,10 +516,42 @@ def build_s09_ashlar_wall() -> str:
         (0.75, 0.56, 0.53, 0.47),   # mid warm gray
         (1.0,  0.50, 0.43, 0.34),   # tan sandstone (was rustic orange)
     ])
+
+    # Subgraph grouping. `stone_wall`'s own blend_0 is a genuine masked
+    # blend, port sources traced from its raw connections before grouping:
+    # port0(s1)=colorize_1 (block tone, fed by blend_1's per-brick random),
+    # port1(s2)=colorize_0 (mortar tone, fed by Perlin), port2(mask)=
+    # colorize_2 (the Warp'd Bricks shape, high inside each brick face and
+    # low at the joints) -- so mask-high shows the block tone and mask-low
+    # shows the mortar tone, the expected read for cut stone with dark
+    # joints (not the sf03/l02-style reversal). blend_1 (Perlin + Bricks
+    # port1 random -> colorize_1) and blend_2 (Warp + Perlin -> the height/
+    # AO/depth fan-out) both carry no port2 mask (unconnected -> uniform
+    # 1.0), plain amount mixes, untouched by this builder. Neither blend's
+    # wiring is modified here, only regrouped -- verified unchanged by
+    # `renders_match` below. `uniform_0` (metallic constant) and the
+    # unnamed "394" shader-preview node are left top-level, matching the
+    # precedent for untouched single-purpose nodes feeding one port
+    # directly. The relief/AO/depth chain (blend_2, colorize_6, colorize_4,
+    # normal_map_0) carries no builder-set parameter of its own, so it is
+    # folded into the color group rather than left standing with zero
+    # exposed parameters.
+    group_into_subgraph(g, ["Bricks", "perlin_0", "Warp", "colorize_2", "colorize_7"],
+                         "block_layout", "Block Layout",
+                         [("Bricks", "columns", "param0", "Block size"),
+                          ("Bricks", "mortar", "param1", "Joint width"),
+                          ("Bricks", "bevel", "param2", "Edge chamfer")],
+                         catalog)
+    group_into_subgraph(g, ["Perlin", "colorize_0", "blend_1", "colorize_1",
+                             "blend_0", "blend_2", "colorize_6", "colorize_4",
+                             "normal_map_0"],
+                         "block_finish", "Block & Mortar Finish",
+                         [("colorize_1", "gradient", "param0", "Block color")],
+                         catalog)
     return save_variant(g, _LABEL, "s09_ashlar_wall", 1)
 
 
-def build_s10_flagstone() -> str:
+def build_s10_flagstone(catalog: dict) -> str:
     """Flagstone / slate paving: large flat irregular slabs with tight joints,
     cool slate tones. Same dry_earth voronoi-plate donor as s07, tuned in the
     OPPOSITE direction on every axis so it reads as flat quarried paving, not
@@ -427,10 +593,14 @@ def build_s10_flagstone() -> str:
         {"from": "colorize_grain", "from_port": 0, "to": "blend_grain", "to_port": 1},
     ]
     rewire(g, "Material", 0, "blend_grain", 0)
+    # s10 explicitly tunes normal_map_0.param1 (0.5, flat slab tops vs. the
+    # cobbles' 0.99 bulge) -- unlike s07/s08, this earns the Relief group
+    # its own exposed parameter instead of being folded into Stone Color.
+    _group_paving_stone(g, catalog, relief_label="Slab flatness")
     return save_variant(g, _LABEL, "s10_flagstone", 1)
 
 
-def build_s11_marble() -> str:
+def build_s11_marble(catalog: dict) -> str:
     """Polished marble: a cream base with soft flowing gray veins, glossy and
     smooth -- the one masonry material that leaves the coursed/paved family
     entirely. Same dry_earth donor, but used for its VEIN STRUCTURE, not its
@@ -463,6 +633,31 @@ def build_s11_marble() -> str:
     set_gradient(g, "colorize_3", [(0.0, 0, 0, 0), (1.0, 0, 0, 0)])  # metallic 0 (non-metal)
     set_param(g, "Material", "roughness", 0.15)  # polished (roughness port is unconnected)
     set_param(g, "normal_map_0", "param1", 0.1)  # smooth: veins barely raised
+
+    # Subgraph grouping. Unlike s07/s08/s10, this builder never rewires the
+    # donor -- colorize_0 (not colorize_cobble) is still blend_0's port1
+    # background exactly as dry_earth ships it, so warp_0 stays paired with
+    # blend_0, its most direct and most visible consumer here (the flowing
+    # crack/vein network). warp_0.amount is 0.5 -- HIGH, deliberately, the
+    # single most sensitive value in this whole category ("IS the look"
+    # rather than haze to kill) -- so it is emphatically NOT exposed as a
+    # friendly parameter; verified below with an extra-scrutiny
+    # renders_match check (actual diff value, not just pass/fail) per the
+    # category caution. colorize_3 (metallic, zeroed) stays an unexposed
+    # member of the relief group -- "make this non-metal marble metallic"
+    # isn't a friendly knob worth surfacing.
+    group_into_subgraph(g, ["voronoi_0", "colorize_1", "warp_0", "perlin_0",
+                             "colorize_0", "blend_0"],
+                         "marble_veins", "Marble Base & Veins",
+                         [("voronoi_0", "scale_x", "param0", "Vein scale"),
+                          ("colorize_0", "gradient", "param1", "Base color"),
+                          ("blend_0", "amount", "param2", "Vein softness")],
+                         catalog)
+    group_into_subgraph(g, ["perlin_1", "colorize_3", "colorize_4", "blend_1",
+                             "colorize", "normal_map_0"],
+                         "marble_relief", "Relief & Metallic",
+                         [("normal_map_0", "param1", "param0", "Vein relief")],
+                         catalog)
     return save_variant(g, _LABEL, "s11_marble", 1)
 
 
@@ -480,8 +675,12 @@ BUILDERS = {
 
 def main() -> int:
     targets = sys.argv[1:] or list(BUILDERS.keys())
+    # Loaded once per script run (not once per builder), same convention as
+    # cookbook_leather.py/cookbook_fabrics.py -- all 8 materials need it for
+    # group_into_subgraph.
+    catalog = build_catalog(load_config().nodes_dir)
     for case in targets:
-        path = BUILDERS[case]()
+        path = BUILDERS[case](catalog)
         print(f"{case}: {path}")
     return 0
 

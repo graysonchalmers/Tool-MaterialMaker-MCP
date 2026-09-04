@@ -23,6 +23,15 @@ Clone `dry_earth` (topology match, not a from-scratch build). `voronoi_0` scale 
 
 Same ORM gap as the `dry_earth`-derived terrain materials: the donor leaves the roughness input unconnected, so a scalar-only roughness exports no ORM map. Fixed the same way `_dry_earth_plates()` does in `cookbook_terrain.py`, a flat constant-gray roughness texture (`rough_const`) wired into `Material` port 2, so an ORM map actually exports for the preview.
 
+## Subgraph structure
+
+Grouped per the "Grouping into subgraphs" lever in `docs/AUTHORING.md`. Opening the graph shows 5 top-level nodes (two shared noise sources plus these two groups plus `Material`) instead of the raw 14-node `dry_earth` tangle:
+
+- **Base Color** — the voronoi crack generator, its warp, and the plate/crack colorize+blend chain that produces the albedo. Exposed: `Facet size` (voronoi scale), `Base color` (the plate color gradient), `Crack contrast` (the blend amount between the crack mask and the base color).
+- **Surface Detail** — the height/normal chain plus the flat-roughness constant. Exposed: `Roughness`, `Surface relief` (the normal map's strength).
+
+The two `perlin` noise sources stay outside both groups since each feeds into more than one group; folding either in would just relabel the sharing as an extra boundary port rather than actually simplifying anything.
+
 ## Honest limitation
 
 Material Maker's `material` node has no true transparency or refraction model. This recipe approximates frosted glass as an opaque, matte, finely-faceted diffuse surface, which is the right call for how it will be *used* (a wall panel, a frosted door insert, a diffuser surface visible under normal lighting) but it is not simulating light transmission through the glass. If a use case specifically needs to see through the material, this recipe is not that.

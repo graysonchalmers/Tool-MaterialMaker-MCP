@@ -12,7 +12,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "quality"))
 
-from author_helpers import rewire, drop_conn, node, add_node  # noqa: E402
+from author_helpers import rewire, drop_conn, node, add_node, group_into_subgraph  # noqa: E402
 
 
 def _graph():
@@ -102,3 +102,106 @@ def test_rewire_then_drop_conn_composes():
     rewire(g, "c", 0, "b", 1)
     drop_conn(g, "c", 0)
     assert g["connections"] == []
+
+
+_FAKE_CATALOG = {
+    "perlin": {"inputs": [], "outputs": [{"type": "f"}], "parameters": []},
+    "colorize": {
+        "inputs": [{"name": "in", "type": "f", "desc": ""}],
+        "outputs": [{"type": "rgba"}], "parameters": [],
+    },
+    "material": {
+        "inputs": [{"name": "albedo", "type": "rgb", "desc": ""}],
+        "outputs": [], "parameters": [],
+    },
+}
+
+
+def _simple_graph():
+    return {
+        "nodes": [
+            {"name": "perlin_0", "type": "perlin",
+             "node_position": {"x": 0, "y": 0},
+             "parameters": {"scale": 4}},
+            {"name": "colorize_0", "type": "colorize",
+             "node_position": {"x": 200, "y": 0},
+             "parameters": {"amount": 1}},
+            {"name": "Material", "type": "material",
+             "node_position": {"x": 400, "y": 0},
+             "parameters": {}},
+        ],
+        "connections": [
+            {"from": "perlin_0", "from_port": 0, "to": "colorize_0", "to_port": 0},
+            {"from": "colorize_0", "from_port": 0, "to": "Material", "to_port": 0},
+        ],
+    }
+
+
+def test_group_into_subgraph_collapses_named_nodes():
+    g = _simple_graph()
+    group_into_subgraph(
+        g, ["perlin_0"], "base_noise", "Base Noise",
+        [("perlin_0", "scale", "param0", "Scale")], _FAKE_CATALOG,
+    )
+    names = {n["name"] for n in g["nodes"]}
+    assert "perlin_0" not in names
+    assert "base_noise" in names
+    assert "colorize_0" in names and "Material" in names
+
+
+def test_group_into_subgraph_new_node_is_type_graph_with_exposed_param():
+    g = _simple_graph()
+    group_into_subgraph(
+        g, ["perlin_0"], "base_noise", "Base Noise",
+        [("perlin_0", "scale", "param0", "Scale")], _FAKE_CATALOG,
+    )
+    collapsed = node(g, "base_noise")
+    assert collapsed["type"] == "graph"
+    assert collapsed["label"] == "Base Noise"
+    assert collapsed["parameters"]["param0"] == 4
+    remote = next(n for n in collapsed["nodes"] if n["type"] == "remote")
+    widget = remote["widgets"][0]
+    assert widget["name"] == "param0"
+    assert widget["shortdesc"] == "Scale"
+    assert widget["linked_widgets"] == [{"node": "perlin_0", "widget": "scale"}]
+
+
+def test_group_into_subgraph_preserves_outer_wiring():
+    g = _simple_graph()
+    group_into_subgraph(
+        g, ["perlin_0"], "base_noise", "Base Noise",
+        [("perlin_0", "scale", "param0", "Scale")], _FAKE_CATALOG,
+    )
+    # perlin_0 -> colorize_0 becomes base_noise -> colorize_0
+    outer = [c for c in g["connections"] if c["to"] == "colorize_0"]
+    assert outer == [{"from": "base_noise", "from_port": 0,
+                       "to": "colorize_0", "to_port": 0}]
+    # colorize_0 -> Material is untouched (neither endpoint was grouped)
+    untouched = [c for c in g["connections"] if c["to"] == "Material"]
+    assert untouched == [{"from": "colorize_0", "from_port": 0,
+                           "to": "Material", "to_port": 0}]
+
+
+def test_group_into_subgraph_handles_incoming_and_outgoing_boundary():
+    g = _simple_graph()
+    group_into_subgraph(
+        g, ["colorize_0"], "recolor", "Recolor", [], _FAKE_CATALOG,
+    )
+    collapsed = node(g, "recolor")
+    gen_inputs = next(n for n in collapsed["nodes"] if n["name"] == "gen_inputs")
+    gen_outputs = next(n for n in collapsed["nodes"] if n["name"] == "gen_outputs")
+    assert len(gen_inputs["ports"]) == 1
+    assert gen_inputs["ports"][0]["type"] == "f"       # perlin_0's output type
+    assert len(gen_outputs["ports"]) == 1
+    assert gen_outputs["ports"][0]["type"] == "rgba"   # colorize_0's output type
+    # parent-level connections now point at "recolor" instead of "colorize_0"
+    assert {"from": "perlin_0", "from_port": 0,
+            "to": "recolor", "to_port": 0} in g["connections"]
+    assert {"from": "recolor", "from_port": 0,
+            "to": "Material", "to_port": 0} in g["connections"]
+    # the internal connection is rehomed onto gen_inputs/gen_outputs
+    inner = collapsed["connections"]
+    assert {"from": "gen_inputs", "from_port": 0,
+            "to": "colorize_0", "to_port": 0} in inner
+    assert {"from": "colorize_0", "from_port": 0,
+            "to": "gen_outputs", "to_port": 0} in inner

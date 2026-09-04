@@ -33,6 +33,25 @@ position) so wood is the sparse minority showing through. Band position
 controls majority/minority balance independently of the width that controls
 edge softness, so this didn't reintroduce the speckle.
 
+## Subgraph structure
+
+Grouped per the "Grouping into subgraphs" lever in `docs/AUTHORING.md`.
+Opening the graph shows 3 top-level nodes (these two groups plus `Material`)
+instead of the raw 16-node tangle (10 from the `wooden_floor` donor plus 6
+for the paint-over composite):
+
+- **Board Structure** — the whole bare-plank chain: the `bricks_0` board
+  pattern, its relief/transform inputs, the plank albedo colorize, the AO
+  uniform, and the plank's own normal map. The plank normal is grouped here
+  (not with the paint) because it's the boards' own relief, deliberately
+  untouched by the paint pass. Exposed: `Wood color` (the exposed-timber
+  albedo gradient). `combine_0` (an unused donor leftover with no downstream
+  connection) is folded in here with its source `uniform_0` rather than left
+  as an orphaned top-level node.
+- **Paint Overlay** — the weathered paint coat and the worn-mask that composites
+  it over the bare planks. Exposed: `Paint color`, `Wear grain size` (the
+  mask noise scale), `Wear coverage` (the mask threshold gradient).
+
 ## See also
 
 The invariant guide (`guide://authoring` resource, or `docs/AUTHORING.md`) for

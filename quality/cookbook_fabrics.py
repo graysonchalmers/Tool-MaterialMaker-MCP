@@ -12,12 +12,58 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
-from author_helpers import load_example, node, set_gradient, set_param, retype, rewire, add_node, save_variant
+from author_helpers import (load_example, node, set_gradient, set_param, retype,
+                    rewire, add_node, save_variant, group_into_subgraph)
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+from mm_mcp.catalog_builder import build_catalog
+from mm_mcp.config import load_config
 
 _LABEL = "cookbook-fabrics"
 
 
-def build_f03_canvas_burlap() -> str:
+def _group_weave_family(g, catalog, *, pattern_name, pattern_label, color_label,
+                         density_param, density_label, finish_label):
+    """Shared grouping for f03/f04/f05/f06/f07: all five clone `crocodile_skin`
+    and keep its identical voronoi(retyped)->{colorize_0, colorize_1,
+    colorize_3} fan-out untouched structurally (only the generator's type/
+    params and the three colorize gradients differ per material). Same donor
+    and same shape already grouped this way for o04_snake_scales/o05_coral in
+    cookbook_organics.py's `_group_crocodile_skin_pattern` -- reused here with
+    per-material pattern names/labels instead of a single generic "Surface
+    Pattern" label, since each fabric's generator type (weave/weave2/
+    diagonal_weave/perlin) is different enough to deserve its own name.
+
+    Per the task's blend caution: this donor carries NO `blend` node at all
+    (see quality/donors/crocodile_skin.ptex's own `connections` list), so
+    there is no port-source tracing to do here. The only structural subtlety
+    is that `voronoi_0` (the retyped generator) is a single upstream node
+    feeding THREE downstream consumers (colorize_0 for normal, colorize_1
+    for albedo, colorize_3 for roughness), so it cannot sit inside both a
+    "pattern" and a "surface finish" group at once -- it is folded into the
+    pattern group (paired with colorize_1, the albedo it drives most
+    directly), matching the organics precedent, so colorize_0/normal_map_0/
+    colorize_3 read its output across the group boundary. `uniform_0`
+    (Material's untouched metallic scalar, always 0 and never touched by any
+    of these builders) is left top-level, also matching the organics
+    precedent -- a single donor-default node feeding one port directly, not
+    a generative/compositing chain worth collapsing."""
+    group_into_subgraph(
+        g, ["voronoi_0", "colorize_1"], pattern_name, pattern_label,
+        [("voronoi_0", density_param, "param0", density_label),
+         ("colorize_1", "gradient", "param1", color_label)],
+        catalog,
+    )
+    group_into_subgraph(
+        g, ["colorize_0", "colorize_3", "normal_map_0"], "surface_finish",
+        "Surface Finish",
+        [("colorize_3", "gradient", "param0", finish_label),
+         ("normal_map_0", "param1", "param1", "Relief strength")],
+        catalog,
+    )
+
+
+def build_f03_canvas_burlap(catalog: dict) -> str:
     """Coarse plain-weave burlap/canvas: retype crocodile_skin's generator to
     `weave` (over/under plain weave, one output). Low width leaves visible
     gaps between thick jute threads. Natural tan, high roughness. Directly-fed
@@ -36,10 +82,16 @@ def build_f03_canvas_burlap() -> str:
     set_gradient(g, "colorize_0", [(0.0, 0, 0, 0), (1.0, 1, 1, 1)])
     node(g, "normal_map_0")["parameters"] = {
         "param0": 11, "param1": 0.4, "param2": 0, "param4": 0}
+
+    _group_weave_family(
+        g, catalog, pattern_name="weave_pattern", pattern_label="Weave Pattern",
+        color_label="Burlap color", density_param="width",
+        density_label="Thread gap", finish_label="Roughness",
+    )
     return save_variant(g, _LABEL, "f03_canvas_burlap", 1)
 
 
-def build_f04_wool_knit() -> str:
+def build_f04_wool_knit(catalog: dict) -> str:
     """Chunky wool knit: retype the generator to `weave` at a COARSE scale
     with near-max width (few, wide ribs, almost no gap) so it reads as thick
     blocky yarn rows rather than a fine thread grid. (Tried `weave2` with a
@@ -63,10 +115,16 @@ def build_f04_wool_knit() -> str:
     set_gradient(g, "colorize_0", [(0.0, 0, 0, 0), (1.0, 1, 1, 1)])
     node(g, "normal_map_0")["parameters"] = {
         "param0": 11, "param1": 0.3, "param2": 0, "param4": 0}
+
+    _group_weave_family(
+        g, catalog, pattern_name="knit_pattern", pattern_label="Knit Pattern",
+        color_label="Wool color", density_param="columns",
+        density_label="Rib count", finish_label="Roughness",
+    )
     return save_variant(g, _LABEL, "f04_wool_knit", 1)
 
 
-def build_f05_silk_satin() -> str:
+def build_f05_silk_satin(catalog: dict) -> str:
     """Silk/satin: retype the generator to `diagonal_weave` at a FINE scale
     (near-invisible weave, unlike denim's coarse twill) so the differentiator
     is glossy low roughness + saturated low-contrast jewel-tone albedo, not
@@ -85,10 +143,16 @@ def build_f05_silk_satin() -> str:
     set_gradient(g, "colorize_0", [(0.0, 0, 0, 0), (1.0, 1, 1, 1)])
     node(g, "normal_map_0")["parameters"] = {
         "param0": 11, "param1": 0.08, "param2": 0, "param4": 0}
+
+    _group_weave_family(
+        g, catalog, pattern_name="weave_pattern", pattern_label="Weave Pattern",
+        color_label="Satin color", density_param="size",
+        density_label="Weave scale", finish_label="Sheen",
+    )
     return save_variant(g, _LABEL, "f05_silk_satin", 1)
 
 
-def build_f06_velvet() -> str:
+def build_f06_velvet(catalog: dict) -> str:
     """Velvet: NOT a weave graft -- a soft fibrous pile has no grid pattern.
     First try was the granite speckle lever (voronoi PORT 2, flat per-cell
     random): at voronoi's max scale (32) the cells are still ~60px wide on a
@@ -114,10 +178,16 @@ def build_f06_velvet() -> str:
     set_gradient(g, "colorize_0", [(0.0, 0, 0, 0), (1.0, 1, 1, 1)])
     node(g, "normal_map_0")["parameters"] = {
         "param0": 11, "param1": 0.12, "param2": 0, "param4": 0}
+
+    _group_weave_family(
+        g, catalog, pattern_name="fiber_pattern", pattern_label="Fiber Pattern",
+        color_label="Velvet color", density_param="iterations",
+        density_label="Fiber grain", finish_label="Roughness",
+    )
     return save_variant(g, _LABEL, "f06_velvet", 1)
 
 
-def build_f07_herringbone_tweed() -> str:
+def build_f07_herringbone_tweed(catalog: dict) -> str:
     """Herringbone tweed: retype the generator to `weave2` with stitch=3, which
     renders the classic herringbone chevron (diagonal ribbons that reverse
     direction band to band). This slot came out of a geometry probe for wool
@@ -146,10 +216,17 @@ def build_f07_herringbone_tweed() -> str:
     set_gradient(g, "colorize_0", [(0.0, 0, 0, 0), (1.0, 1, 1, 1)])
     node(g, "normal_map_0")["parameters"] = {
         "param0": 11, "param1": 0.35, "param2": 0, "param4": 0}
+
+    _group_weave_family(
+        g, catalog, pattern_name="herringbone_pattern",
+        pattern_label="Herringbone Pattern", color_label="Tweed color",
+        density_param="columns", density_label="Weave scale",
+        finish_label="Roughness",
+    )
     return save_variant(g, _LABEL, "f07_herringbone_tweed", 1)
 
 
-def build_f08_donegal_tweed() -> str:
+def build_f08_donegal_tweed(catalog: dict) -> str:
     """Donegal-style flecked tweed: unlike f07 (which differentiates through
     weave GEOMETRY), this differentiates through COLOR -- a plain weave2
     base (stitch=1, no herringbone chevron) with the voronoi-port-2
@@ -206,6 +283,44 @@ def build_f08_donegal_tweed() -> str:
         {"from": "colorize_fleck_mask", "from_port": 0, "to": "blend_fleck", "to_port": 2},
     ]
     rewire(g, "Material", 0, "blend_fleck", 0)
+
+    # Extra scrutiny per the task brief: this is the material the fleck/blend
+    # caution is specifically about. `blend_fleck`'s port sources were traced
+    # from the connections list assembled above (not assumed from the
+    # docstring, which predates this retrofit):
+    #   port0 (minority, shows where mask=1) <- colorize_fleck_color
+    #   port1 (majority, shows where mask=0) <- colorize_1 (the base weave)
+    #   port2 (mask)                         <- colorize_fleck_mask
+    # The fleck voronoi (`voronoi_fleck`) and its two colorize consumers are
+    # kept in their OWN group ("fleck_pattern"), separate from the base
+    # weave's group ("base_weave"), so the "Fleck density" knob
+    # (voronoi_fleck.scale_x) stays a distinct, independently tunable thing
+    # rather than disappearing into the same opaque group as the weave it's
+    # blended over. `blend_fleck` itself gets a THIRD group
+    # ("fleck_composite") rather than folding into either side: all three of
+    # its inputs are external (majority from base_weave, minority+mask from
+    # fleck_pattern), the same shape pm03's paint_metal_composite used in
+    # cookbook_painted_metal.py for an analogous three-input composite blend.
+    # group_into_subgraph preserves each incoming connection's own to_port
+    # independently when rehoming it through gen_inputs, so grouping cannot
+    # swap which source lands on port0 vs port1 vs port2.
+    _group_weave_family(
+        g, catalog, pattern_name="base_weave", pattern_label="Base Weave",
+        color_label="Tweed color", density_param="columns",
+        density_label="Weave scale", finish_label="Roughness",
+    )
+    group_into_subgraph(
+        g, ["voronoi_fleck", "colorize_fleck_mask", "colorize_fleck_color"],
+        "fleck_pattern", "Fleck Pattern",
+        [("voronoi_fleck", "scale_x", "param0", "Fleck density"),
+         ("colorize_fleck_color", "gradient", "param1", "Fleck color")],
+        catalog,
+    )
+    group_into_subgraph(
+        g, ["blend_fleck"], "fleck_composite", "Fleck Composite",
+        [("blend_fleck", "amount", "param0", "Fleck strength")],
+        catalog,
+    )
     return save_variant(g, _LABEL, "f08_donegal_tweed", 1)
 
 
@@ -221,8 +336,12 @@ BUILDERS = {
 
 def main() -> int:
     targets = sys.argv[1:] or list(BUILDERS.keys())
+    # Loaded once per script run (not once per builder), same convention as
+    # cookbook_painted_metal.py/cookbook_scifi.py/cookbook_organics.py -- all
+    # 6 materials need it for group_into_subgraph.
+    catalog = build_catalog(load_config().nodes_dir)
     for case in targets:
-        path = BUILDERS[case]()
+        path = BUILDERS[case](catalog)
         print(f"{case}: {path}")
     return 0
 

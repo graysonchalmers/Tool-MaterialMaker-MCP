@@ -12,12 +12,17 @@ import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
 from author_helpers import (load_example, node, set_gradient, set_param, retype,
-                     rewire, drop_conn, add_node, save_variant, _grad)
+                     rewire, drop_conn, add_node, save_variant, _grad,
+                     group_into_subgraph)
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+from mm_mcp.catalog_builder import build_catalog
+from mm_mcp.config import load_config
 
 _LABEL = "cookbook-terrain"
 
 
-def build_t01_sand_dunes() -> str:
+def build_t01_sand_dunes(catalog: dict) -> str:
     """Sand dunes: clone `wood` UNMODIFIED structurally (like o03 bark) --
     dune ripples are organic and wavy, so KEEP the knot-warp chain rather
     than straightening it like m02 aluminum. Widen perlin_2's scale for
@@ -36,10 +41,34 @@ def build_t01_sand_dunes() -> str:
         (0.0, 0.78, 0.78, 0.78),
         (1.0, 0.92, 0.92, 0.92),
     ])
+
+    # Subgraph grouping. `perlin_2` -> `blend_0` (Multiply, port0) is the
+    # dune-ripple base; `blend_0`'s port1 keeps wood's own unmodified
+    # grain-warp chain (perlin_0/perlin_1/warp_0/voronoi_0/colorize_1/
+    # warp_1), per the docstring's explicit choice to clone wood's structure
+    # UNMODIFIED -- none of that chain's own params are builder-set, so it
+    # rides along with the pattern group it feeds rather than standing alone
+    # with zero exposed parameters. `blend_0` itself (amount/blend_type) is
+    # an untouched donor default. NOTE (pre-existing, not this task's to
+    # fix): `blend_0` feeds `Material` port 1 (metallic) DIRECTLY in the
+    # `wood` donor -- unusual for a non-metal material, but this builder
+    # never rewires it, so the wire is preserved as-is; it becomes a
+    # boundary port from Dune Ripples straight to Material.
+    group_into_subgraph(g, ["perlin_2", "perlin_1", "perlin_0", "warp_0",
+                             "voronoi_0", "colorize_1", "warp_1", "blend_0"],
+                         "dune_ripples", "Dune Ripples",
+                         [("perlin_2", "scale_x", "param0", "Ripple scale"),
+                          ("perlin_2", "iterations", "param1", "Ripple detail")],
+                         catalog)
+    group_into_subgraph(g, ["colorize_0", "colorize_2", "normal_map_0"],
+                         "sand_finish", "Sand Finish",
+                         [("colorize_2", "gradient", "param0", "Sand color"),
+                          ("colorize_0", "gradient", "param1", "Surface sheen")],
+                         catalog)
     return save_variant(g, _LABEL, "t01_sand_dunes", 1)
 
 
-def build_t02_fresh_snow() -> str:
+def build_t02_fresh_snow(catalog: dict) -> str:
     """Fresh snow: clone `rock` and KEEP its smooth blobby structure (per
     AUTHORING.md's own rule: a smooth source is fine when the target is
     genuinely near-flat -- snow drifts are exactly that case, like s02
@@ -63,10 +92,29 @@ def build_t02_fresh_snow() -> str:
     ])
     set_param(g, "normal_map_0", "param4", 0)
     set_param(g, "normal_map_0", "param1", 0.18)
+
+    # Subgraph grouping, same rock-donor template as s04/s06 (stone
+    # category, Task 10): voronoi_0 -> blend_0 -> colorize_0 is the
+    # untouched-topology pattern/color chain (only colorize_0's gradient is
+    # builder-set here, so it carries the group's exposed parameter).
+    # colorize_1 (metallic, forced to 0) stays an unexposed member of
+    # Material Finish, same precedent as s11's zeroed colorize_3.
+    group_into_subgraph(g, ["voronoi_0", "blend_0", "colorize_0"],
+                         "snow_color", "Snow Color",
+                         [("colorize_0", "gradient", "param0", "Snow color")],
+                         catalog)
+    group_into_subgraph(g, ["perlin_0", "colorize_1", "colorize_2"],
+                         "material_finish", "Material Finish",
+                         [("colorize_2", "gradient", "param0", "Surface sheen")],
+                         catalog)
+    group_into_subgraph(g, ["perlin_1", "voronoi_1", "warp_0", "normal_map_0"],
+                         "relief", "Relief",
+                         [("normal_map_0", "param1", "param0", "Relief strength")],
+                         catalog)
     return save_variant(g, _LABEL, "t02_fresh_snow", 1)
 
 
-def build_t03_gravel() -> str:
+def build_t03_gravel(catalog: dict) -> str:
     """Gravel: clone `rock`, reuse s02 granite's v2 lever (voronoi port 2 =
     rand3, flat per-cell random -> albedo, bypassing the smooth blend) but
     at PEBBLE scale (14, vs granite's fine-fleck 44) and a wider earthy
@@ -92,10 +140,28 @@ def build_t03_gravel() -> str:
     ])
     set_param(g, "normal_map_0", "param4", 0)
     set_param(g, "normal_map_0", "param1", 0.55)
+
+    # Subgraph grouping, the exact s06_river_pebbles template (Task 10):
+    # colorize_0 was rewired to read voronoi_0 PORT 2 (rand3) directly,
+    # orphaning blend_0 -- still present with no consumer, folded into
+    # Pebble Pattern since it shares voronoi_0 as a source.
+    group_into_subgraph(g, ["voronoi_0", "colorize_0", "blend_0"],
+                         "pebble_pattern", "Pebble Pattern",
+                         [("voronoi_0", "scale_x", "param0", "Pebble size"),
+                          ("colorize_0", "gradient", "param1", "Pebble color")],
+                         catalog)
+    group_into_subgraph(g, ["perlin_0", "colorize_1", "colorize_2"],
+                         "material_finish", "Material Finish",
+                         [("colorize_2", "gradient", "param0", "Roughness")],
+                         catalog)
+    group_into_subgraph(g, ["perlin_1", "voronoi_1", "warp_0", "normal_map_0"],
+                         "relief", "Relief",
+                         [("normal_map_0", "param1", "param0", "Relief strength")],
+                         catalog)
     return save_variant(g, _LABEL, "t03_gravel", 1)
 
 
-def build_t04_grass_field() -> str:
+def build_t04_grass_field(catalog: dict) -> str:
     """Grass field: clone rusted_metal's two-layer masked-blend structure --
     the same template o06 lichen-on-rock already proved twice now -- and
     recolor to soil+grass. Unlike lichen (sparse patches on a dominant
@@ -135,7 +201,64 @@ def build_t04_grass_field() -> str:
         {"from": "colorize_3", "from_port": 0, "to": "normal_map_grass", "to_port": 0})
     g["connections"].append(
         {"from": "normal_map_grass", "from_port": 0, "to": "Material", "to_port": 4})
+
+    # Subgraph grouping -- the exact o06_lichen_crusted_rock template
+    # (organics, Task 4), same rusted_metal donor, same three-way fan-out
+    # shape: colorize_3 (mask, explicitly widened threshold) feeds
+    # blend_0's mask port, colorize_4's roughness variant, AND
+    # normal_map_grass's relief input -- one signal, three groups. Rather
+    # than folding it into any one of its three consumers (which would just
+    # relabel two of the three as boundary ports instead of one), it gets
+    # its own small group since the threshold is a real, explicitly-tuned
+    # value, not an untouched donor default.
+    group_into_subgraph(g, ["perlin_1", "colorize_2", "colorize_1", "blend_0"],
+                         "soil_grass_color", "Soil & Grass Color",
+                         [("colorize_2", "gradient", "param0", "Soil color"),
+                          ("colorize_1", "gradient", "param1", "Grass color")],
+                         catalog)
+    group_into_subgraph(g, ["perlin_2", "colorize_3"],
+                         "grass_coverage", "Grass Coverage",
+                         [("colorize_3", "gradient", "param0", "Coverage")],
+                         catalog)
+    group_into_subgraph(g, ["perlin_0", "colorize_0", "colorize_4", "blend_1",
+                             "normal_map_grass"],
+                         "surface_finish", "Surface Finish",
+                         [("normal_map_grass", "param1", "param0", "Relief strength")],
+                         catalog)
     return save_variant(g, _LABEL, "t04_grass_field", 1)
+
+
+def _group_dry_earth_plate(g: dict, catalog: dict, *, plate_label: str,
+                            color_label: str, gap_label: str) -> None:
+    """Shared grouping for the plain `_dry_earth_plates` terrain materials
+    (t05_cracked_ice, t08_riverbed_pebbles): same donor, same
+    `colorize_plate`/`rough_const` additions, no emission chain (that is
+    t06_cooled_lava's bespoke case, kept separate below per the task
+    brief's warp_0/glow-chain caution).
+
+    `warp_0` is kept in one group with BOTH of its direct consumers here --
+    `blend_0` (the crack/gap darkening composite feeding albedo) and, via
+    `colorize_4`, the crack-relief chain feeding `normal_map_0` -- per the
+    standing rule that `warp_0` is never exposed as a friendly parameter
+    and always stays grouped with what it feeds. `colorize_3` (fed by
+    `perlin_1`, orphaned once dry_earth's own metallic wire is dropped by
+    `_dry_earth_plates`) folds into Surface Finish since it shares
+    `perlin_1` with nothing else -- there is no other consumer for it to
+    ride along with, and Surface Finish already has an explicit exposed
+    parameter (`rough_const`, the flat roughness texture this helper adds)
+    so it is not left standing with zero."""
+    group_into_subgraph(g, ["voronoi_0", "colorize_1", "colorize_0", "colorize_plate",
+                             "warp_0", "blend_0", "colorize_4", "blend_1", "colorize",
+                             "normal_map_0"],
+                         "plate_pattern", plate_label,
+                         [("voronoi_0", "scale_x", "param0", "Plate size"),
+                          ("colorize_plate", "gradient", "param1", color_label),
+                          ("blend_0", "amount", "param2", gap_label)],
+                         catalog)
+    group_into_subgraph(g, ["perlin_1", "colorize_3", "perlin_0", "rough_const"],
+                         "surface_finish", "Surface Finish",
+                         [("rough_const", "gradient", "param0", "Roughness")],
+                         catalog)
 
 
 def _dry_earth_plates(scale: int, plate_grad, blend_amount: float,
@@ -176,7 +299,7 @@ def _dry_earth_plates(scale: int, plate_grad, blend_amount: float,
     return g
 
 
-def build_t05_cracked_ice() -> str:
+def build_t05_cracked_ice(catalog: dict) -> str:
     """Cracked ice / frozen lake: dry_earth voronoi-plate donor recolored to
     glassy blue-white plates with a network of darker cracks. Distinct from t02
     fresh snow (matte, soft, smooth rock donor): ice is GLOSSY (low roughness)
@@ -200,10 +323,12 @@ def build_t05_cracked_ice() -> str:
     # cracks carry relief. Without this the plates read as frosted/sandy concrete
     # (dry_earth's built-in micro-grain), wrong for glassy ice.
     rewire(g, "colorize", 0, "colorize_4", 0)
+    _group_dry_earth_plate(g, catalog, plate_label="Ice Plate & Cracks",
+                            color_label="Ice color", gap_label="Crack depth")
     return save_variant(g, _LABEL, "t05_cracked_ice", 1)
 
 
-def build_t06_cooled_lava() -> str:
+def build_t06_cooled_lava(catalog: dict) -> str:
     """Cooled lava / volcanic basalt: dry_earth voronoi-plate donor as a
     near-black cracked crust, with warm EMISSION glowing in the fissures. The
     glow taps warp_0 (dry_earth's crack signal, dark at the cracks where the
@@ -233,10 +358,43 @@ def build_t06_cooled_lava() -> str:
     g["connections"].append(
         {"from": "colorize_glow", "from_port": 0, "to": "Material", "to_port": 3})
     set_param(g, "Material", "emission_energy", 1.0)
+
+    # Subgraph grouping -- CAUTION per the task brief: `warp_0` (dry_earth's
+    # crack signal) has THREE consumers here -- `blend_0` (crack darkening
+    # in albedo), `colorize_4` (feeds the normal-relief chain via blend_1),
+    # and `colorize_glow` (the emission glow). The brief requires the whole
+    # `warp_0` -> `colorize_glow` -> emission chain to stay inside ONE
+    # subgraph, reasoned about as a single "glow" effect. So `warp_0` is
+    # grouped here with `colorize_glow` ONLY, not with `blend_0`/
+    # `colorize_4` (which land in the other two groups instead) -- its
+    # other two outgoing connections become two separate boundary output
+    # ports from Ember Glow, per the standing rule that a single upstream
+    # node feeding multiple downstream groups is fine and expected
+    # (`group_into_subgraph` creates one boundary port per outgoing
+    # connection, so this doesn't collapse the fan-out). `warp_0.amount` is
+    # NOT exposed anywhere -- per the brief, a downstream "glow color"
+    # parameter is exposed on `colorize_glow` instead, never the raw crack
+    # signal.
+    group_into_subgraph(g, ["voronoi_0", "colorize_1", "colorize_0", "colorize_plate",
+                             "blend_0"],
+                         "basalt_crust", "Basalt Crust",
+                         [("voronoi_0", "scale_x", "param0", "Plate size"),
+                          ("colorize_plate", "gradient", "param1", "Crust color"),
+                          ("blend_0", "amount", "param2", "Crack depth")],
+                         catalog)
+    group_into_subgraph(g, ["warp_0", "colorize_glow"],
+                         "ember_glow", "Ember Glow",
+                         [("colorize_glow", "gradient", "param0", "Glow color")],
+                         catalog)
+    group_into_subgraph(g, ["perlin_1", "colorize_3", "perlin_0", "blend_1",
+                             "colorize_4", "colorize", "normal_map_0", "rough_const"],
+                         "surface_relief", "Surface Relief",
+                         [("rough_const", "gradient", "param0", "Roughness")],
+                         catalog)
     return save_variant(g, _LABEL, "t06_cooled_lava", 1)
 
 
-def build_t07_forest_floor() -> str:
+def build_t07_forest_floor(catalog: dict) -> str:
     """Forest floor / leaf litter -- RE-BASED off the voronoi-plate donor the
     other terrain plate materials share. Leaf litter has NO connected crack
     network (that shared topology made every plate material read as a sibling and
@@ -266,10 +424,27 @@ def build_t07_forest_floor() -> str:
     set_gradient(g, "colorize_0", [(0.0, 0, 0, 0), (1.0, 1, 1, 1)])
     node(g, "normal_map_0")["parameters"] = {
         "param0": 11, "param1": 0.4, "param2": 0, "param4": 0}
+
+    # Subgraph grouping -- the exact o05_coral template (organics, Task 4),
+    # same crocodile_skin donor: the retyped noise node + its albedo
+    # colorize as "pattern", the roughness/relief consumers as "finish".
+    # `uniform_0` (Material's untouched metallic-0 scalar, feeding port 1
+    # directly) is left top-level, matching o05/s05/s09's precedent for
+    # untouched single-purpose scalar nodes.
+    group_into_subgraph(g, ["voronoi_0", "colorize_1"],
+                         "litter_pattern", "Litter Pattern",
+                         [("voronoi_0", "scale_x", "param0", "Clump scale"),
+                          ("colorize_1", "gradient", "param1", "Leaf color")],
+                         catalog)
+    group_into_subgraph(g, ["colorize_0", "colorize_3", "normal_map_0"],
+                         "surface_finish", "Surface Finish",
+                         [("colorize_3", "gradient", "param0", "Roughness"),
+                          ("normal_map_0", "param1", "param1", "Debris relief")],
+                         catalog)
     return save_variant(g, _LABEL, "t07_forest_floor", 1)
 
 
-def build_t08_riverbed_pebbles() -> str:
+def build_t08_riverbed_pebbles(catalog: dict) -> str:
     """Riverbed pebbles: dry_earth voronoi-plate donor as tight-packed, rounded,
     WET river stones. The wet-vs-dry contrast with t03 gravel (loose, angular,
     matte, rock donor) is the whole point: small rounded plates (scale 8), clean
@@ -288,6 +463,8 @@ def build_t08_riverbed_pebbles() -> str:
         blend_amount=0.6, warp=0.02, roughness=0.2)   # warp ~0: recessed contact
         # gaps between packed pebbles, not the warped crack lines that made this
         # a sibling of the ice plates
+    _group_dry_earth_plate(g, catalog, plate_label="Pebble Bed & Gaps",
+                            color_label="Pebble color", gap_label="Gap depth")
     return save_variant(g, _LABEL, "t08_riverbed_pebbles", 1)
 
 
@@ -305,8 +482,12 @@ BUILDERS = {
 
 def main() -> int:
     targets = sys.argv[1:] or list(BUILDERS.keys())
+    # Loaded once per script run (not once per builder), same convention as
+    # cookbook_stone.py/cookbook_leather.py -- all 8 materials need it for
+    # group_into_subgraph.
+    catalog = build_catalog(load_config().nodes_dir)
     for case in targets:
-        path = BUILDERS[case]()
+        path = BUILDERS[case](catalog)
         print(f"{case}: {path}")
     return 0
 
