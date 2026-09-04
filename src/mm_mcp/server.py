@@ -148,7 +148,7 @@ def render_preview(albedo_path: str, normal_path: str, orm_path: str,
     exist, so a normal map's relief is visible under real lighting instead of
     read as a flat swatch. tile controls the UV repeat count on the objects
     (the ground always tiles finer than that, so its own repeat is visible
-    regardless of the chosen value) — raise it to check how a material reads
+    regardless of the chosen value). Raise it to check how a material reads
     at a smaller physical scale, e.g. tiled across a large surface.
     """
     cfg, _ = _ensure_ready()
