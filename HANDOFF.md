@@ -1,35 +1,55 @@
 # 🧭 Session Handoff: Tool-MaterialMaker-MCP
 
-_Last updated: 2026-09-04 (live_load shipped) CT (America/Chicago)_
+_Last updated: 2026-09-04 (blocker corrected: local render works on host) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**LATER same session: the play surface does NOT render on Grayson's real
-host, and we found why.** When Grayson ran `play.bat` himself, every render
-failed. Root cause (confirmed by running the exact Godot command by hand on his
-host): Godot's `RenderingServer.create_local_rendering_device()`
-(`multi_renderer.gd:167`) returns null on his machine under BOTH Vulkan and
-D3D12 (RTX 4060 Laptop, Vulkan 1.4.325), so Material Maker's compute pipeline
-gets no device and exports blank maps (`shader_compile_spirv_from_source` on a
-null value, `pipeline.gd:108`). This is a Godot/host compatibility issue, NOT
-our code. Two environment facts surfaced along the way: (a)
-`C:\Users\Grayson\AppData\Local\Godot` (the `.env` Godot path) exists only in
-the AGENT environment, not on Grayson's host, so every render in this project
-ran agent-side, never on his machine; (b) the agent shares the project folder
-with the host (my code edits reach his `play.bat`) but has its own separate
-system drive. Because MM's own GUI uses the same compute pipeline, the Material
-Maker editor likely cannot render on his host either, so the North Star's local
-round-trip has never actually run on his machine. **Play-server hardening
-shipped and pushed (commit `991f958`, fast suite 590):** `serve()` runs
-`require_valid` at startup (names the exact bad Godot path instead of a cryptic
-`WinError 2`), request handlers return `{ok:false,error}` JSON instead of a
-bubbled traceback, and the client surfaces failed renders / 3D-init failures
-instead of hanging on "rendering...". STATUS `mm-play` row downgraded ✅ -> 🔌.
-Next lead: NVIDIA driver update or a different Godot build. Temporary diag files
-and a copied `_godot/` binary were used and cleaned up; `.env` reverted to the
-agent-side Godot path.
+**LATEST (2026-09-04): the "local render dead on host" blocker does NOT
+reproduce. It was a stale server squatting a port, not a GPU or code fault.**
+This session, my tools ran directly on Grayson's real Legion
+(`GC-Legion-Slim5`, RTX 4060 Laptop, NVIDIA driver 591.59), not a separate
+agent box like the prior "blocker" session assumed. Findings, each measured:
+- A real MM export (`--export-material bricks.ptex`) produced real, non-blank
+  PBR maps (pixel stats show real variation in albedo/normal/heightmap/orm),
+  and again through the actual play server on a clean port (canvas_burlap:
+  real tan albedo, proper normal map, ORM). Not blank.
+- `RenderingServer.create_local_rendering_device()` works under
+  `--rendering-driver vulkan` AND `d3d12`. It returns null ONLY when Godot is
+  given no driver and falls back to the OpenGL/Compatibility renderer (which
+  has no RenderingDevice). The prior "null under both Vulkan and D3D12" claim
+  is refuted by a two-line probe.
+- The `WinError 2` Grayson saw came from a STALE play-server process
+  squatting port 8788 (pid 26176, up since 11:50 AM that day, a prior-session
+  leftover running older code). New servers could not bind 8788, so every
+  request hit the broken squatter while the identical render code succeeded
+  when called directly or on a clean port. With 8788 freed, a clean
+  `python -m mm_mcp.play.server` renders correctly.
+- The `SCRIPT ERROR: Cannot call method 'shader_compile_spirv_from_source' on
+  a null value` (`parse_args.gd:59`) prints on EVERY successful export and
+  does not gate the four maps. It is a red herring, very likely what sent the
+  prior session down the "blank maps" path.
+
+**Cannot prove a driver update was the fix** (no record of the driver version
+at blocker time), so the honest statement is: does not reproduce on driver
+591.59. **`mm-play` stays 🔌**, not promoted, because "verified" in this
+project means Grayson ran it hands-on and every render this session was
+automation-run. To reach ✅ he runs `play.bat` himself with 8788 free (kill
+any stale listener first: `Get-NetTCPConnection -LocalPort 8788 -State Listen |
+ForEach-Object { Get-Process -Id $_.OwningProcess }`). The port was left free
+and my test servers were all stopped at the end of the session.
+
+**Superseded by the above:** the earlier (now-corrected) diagnosis held that
+`play.bat` could not render on Grayson's host because
+`create_local_rendering_device()` returned null under both Vulkan and D3D12,
+so MM exported blank maps, and that the `.env` Godot path existed only
+agent-side. That was wrong on both counts for this session's environment. The
+play-server hardening from that pass still stands and is good (commit
+`991f958`, fast suite 590): `serve()` runs `require_valid` at startup, handlers
+return `{ok:false,error}` JSON, the client surfaces failed renders instead of
+hanging on "rendering...". It just was not needed to work around a GPU bug that
+does not exist here.
 
 **Before this, `live_load` shipped and merged to `main` (`d523ad6`, pushed, in sync).**
 A new `live_load` MCP tool (the seventh live tool) replaces the graph shown in
@@ -211,18 +231,23 @@ Older write-ups/log beyond the cap live in
 
 ## 📌 Where we stopped
 
-`live_load` merged to `main` (`d523ad6`) and pushed; `main` in sync with
-origin. The feature branch `live-load` is merged and deleted, the SDD workspace
-removed. Everything is closed out. Nothing is in flight and nothing is waiting
-on Grayson.
+The host-render blocker was investigated and does NOT reproduce (see Current
+state). STATUS + HANDOFF corrected. `mm-play` stays 🔌 pending Grayson's own
+`play.bat` run. Port 8788 was left free and all test servers stopped. No code
+changed this session; the correction is docs-only and not yet committed.
 
 ## ▶️ Next concrete step
 
-Nothing is blocking. Pick a fresh thread:
-1. **Check Unreal UE5 export** now that `mcp__unreal-engine__*` tools show
+1. **Grayson runs `play.bat` himself (port 8788 is free).** Pick a material,
+   drag a slider, confirm the sphere renders. This is the one thing that
+   promotes `mm-play` from 🔌 to ✅ and closes the blocker for good. If it fails,
+   FIRST check for a stale server on 8788 (see the heads-up), not the GPU.
+2. **Commit the docs correction.** STATUS.md + HANDOFF.md were edited to correct
+   the blocker record but are not committed. A `docs:` commit lands it.
+3. **Check Unreal UE5 export** now that `mcp__unreal-engine__*` tools show
    connected (blocked for several sessions on "needs a live bridge"). Bigger,
    needs a live Unreal Editor open.
-2. **Hands-on verify `live_load` / the new live play path.** The addon
+4. **Hands-on verify `live_load` / the new live play path.** The addon
    round-trip is proven by an integration test, but a hands-on run (drive the
    play surface against a live MM session, pick a material that differs from
    what is loaded, watch it switch in-app then tweak sliders) would promote the
@@ -434,21 +459,23 @@ The older open backlog, unchanged unless noted:
 
 ## ⚠️ Heads-up for the next agent
 
-- **BLOCKER: local rendering does not work on Grayson's host (Godot compute
-  device is null).** `RenderingServer.create_local_rendering_device()`
-  (`multi_renderer.gd:167`) returns null on his machine under BOTH Vulkan and
-  D3D12, so Material Maker exports blank maps (`shader_compile_spirv_from_source`
-  on null, `pipeline.gd:108`). It is NOT our code -- the render command is
-  correct and works agent-side. Every render in this project ran agent-side; the
-  `.env` Godot path (`C:\Users\Grayson\AppData\Local\Godot`) exists only in the
-  agent env, not on the host. To reproduce/diagnose, run the render command by
-  hand on the host with the `_console.exe` (it prints the real errors the server
-  hides). Likely fixes to try: NVIDIA driver update (Vulkan 1.4.325 is very new),
-  or a different Godot build. This also implies the MM GUI itself may not render
-  on his host, so the whole local round-trip is in question -- worth its own
-  focused session. The play-server code was hardened (`991f958`) so this now
-  fails loudly (fail-fast `require_valid` naming the bad path, JSON errors,
-  client error surfacing) instead of hanging on "rendering...".
+- **CORRECTED (2026-09-04): the "local render dead on host" blocker does NOT
+  reproduce.** The earlier BLOCKER note here was wrong. On Grayson's real
+  machine this session, MM renders real (non-blank) maps and
+  `create_local_rendering_device()` works under `vulkan`/`d3d12` (null only
+  under the driverless OpenGL fallback). The `WinError 2` was a stale
+  play-server squatting port 8788, not a GPU/code fault. The SPIRV
+  `SCRIPT ERROR` at `parse_args.gd:59` is a RED HERRING that prints on every
+  successful export. See the "Current state" section at the top of this doc for
+  the full evidence. **The real gotcha to carry forward: a leftover play-server
+  (or any orphaned Python) holding port 8788 makes every render fail with
+  `WinError 2` while the code is fine.** Before blaming the GPU/code, check the
+  port: `Get-NetTCPConnection -LocalPort 8788 -State Listen | ForEach-Object {
+  Get-Process -Id $_.OwningProcess }`, and kill any stale listener. There is a
+  pile of orphaned Python processes on this machine from prior sessions (the
+  `stop-node-hogs` pattern); worth a sweep. The play-server hardening
+  (`991f958`) still stands (fail-fast `require_valid`, JSON errors, client error
+  surfacing) and is good on its own merits.
 - **The play surface lives in `src/mm_mcp/play/` (new this session).** Launch it
   with `mm-play` (or `.venv\Scripts\python.exe -m mm_mcp.play.server`, which now
   works thanks to the `__main__` guard). It serves `http://127.0.0.1:8788/`
@@ -657,6 +684,30 @@ The older open backlog, unchanged unless noted:
 > session back through the 2026-09-04 v0.5.0 release + AUTHORING split
 > session back through the project's Phase 1-2 kickoff on 2026-08-25.
 
+
+### 2026-09-04 (blocker correction): the "host can't render" blocker was a squatted port
+- `pickup` reconciled clean (`main` at `a1ed4da`, tree clean, in sync). Grayson
+  picked next-move #1: chase the host render blocker. Ran through
+  `systematic-debugging`.
+- First surprise: my tools this session run directly on Grayson's real Legion
+  (`GC-Legion-Slim5`, RTX 4060, NVIDIA 591.59), NOT a separate agent box. So I
+  could reproduce/test everything, contrary to the prior session's
+  environment-separation note (stale for this session).
+- Root-cause probes, each measured: (a) a GDScript probe showed
+  `create_local_rendering_device()` returns null with the DEFAULT driver (OpenGL
+  fallback) but OK under forced `vulkan`/`d3d12`; (b) a real MM export produced
+  real, non-blank PBR maps (pixel stats), with the SPIRV `SCRIPT ERROR` printing
+  anyway (so it is a red herring, co-exists with correct output).
+- The `WinError 2` from the play surface took several rounds because a STALE
+  play-server (pid 26176, up since 11:50 that day) squatted port 8788; every
+  POST hit it while identical render code succeeded directly. Advisor consult
+  reframed it ("run the play path, not adjacent commands; the SPIRV error
+  co-exists with correct output"). Proved it by running the play server on a
+  clean port (8799 -> ok) and then on a freed 8788 (ok). Real maps both times.
+- Conclusion: blocker does NOT reproduce; cannot prove a driver update caused
+  it. `mm-play` stays 🔌 (automation-run, not hands-on). Left 8788 free and
+  stopped every test server. Corrected STATUS.md + HANDOFF.md (this edit).
+  Docs-only, not yet committed.
 
 ### 2026-09-04 (live_load): the live session finally takes a whole graph
 - `pickup` reconciled clean (`main` at `e78457d`); Grayson picked next-move #2,
