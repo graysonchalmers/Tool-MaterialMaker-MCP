@@ -155,11 +155,20 @@ def build_l02_distressed_two_tone(catalog: dict) -> str:
         {"from": "perlin_wm", "from_port": 0, "to": "colorize_wm", "to_port": 0},
         {"from": "perlin_wm", "from_port": 0, "to": "worn_alb", "to_port": 0},
         {"from": "perlin_wm", "from_port": 0, "to": "worn_rgh", "to_port": 0},
-        {"from": "colorize_1", "from_port": 0, "to": "blend_alb", "to_port": 0},  # base grain
-        {"from": "worn_alb", "from_port": 0, "to": "blend_alb", "to_port": 1},
+        # Polarity fix (2026-09-04): the worn tone is the MINORITY (scattered
+        # rubs), the dark saddle base is the MAJORITY. blend output =
+        # mask*port0 + (1-mask)*port1, and colorize_wm's mask is 1 only in the
+        # small high-perlin patches, 0 across the broad remainder. So the worn
+        # tone belongs on port0 (shown where mask=1 = the patches) and the base
+        # on port1 (shown where mask=0 = most of the surface). The original
+        # wiring had these reversed, so the worn tan covered most of the hide
+        # and the base showed only in small patches -- backwards from the
+        # recipe's own intent.
+        {"from": "worn_alb", "from_port": 0, "to": "blend_alb", "to_port": 0},   # worn rubs (minority, mask=1)
+        {"from": "colorize_1", "from_port": 0, "to": "blend_alb", "to_port": 1}, # dark saddle base (majority, mask=0)
         {"from": "colorize_wm", "from_port": 0, "to": "blend_alb", "to_port": 2},
-        {"from": "colorize_3", "from_port": 0, "to": "blend_rgh", "to_port": 0},
-        {"from": "worn_rgh", "from_port": 0, "to": "blend_rgh", "to_port": 1},
+        {"from": "worn_rgh", "from_port": 0, "to": "blend_rgh", "to_port": 0},   # worn roughness (minority)
+        {"from": "colorize_3", "from_port": 0, "to": "blend_rgh", "to_port": 1}, # base roughness (majority)
         {"from": "colorize_wm", "from_port": 0, "to": "blend_rgh", "to_port": 2},
     ]
     rewire(g, "Material", 0, "blend_alb", 0)   # albedo <- worn-over-base
@@ -171,12 +180,12 @@ def build_l02_distressed_two_tone(catalog: dict) -> str:
     # Port-source trace for blend_alb/blend_rgh, read directly from the
     # `connections` list assembled above (ground truth: blend.mmg's shader
     # model is s1=port0/foreground, s2=port1/background, a=port2/mask, output
-    # = mask*port0 + (1-mask)*port1):
-    #   blend_alb: port0 (shown where mask=1) <- colorize_1 (base grain)
-    #              port1 (shown where mask=0) <- worn_alb
+    # = mask*port0 + (1-mask)*port1). Post-polarity-fix wiring:
+    #   blend_alb: port0 (shown where mask=1) <- worn_alb (scattered rubs)
+    #              port1 (shown where mask=0) <- colorize_1 (base grain, majority)
     #              port2 (mask)               <- colorize_wm
-    #   blend_rgh: port0 (shown where mask=1) <- colorize_3 (base roughness)
-    #              port1 (shown where mask=0) <- worn_rgh
+    #   blend_rgh: port0 (shown where mask=1) <- worn_rgh (rubbed roughness)
+    #              port1 (shown where mask=0) <- colorize_3 (base roughness, majority)
     #              port2 (mask)               <- colorize_wm (same mask)
     # Grouping below keeps both blends together in one composite group with
     # no change to any of these connections; group_into_subgraph rehomes each
@@ -332,9 +341,15 @@ def build_l05_quilted_leather(catalog: dict) -> str:
         # height: pattern pads (base) + grain (colorize_0) overlaid at 0.35
         {"from": "pattern_q", "from_port": 0, "to": "blend_h_q", "to_port": 0},
         {"from": "colorize_0", "from_port": 0, "to": "blend_h_q", "to_port": 1},
-        # albedo: darken the seams over the saddle grain, opacity = seam mask
-        {"from": "colorize_1", "from_port": 0, "to": "blend_alb_q", "to_port": 0},
-        {"from": "seam_shade", "from_port": 0, "to": "blend_alb_q", "to_port": 1},
+        # albedo: darken the seams over the saddle grain. Polarity fix
+        # (2026-09-04): seam_mask is 1 in the recessed seams (low pattern) and
+        # 0 on the pad faces (high pattern), and blend output =
+        # mask*port0 + (1-mask)*port1, so the dark seam_shade must sit on port0
+        # (shown where mask=1 = seams) and the grain on port1 (shown where
+        # mask=0 = pads). The original wiring had these reversed, so the dark
+        # landed on the pad CENTERS (button-tuft dots) instead of in the seams.
+        {"from": "seam_shade", "from_port": 0, "to": "blend_alb_q", "to_port": 0},  # dark seams (mask=1)
+        {"from": "colorize_1", "from_port": 0, "to": "blend_alb_q", "to_port": 1},  # grain pad faces (mask=0)
         {"from": "seam_mask", "from_port": 0, "to": "blend_alb_q", "to_port": 2},
     ]
     rewire(g, "Material", 0, "blend_alb_q", 0)     # albedo <- seam-shaded grain

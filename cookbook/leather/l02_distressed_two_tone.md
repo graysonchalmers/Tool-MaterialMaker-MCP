@@ -22,24 +22,25 @@ shader model (ground truth, read directly from
 port0 (foreground), `s2` is port1 (background), `a` is port2 (mask), and the
 output is `mask*port0 + (1-mask)*port1`. Traced wiring:
 
-- `blend_alb`: port0 (shown where mask=1) ← `colorize_1` (base grain
-  albedo); port1 (shown where mask=0) ← `worn_alb`; port2 (mask) ←
-  `colorize_wm`.
-- `blend_rgh`: port0 (shown where mask=1) ← `colorize_3` (base roughness);
-  port1 (shown where mask=0) ← `worn_rgh`; port2 (mask) ← `colorize_wm`
-  (the same mask feeds both blends).
+- `blend_alb`: port0 (shown where mask=1) ← `worn_alb` (the scattered rubs);
+  port1 (shown where mask=0) ← `colorize_1` (base grain albedo, the
+  majority); port2 (mask) ← `colorize_wm`.
+- `blend_rgh`: port0 (shown where mask=1) ← `worn_rgh` (rubbed roughness);
+  port1 (shown where mask=0) ← `colorize_3` (base roughness, the majority);
+  port2 (mask) ← `colorize_wm` (the same mask feeds both blends).
 
-Note for anyone tuning this graph: given `colorize_wm`'s threshold shape
-(ramping 0→1 between perlin values 0.40 and 0.72), the mask value is 1 only
-in the smaller high-perlin region and 0 across the broader remainder — so in
-the actual render, `worn_alb`/`worn_rgh` (port1) covers most of the visible
-surface and `colorize_1`/`colorize_3` (port0, the "base" tone) shows through
-in the smaller high-perlin patches, the reverse of which layer the recipe
-prose above calls "base" versus "showing through." This is the material's
-existing, already-shipped behavior (confirmed against the pre-retrofit
-baseline render, not something this retrofit changed), documented here
-factually rather than re-litigated, since fixing the mask polarity is
-outside this task's scope.
+Polarity fix (2026-09-04): `colorize_wm`'s threshold ramps 0→1 between perlin
+values 0.40 and 0.72, so the mask is 1 only in the smaller high-perlin region
+and 0 across the broader remainder. The worn tone is therefore the MINORITY
+(scattered rubs) and belongs on port0 (shown where mask=1), while the dark
+saddle base is the MAJORITY and belongs on port1 (shown where mask=0). The
+original wiring had these reversed, so the lighter worn tan covered most of
+the hide and the dark base showed through only in small patches — backwards
+from this recipe's own description. Both blends were swapped; a before/after
+render confirmed the field flipped from mostly-light to mostly-dark-saddle
+with lighter worn rubs scattered through it. As a bonus, the exposed `Wear
+blend strength` (`blend_alb.amount`) now controls what its label claims, since
+port0 is finally the wear layer.
 
 Opening the graph shows 4 top-level groups (plus `Material` and the
 untouched metallic `uniform_0`) instead of the raw 13-node graph:

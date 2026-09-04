@@ -935,7 +935,7 @@
      "from": "gen_inputs",
      "from_port": 1,
      "to": "blend_alb_q",
-     "to_port": 0
+     "to_port": 1
     },
     {
      "from": "gen_inputs",
@@ -947,7 +947,7 @@
      "from": "gen_inputs",
      "from_port": 3,
      "to": "blend_alb_q",
-     "to_port": 1
+     "to_port": 0
     },
     {
      "from": "gen_inputs",

@@ -27,15 +27,17 @@ Grouped per the "Grouping into subgraphs" lever in `docs/AUTHORING.md`:
   `Sand color` (`colorize_2.gradient`), `Surface sheen`
   (`colorize_0.gradient`).
 
-Pre-existing wiring note, not touched by this retrofit: in the `wood`
-donor, `blend_0` feeds the Material node's metallic port (port 1) DIRECTLY
--- unusual for a non-metal material, but this recipe never rewires it, so
-the connection is preserved as-is (now a boundary port from Dune Ripples
-straight to Material).
-
-Verified after building: `renders_match` against this material's own
-pre-retrofit baseline came back at an exact `grid_mean_abs_diff` of `0.0`
-on all three exported maps (albedo, normal, orm).
+Metallic fix (2026-09-04): the `wood` donor wires `blend_0` (the master
+ripple pattern) straight into the Material node's metallic port (port 1), so
+a grayscale 0..1 pattern was driving the metallic channel and parts of the
+sand read as metal. Sand is non-metallic, so the builder now drops that wire
+AND sets the Material node's own `metallic` scalar to 0 (its donor default is
+1, so dropping the wire alone would have flipped it fully metallic; doing both
+is correct under every Material-node port/scalar semantic, and mirrors how
+`t02_fresh_snow` zeroes its own metallic feeder). Verified by reading the
+exported ORM map's metallic (B) channel directly: flat 0 across the whole
+surface. The albedo/normal maps are unaffected, since metallic is not visible
+in albedo.
 
 ## See also
 

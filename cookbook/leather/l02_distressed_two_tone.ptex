@@ -985,19 +985,19 @@
      "from": "gen_inputs",
      "from_port": 0,
      "to": "blend_alb",
-     "to_port": 0
+     "to_port": 1
     },
     {
      "from": "gen_inputs",
      "from_port": 1,
      "to": "blend_rgh",
-     "to_port": 0
+     "to_port": 1
     },
     {
      "from": "gen_inputs",
      "from_port": 2,
      "to": "blend_alb",
-     "to_port": 1
+     "to_port": 0
     },
     {
      "from": "gen_inputs",
@@ -1009,7 +1009,7 @@
      "from": "gen_inputs",
      "from_port": 4,
      "to": "blend_rgh",
-     "to_port": 1
+     "to_port": 0
     },
     {
      "from": "gen_inputs",

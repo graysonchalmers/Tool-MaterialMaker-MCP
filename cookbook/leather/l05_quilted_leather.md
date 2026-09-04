@@ -25,24 +25,25 @@ Traced wiring:
   (grain height). Port2 (mask) has no connection at all, so it uses the
   node's own default of a constant `1.0` — this blend is a flat, unmasked
   `0.35*pads + 0.65*grain` mix, not a spatial composite.
-- `blend_alb_q`: port0 (shown where mask=1) ← `colorize_1` (base grain);
-  port1 (shown where mask=0) ← `seam_shade` (the dark constant); port2
-  (mask) ← `seam_mask`.
+- `blend_alb_q`: port0 (shown where mask=1) ← `seam_shade` (the dark
+  constant, in the recessed seams); port1 (shown where mask=0) ← `colorize_1`
+  (base grain, on the pad faces); port2 (mask) ← `seam_mask`.
 
-Note for anyone tuning this graph: `seam_mask`'s gradient is 1 for low
-`pattern_q` values and 0 for high ones, and the pattern's two-multiplied-sine
-shape puts its high values in small, roughly circular regions at the pad
-centers (visually confirmed against the render — regularly spaced dark
-roundels, matching `x_scale=5`/`y_scale=5`) with lower values across the
-broader area between them. So in the actual render, `colorize_1` (the base
-grain, port0) covers the broader field and `seam_shade` (the near-black
-constant, port1) appears in the smaller pad-center roundels — read as dark
-button-tuft points on a grained field, not literally "dark seams / grain-
-colored pad faces" as the recipe prose above describes. This is the
-material's existing, already-shipped behavior (confirmed against the
-pre-retrofit baseline render, not something this retrofit changed),
-documented here factually since re-deriving the mask polarity is outside
-this task's scope.
+Polarity fix (2026-09-04): `seam_mask` is 1 for low `pattern_q` values (the
+recessed seams) and 0 for high ones (the raised pad centers), and blend output
+is `mask*port0 + (1-mask)*port1`, so the dark `seam_shade` must sit on port0
+(shown where mask=1 = the seams) and the grain on port1 (shown where mask=0 =
+the pads). The original wiring had these reversed, so the dark landed on the
+pad centers as button-tuft dots rather than in the seams. A before/after
+render confirmed the flip: grain-toned pads on dark recessed seams.
+
+Honest geometry note: the two-multiplied-sine `pattern` makes compact, roughly
+circular peaks with broad low valleys, so after the fix the grain pads read as
+round pads on a broad dark seam grid rather than large puffy diamond pads with
+thin seams. Grayson reviewed the before/after and chose the swap: it matches
+the material's name and stated intent, with the round pad shape accepted as a
+minor stylization. A proper broad-diamond quilt would need a different wave
+shape (e.g. `pattern` Bounce) and is a separate, larger change.
 
 Opening the graph shows 4 top-level groups (plus `Material` and the
 untouched metallic `uniform_0`) instead of the raw 11-node graph:

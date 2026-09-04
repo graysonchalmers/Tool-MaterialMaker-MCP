@@ -42,6 +42,18 @@ def build_t01_sand_dunes(catalog: dict) -> str:
         (1.0, 0.92, 0.92, 0.92),
     ])
 
+    # Non-metallic fix (2026-09-04): the `wood` donor wires `blend_0` (the
+    # master ripple pattern) straight into `Material` port 1 (metallic), so a
+    # grayscale 0..1 pattern drove the metallic channel and parts of the sand
+    # read as metal. Sand is non-metallic. Drop the wire AND zero the scalar:
+    # `Material`'s own `metallic` default is 1, so dropping alone would flip it
+    # fully metallic -- doing both is correct under every Material-node
+    # port/scalar semantic (t02_fresh_snow zeroes its metallic-feeding node the
+    # same way; here the feeder also drives albedo/roughness/normal so it can't
+    # be zeroed, hence the scalar).
+    drop_conn(g, "Material", 1)          # remove blend_0 -> metallic wire
+    set_param(g, "Material", "metallic", 0)
+
     # Subgraph grouping. `perlin_2` -> `blend_0` (Multiply, port0) is the
     # dune-ripple base; `blend_0`'s port1 keeps wood's own unmodified
     # grain-warp chain (perlin_0/perlin_1/warp_0/voronoi_0/colorize_1/
@@ -49,11 +61,10 @@ def build_t01_sand_dunes(catalog: dict) -> str:
     # UNMODIFIED -- none of that chain's own params are builder-set, so it
     # rides along with the pattern group it feeds rather than standing alone
     # with zero exposed parameters. `blend_0` itself (amount/blend_type) is
-    # an untouched donor default. NOTE (pre-existing, not this task's to
-    # fix): `blend_0` feeds `Material` port 1 (metallic) DIRECTLY in the
-    # `wood` donor -- unusual for a non-metal material, but this builder
-    # never rewires it, so the wire is preserved as-is; it becomes a
-    # boundary port from Dune Ripples straight to Material.
+    # an untouched donor default. `blend_0` feeds normal_map_0/colorize_0/
+    # colorize_2 (all in Sand Finish), so it stays in Dune Ripples with those
+    # three outgoing boundary ports (the fourth, to Material's metallic port,
+    # was dropped above).
     group_into_subgraph(g, ["perlin_2", "perlin_1", "perlin_0", "warp_0",
                              "voronoi_0", "colorize_1", "warp_1", "blend_0"],
                          "dune_ripples", "Dune Ripples",
