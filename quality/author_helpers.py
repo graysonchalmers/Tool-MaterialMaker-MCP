@@ -18,7 +18,7 @@ sys.path.insert(0, str(_ROOT / "src"))
 from mm_mcp.config import load_config
 
 _CFG = load_config()
-_EX = Path(_CFG.examples_dir)
+_EX = _ROOT / "quality" / "donors"
 
 
 def load_example(name: str) -> dict:

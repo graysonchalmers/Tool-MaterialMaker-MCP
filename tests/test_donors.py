@@ -55,3 +55,14 @@ def test_donor_graph_has_no_type_or_connection_errors(name):
             if p["severity"] == "error":
                 hard_errors.append(p["message"])
     assert hard_errors == [], f"{name}: {hard_errors}"
+
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "quality"))
+
+
+def test_load_example_reads_from_the_vendored_donors_dir():
+    import author_helpers
+    assert Path(author_helpers._EX) == Path(DONORS_DIR)
