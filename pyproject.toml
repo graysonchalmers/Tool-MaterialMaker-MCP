@@ -1,6 +1,6 @@
 [project]
 name = "mm-mcp"
-version = "0.5.0"
+version = "0.6.0"
 description = "MCP server for authoring and rendering Material Maker node graphs"
 readme = "README.md"
 requires-python = ">=3.10"

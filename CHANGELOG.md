@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.6.0](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/compare/v0.5.0...v0.6.0) (2026-09-04)
+
+
+### Features
+
+* **server:** serve docs/AUTHORING.md as the guide://authoring resource ([ec72228](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/ec722286fd89ebb50a78ac0502419afb702b8582))
+
+
+### Documentation
+
+* **cookbook:** recipe cards for fabrics, organics, wood ([d006b1b](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/d006b1bc78fb658d16778005fe7dcbab667782bf))
+* **cookbook:** recipe cards for leather, painted-metal, sci-fi ([1676b8e](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/1676b8e7c627a929a4e58a4fa694a62240fd0545))
+* **cookbook:** recipe cards for stone and terrain ([6d3e134](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/6d3e13429a4b05c26b85f77511edf4a8931adf2f))
+* point references at the guide+cards split; add card-parity gate; sweep em dashes and card backticks ([a2455b8](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/a2455b83d60d3add4d584acff4022acb68ee6614))
+* wrap up v0.5.0 + AUTHORING split + hygiene session (baton, plan, archive trim) ([677f852](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/677f8526084e74d3f443494c84d03fbb4f2edc49))
+
 ## [0.5.0](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/compare/v0.4.0...v0.5.0) (2026-09-04)
 
 
