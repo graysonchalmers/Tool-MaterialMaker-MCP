@@ -25,7 +25,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
-from author import _grad, save_variant
+from author_helpers import _grad, save_variant
 
 _LABEL = "debug-swatches"
 

@@ -13,7 +13,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
-from author import load_example, set_gradient, set_param, save_variant, add_node, rewire, _grad
+from author_helpers import load_example, set_gradient, set_param, save_variant, add_node, rewire, _grad
 
 _LABEL = "cookbook-stone"
 

@@ -12,7 +12,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
-from author import load_example, node, set_gradient, set_param, retype, rewire, add_node, save_variant
+from author_helpers import load_example, node, set_gradient, set_param, retype, rewire, add_node, save_variant
 
 _LABEL = "cookbook-fabrics"
 
