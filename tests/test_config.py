@@ -107,3 +107,13 @@ def test_cookbook_dir_override_wins(tmp_path):
 def test_cookbook_dir_env_var_wins(monkeypatch, tmp_path):
     monkeypatch.setenv("MM_COOKBOOK_DIR", str(tmp_path))
     assert load_config().cookbook_dir == str(tmp_path)
+
+
+def test_play_port_defaults_to_8788():
+    cfg = load_config(overrides={"MM_PLAY_PORT": ""})
+    assert cfg.play_port == 8788
+
+
+def test_play_port_reads_env():
+    cfg = load_config(overrides={"MM_PLAY_PORT": "9001"})
+    assert cfg.play_port == 9001

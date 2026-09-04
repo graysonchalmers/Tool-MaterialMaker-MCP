@@ -16,6 +16,7 @@ _DEFAULTS = {
     "MM_LIVE_OVERLAY_DIR": "",
     "MM_ALLOWED_ROOTS": "",
     "MM_COOKBOOK_DIR": "",
+    "MM_PLAY_PORT": "8788",
 }
 
 
@@ -37,6 +38,7 @@ class Config:
     live_overlay_dir: str
     allowed_roots: list[str]
     cookbook_dir: str = ""
+    play_port: int = 8788
 
 
 def _resolve_console(godot_binary: str) -> str:
@@ -99,6 +101,7 @@ def load_config(overrides: dict | None = None) -> Config:
     live_overlay_dir = env["MM_LIVE_OVERLAY_DIR"] or os.path.join(os.getcwd(), "mm_live_overlay")
     allowed_roots = [p for p in env["MM_ALLOWED_ROOTS"].split(os.pathsep) if p]
     cookbook_dir = env["MM_COOKBOOK_DIR"] or _default_cookbook_dir()
+    play_port = int(env["MM_PLAY_PORT"] or 8788)
     return Config(
         godot_binary=env["MM_GODOT_BINARY"],
         console_binary=_resolve_console(env["MM_GODOT_BINARY"]),
@@ -109,4 +112,5 @@ def load_config(overrides: dict | None = None) -> Config:
         live_overlay_dir=live_overlay_dir,
         allowed_roots=allowed_roots,
         cookbook_dir=cookbook_dir,
+        play_port=play_port,
     )
