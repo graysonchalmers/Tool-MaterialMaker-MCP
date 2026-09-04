@@ -1,13 +1,29 @@
 # 🧭 Session Handoff: Tool-MaterialMaker-MCP
 
-_Last updated: 2026-09-04 (leather + terrain bug fixes) CT (America/Chicago)_
+_Last updated: 2026-09-04 (live web play surface shipped) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**The three cookbook bugs the subgraph retrofit surfaced are all fixed,
-verified, promoted, committed, and pushed.** `main` is at `5cd9e0b`, in sync
+**The live web play surface shipped and merged (PR #5, `main` at `9b0e64e`,
+in sync).** A new `src/mm_mcp/play/` package (stdlib `http.server` + a vendored
+three.js frontend, launched by the new `mm-play` console command) turns each
+cookbook material's exposed subgraph parameters into friendly web sliders driving
+a live WebGL PBR sphere. Aimed at a non-technical person tweaking a finished
+material without ever touching the node graph. This closed sub-project 2 of the
+"Material Maker for dummies" idea, so that whole idea is now done. Built via
+`subagent-driven-development` (10 tasks, per-task review, final whole-branch
+review on opus, one Important live-path bug found and fixed). Fast suite 559 ->
+579, stdlib only, no new runtime deps. **Live-verified in a browser by the agent
+(gallery of 46 materials, subgraph-grouped author-named sliders, sphere shading
+real maps, changed-value renders, unique-id addressing confirmed); the STATUS row
+is `wired`, not verified, because promoting it needs Grayson's own hands-on
+`mm-play` run.**
+
+**Before this, the three cookbook bugs the subgraph retrofit surfaced were all
+fixed,
+verified, promoted, committed, and pushed.** `main` was at `5cd9e0b`, in sync
 with origin. Fast suite 505 passed, `promote_cookbook.py --check` in sync, no
 incidental render-sweep churn.
 - **t01_sand_dunes (terrain):** the `wood` donor wired `blend_0` (the master
@@ -144,30 +160,28 @@ Older write-ups/log beyond the cap live in
 
 ## 📌 Where we stopped
 
-`main` pushed and in sync. All three retrofit-surfaced cookbook bugs (t01
-metallic `5cd9e0b`, l02 reversed layers `5cd9e0b`, l05 seam polarity `5cd9e0b`)
-fixed, plus the l05 height-weighting follow-up (`6d460c4`), all promoted,
-carded, and pushed. Natural stopping point, no open decision blocking the next
-session.
+Play surface merged to `main` (`9b0e64e`) via PR #5 (now merged), pushed, feature
+branch deleted (local and remote), SDD workspace cleaned. `main` in sync with
+origin. Natural stopping point. The only thing waiting on Grayson is a hands-on
+`mm-play` run to promote the play-surface STATUS row from `wired` to `verified`.
 
 ## ▶️ Next concrete step
 
 Nothing is blocking on Grayson right now.
-1. **l05's `blend_h_q` height weighting: DONE (2026-09-04, `6d460c4`).** Bumped
-   `amount` from 0.35 to 0.85 so the quilt pads drive the relief instead of the
-   crocodile grain overpowering them; confirmed in a 3D preview (puffy padded
-   bumps with recessed channels). Only optional remainder here: swapping the
-   `pattern` node to a Bounce wave for broad diamond pads instead of `sin*sin`'s
-   compact round ones (a larger redesign, still deferred, not needed).
-2. **Sub-project 2 of the "Material Maker for dummies" idea: the live web
-   companion.** Now unblocked (sub-project 1, this session's retrofit, is
-   the prerequisite). A local server bundled with `mm-mcp`, opened in a
-   real browser, driving Phase 5's existing live-control tools
-   (`live_apply`/`live_render`/`set_param`), with slider definitions read
-   directly from each graph's exposed subgraph parameters rather than a
-   separate curation step. Needs its own `brainstorming` session to nail
-   down the UI shape before building (was explicitly deferred pending
-   sub-project 1's completion, see the 2026-09-04 session log entry).
+1. **Run `mm-play` hands-on** (the pick). Launch the play surface yourself
+   (`mm-play`, or `.venv\Scripts\python.exe -m mm_mcp.play.server`), click a few
+   materials, drag the sliders, spin the sphere. If it behaves, that promotes the
+   STATUS row from `wired` to `verified`. One known nit to watch: the WebGL canvas
+   does not reliably re-fill the viewport if you resize the browser window
+   mid-session (it sizes correctly at load); worth a small follow-up if it bugs
+   you. The live path (driving a running Material Maker session) is the least
+   exercised branch, worth a look if you have MM open.
+2. **Sub-project 2 of "Material Maker for dummies" is DONE** (this session's play
+   surface). The whole idea is closed. A natural NEXT extension, if wanted: a
+   "push the picked material into a live MM session first" flow (currently the
+   live path only drives MM when the picked material already matches what is
+   loaded there; otherwise it falls back to headless). That overlaps the deferred
+   `live_load` backlog item and would need its own scoping.
 3. **This session's tool list showed `mcp__unreal-engine__*` tools
    connected** (see the drift note an earlier pickup briefing surfaced).
    **Unreal UE5 export verification** has been blocked for multiple
@@ -248,6 +262,45 @@ The older open backlog, unchanged unless noted:
   available; two parked-not-fixed overlay-builder findings from a much
   earlier session (staleness marker, `_append_autoload`'s first-occurrence
   match, both verified low-priority).
+
+## 🗂️ Changed this session (live web play surface)
+
+- **New package `src/mm_mcp/play/`**: `sliders.py` (the bridge: derive sliders
+  from each material's subgraph `remote` widgets + catalog ranges, and apply
+  values back), `renderer.py` (render facade: live-vs-headless selection,
+  serialized under a lock, live outputs copied into the served dir), `api.py`
+  (pure handlers: materials list, sliders, render, export), `server.py` (stdlib
+  `http.server`, routing, `mm-play` entry, path-bounded static/map serving),
+  `static/` (vendored three.js WebGL PBR sphere frontend, no runtime CDN).
+- **`src/mm_mcp/config.py`**: new `play_port` field (default 8788, `MM_PLAY_PORT`).
+- **`src/mm_mcp/catalog_builder.py`**: `_parse_generic_node` gained
+  `_resolve_widget_range`, resolving compound-node parameter ranges from each
+  remote widget's linked inner shader node (e.g. `normal_map` param1 ->
+  `edge_detect_1.amount` 0..2). Additive: only fills previously-null range fields;
+  the leaf-node shader_model path is untouched. This is the fix for 34/46
+  materials that otherwise had unranged sliders.
+- **`pyproject.toml`**: `mm-play` console script + `play/static/*` package-data.
+- **Docs**: North Star non-goals bullet (the companion, hides the graph,
+  secondary audience, export still hands back the real `.ptex`), README "Play
+  surface" subsection, `doctor.py` informational play line + test, STATUS row
+  (`wired`). Spec `docs/superpowers/specs/2026-09-04-play-surface-design.md`,
+  plan `docs/superpowers/plans/2026-09-04-play-surface.md`.
+- **Decisions (+ why):** unique per-slider id `f"{subgraph_node}/{slot_id}"`
+  because slot_ids collide across subgraphs (velvet had two `param0`); fix
+  compound ranges in `catalog_builder` (correct for all consumers) not by guessing
+  in the bridge; corrected the plan's `reject_path_fragment` usage (it raises, not
+  returns-truthy); added a `__main__` guard so `python -m mm_mcp.play.server`
+  actually serves; kept STATUS at `wired` because "verified" means Grayson ran it
+  hands-on; fixed the live-path map-dir mismatch in the facade rather than
+  touching the frozen Phase 5 `live.py`.
+- **Process:** `pickup` -> `brainstorming` (architectural) -> `writing-plans` ->
+  `subagent-driven-development` on branch `play-surface`. Four clarifying
+  questions set scope (play surface for non-tech, both/auto-detect runtime, WebGL
+  sphere, all four v1 features). Every task per-task-reviewed; the final
+  whole-branch review (opus) found one Important live-path bug (maps landed in
+  the wrong dir), fixed in one wave. Controller live-verified the UI in a browser.
+  Merged via PR #5 (merged) + local `--no-ff` to `main`, pushed, branch and SDD
+  workspace cleaned. Fast suite 559 -> 579.
 
 ## 🗂️ Changed this session (leather + terrain bug fixes)
 
@@ -374,48 +427,8 @@ The older open backlog, unchanged unless noted:
   `--no-ff` to `main` (`034aeaf`), pushed, branch deleted, SDD workspace
   removed. Fast suite 453 -> 505.
 
-## 🗂️ Changed this session (plastics category + Donegal tweed)
-
-- **`quality/cookbook_plastics.py`** (new file): `build_p01_glossy_plastic`,
-  the first cookbook material built from scratch via
-  `_from_scratch_noise_material` rather than cloned from a donor. Narrow
-  near-single-color red albedo, non-metallic, low roughness (`0.18`),
-  near-zero normal relief (`param1=0.04`, `param4=0` since the fix still
-  applies to a directly-fed perlin). Added a `rough_const` flat-roughness
-  texture into `Material` port 2 so ORM exports (same gap
-  `gl01_frosted_glass` hit).
-- **`quality/cookbook_fabrics.py`**: new `build_f08_donegal_tweed`. Plain
-  `weave2` base (`stitch=1`, distinct from f07's herringbone `stitch=3`)
-  recolored heather gray-brown. A separate `voronoi_fleck` node (not the
-  base generator, which loses its rand3 output once retyped) feeds a
-  hard-threshold mask (top ~20% of cells) and a cream/rust two-tone color
-  layer, composited via `blend` (`blend_type=0`, base weave on majority
-  port 1, flecks on minority port 0, mask on port 2). First pass was too
-  sparse (~4 flecks visible per 2048px crop, sent to Grayson); revised the
-  threshold and added the second fleck tone, approved on the second pass.
-- **`cookbook/plastics/p01_glossy_plastic.{ptex,md}`**,
-  **`cookbook/fabrics/f08_donegal_tweed.{ptex,md}`**: promoted via
-  `promote_cookbook.py`, recipe cards written, gallery thumbnails
-  generated (`_make_previews.py`). `README.md` counts bumped 44/nine to
-  46/ten, contact-sheet caption updated (not regenerated, same deliberate
-  deferral as glass).
-- **Gotcha hit and fixed:** `_make_previews.py cookbook-fabrics` (and
-  `render_cookbook.py` before it) regenerate every case in the label, not
-  just the new one. `f04_wool_knit`'s thumbnail came back byte-different
-  (render non-determinism, the graph itself is unchanged) and was reverted
-  before committing to keep the diff scoped to the real work.
-- **Process:** `pickup` chained straight into `brainstorming` (bounded
-  path, no plan doc) since the prior session's briefing already scoped both
-  items into concrete numbered options. Two clarifying questions (plastics
-  look, tweed's distinguishing lever vs. f07) then a short in-chat design,
-  approved. Each material: build, render, 3D-preview, send to Grayson,
-  wait for a look, promote. Fast suite 447 -> 453 (2 new gate tests per
-  material: recipe-card parity + thumbnail presence, already existed as a
-  parametrized test, just gained 2 more cases). Committed (`68c51dc`) and
-  pushed to `main` on Grayson's explicit go-ahead (design approval and push
-  approval given separately).
-
-> 📦 **26 older "Changed this session" write-ups archived**, newest first the
+> 📦 **27 older "Changed this session" write-ups archived**, newest first the
+> 2026-09-03 plastics category + Donegal tweed session, then the
 > 2026-09-03 reference-photo authoring + glass cookbook session, then the
 > 2026-09-03 v0.6.0 release + author.py split + donor vendoring session, then the
 > 2026-09-04 v0.5.0 release + AUTHORING split + hygiene session, then the
@@ -433,6 +446,21 @@ The older open backlog, unchanged unless noted:
 
 ## ⚠️ Heads-up for the next agent
 
+- **The play surface lives in `src/mm_mcp/play/` (new this session).** Launch it
+  with `mm-play` (or `.venv\Scripts\python.exe -m mm_mcp.play.server`, which now
+  works thanks to the `__main__` guard). It serves `http://127.0.0.1:8788/`
+  (`Config.play_port`/`MM_PLAY_PORT`). The one new piece of logic is
+  `play/sliders.py` (the bridge: subgraph widgets + catalog ranges -> sliders,
+  addressed by a UNIQUE id `f"{subgraph_node}/{slot_id}"` because slot_ids collide
+  across subgraphs). It reuses `cookbook.py`, the catalog, `render.py`, and frozen
+  `live.py`. Renders are serialized (one Godot at a time), small + debounced. To
+  drive a render at the API: `POST /api/render {material_id, values (keyed by
+  slider id), size}`.
+- **Compound-node parameter ranges are now resolved in `catalog_builder`**
+  (`_parse_generic_node` -> `_resolve_widget_range`). This was needed for the
+  sliders but is a general improvement: `catalog[compound_type]["parameters"]`
+  entries now carry real min/max/step/type, resolved from the linked inner shader
+  node in the `.mmg`. Additive, the leaf-node path is untouched.
 - **Every cookbook material now uses subgraphs (`group_into_subgraph` in
   `quality/author_helpers.py`); a new material should too, from the start.**
   Call it before `save_variant` returns, following `docs/AUTHORING.md`'s
@@ -626,6 +654,31 @@ The older open backlog, unchanged unless noted:
 > session back through the project's Phase 1-2 kickoff on 2026-08-25.
 
 
+### 2026-09-04 (live web play surface): the node graph gets a slider panel a non-coder can use
+- `pickup` reconciled clean (`main` at `108c6e0`). Grayson picked next move #1:
+  scope the deferred live web companion (sub-project 2 of "MM for dummies").
+- `brainstorming` (architectural): four decisions locked via clarifying
+  questions: purpose = a play surface for non-technical people (graph hidden);
+  runtime = both/auto-detect (standalone headless, or drive a live MM session);
+  preview = in-browser WebGL three.js sphere; v1 = all four of gallery,
+  standalone render loop, live auto-detect, download. One honest flag carried
+  into the spec: this serves the North Star's SECONDARY audience and hides the
+  graph, so it is framed as a companion (export still returns the real `.ptex`).
+- Spec + 10-task plan -> `subagent-driven-development` on branch `play-surface`.
+  Ledger-tracked. Several controller rulings on plan/design gaps found mid-build:
+  the compound-node range fix in `catalog_builder` (34/46 materials had unranged
+  sliders), the unique-slider-id addressing (slot_id collisions across
+  subgraphs), the `reject_path_fragment` usage correction, and the `__main__`
+  guard. Controller did the live browser verification (headless path); the final
+  whole-branch review (opus) then caught the one bug a headless-only check could
+  not: on the live path, maps landed in `cfg.output_dir` but the server serves
+  `cfg.output_dir/play`, so live previews would 404. Fixed in the facade (copy
+  live outputs into the served dir), keeping frozen `live.py` untouched.
+- Integrated per Grayson's "1 + 2 + commit + wrap": pushed the branch, opened PR
+  #5, merged `--no-ff` to `main` (`9b0e64e`) and pushed (PR auto-detected as
+  merged), deleted the branch local and remote, cleaned the SDD workspace. Fast
+  suite 559 -> 579. Then this wrap-up.
+
 ### 2026-09-04 (leather + terrain bug fixes): the three bugs the retrofit left behind, closed
 - `pickup` reconciled clean (`main` at `8cf496a`); Grayson's command was
   `+ fix the leather and terrain bugs`, the three pre-existing bugs the
@@ -741,38 +794,5 @@ The older open backlog, unchanged unless noted:
   fix: a stale gitignored build artifact (`f04_wool_knit`, unrelated to
   this session) was making `promote_cookbook.py --check` report false
   drift. Cleared it, confirmed clean, then this wrap-up.
-
-### 2026-09-03 (v0.6.0 release + author.py split + donor vendoring): the pipeline stops depending on the external checkout
-- `pickup` reconciled clean (`main` at `677f852`), then merged release-please
-  PR #3 straight away (0.6.0, pure metadata bump) since it was the standing
-  next step. Grayson picked options 1 + 2 from the briefing: decide the two
-  deferred hygiene items, and scope the `author.py` refactor.
-- Asked Grayson directly: fold `examples/` into the cookbook (chosen), keep
-  `docs/HANDOFF_ARCHIVE.md` (chosen, no longer an open item). `brainstorming`
-  on both remaining tasks surfaced the scope correction: "examples/" meant
-  `cfg.examples_dir` (Material Maker's 43 bundled demos in the external
-  checkout), not this repo's own `examples/` folder. Auditing every
-  `load_example()` call site found only 9 of 43 are load-bearing donors.
-  Grayson chose to vendor just those 9 and keep browsing/the gate live
-  against the external checkout.
-- Spec written and approved
-  (`docs/superpowers/specs/2026-09-03-vendor-donor-examples-design.md`),
-  4-task plan (`docs/superpowers/plans/2026-09-03-author-helpers-donor-vendor.md`)
-  -> `subagent-driven-development` on branch `author-helpers-donor-vendor`
-  (feature branch in the main checkout, not a worktree, same editable-`.venv`
-  reason as the AUTHORING split). Task 1 extracted the helpers into
-  `author_helpers.py` (the implementer caught and fixed a real gap in my own
-  brief: it omitted `_grad`/`_ROOT`, which `author.py`'s own remaining code
-  still needs). Task 2 repointed 10 consumer files. Task 3 vendored the 9
-  donors (one fix round: a required test file was created but never
-  committed, because the plan's own commit command omitted it, fixed with a
-  follow-up commit). Task 4 repointed `load_example()`, proved byte-identical
-  builder output before/after via a real before/after hash comparison.
-- Final whole-branch review (opus): "with fixes" -- 1 Important + 6 Minor,
-  all stale "author.py" doc references left over from the split (e.g.
-  `quality/README.md`'s Cookbook-growth section). One fix wave, scoped
-  re-review clean. Fast-forward-merged to `main` (`54693fb`), pushed, branch
-  deleted, SDD workspace removed. Fast suite 424 -> 444.
-- Then this wrap-up (HANDOFF baton, memory, commons log).
 
 _(Older entries continue in [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).)_

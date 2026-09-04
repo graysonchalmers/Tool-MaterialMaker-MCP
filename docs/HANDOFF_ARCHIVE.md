@@ -19,6 +19,47 @@ doc's window.
 
 ## Archived "Changed this session" write-ups
 
+### Changed this session (plastics category + Donegal tweed)
+
+- **`quality/cookbook_plastics.py`** (new file): `build_p01_glossy_plastic`,
+  the first cookbook material built from scratch via
+  `_from_scratch_noise_material` rather than cloned from a donor. Narrow
+  near-single-color red albedo, non-metallic, low roughness (`0.18`),
+  near-zero normal relief (`param1=0.04`, `param4=0` since the fix still
+  applies to a directly-fed perlin). Added a `rough_const` flat-roughness
+  texture into `Material` port 2 so ORM exports (same gap
+  `gl01_frosted_glass` hit).
+- **`quality/cookbook_fabrics.py`**: new `build_f08_donegal_tweed`. Plain
+  `weave2` base (`stitch=1`, distinct from f07's herringbone `stitch=3`)
+  recolored heather gray-brown. A separate `voronoi_fleck` node (not the
+  base generator, which loses its rand3 output once retyped) feeds a
+  hard-threshold mask (top ~20% of cells) and a cream/rust two-tone color
+  layer, composited via `blend` (`blend_type=0`, base weave on majority
+  port 1, flecks on minority port 0, mask on port 2). First pass was too
+  sparse (~4 flecks visible per 2048px crop, sent to Grayson); revised the
+  threshold and added the second fleck tone, approved on the second pass.
+- **`cookbook/plastics/p01_glossy_plastic.{ptex,md}`**,
+  **`cookbook/fabrics/f08_donegal_tweed.{ptex,md}`**: promoted via
+  `promote_cookbook.py`, recipe cards written, gallery thumbnails
+  generated (`_make_previews.py`). `README.md` counts bumped 44/nine to
+  46/ten, contact-sheet caption updated (not regenerated, same deliberate
+  deferral as glass).
+- **Gotcha hit and fixed:** `_make_previews.py cookbook-fabrics` (and
+  `render_cookbook.py` before it) regenerate every case in the label, not
+  just the new one. `f04_wool_knit`'s thumbnail came back byte-different
+  (render non-determinism, the graph itself is unchanged) and was reverted
+  before committing to keep the diff scoped to the real work.
+- **Process:** `pickup` chained straight into `brainstorming` (bounded
+  path, no plan doc) since the prior session's briefing already scoped both
+  items into concrete numbered options. Two clarifying questions (plastics
+  look, tweed's distinguishing lever vs. f07) then a short in-chat design,
+  approved. Each material: build, render, 3D-preview, send to Grayson,
+  wait for a look, promote. Fast suite 447 -> 453 (2 new gate tests per
+  material: recipe-card parity + thumbnail presence, already existed as a
+  parametrized test, just gained 2 more cases). Committed (`68c51dc`) and
+  pushed to `main` on Grayson's explicit go-ahead (design approval and push
+  approval given separately).
+
 ## 🗂️ Changed this session (reference-photo authoring workflow + glass cookbook)
 
 - **`docs/AUTHORING.md`**: new "Authoring from a reference photo" section,
@@ -881,6 +922,39 @@ doc's window.
 ---
 
 ## Archived session log
+
+### 2026-09-03 (v0.6.0 release + author.py split + donor vendoring): the pipeline stops depending on the external checkout
+- `pickup` reconciled clean (`main` at `677f852`), then merged release-please
+  PR #3 straight away (0.6.0, pure metadata bump) since it was the standing
+  next step. Grayson picked options 1 + 2 from the briefing: decide the two
+  deferred hygiene items, and scope the `author.py` refactor.
+- Asked Grayson directly: fold `examples/` into the cookbook (chosen), keep
+  `docs/HANDOFF_ARCHIVE.md` (chosen, no longer an open item). `brainstorming`
+  on both remaining tasks surfaced the scope correction: "examples/" meant
+  `cfg.examples_dir` (Material Maker's 43 bundled demos in the external
+  checkout), not this repo's own `examples/` folder. Auditing every
+  `load_example()` call site found only 9 of 43 are load-bearing donors.
+  Grayson chose to vendor just those 9 and keep browsing/the gate live
+  against the external checkout.
+- Spec written and approved
+  (`docs/superpowers/specs/2026-09-03-vendor-donor-examples-design.md`),
+  4-task plan (`docs/superpowers/plans/2026-09-03-author-helpers-donor-vendor.md`)
+  -> `subagent-driven-development` on branch `author-helpers-donor-vendor`
+  (feature branch in the main checkout, not a worktree, same editable-`.venv`
+  reason as the AUTHORING split). Task 1 extracted the helpers into
+  `author_helpers.py` (the implementer caught and fixed a real gap in my own
+  brief: it omitted `_grad`/`_ROOT`, which `author.py`'s own remaining code
+  still needs). Task 2 repointed 10 consumer files. Task 3 vendored the 9
+  donors (one fix round: a required test file was created but never
+  committed, because the plan's own commit command omitted it, fixed with a
+  follow-up commit). Task 4 repointed `load_example()`, proved byte-identical
+  builder output before/after via a real before/after hash comparison.
+- Final whole-branch review (opus): "with fixes" -- 1 Important + 6 Minor,
+  all stale "author.py" doc references left over from the split (e.g.
+  `quality/README.md`'s Cookbook-growth section). One fix wave, scoped
+  re-review clean. Fast-forward-merged to `main` (`54693fb`), pushed, branch
+  deleted, SDD workspace removed. Fast suite 424 -> 444.
+- Then this wrap-up (HANDOFF baton, memory, commons log).
 
 ### 2026-09-04 (v0.5.0 release + AUTHORING split + hygiene): the guide becomes a resource, recipes become cards
 - `pickup` reconciled clean (`main` at `66661f5`); confirmed release PR #2 now
