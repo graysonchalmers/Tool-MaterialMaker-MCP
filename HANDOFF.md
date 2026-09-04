@@ -1,15 +1,37 @@
 # 🧭 Session Handoff: Tool-MaterialMaker-MCP
 
-_Last updated: 2026-09-03 (v0.6.0 released, author.py split + donor vendoring landed) CT (America/Chicago)_
+_Last updated: 2026-09-03 (reference-photo authoring workflow + first glass cookbook material) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**v0.6.0 is released, and both items surfaced last session are done: the
-`author.py` split and the donor-vendoring project (the corrected scope of
-"fold examples into the cookbook").** `main` is at `54693fb`, pushed and in
-sync.
+**The "image-to-material decomposition" backlog idea is closed: a
+reference-photo authoring workflow is documented and proven with a real
+cookbook material.** `main` is at `9a02a8d`, pushed and in sync.
+- Scoped via `brainstorming`: the decomposition reasoning happens in
+  Claude's own vision during a chat session, no new server code, no new MCP
+  tool, no new dependency, which downgraded the task from architectural to
+  bounded (a documented workflow, not a subsystem).
+- New "Authoring from a reference photo" section in `docs/AUTHORING.md`,
+  extends the existing step-1 workflow with a decomposition rubric
+  (color/tone, pattern topology, scale, roughness, relief cues), reusing
+  the noise vocabulary and cross-material lessons already documented rather
+  than inventing new taxonomy.
+- Proved it out end to end: sourced a real CC-BY-SA 4.0 macro photo of
+  sandblasted glass (Wikimedia Commons), decomposed it, and authored
+  `cookbook/glass/gl01_frosted_glass`, cloning `dry_earth`'s connected-
+  crack-network topology at a much finer scale, judged in the 3D preview,
+  promoted through the normal `promote_cookbook.py` path. First entry in a
+  new `glass` category, closes half of the glass/plastics backlog gap.
+  Fast suite 444 -> 447.
+- Also cleared a pre-existing stale local build artifact
+  (`quality/authored/cookbook-fabrics/f04_wool_knit/`, gitignored, left
+  over from the 2026-09-01 wool-knit exploration) that was making
+  `promote_cookbook.py --check` report false drift.
+
+**Before this, v0.6.0 was released and both items surfaced two sessions ago
+were done: the `author.py` split and the donor-vendoring project.**
 - **v0.6.0 released** by merging release-please PR #3, a pure metadata bump
   (CHANGELOG + version, no code changes). Fast-forwarded local `main`.
 - **`quality/author.py` split (bounded task, no spec doc):** the file mixed
@@ -46,18 +68,24 @@ Older write-ups/log beyond the cap live in
 
 ## 📌 Where we stopped
 
-`main` at `54693fb`, pushed and in sync. v0.6.0 released, `author.py` split
-and donor vendoring both landed and merged. Natural stopping point, both
-decisions Grayson was asked to make last session are resolved.
+`main` at `9a02a8d`, pushed and in sync. Reference-photo authoring workflow
+documented and proven with the new glass cookbook entry. Natural stopping
+point, no open decision blocking the next session.
 
 ## ▶️ Next concrete step
 
-Nothing is blocking on Grayson right now. Pick up the teardown's v2 order
-where it left off:
-1. **Cookbook backlog** (glass/plastics category; two-color tweed): new
-   materials land in `cookbook/` via `promote_cookbook.py`, then get a card
-   at `cookbook/<category>/<id>.md`.
-2. **"Material Maker for dummies" — a simplified interface, unscoped.**
+Nothing is blocking on Grayson right now.
+1. **Plastics is now the one remaining gap in the glass/plastics cookbook
+   pair** (glass got its first entry this session). Two-color tweed is
+   still open too. New materials land in `cookbook/` via
+   `promote_cookbook.py`, then get a card at `cookbook/<category>/<id>.md`.
+2. **This session's tool list showed `mcp__unreal-engine__*` tools
+   connected** (see the drift note the pickup briefing surfaced). **A.
+   Unreal UE5 export verification** has been blocked for multiple sessions
+   on "needs a live Unreal Editor with the MCP bridge connected, Grayson
+   said it wasn't as of an older session" — worth a live check now that the
+   bridge appears to be up, before assuming it's still blocked.
+3. **"Material Maker for dummies" — a simplified interface, unscoped.**
    Grayson's backlog idea (captured in full in
    `_agent-commons/ideas/Tool-MaterialMaker-MCP.md`): the real node graph
    can be intimidating to a non-technical viewer; is there a simpler
@@ -66,13 +94,8 @@ where it left off:
    framing first, since hiding the graph outright vs. exposing a simplified
    parameter panel on top of a graph mm-mcp already authored are very
    different scope bets.
-3. **A. Unreal UE5 export verification** — natural continuation of older
-   work. Unity is proven end to end; Unreal's export mechanism is confirmed
-   real at the file-generation level but needs a live Unreal Editor with the
-   `mcp__unreal-engine__*` MCP bridge connected. Check whether Unreal is
-   working before retrying (Grayson said it wasn't, as of an older session).
 
-The older open backlog, unchanged:
+The older open backlog, unchanged unless noted:
 - **2 findings ruled out, not fixed** (deliberate): #8 (`_cmd_clear_graph`'s
   guard is correct, `new_material()` creates the generator, doesn't read
   one) and #10 (`generic_size or 1` coercion is safer than passing an
@@ -81,17 +104,19 @@ The older open backlog, unchanged:
   full `catalog://nodes` resource, so it's the cheap discovery lever, not
   redundant with the resource + `describe_node`.
 - **B. More cookbook categories** — fabrics, organics, sci-fi, terrain, wood,
-  stone, leather, painted-metal are all represented; terrain includes the
-  natural-surface set (ice/lava/forest floor/pebbles). **Glass and plastics
-  are the remaining uncovered quick-wins.**
+  stone, leather, painted-metal, and now glass (1 entry) are all
+  represented; terrain includes the natural-surface set (ice/lava/forest
+  floor/pebbles). **Plastics is the remaining uncovered quick-win.**
 - **C. True cobblestone — DONE.** `s07_cobblestone` closed this; the `s05`
   hex-grid partial is superseded.
 - **D. Wool loop-knit — CLOSED as unreachable.** No bundled generator makes
   upright-V stockinette; `f04` stays the honest coarse-weave stand-in and
   `f07_herringbone_tweed` shipped as the closing probe's byproduct.
-- **E. Image-to-material decomposition** — Grayson's own backlog idea,
-  captured in `_agent-commons/ideas/Tool-MaterialMaker-MCP.md`. Explicitly
-  deferred; likely wants its own `brainstorming` session, not a cold start.
+- **E. Image-to-material decomposition — CLOSED, 2026-09-03.** Shipped as
+  the "Authoring from a reference photo" section in `docs/AUTHORING.md`
+  plus `cookbook/glass/gl01_frosted_glass` as the worked proof. Scoped to
+  Claude's own vision doing the decomposition in-session, no new server
+  code or MCP tool.
 - **F. PyPI publish** (on hold; GitHub-clone is the current route).
 - **J. Load an existing `.ptex` into a live session.** No `live_load`
   equivalent exists. Lowest priority of the remaining live-mode gaps.
@@ -129,6 +154,48 @@ The older open backlog, unchanged:
   available; two parked-not-fixed overlay-builder findings from a much
   earlier session (staleness marker, `_append_autoload`'s first-occurrence
   match, both verified low-priority).
+
+## 🗂️ Changed this session (reference-photo authoring workflow + glass cookbook)
+
+- **`docs/AUTHORING.md`**: new "Authoring from a reference photo" section,
+  slotted right after the existing "Authoring workflow" (extends step 1,
+  "pick the closest starting graph," to cover a photo instead of just a
+  text prompt). A decomposition rubric (color/tone, pattern topology, scale,
+  roughness, relief cues) that reuses the noise vocabulary and
+  cross-material lessons already in the guide rather than a new taxonomy.
+- **`cookbook/glass/gl01_frosted_glass`**: first glass-category material,
+  authored end to end from a real CC-BY-SA 4.0 macro photo of sandblasted
+  glass (J. Koopstra, Wikimedia Commons). Clones `dry_earth`'s connected-
+  crack-network topology at a much finer scale (`voronoi_0` scale 60 vs.
+  the default 4), recolored cool blue-gray, high uniform roughness, subtle
+  relief (`normal_map` `param4=0` at low `param1=0.15`). Card documents an
+  honest limitation: Material Maker has no true transparency/refraction
+  model, so this approximates frosted glass as an opaque matte diffuse
+  surface, which is right for how it will be used but not a light-
+  transmission simulation. `quality/cookbook_glass.py` new builder,
+  promoted through the normal `promote_cookbook.py` path.
+- **`README.md`**: material/category counts bumped 43/eight to 44/nine; the
+  contact-sheet caption now notes it has not been regenerated to include
+  glass yet (real cost, a multi-MB image rebuild, left as a deliberate
+  follow-up).
+- Cleared a pre-existing stale local build artifact
+  (`quality/authored/cookbook-fabrics/f04_wool_knit/`, gitignored, left
+  over from the 2026-09-01 wool-knit exploration) that was making
+  `promote_cookbook.py --check` report false drift on an unrelated
+  category. Local-only fix, nothing to commit (the path is gitignored).
+- **Process:** `pickup` -> `brainstorming` on the "image-to-material
+  decomposition" backlog idea. Two scoping questions collapsed the task
+  from architectural to bounded: the decomposition reasoning happens in
+  Claude's own vision during a chat session (no new server code, no new
+  MCP tool, no new dependency), so the actual deliverable is a documented
+  workflow, not a subsystem. Sourced the reference photo via `WebSearch` +
+  `WebFetch` against Wikimedia Commons after an early attempt to browse
+  `ambientcg.com` hit a malicious ad redirect to a fake "McAfee Security"
+  scareware page (`securesweep.pro`); closed the tab immediately without
+  interacting. Implemented directly (bounded path, no plan doc), committed
+  and pushed to `main` on Grayson's explicit approval of both the design
+  and the push.
+- Fast suite 444 -> 447.
 
 ## 🗂️ Changed this session (v0.6.0 release + author.py split + donor vendoring)
 
@@ -232,47 +299,11 @@ The older open backlog, unchanged:
   than being lifted to the guide. Not content loss; a one-line guide addition
   could close it later.
 
-## 🗂️ Changed this session (teardown #2 + cookbook-as-data)
-
-- Branch: feature branch `cookbook-as-data` (11 commits `6c3083c..f31d753`),
-  merged `--no-ff` into `main` as `530ad0f`, **pushed**; branch deleted locally
-  and on origin. Files: `cookbook/**/*.ptex` (43, new) + `cookbook/README.md`;
-  `quality/promote_cookbook.py`; `src/mm_mcp/cookbook.py`, `config.py`,
-  `server.py`, `doctor.py`; `tests/test_cookbook.py`, `test_cookbook_gate.py`,
-  `test_promote_cookbook.py` (new), `test_config.py`, `test_doctor.py`,
-  `test_server_tools.py`; `README.md`, `quality/README.md`, `docs/AUTHORING.md`,
-  `.env.example`, `.gitignore` (comment), `docs/images/cookbook-contact-sheet.png`
-  (43 tiles), `release-please-config.json`; spec + plan under `docs/superpowers/`.
-  This wrap-up also capped STATUS.md's header and moved its old text to the
-  archive.
-- **Process:** `pickup` chained into `teardown` (six lenses, verdict table, v2
-  sketch; report sent as a file). Grayson chose next-move #1. `phased-rebuild`
-  framed three gated phases; `writing-plans` produced the spec + 7-task plan;
-  `subagent-driven-development` executed it: fresh subagent per task, a task
-  review per task (two fix rounds total: Task 1 had dropped the
-  `quality/cookbook/` ignore rule, Task 6's doctor call was unguarded), a final
-  whole-branch review on the most capable model, one fix wave, one scoped
-  re-review, clean.
-- **Gates recorded:** Phase A `promote --check` in sync + gate test 88 passed;
-  Phase B fast suite green + a real render of `load_example("f07_herringbone_tweed")`
-  byte-identical to the locked cookbook render (3 maps: f07 wires no height
-  input, so the spec's "4 PNGs" wording was corrected); Phase C README counts
-  match the tree, CI success (tests workflow on windows-latest, run 2026-09-03).
-- **Decisions (+ why):** promote-not-unignore (a tracked copy is a regression
-  baseline; `quality/authored/` stays build output); `MM_COOKBOOK_DIR` defaults
-  from the package location so a clone needs no config, and the wheel does not
-  package `cookbook/` (GitHub-clone is the distribution route); `list_examples`
-  shape change accepted as a 0.x breaking change with zero external users;
-  `--check` compares parsed JSON, not bytes, because builders write CRLF on
-  Windows while git checks out LF (do not pin `*.ptex eol=lf` without keeping
-  that); `promote --check` left to fail loudly on malformed JSON (dev tooling).
-- Seven rulings made on Grayson's behalf are listed in the commons log
-  `_agent-commons\log\2026-09-03-claude-code-mm-mcp-teardown2-cookbook-as-data.md`.
-
-> 📦 **22 older "Changed this session" write-ups archived** (through
+> 📦 **23 older "Changed this session" write-ups archived**, newest first the
+> 2026-09-03 teardown #2 + cookbook-as-data session, then through
 > 2026-09-01, incl. the wool-knit closure/f07/terrain session, the blend-opacity
 > debug swatches, the painted-metal cookbook, and the v0.4.0 release-unblock
-> + README gallery session) --
+> + README gallery session --
 > the pre-release audit/teardown/doc-fix pass,
 > render_node_output/live_render_node_output (item H), saved_graphs/
 > round-trip, Unity export proof, wood/stone cookbooks, the overlay
@@ -283,6 +314,17 @@ The older open backlog, unchanged:
 
 ## ⚠️ Heads-up for the next agent
 
+- **`ambientcg.com` redirected to a malicious scareware page during this
+  session** (a fake "McAfee Security" page at `securesweep.pro`, hit via
+  the in-app Browser pane's `navigate`). Closed the tab immediately without
+  interacting; switched to Wikimedia Commons for reference photos instead,
+  which worked cleanly. Worth avoiding `ambientcg.com` until/unless
+  verified safe again.
+- **`docs/AUTHORING.md` now has an "Authoring from a reference photo"
+  section** right after the main workflow list. If a future session is
+  asked to build a material from an attached photo, read that section
+  first, it's a decomposition rubric that plugs into the existing donor/
+  topology vocabulary, not a separate pipeline.
 - **`quality/author.py` is now a builders-only file; graph-surgery helpers
   live in `quality/author_helpers.py`.** If you're adding a new cookbook
   category or debug swatch, `from author_helpers import ...` the helpers
@@ -430,6 +472,33 @@ The older open backlog, unchanged:
 > now archived there**, from the 2026-09-01 blend-opacity-debug-swatches
 > session back through the project's Phase 1-2 kickoff on 2026-08-25.
 
+
+### 2026-09-03 (reference-photo authoring workflow + glass cookbook): the assistant learns to read a photo, not just a sentence
+- `pickup` reconciled clean (`main` at `692057b`). Grayson picked backlog
+  item #4, "image-to-material decomposition," from the briefing's numbered
+  options.
+- `brainstorming` classified it architectural at first (a new subsystem),
+  then a scoping question collapsed it to bounded: the decomposition
+  reasoning happens in Claude's own vision during the chat session itself,
+  not a new server-side vision tool, so the real deliverable is a
+  documented workflow addition to `docs/AUTHORING.md`, not a subsystem.
+  Grayson also chose to include a worked proof (not guidance-only) and to
+  commit the proof as a real cookbook entry (not throwaway).
+- Sourced a CC-BY-SA 4.0 reference photo. An early attempt to browse
+  `ambientcg.com` hit a malicious ad redirect to a fake "McAfee Security"
+  scareware page (`securesweep.pro`); closed the tab immediately without
+  interacting and switched to Wikimedia Commons, which worked cleanly.
+- Wrote the "Authoring from a reference photo" section, then authored
+  `cookbook/glass/gl01_frosted_glass` end to end from the photo: decomposed
+  it against the new rubric, matched it to `dry_earth`'s connected-crack-
+  network topology at a much finer scale, built and rendered the graph,
+  judged it in the 3D preview (sent to Grayson for a look), promoted it
+  through `promote_cookbook.py`. Fast suite 444 -> 447. Committed and
+  pushed to `main` (`9a02a8d`) on Grayson's explicit go-ahead.
+- Wrote the session's commons log entry, then Grayson asked for one more
+  fix: a stale gitignored build artifact (`f04_wool_knit`, unrelated to
+  this session) was making `promote_cookbook.py --check` report false
+  drift. Cleared it, confirmed clean, then this wrap-up.
 
 ### 2026-09-03 (v0.6.0 release + author.py split + donor vendoring): the pipeline stops depending on the external checkout
 - `pickup` reconciled clean (`main` at `677f852`), then merged release-please

@@ -19,6 +19,43 @@ doc's window.
 
 ## Archived "Changed this session" write-ups
 
+## 🗂️ Changed this session (teardown #2 + cookbook-as-data)
+
+- Branch: feature branch `cookbook-as-data` (11 commits `6c3083c..f31d753`),
+  merged `--no-ff` into `main` as `530ad0f`, **pushed**; branch deleted locally
+  and on origin. Files: `cookbook/**/*.ptex` (43, new) + `cookbook/README.md`;
+  `quality/promote_cookbook.py`; `src/mm_mcp/cookbook.py`, `config.py`,
+  `server.py`, `doctor.py`; `tests/test_cookbook.py`, `test_cookbook_gate.py`,
+  `test_promote_cookbook.py` (new), `test_config.py`, `test_doctor.py`,
+  `test_server_tools.py`; `README.md`, `quality/README.md`, `docs/AUTHORING.md`,
+  `.env.example`, `.gitignore` (comment), `docs/images/cookbook-contact-sheet.png`
+  (43 tiles), `release-please-config.json`; spec + plan under `docs/superpowers/`.
+  This wrap-up also capped STATUS.md's header and moved its old text to the
+  archive.
+- **Process:** `pickup` chained into `teardown` (six lenses, verdict table, v2
+  sketch; report sent as a file). Grayson chose next-move #1. `phased-rebuild`
+  framed three gated phases; `writing-plans` produced the spec + 7-task plan;
+  `subagent-driven-development` executed it: fresh subagent per task, a task
+  review per task (two fix rounds total: Task 1 had dropped the
+  `quality/cookbook/` ignore rule, Task 6's doctor call was unguarded), a final
+  whole-branch review on the most capable model, one fix wave, one scoped
+  re-review, clean.
+- **Gates recorded:** Phase A `promote --check` in sync + gate test 88 passed;
+  Phase B fast suite green + a real render of `load_example("f07_herringbone_tweed")`
+  byte-identical to the locked cookbook render (3 maps: f07 wires no height
+  input, so the spec's "4 PNGs" wording was corrected); Phase C README counts
+  match the tree, CI success (tests workflow on windows-latest, run 2026-09-03).
+- **Decisions (+ why):** promote-not-unignore (a tracked copy is a regression
+  baseline; `quality/authored/` stays build output); `MM_COOKBOOK_DIR` defaults
+  from the package location so a clone needs no config, and the wheel does not
+  package `cookbook/` (GitHub-clone is the distribution route); `list_examples`
+  shape change accepted as a 0.x breaking change with zero external users;
+  `--check` compares parsed JSON, not bytes, because builders write CRLF on
+  Windows while git checks out LF (do not pin `*.ptex eol=lf` without keeping
+  that); `promote --check` left to fail loudly on malformed JSON (dev tooling).
+- Seven rulings made on Grayson's behalf are listed in the commons log
+  `_agent-commons\log\2026-09-03-claude-code-mm-mcp-teardown2-cookbook-as-data.md`.
+
 ## 🗂️ Changed this session (wool-knit closed, f07 herringbone tweed, +4 terrain)
 
 - Branches/commits: `main`, `8ca2c2b` (f07 herringbone tweed + wool-knit closure)
