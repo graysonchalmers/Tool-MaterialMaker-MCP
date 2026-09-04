@@ -6,7 +6,7 @@ A saddle-tan grain base raised into a grid of puffy pads with recessed stitch-ch
 
 ## Recipe
 
-Clones `crocodile_skin` for its base grain, but the quilt pads themselves come from the `pattern` node rather than the voronoi cells: two Sine waves multiplied (`x_wave`/`y_wave` = Sine, `mix` = Multiply, scale around 5) give a smooth grid of rounded pads that peak at the pad centers and fall to the seams, the quilt shape. Drive the normal from the pattern pads (`param1` around 0.9 for pronounced padding) with the crocodile grain blended on top at around 0.35 for fine detail, and darken the seams in albedo with a seam mask off the same pattern so the channels read as recessed.
+Clones `crocodile_skin` for its base grain, but the quilt pads themselves come from the `pattern` node rather than the voronoi cells: two Sine waves multiplied (`x_wave`/`y_wave` = Sine, `mix` = Multiply, scale around 5) give a smooth grid of rounded pads that peak at the pad centers and fall to the seams, the quilt shape. Drive the normal from the pattern pads (`param1` around 0.9 for pronounced padding), with the crocodile grain blended on top as fine detail: the height blend weights the pads at 0.85 and the grain at 0.15 (`blend_h_q.amount=0.85`), so the puffy quilt shape dominates and the grain is a subtle overlay. Darken the seams in albedo with a seam mask off the same pattern so the channels read as recessed.
 
 Pitfall specific to this material: the natural way to lay down stitch dashes is a small `shape` repeated by `tiler`, but that approach fought back badly. In the full graph it produced no visible dashes, and isolating the tiler output to the albedo timed out the renderer at 180 seconds (a single centered shape through `tiler` builds a degenerate or expensive shader in this setup). The reliable path was the parameter-only `pattern` node instead, with no shape or tiler shader surprises. Honest gap: this delivers the quilt shape and channel seams but not individual per-stitch dash marks running along the seams. l06 in this cookbook solves the dash generator that l05 lacks.
 
@@ -23,8 +23,15 @@ Traced wiring:
 
 - `blend_h_q`: port0 ← `pattern_q` (the quilt pads), port1 ← `colorize_0`
   (grain height). Port2 (mask) has no connection at all, so it uses the
-  node's own default of a constant `1.0` — this blend is a flat, unmasked
-  `0.35*pads + 0.65*grain` mix, not a spatial composite.
+  node's own default of a constant `1.0`, making the opacity equal to
+  `amount`. This is a flat, unmasked `amount*pads + (1-amount)*grain` mix, not
+  a spatial composite. Height weighting fix (2026-09-04): `amount` was `0.35`
+  (pads underweighted, grain dominant, so the busy high-frequency crocodile
+  grain overpowered the smooth quilt pads in the normal). Now `0.85`, so the
+  pads drive the relief with the grain as ~0.15 fine detail, matching the
+  recipe's stated pad-driven intent; confirmed in a 3D preview (puffy padded
+  bumps with recessed channels). The exposed "Quilt puffiness" slider IS this
+  `amount`, so higher reads as puffier.
 - `blend_alb_q`: port0 (shown where mask=1) ← `seam_shade` (the dark
   constant, in the recessed seams); port1 (shown where mask=0) ← `colorize_1`
   (base grain, on the pad faces); port2 (mask) ← `seam_mask`.

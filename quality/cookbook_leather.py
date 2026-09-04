@@ -333,7 +333,14 @@ def build_l05_quilted_leather(catalog: dict) -> str:
     add_node(g, "seam_shade", "colorize",
              {"gradient": _grad([(0.0, 0.09, 0.05, 0.03), (1.0, 0.09, 0.05, 0.03)])})
     # Combined height: pads (pattern) as the big shape, grain layered on top.
-    add_node(g, "blend_h_q", "blend", {"blend_type": 0, "amount": 0.35})
+    # amount is the port0 (pads) weight since port2/mask is unconnected (opacity
+    # = amount x mask, mask defaults to 1.0), so height = amount*pads +
+    # (1-amount)*grain. 0.65 makes the pads dominant with the crocodile grain as
+    # ~0.35 fine detail, matching this recipe's stated "drive the relief from
+    # the pattern pads, grain on top at ~0.35" intent. It was 0.35 (pads
+    # underweighted, grain dominant), the inverse; fixed 2026-09-04. The exposed
+    # "Quilt puffiness" slider IS this amount, so higher now reads as puffier.
+    add_node(g, "blend_h_q", "blend", {"blend_type": 0, "amount": 0.85})
     add_node(g, "blend_alb_q", "blend", {"blend_type": 0, "amount": 1})
     g["connections"] += [
         {"from": "pattern_q", "from_port": 0, "to": "seam_mask", "to_port": 0},

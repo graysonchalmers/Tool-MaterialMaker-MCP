@@ -772,7 +772,7 @@
     "y": 111.33333333333333
    },
    "parameters": {
-    "param0": 0.35,
+    "param0": 0.85,
     "param1": 0.9
    },
    "seed_int": 0,
@@ -845,7 +845,7 @@
       "y": 311.3333333333333
      },
      "parameters": {
-      "param0": 0.35,
+      "param0": 0.85,
       "param1": 0.9
      },
      "seed": 0,
@@ -902,7 +902,7 @@
      },
      "parameters": {
       "blend_type": 0,
-      "amount": 0.35
+      "amount": 0.85
      }
     },
     {
