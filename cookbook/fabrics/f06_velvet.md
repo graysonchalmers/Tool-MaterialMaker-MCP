@@ -26,6 +26,26 @@ edges hit a Godot "invalid shader" render failure (its input port is `rgba`;
 voronoi port 2 is `rgb`), not worth chasing further. For a soft, continuous
 material like velvet, reach for `perlin`/`fbm` before `voronoi`.
 
+## Subgraph structure
+
+Grouped per the "Grouping into subgraphs" lever in `docs/AUTHORING.md`.
+Same `crocodile_skin` donor shape as `f03_canvas_burlap` (no `blend` node,
+no mask wiring to trace) even though the generator is retyped to `perlin`
+rather than a weave family. Opening the graph shows 2 top-level groups
+(plus `Material` and the untouched metallic `uniform_0`) instead of the
+raw 6-node graph:
+
+- **Fiber Pattern** — `voronoi_0` (retyped to `perlin`) and `colorize_1`
+  (albedo). `voronoi_0` also feeds **Surface Finish**'s normal and
+  roughness colorizes directly, the expected shared-upstream-node shape.
+  Exposed: `Fiber grain` (the `iterations` octave count), `Velvet color`.
+- **Surface Finish** — `colorize_0` (normal source), `colorize_3`
+  (roughness), `normal_map_0`. Exposed: `Roughness`, `Relief strength`.
+
+Verified after building: `renders_match` against this material's own
+pre-retrofit baseline came back at an exact `grid_mean_abs_diff` of `0.0`
+on all three exported maps (albedo, normal, orm).
+
 ## See also
 
 The invariant guide (`guide://authoring` resource, or `docs/AUTHORING.md`) for

@@ -1,82 +1,58 @@
 {
  "connections": [
   {
-   "from": "voronoi_0",
-   "from_port": 0,
-   "to": "colorize_0",
-   "to_port": 0
-  },
-  {
-   "from": "colorize_0",
-   "from_port": 0,
-   "to": "normal_map_0",
-   "to_port": 0
-  },
-  {
-   "from": "normal_map_0",
-   "from_port": 0,
-   "to": "Material",
-   "to_port": 4
-  },
-  {
-   "from": "voronoi_0",
-   "from_port": 0,
-   "to": "colorize_1",
-   "to_port": 0
-  },
-  {
-   "from": "blend_fleck",
-   "from_port": 0,
-   "to": "Material",
-   "to_port": 0
-  },
-  {
-   "from": "voronoi_0",
-   "from_port": 0,
-   "to": "colorize_3",
-   "to_port": 0
-  },
-  {
-   "from": "colorize_3",
-   "from_port": 0,
-   "to": "Material",
-   "to_port": 2
-  },
-  {
    "from": "uniform_0",
    "from_port": 0,
    "to": "Material",
    "to_port": 1
   },
   {
-   "from": "voronoi_fleck",
-   "from_port": 2,
-   "to": "colorize_fleck_mask",
-   "to_port": 0
-  },
-  {
-   "from": "voronoi_fleck",
-   "from_port": 2,
-   "to": "colorize_fleck_color",
-   "to_port": 0
-  },
-  {
-   "from": "colorize_fleck_color",
+   "from": "base_weave",
    "from_port": 0,
-   "to": "blend_fleck",
+   "to": "surface_finish",
    "to_port": 0
   },
   {
-   "from": "colorize_1",
-   "from_port": 0,
-   "to": "blend_fleck",
+   "from": "base_weave",
+   "from_port": 1,
+   "to": "surface_finish",
    "to_port": 1
   },
   {
-   "from": "colorize_fleck_mask",
+   "from": "surface_finish",
    "from_port": 0,
-   "to": "blend_fleck",
+   "to": "Material",
+   "to_port": 4
+  },
+  {
+   "from": "surface_finish",
+   "from_port": 1,
+   "to": "Material",
    "to_port": 2
+  },
+  {
+   "from": "base_weave",
+   "from_port": 2,
+   "to": "fleck_composite",
+   "to_port": 0
+  },
+  {
+   "from": "fleck_pattern",
+   "from_port": 0,
+   "to": "fleck_composite",
+   "to_port": 1
+  },
+  {
+   "from": "fleck_pattern",
+   "from_port": 1,
+   "to": "fleck_composite",
+   "to_port": 2
+  },
+  {
+   "from": "fleck_composite",
+   "from_port": 0,
+   "to": "Material",
+   "to_port": 0
   }
  ],
  "label": "Graph",
@@ -113,13 +89,33 @@
    "type": "material"
   },
   {
-   "name": "colorize_1",
+   "name": "uniform_0",
    "node_position": {
-    "x": 384,
-    "y": 137
+    "x": 413,
+    "y": 208
    },
    "parameters": {
-    "gradient": {
+    "color": {
+     "a": 1,
+     "b": 0,
+     "g": 0,
+     "r": 0,
+     "type": "Color"
+    }
+   },
+   "type": "uniform"
+  },
+  {
+   "name": "base_weave",
+   "label": "Base Weave",
+   "type": "graph",
+   "node_position": {
+    "x": 227.5,
+    "y": 176.5
+   },
+   "parameters": {
+    "param0": 10,
+    "param1": {
      "interpolation": 1,
      "points": [
       {
@@ -147,16 +143,202 @@
      "type": "Gradient"
     }
    },
-   "type": "colorize"
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": -172.5,
+      "y": 176.5
+     },
+     "parameters": {},
+     "ports": [],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 627.5,
+      "y": 176.5
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "out0",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "out1",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "out2",
+       "type": "rgba",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -172.5,
+      "y": 376.5
+     },
+     "parameters": {
+      "param0": 10,
+      "param1": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0.2,
+         "g": 0.18,
+         "b": 0.16,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.38,
+         "g": 0.34,
+         "b": 0.29,
+         "pos": 0.5
+        },
+        {
+         "a": 1,
+         "r": 0.56,
+         "g": 0.51,
+         "b": 0.44,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      }
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Weave scale",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "voronoi_0",
+         "widget": "columns"
+        }
+       ]
+      },
+      {
+       "name": "param1",
+       "shortdesc": "Tweed color",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "colorize_1",
+         "widget": "gradient"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "colorize_1",
+     "node_position": {
+      "x": 384,
+      "y": 137
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0.2,
+         "g": 0.18,
+         "b": 0.16,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.38,
+         "g": 0.34,
+         "b": 0.29,
+         "pos": 0.5
+        },
+        {
+         "a": 1,
+         "r": 0.56,
+         "g": 0.51,
+         "b": 0.44,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      }
+     },
+     "type": "colorize"
+    },
+    {
+     "name": "voronoi_0",
+     "node_position": {
+      "x": 71,
+      "y": 216
+     },
+     "parameters": {
+      "columns": 10,
+      "rows": 10,
+      "width_x": 0.85,
+      "width_y": 0.85,
+      "stitch": 1
+     },
+     "type": "weave2"
+    }
+   ],
+   "connections": [
+    {
+     "from": "voronoi_0",
+     "from_port": 0,
+     "to": "colorize_1",
+     "to_port": 0
+    },
+    {
+     "from": "voronoi_0",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    },
+    {
+     "from": "voronoi_0",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 1
+    },
+    {
+     "from": "colorize_1",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 2
+    }
+   ]
   },
   {
-   "name": "colorize_3",
+   "name": "surface_finish",
+   "label": "Surface Finish",
+   "type": "graph",
    "node_position": {
-    "x": 384,
-    "y": 258
+    "x": 375.6666666666667,
+    "y": 307.6666666666667
    },
    "parameters": {
-    "gradient": {
+    "param0": {
      "interpolation": 1,
      "points": [
       {
@@ -175,152 +357,233 @@
       }
      ],
      "type": "Gradient"
-    }
+    },
+    "param1": 0.3
    },
-   "type": "colorize"
-  },
-  {
-   "name": "uniform_0",
-   "node_position": {
-    "x": 413,
-    "y": 208
-   },
-   "parameters": {
-    "color": {
-     "a": 1,
-     "b": 0,
-     "g": 0,
-     "r": 0,
-     "type": "Color"
-    }
-   },
-   "type": "uniform"
-  },
-  {
-   "name": "voronoi_0",
-   "node_position": {
-    "x": 71,
-    "y": 216
-   },
-   "parameters": {
-    "columns": 10,
-    "rows": 10,
-    "width_x": 0.85,
-    "width_y": 0.85,
-    "stitch": 1
-   },
-   "type": "weave2"
-  },
-  {
-   "name": "colorize_0",
-   "node_position": {
-    "x": 264,
-    "y": 331
-   },
-   "parameters": {
-    "gradient": {
-     "interpolation": 1,
-     "points": [
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": -24.333333333333314,
+      "y": 307.6666666666667
+     },
+     "parameters": {},
+     "ports": [
       {
-       "a": 1,
-       "r": 0,
-       "g": 0,
-       "b": 0,
-       "pos": 0.0
+       "name": "in0",
+       "type": "f",
+       "group_size": 0
       },
       {
-       "a": 1,
-       "r": 1,
-       "g": 1,
-       "b": 1,
-       "pos": 1.0
+       "name": "in1",
+       "type": "f",
+       "group_size": 0
       }
      ],
-     "type": "Gradient"
-    }
-   },
-   "type": "colorize"
-  },
-  {
-   "name": "normal_map_0",
-   "node_position": {
-    "x": 479,
-    "y": 334
-   },
-   "parameters": {
-    "param0": 11,
-    "param1": 0.3,
-    "param2": 0,
-    "param4": 0
-   },
-   "type": "normal_map"
-  },
-  {
-   "name": "voronoi_fleck",
-   "type": "voronoi",
-   "node_position": {
-    "x": 0,
-    "y": 0
-   },
-   "parameters": {
-    "scale_x": 36,
-    "scale_y": 36,
-    "randomness": 1
-   }
-  },
-  {
-   "name": "colorize_fleck_mask",
-   "type": "colorize",
-   "node_position": {
-    "x": 0,
-    "y": 0
-   },
-   "parameters": {
-    "gradient": {
-     "interpolation": 1,
-     "type": "Gradient",
-     "points": [
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 775.6666666666667,
+      "y": 307.6666666666667
+     },
+     "parameters": {},
+     "ports": [
       {
-       "a": 1,
-       "r": 0,
-       "g": 0,
-       "b": 0,
-       "pos": 0.0
+       "name": "out0",
+       "type": "rgb",
+       "group_size": 0
       },
       {
-       "a": 1,
-       "r": 0,
-       "g": 0,
-       "b": 0,
-       "pos": 0.78
+       "name": "out1",
+       "type": "rgba",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -24.333333333333314,
+      "y": 507.6666666666667
+     },
+     "parameters": {
+      "param0": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0.86,
+         "g": 0.86,
+         "b": 0.86,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.96,
+         "g": 0.96,
+         "b": 0.96,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      },
+      "param1": 0.3
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Roughness",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "colorize_3",
+         "widget": "gradient"
+        }
+       ]
       },
       {
-       "a": 1,
-       "r": 1,
-       "g": 1,
-       "b": 1,
-       "pos": 0.84
-      },
-      {
-       "a": 1,
-       "r": 1,
-       "g": 1,
-       "b": 1,
-       "pos": 1.0
+       "name": "param1",
+       "shortdesc": "Relief strength",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "normal_map_0",
+         "widget": "param1"
+        }
+       ]
       }
      ]
+    },
+    {
+     "name": "colorize_3",
+     "node_position": {
+      "x": 384,
+      "y": 258
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0.86,
+         "g": 0.86,
+         "b": 0.86,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.96,
+         "g": 0.96,
+         "b": 0.96,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      }
+     },
+     "type": "colorize"
+    },
+    {
+     "name": "colorize_0",
+     "node_position": {
+      "x": 264,
+      "y": 331
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0,
+         "g": 0,
+         "b": 0,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 1,
+         "g": 1,
+         "b": 1,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      }
+     },
+     "type": "colorize"
+    },
+    {
+     "name": "normal_map_0",
+     "node_position": {
+      "x": 479,
+      "y": 334
+     },
+     "parameters": {
+      "param0": 11,
+      "param1": 0.3,
+      "param2": 0,
+      "param4": 0
+     },
+     "type": "normal_map"
     }
-   }
+   ],
+   "connections": [
+    {
+     "from": "colorize_0",
+     "from_port": 0,
+     "to": "normal_map_0",
+     "to_port": 0
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 0,
+     "to": "colorize_0",
+     "to_port": 0
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 1,
+     "to": "colorize_3",
+     "to_port": 0
+    },
+    {
+     "from": "normal_map_0",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    },
+    {
+     "from": "colorize_3",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 1
+    }
+   ]
   },
   {
-   "name": "colorize_fleck_color",
-   "type": "colorize",
+   "name": "fleck_pattern",
+   "label": "Fleck Pattern",
+   "type": "graph",
    "node_position": {
-    "x": 0,
-    "y": 0
+    "x": 0.0,
+    "y": 0.0
    },
    "parameters": {
-    "gradient": {
+    "param0": 36,
+    "param1": {
      "interpolation": 1,
      "type": "Gradient",
      "points": [
@@ -347,19 +610,353 @@
       }
      ]
     }
-   }
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": -400.0,
+      "y": 0.0
+     },
+     "parameters": {},
+     "ports": [],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 400.0,
+      "y": 0.0
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "out0",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "out1",
+       "type": "rgba",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -400.0,
+      "y": 200.0
+     },
+     "parameters": {
+      "param0": 36,
+      "param1": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.85,
+         "g": 0.78,
+         "b": 0.62,
+         "pos": 0.78
+        },
+        {
+         "a": 1,
+         "r": 0.62,
+         "g": 0.28,
+         "b": 0.16,
+         "pos": 0.9
+        },
+        {
+         "a": 1,
+         "r": 0.9,
+         "g": 0.83,
+         "b": 0.66,
+         "pos": 1.0
+        }
+       ]
+      }
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Fleck density",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "voronoi_fleck",
+         "widget": "scale_x"
+        }
+       ]
+      },
+      {
+       "name": "param1",
+       "shortdesc": "Fleck color",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "colorize_fleck_color",
+         "widget": "gradient"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "voronoi_fleck",
+     "type": "voronoi",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "scale_x": 36,
+      "scale_y": 36,
+      "randomness": 1
+     }
+    },
+    {
+     "name": "colorize_fleck_mask",
+     "type": "colorize",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0,
+         "g": 0,
+         "b": 0,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0,
+         "g": 0,
+         "b": 0,
+         "pos": 0.78
+        },
+        {
+         "a": 1,
+         "r": 1,
+         "g": 1,
+         "b": 1,
+         "pos": 0.84
+        },
+        {
+         "a": 1,
+         "r": 1,
+         "g": 1,
+         "b": 1,
+         "pos": 1.0
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "colorize_fleck_color",
+     "type": "colorize",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.85,
+         "g": 0.78,
+         "b": 0.62,
+         "pos": 0.78
+        },
+        {
+         "a": 1,
+         "r": 0.62,
+         "g": 0.28,
+         "b": 0.16,
+         "pos": 0.9
+        },
+        {
+         "a": 1,
+         "r": 0.9,
+         "g": 0.83,
+         "b": 0.66,
+         "pos": 1.0
+        }
+       ]
+      }
+     }
+    }
+   ],
+   "connections": [
+    {
+     "from": "voronoi_fleck",
+     "from_port": 2,
+     "to": "colorize_fleck_mask",
+     "to_port": 0
+    },
+    {
+     "from": "voronoi_fleck",
+     "from_port": 2,
+     "to": "colorize_fleck_color",
+     "to_port": 0
+    },
+    {
+     "from": "colorize_fleck_color",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    },
+    {
+     "from": "colorize_fleck_mask",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 1
+    }
+   ]
   },
   {
-   "name": "blend_fleck",
-   "type": "blend",
+   "name": "fleck_composite",
+   "label": "Fleck Composite",
+   "type": "graph",
    "node_position": {
-    "x": 0,
-    "y": 0
+    "x": 0.0,
+    "y": 0.0
    },
    "parameters": {
-    "blend_type": 0,
-    "amount": 1
-   }
+    "param0": 1
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": -400.0,
+      "y": 0.0
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "in0",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "in1",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "in2",
+       "type": "f",
+       "group_size": 0
+      }
+     ],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 400.0,
+      "y": 0.0
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "out0",
+       "type": "rgba",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -400.0,
+      "y": 200.0
+     },
+     "parameters": {
+      "param0": 1
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Fleck strength",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "blend_fleck",
+         "widget": "amount"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "blend_fleck",
+     "type": "blend",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "blend_type": 0,
+      "amount": 1
+     }
+    }
+   ],
+   "connections": [
+    {
+     "from": "gen_inputs",
+     "from_port": 0,
+     "to": "blend_fleck",
+     "to_port": 1
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 1,
+     "to": "blend_fleck",
+     "to_port": 0
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 2,
+     "to": "blend_fleck",
+     "to_port": 2
+    },
+    {
+     "from": "blend_fleck",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    }
+   ]
   }
  ],
  "parameters": {},

@@ -26,6 +26,25 @@ chevrons, but they reverse band-to-band, i.e. herringbone tweed (shipped
 separately as `f07_herringbone_tweed`), not knit. Do not re-open this search
 without a new generator in the catalog.
 
+## Subgraph structure
+
+Grouped per the "Grouping into subgraphs" lever in `docs/AUTHORING.md`.
+Same `crocodile_skin` donor shape as `f03_canvas_burlap` (no `blend` node,
+no mask wiring to trace). Opening the graph shows 2 top-level groups
+(plus `Material` and the untouched metallic `uniform_0`) instead of the
+raw 6-node graph:
+
+- **Knit Pattern** — `voronoi_0` (retyped to `weave`) and `colorize_1`
+  (albedo). `voronoi_0` also feeds **Surface Finish**'s normal and
+  roughness colorizes directly, the expected shared-upstream-node shape.
+  Exposed: `Rib count`, `Wool color`.
+- **Surface Finish** — `colorize_0` (normal source), `colorize_3`
+  (roughness), `normal_map_0`. Exposed: `Roughness`, `Relief strength`.
+
+Verified after building: `renders_match` against this material's own
+pre-retrofit baseline came back at an exact `grid_mean_abs_diff` of `0.0`
+on all three exported maps (albedo, normal, orm).
+
 ## See also
 
 The invariant guide (`guide://authoring` resource, or `docs/AUTHORING.md`) for
