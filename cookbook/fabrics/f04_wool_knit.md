@@ -43,7 +43,28 @@ raw 6-node graph:
 
 Verified after building: `renders_match` against this material's own
 pre-retrofit baseline came back at an exact `grid_mean_abs_diff` of `0.0`
-on all three exported maps (albedo, normal, orm).
+on all three exported maps (albedo, normal, orm). That `0.0` proves this
+retrofit's own subgraph-grouping step changed nothing further — the
+builder's rendered output before grouping and after grouping is pixel-
+identical. It does **not** prove the tracked `.ptex` on `main` was
+unchanged by this branch: it was not.
+
+Disclosure: unlike every other material in this retrofit, this one's
+committed `.ptex` changed by more than reorganization. Before this
+retrofit, the tracked graph's generator was still a `pattern` node, a
+stale leftover from the "Bounce" approach that the "Closed for good on
+2026-09-03" note above explicitly rejected as unworkable; the builder
+and this card had already moved on to the `weave`-based recipe described
+under "Recipe," but the tracked artifact and its thumbnail had never
+been re-promoted to match. Building this material fresh from the current
+(`weave`-based) builder as part of this task's render-and-repromote step
+incidentally rebuilt the tracked `.ptex` from the correct source, which
+changed the generator node type `pattern` → `weave`,
+`normal_map_0.param1` 0.5 → 0.3, and a colorize gradient's endpoints, as
+a side effect of retrofitting subgraph structure — not as an intentional
+fix undertaken by this task. The corrected thumbnail was independently
+verified to match the `weave` version (6-column/7-row periodicity via
+autocorrelation). No further action is needed on the artifact itself.
 
 ## See also
 
