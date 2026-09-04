@@ -1,0 +1,164 @@
+{
+ "type": "graph",
+ "name": "graph",
+ "label": "Graph",
+ "node_position": {
+  "x": 0,
+  "y": 0
+ },
+ "parameters": {},
+ "connections": [
+  {
+   "from": "pattern_holes",
+   "from_port": 0,
+   "to": "colorize_0",
+   "to_port": 0
+  },
+  {
+   "from": "colorize_0",
+   "from_port": 0,
+   "to": "Material",
+   "to_port": 0
+  },
+  {
+   "from": "pattern_holes",
+   "from_port": 0,
+   "to": "colorize_rgh",
+   "to_port": 0
+  },
+  {
+   "from": "colorize_rgh",
+   "from_port": 0,
+   "to": "Material",
+   "to_port": 2
+  },
+  {
+   "from": "pattern_holes",
+   "from_port": 0,
+   "to": "normal_map_0",
+   "to_port": 0
+  },
+  {
+   "from": "normal_map_0",
+   "from_port": 0,
+   "to": "Material",
+   "to_port": 4
+  }
+ ],
+ "nodes": [
+  {
+   "name": "pattern_holes",
+   "type": "pattern",
+   "node_position": {
+    "x": 0,
+    "y": 0
+   },
+   "parameters": {
+    "mix": 3,
+    "x_wave": 2,
+    "x_scale": 10,
+    "y_wave": 2,
+    "y_scale": 10
+   }
+  },
+  {
+   "name": "colorize_0",
+   "type": "colorize",
+   "node_position": {
+    "x": 0,
+    "y": 0
+   },
+   "parameters": {
+    "gradient": {
+     "interpolation": 1,
+     "points": [
+      {
+       "a": 1,
+       "r": 0.03,
+       "g": 0.03,
+       "b": 0.03,
+       "pos": 0.0
+      },
+      {
+       "a": 1,
+       "r": 0.03,
+       "g": 0.03,
+       "b": 0.03,
+       "pos": 0.55
+      },
+      {
+       "a": 1,
+       "r": 0.58,
+       "g": 0.59,
+       "b": 0.61,
+       "pos": 0.6
+      },
+      {
+       "a": 1,
+       "r": 0.58,
+       "g": 0.59,
+       "b": 0.61,
+       "pos": 1.0
+      }
+     ],
+     "type": "Gradient"
+    }
+   }
+  },
+  {
+   "name": "colorize_rgh",
+   "type": "colorize",
+   "node_position": {
+    "x": 0,
+    "y": 0
+   },
+   "parameters": {
+    "gradient": {
+     "interpolation": 1,
+     "points": [
+      {
+       "a": 1,
+       "r": 0.65,
+       "g": 0.65,
+       "b": 0.65,
+       "pos": 0.0
+      },
+      {
+       "a": 1,
+       "r": 0.35,
+       "g": 0.35,
+       "b": 0.35,
+       "pos": 1.0
+      }
+     ],
+     "type": "Gradient"
+    }
+   }
+  },
+  {
+   "name": "normal_map_0",
+   "type": "normal_map",
+   "node_position": {
+    "x": 0,
+    "y": 0
+   },
+   "parameters": {
+    "param0": 10,
+    "param1": 0.5,
+    "param2": 0,
+    "param4": 0
+   }
+  },
+  {
+   "name": "Material",
+   "type": "material",
+   "node_position": {
+    "x": 0,
+    "y": 0
+   },
+   "parameters": {
+    "metallic": 1
+   }
+  }
+ ]
+}

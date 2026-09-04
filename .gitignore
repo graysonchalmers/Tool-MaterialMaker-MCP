@@ -24,12 +24,10 @@ mm_live_overlay/
 
 # Phase 3 quality: keep test_set + scorecards; ignore heavy renders and the
 # authored .ptex variants (author.py regenerates them deterministically).
+# The locked cookbook graphs are promoted from quality/authored/cookbook-*/
+# into the tracked cookbook/ tree by quality/promote_cookbook.py.
 quality/runs/
 quality/authored/
-
-# Cookbook growth (informal, non-frozen extensions like the fabric cases):
-# same story, cookbook_fabrics.py regenerates the .ptex variants.
-quality/cookbook/
 
 # OS junk
 Thumbs.db
