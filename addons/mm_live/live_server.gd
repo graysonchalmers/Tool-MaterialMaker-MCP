@@ -80,6 +80,8 @@ func _dispatch(peer: StreamPeerTCP, line: String) -> void:
 				response = await _cmd_render(parsed)
 			"clear_graph":
 				response = await _cmd_clear_graph()
+			"load_graph":
+				response = await _cmd_load_graph(parsed)
 			_:
 				response = {"ok": false, "error": "unknown command: %s" % str(parsed["cmd"])}
 	peer.put_data((JSON.stringify(response) + "\n").to_utf8_buffer())
@@ -268,6 +270,45 @@ func _cmd_clear_graph() -> Dictionary:
 	# that hit _cmd_render's export_material call applies here too.
 	await graph_edit.new_material()
 	_show_transient_notice("Claude cleared the graph")
+	return {"ok": true}
+
+
+func _cmd_load_graph(cmd: Dictionary) -> Dictionary:
+	# Replace the current tab's graph in place with the caller's, using
+	# Material Maker's own load path minus its two unwanted side effects:
+	#   1. string_to_dict_tree (not a raw JSON.parse) so a Material-Maker-native
+	#      save's array-of-lines shader fields are converted back to strings,
+	#      which create_gen/deserialize expect. It is a no-op on data already in
+	#      string form (our Python-saved cookbook graphs, and get_graph output),
+	#      so it is safe for every input.
+	#   2. NO set_save_path with a real path - do_load_material_from_data/
+	#      load_from_data would point the tab at that file, so a stray Ctrl+S in
+	#      the window could overwrite a tracked cookbook .ptex. We leave the save
+	#      path untouched.
+	# set_new_generator is the exact call load_from_data makes after building the
+	# generator; calling it here (instead of do_load_material_from_data) avoids
+	# create_new_graph_edit_if_needed, which spawns a fresh tab whenever the
+	# current tab already holds a real material - that would pile up a tab per
+	# load. create_gen awaits deserialize internally, so it MUST be awaited (the
+	# un-awaited-coroutine trap that hit _cmd_render/_cmd_clear_graph).
+	if mm_globals.main_window == null:
+		return {"ok": false, "error": "main_window not ready"}
+	var graph_edit: MMGraphEdit = mm_globals.main_window.get_current_graph_edit()
+	if graph_edit == null:
+		return {"ok": false, "error": "no active graph tab"}
+	var data_str = cmd.get("data")
+	if typeof(data_str) != TYPE_STRING or data_str.is_empty():
+		return {"ok": false, "error": "load_graph requires a non-empty 'data' string"}
+	var data: Dictionary = mm_loader.string_to_dict_tree(data_str)
+	if data.is_empty():
+		return {"ok": false, "error": "load_graph: could not parse graph data"}
+	var gen = await mm_loader.create_gen(data)
+	if gen == null:
+		return {"ok": false, "error": "Material Maker could not build a generator from the graph"}
+	graph_edit.set_new_generator(gen)
+	if not _has_active_graph():
+		return {"ok": false, "error": "graph loaded but no active graph is present afterward"}
+	_show_transient_notice("Claude loaded a graph")
 	return {"ok": true}
 
 

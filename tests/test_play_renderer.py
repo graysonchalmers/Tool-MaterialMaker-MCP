@@ -105,3 +105,64 @@ def test_live_render_copies_images_into_play_outdir(tmp_path):
     assert os.path.basename(copied) == "play_albedo.png"
     # original file untouched, this is a copy not a move
     assert src_image.is_file()
+
+
+def test_render_material_loads_the_picked_material_once_per_pick_change(tmp_path):
+    renderer._last_pushed_id = None
+    calls = []
+
+    def fake_ping(timeout=1.0):
+        return _Result(True, data={"has_graph": True})
+
+    def fake_load(graph=None, path=None, cfg=None):
+        calls.append(graph)
+        return _Result(True)
+
+    def fake_set_param(name, parameters, cfg=None):
+        return _Result(True)
+
+    def fake_live_render(basename="material", cfg=None):
+        return _Result(True, images=["a_albedo.png"])
+
+    def fake_headless(ptex, size=512, outdir=None, basename="material", cfg=None):
+        return _Result(False)
+
+    def go(mid):
+        return renderer.render_material(
+            {"nodes": [], "connections": []}, [], 256, _cfg(), outdir=str(tmp_path),
+            material_id=mid, ping=fake_ping, live_load=fake_load,
+            live_set_param=fake_set_param, live_render=fake_live_render,
+            headless_render=fake_headless)
+
+    go("A"); go("A"); go("B")
+    assert len(calls) == 2  # one for A, none for the repeat, one for B
+
+
+def test_render_material_falls_back_to_headless_when_load_fails(tmp_path):
+    renderer._last_pushed_id = None
+    headless_hit = []
+
+    def fake_ping(timeout=1.0):
+        return _Result(True, data={"has_graph": True})
+
+    def fake_load(graph=None, path=None, cfg=None):
+        return _Result(False, error="load boom")
+
+    def fake_set_param(name, parameters, cfg=None):
+        return _Result(True)
+
+    def fake_live_render(basename="material", cfg=None):
+        return _Result(True, images=["a_albedo.png"])
+
+    def fake_headless(ptex, size=512, outdir=None, basename="material", cfg=None):
+        headless_hit.append(True)
+        return _Result(True, images=["h_albedo.png"])
+
+    result = renderer.render_material(
+        {"nodes": [], "connections": []}, [], 256, _cfg(), outdir=str(tmp_path),
+        material_id="A", ping=fake_ping, live_load=fake_load,
+        live_set_param=fake_set_param, live_render=fake_live_render,
+        headless_render=fake_headless)
+    assert result["ok"]
+    assert result["path"] == "headless"
+    assert headless_hit == [True]

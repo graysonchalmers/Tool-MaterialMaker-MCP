@@ -945,3 +945,105 @@ def test_clear_graph_resets_a_built_graph_to_the_default_material_node(tmp_path)
         assert graph_after.data["graph"]["connections"] == []
     finally:
         session.close()
+
+
+@pytest.mark.integration
+def test_load_graph_round_trips_a_cookbook_material(tmp_path):
+    # Isolated overlay dir so this test never collides with (or clobbers) a
+    # manual session's overlay, matching this file's other integration tests.
+    from mm_mcp import cookbook
+
+    isolated_cfg = replace(cfg, live_overlay_dir=str(tmp_path / "mm_live_overlay"))
+    entry = cookbook.find_cookbook(isolated_cfg.cookbook_dir, "f03_canvas_burlap")
+    assert entry is not None, "f03_canvas_burlap must exist in the tracked cookbook"
+    with open(entry.path, encoding="utf-8") as fh:
+        material = json.load(fh)
+    expected_names = sorted(n["name"] for n in material["nodes"])
+
+    session = live.connect_or_launch(cfg=isolated_cfg, launch_timeout=90.0)
+    try:
+        assert session.ok, session.error
+        assert session.process is not None, (
+            "attached to a pre-existing instance on port 8765 -- close it and rerun; "
+            "this test must launch its own overlay to prove the committed addon works"
+        )
+
+        load_res = live.load_graph(graph=material, cfg=isolated_cfg)
+        assert load_res.ok, load_res.error
+
+        got = live.get_graph()
+        assert got.ok, got.error
+        got_names = sorted(n["name"] for n in got.data["graph"]["nodes"])
+        # In-place replace: the loaded material's top-level nodes must now be
+        # what's shown, not the default single-Material graph new_material()
+        # would leave behind.
+        assert got_names == expected_names
+    finally:
+        session.close()
+
+
+def test_load_graph_sends_validated_dict_as_json_data():
+    received = {}
+
+    def responder(cmd):
+        received.update(cmd)
+        return {"ok": True}
+
+    server = _FakeLiveServer(responder)
+    try:
+        graph = {"nodes": [], "connections": []}  # trivially catalog-valid
+        result = live.load_graph(graph=graph, cfg=cfg, host="127.0.0.1", port=server.port)
+        assert result.ok
+        assert received["cmd"] == "load_graph"
+        assert json.loads(received["data"]) == graph
+    finally:
+        server.stop()
+
+
+def test_load_graph_rejects_an_invalid_graph_before_the_socket():
+    def responder(cmd):
+        raise AssertionError("socket must not be reached for an invalid graph")
+
+    server = _FakeLiveServer(responder)
+    try:
+        bad = {"nodes": [{"name": "x", "type": "NOT_A_REAL_NODE_TYPE",
+                          "node_position": {"x": 0, "y": 0}, "parameters": {}}],
+               "connections": []}
+        result = live.load_graph(graph=bad, cfg=cfg, host="127.0.0.1", port=server.port)
+        assert not result.ok
+        assert result.error == "validation failed"
+        assert result.data and result.data["problems"]
+    finally:
+        server.stop()
+
+
+def test_load_graph_requires_exactly_one_of_graph_or_path():
+    r_none = live.load_graph(cfg=cfg)
+    assert not r_none.ok and "exactly one" in r_none.error
+    r_both = live.load_graph(graph={"nodes": [], "connections": []}, path="x.ptex", cfg=cfg)
+    assert not r_both.ok and "exactly one" in r_both.error
+
+
+def test_load_graph_reads_validates_and_sends_a_ptex_path(tmp_path):
+    received = {}
+
+    def responder(cmd):
+        received.update(cmd)
+        return {"ok": True}
+
+    server = _FakeLiveServer(responder)
+    try:
+        graph = {"nodes": [], "connections": []}
+        p = tmp_path / "m.ptex"
+        p.write_text(json.dumps(graph), encoding="utf-8")
+        result = live.load_graph(path=str(p), cfg=cfg, host="127.0.0.1", port=server.port)
+        assert result.ok
+        assert json.loads(received["data"]) == graph
+    finally:
+        server.stop()
+
+
+def test_load_graph_reports_a_missing_path_as_data():
+    result = live.load_graph(path="does_not_exist_12345.ptex", cfg=cfg)
+    assert not result.ok
+    assert "could not read graph file" in result.error
