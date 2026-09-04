@@ -12,7 +12,11 @@ import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
 from author_helpers import (load_example, set_gradient, set_param, drop_conn,
-                     save_variant, add_node, _grad)
+                     save_variant, add_node, _grad, group_into_subgraph)
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+from mm_mcp.catalog_builder import build_catalog
+from mm_mcp.config import load_config
 
 _LABEL = "cookbook-glass"
 
@@ -59,6 +63,32 @@ def build_gl01_frosted_glass() -> str:
         {"from": "perlin_0", "from_port": 0, "to": "rough_const", "to_port": 0})
     g["connections"].append(
         {"from": "rough_const", "from_port": 0, "to": "Material", "to_port": 2})
+
+    # Group the raw dry_earth-derived tangle (14 top-level nodes) into two
+    # named subgraphs so opening the graph in Material Maker shows a small,
+    # legible handful of nodes instead of every wire. Two independent noise
+    # sources (perlin_0, perlin_1) stay top-level since each feeds both
+    # groups; grouping them in with either would just relabel the sharing
+    # as an extra boundary port. colorize_3 is dead (its connection to
+    # Material was dropped above, per dry_earth's own metallic-variance
+    # wiring) and gets tucked inside base_color with its source, perlin_1,
+    # rather than left as an orphaned top-level node.
+    catalog = build_catalog(load_config().nodes_dir)
+    group_into_subgraph(
+        g, ["voronoi_0", "colorize_1", "warp_0", "colorize_0", "blend_0", "colorize_3"],
+        "base_color", "Base Color",
+        [("voronoi_0", "scale_x", "param0", "Facet size"),
+         ("colorize_0", "gradient", "param1", "Base color"),
+         ("blend_0", "amount", "param2", "Crack contrast")],
+        catalog,
+    )
+    group_into_subgraph(
+        g, ["colorize_4", "blend_1", "colorize", "normal_map_0", "rough_const"],
+        "surface_detail", "Surface Detail",
+        [("rough_const", "gradient", "param0", "Roughness"),
+         ("normal_map_0", "param1", "param1", "Surface relief")],
+        catalog,
+    )
     return save_variant(g, _LABEL, "gl01_frosted_glass", 1)
 
 

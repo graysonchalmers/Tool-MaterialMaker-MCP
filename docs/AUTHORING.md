@@ -39,6 +39,34 @@ open. Concretely:
 - When a recipe has a real simpler equivalent, prefer it: cleverness that
   only pays off in fewer nodes but costs readability is the wrong trade here.
 
+## Grouping into subgraphs
+
+A subgraph is Material Maker's own native mechanism for the readability goal
+above: select a cluster of nodes in the app and press `Ctrl+G` to collapse
+them into a single node of `type: "graph"`, with an internal Parameters
+remote that exposes a curated, named subset of the cluster's widgets on the
+collapsed node itself. It is not a project-specific invention — it's the
+same shape Material Maker uses for its own bundled compound nodes
+(`normal_map`, `occlusion`, etc.). Opening a graph built this way shows a
+handful of friendly, labeled nodes (e.g. "Base Color", "Surface Detail")
+instead of every raw generator and wire, with the full detail still one
+double-click away.
+
+Cookbook and Phase 3 builders can do the same collapse in code, without
+touching the Material Maker GUI, via `group_into_subgraph(graph,
+member_names, name, label, exposed, catalog)` in `quality/author_helpers.py`.
+`member_names` is the list of node names to fold together; `exposed` is a
+list of `(internal_node_name, internal_param_name, slot_id, friendly_label)`
+tuples, one per widget that should surface on the collapsed node (`slot_id`
+is the external-facing parameter name, `paramN` by convention). `catalog` is
+loaded the same way the rest of the authoring tools do:
+`build_catalog(load_config().nodes_dir)`. Call it at the end of a `build_*`
+function, before `save_variant(...)`, once the recipe's real node graph is
+finished — grouping is purely organizational surgery on top of a working
+graph, not a step that changes what the material looks like. New cookbook
+materials should reach for this from the start rather than shipping a raw
+tangle that needs a later retrofit pass.
+
 ## Authoring workflow (invariant across phases)
 
 1. Read the prompt; pick the closest starting graph with `list_examples` /
