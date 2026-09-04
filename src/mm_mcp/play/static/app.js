@@ -34,10 +34,16 @@ function initThree() {
     pitch = Math.max(-1.4, Math.min(1.4, pitch));
     lastX = e.clientX; lastY = e.clientY;
   });
-  window.addEventListener("resize", () => {
-    renderer.setSize(el.clientWidth, el.clientHeight);
-    camera.aspect = el.clientWidth / el.clientHeight; camera.updateProjectionMatrix();
-  });
+  // ResizeObserver on the container fires on any size change (window resize,
+  // sidebar layout shifts), unlike window "resize" which the canvas could
+  // outgrow when a stale pixel width pinned the flex viewport open.
+  const fit = () => {
+    const w = el.clientWidth, h = el.clientHeight;
+    if (!w || !h) return;
+    renderer.setSize(w, h);
+    camera.aspect = w / h; camera.updateProjectionMatrix();
+  };
+  new ResizeObserver(fit).observe(el);
   (function loop() {
     requestAnimationFrame(loop);
     sphere.rotation.y = yaw; sphere.rotation.x = pitch;
