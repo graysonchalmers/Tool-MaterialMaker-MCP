@@ -258,6 +258,7 @@ the GUI instead of copying files back and forth.
 | `live_render` | Trigger a render in the live window, same result shape as `render_graph` |
 | `live_render_node_output` | Render one node's output in isolation on the live graph, previewing then restoring the original wiring |
 | `live_clear` | Reset the live graph to a single default Material node, discarding everything else |
+| `live_load` | Replace the shown graph in place (no new tab) with a caller-supplied graph dict or `.ptex` path, validated against the catalog first; Claude can push an authored graph live, and the play surface uses it to push the picked material into a live session |
 
 No manual setup beyond what batch mode already needs -- the addon ships in
 this repo and builds its own disposable working copy on first use. Live
