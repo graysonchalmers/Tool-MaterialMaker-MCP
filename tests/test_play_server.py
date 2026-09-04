@@ -45,3 +45,20 @@ def test_unknown_path_404(running_server):
     with pytest.raises(urllib.error.HTTPError) as exc:
         _get(running_server + "/nope")
     assert exc.value.code == 404
+
+
+@pytest.mark.integration
+def test_render_endpoint_produces_maps(running_server):
+    payload = json.dumps({"material_id": "t01_sand_dunes",
+                          "values": {}, "size": 256}).encode()
+    req = urllib.request.Request(running_server + "/api/render", data=payload,
+                                 headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=240) as r:
+        data = json.loads(r.read())
+    assert data["ok"], data
+    assert data["maps"], "expected rendered maps"
+    # each map is fetchable and non-empty
+    for name in data["maps"]:
+        with urllib.request.urlopen(running_server + "/api/maps/" + name) as r:
+            body = r.read()
+        assert len(body) > 0
