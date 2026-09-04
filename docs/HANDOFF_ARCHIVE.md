@@ -19,6 +19,40 @@ doc's window.
 
 ## Archived "Changed this session" write-ups
 
+## 🗂️ Changed this session (wool-knit closed, f07 herringbone tweed, +4 terrain)
+
+- Branches/commits: `main`, `8ca2c2b` (f07 herringbone tweed + wool-knit closure)
+  and `6ed5773` (terrain t05-t08), both **pushed** to `origin/main` (CI triggered).
+  Files: `quality/cookbook_fabrics.py` (f07 builder), `quality/cookbook_terrain.py`
+  (`_dry_earth_plates` helper + t05-t08 builders), `docs/AUTHORING.md` (f07 recipe
+  + wool-knit closure; terrain topology-not-donor section + 4 recipes), 5 tracked
+  thumbnails (`docs/images/cookbook-fabrics/f07_herringbone_tweed.png`,
+  `docs/images/cookbook-terrain/t05-t08.png`). Authored `.ptex` + renders (incl.
+  throwaway `scratch-knit/`) stay gitignored. No `src/` change, no gate/phase moved.
+- **Wool loop-knit CLOSED as unreachable.** Isolation-render probe (each candidate
+  generator's raw pattern through a gray ramp, look for the knit tell) tested 4
+  leads: pattern-Bounce + `bricks` Running Bond = staggered pillow honeycomb;
+  `weave2` stitch=1 = basket weave; `weave2` stitch=3 = herringbone chevrons that
+  reverse band-to-band = herringbone, not knit. **Reframe: "offset rows" and
+  "V-columns in aligned wales" are INDEPENDENT; only the second is the knit tell.**
+- **`f07_herringbone_tweed`** = weave2 stitch=3, warm Harris-tweed 3-tone, soft
+  `param1` 0.35 `param4=0`. One-tone limit noted (weave2 emits one grayscale).
+- **Terrain t05-t08 + the topology-not-donor lesson (the durable takeaway).** First
+  pass cloned `dry_earth` 4x -> siblings; Grayson caught it. Fix: pick base by
+  surface TOPOLOGY. Connected crack network (ice, lava) = dry_earth plates (lava
+  glow: `warp_0` crack signal -> `colorize_glow` -> Material emission port 3,
+  `emission_energy` 1.0). Discrete packed cells (pebbles) = voronoi + `warp_0`
+  ~0.02 (recessed contact joints, not crack lines). Scattered pieces (forest floor)
+  = re-based OFF dry_earth onto `fbm` noise=Cellular 4 (the scattered-clump base
+  from the noise gallery). Ice smoothness pass: feed the crack-only signal
+  (`colorize_4`) into the normal instead of the grainy `blend_1` height. New
+  `_dry_earth_plates` helper feeds a FLAT roughness texture so an ORM map exports
+  for the preview (dry_earth leaves the roughness input unconnected otherwise).
+- Process: `brainstorming` (bounded) + `advisor` twice (the chevron reframe on
+  wool, the topology reframe on terrain). Judged every material in 3D via
+  `render_preview` and sent previews to Grayson each pass. `render_preview` has no
+  emission slot, so lava's glow was judged on the exported emission map.
+
 ## 🗂️ Changed this session (noise-vocab gallery + 2 backlog items + wool take-two)
 
 - Branch: `main`. Commit `20e485d`, **pushed** to `origin/main` (CI triggered).
@@ -666,6 +700,27 @@ doc's window.
 ---
 
 ## Archived session log
+
+### 2026-09-01 (blend-opacity debug swatches) — +2 known-answer diagnostics, all pass
+- Picked up via `pickup`; Grayson pre-picked the move in the args (build the
+  blend-opacity debug swatch). Clean `main` at `c0b96d7`, in sync.
+- Read `blend.mmg` FIRST to derive the known-answers from source: Normal-mode
+  output `opacity*s1 + (1-opacity)*s2`, `opacity = amount × mask × s1.alpha`,
+  port 0 = Foreground, port 1 = Background, port 2 = Mask.
+- Called `advisor` before writing the checks. It caught two would-be-shipped
+  bugs: (1) `.mmg` `blend_type` default is 13 (AddSub), so a swatch omitting it
+  renders wrong colors and ships a bogus known-answer, both builders now set
+  `blend_type=0` explicitly; (2) both swatches at amount=1 would leave the
+  `amount` factor unasserted, so swatch 2 moved to amount=0.5.
+- Built `blend_mask_polarity` (hard mask, polarity case) + `blend_opacity_ramp`
+  (ramp mask, amount=0.5, the partial-opacity/sf03 shape) in
+  `quality/debug_swatches.py` + their pixel checks + registry entries. Rendered
+  both via `render_one.py` (one Godot at a time), eyeballed, sampled real pixels
+  to calibrate thresholds, sent both previews to Grayson.
+- Tests: the 2 new blend integration checks pass live (auto-parametrized), fast
+  suite 262. Docs: new blend family section in `docs/DEBUG_SWATCHES.md` +
+  AUTHORING.md cross-ref. Committed `80256d0`, pushed to `origin/main`, in sync.
+- Wrote `_agent-commons\log\2026-09-01-claude-code-mm-mcp-blend-opacity-debug-swatch.md`.
 
 ### 2026-09-01 (painted-metal cookbook) — new category, +5 materials, all HIT
 - Picked up via `pickup` (clean `main` at `a849784`, in sync). Grayson chose the

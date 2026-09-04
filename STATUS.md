@@ -6,7 +6,7 @@
 
 Gate ledger. Three states only: ✅ verified · 🔌 wired · ⬜ not started.
 
-_Last updated: 2026-09-04 (v0.5.0 released via PR #2; the AUTHORING split landed at merge `6c2edf0` plus a hygiene pass `cd900f0`; release-please PR #3 proposes 0.6.0. Session detail lives in HANDOFF.md, releases in CHANGELOG.md)._
+_Last updated: 2026-09-03 (v0.6.0 released via PR #3; `quality/author.py` split into builders + `author_helpers.py`, and the Phase 3 authoring pipeline's 9 donor examples vendored into tracked `quality/donors/` so it no longer depends on the external Material Maker checkout. Session detail lives in HANDOFF.md, releases in CHANGELOG.md)._
 
 ## Phases
 

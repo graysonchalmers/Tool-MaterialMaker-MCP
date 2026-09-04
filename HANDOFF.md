@@ -1,166 +1,197 @@
 # 🧭 Session Handoff: Tool-MaterialMaker-MCP
 
-_Last updated: 2026-09-04 (v0.5.0 released, AUTHORING split landed, hygiene pass) CT (America/Chicago)_
+_Last updated: 2026-09-03 (v0.6.0 released, author.py split + donor vendoring landed) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**Three teardown-order items landed in one session: v0.5.0 was released, the
-AUTHORING split shipped, and a hygiene pass followed.** `main` is at `cd900f0`,
-pushed and in sync. release-please PR #3 proposes 0.6.0 (open, Grayson's to merge).
-- **v0.5.0 released** by merging release-please PR #2 (the cookbook-as-data
-  milestone). `bump-minor-pre-major` held: it cut 0.5.0, not 1.0.0.
-- **AUTHORING split (merge `6c2edf0`, 6 commits, subagent-driven):** the
-  996-line `docs/AUTHORING.md` monolith became a 308-line invariant guide plus
-  43 per-material recipe cards at `cookbook/<category>/<id>.md`. The guide is
-  now served as the `guide://authoring` MCP resource (`server.py`:
-  `_authoring_guide_path`/`read_authoring_guide` + a one-line `@mcp.resource`
-  wrapper mirroring `catalog://nodes`; resolves `<repo>/docs/AUTHORING.md`,
-  graceful notice when absent). Cross-material lessons (topology-not-donor,
-  masonry diagnostics, blend port/opacity) were lifted UP into a new
-  "Cross-material lessons" guide section; per-material recipes moved down to the
-  cards. A `test_cookbook_graph_has_recipe_card` parity gate requires every
-  cookbook `.ptex` to carry a card. Fast suite 424 (was 378). README lists two
-  resources now. Final whole-branch review clean on opus.
-- **Hygiene pass (`cd900f0`):** `quality/README.md` dropped the stale "informal"
-  framing and swept its em dashes; `docs/superpowers/README.md` labels that
-  directory as execution history; the contact sheet shrank 5.45MB to 0.99MB via
-  256-color palette; one em dash swept from `server.py`'s render_preview
-  docstring.
-- **Deferred, surfaced to Grayson (NOT done):** folding `examples/` into the
-  cookbook (it is load-bearing: `server.py`'s `_bundled_examples`/`list_examples`
-  serve `cfg.examples_dir`, and it holds the frozen Phase-3 test-set graphs and
-  is referenced by 7 test files, config, doctor, and quality tooling, so it is
-  its own scoped project, not hygiene) and deleting `docs/HANDOFF_ARCHIVE.md`
-  (a workflow call: it trades a browsable 2015-line history for git archaeology,
-  which matters more for a non-SWE, and rewrites the wrap-up trim convention).
+**v0.6.0 is released, and both items surfaced last session are done: the
+`author.py` split and the donor-vendoring project (the corrected scope of
+"fold examples into the cookbook").** `main` is at `54693fb`, pushed and in
+sync.
+- **v0.6.0 released** by merging release-please PR #3, a pure metadata bump
+  (CHANGELOG + version, no code changes). Fast-forwarded local `main`.
+- **`quality/author.py` split (bounded task, no spec doc):** the file mixed
+  ~11 pure graph-surgery helpers with the 12 Phase-3 `build_*` case builders.
+  Extracted the helpers into a new `quality/author_helpers.py`; `author.py`
+  now holds only the builders, the `BUILDERS` registry, and the CLI. 10
+  consumer files (`quality/cookbook_*.py` x8, `debug_swatches.py`,
+  `noise_gallery.py`, plus `tests/test_author_helpers.py`) repointed at the
+  new module. Pure move, zero behavior change, verified byte-identical.
+- **Donor-vendoring project (the scope-corrected "fold examples" item):**
+  "`examples/`" in the last handoff meant `cfg.examples_dir`, Material
+  Maker's own 43 bundled upstream demo graphs inside the external, un-tracked
+  `z-Git\material-maker` checkout, not this repo's local `examples/`
+  showcase folder (unrelated, never code-referenced). Auditing every
+  `load_example()` call site found only **9 of the 43 are load-bearing**
+  donors for the Phase 3 authoring pipeline. Vendored just those 9 into a
+  new tracked `quality/donors/` directory; `load_example()` now reads from
+  there. Everything else that reads `cfg.examples_dir` (the MCP
+  browse-examples feature, the setup doctor, the Phase 1 gate test
+  validating all 43, two render/preview smoke tests) is deliberately
+  untouched and still reads live from the external checkout.
+- **Process:** spec (`docs/superpowers/specs/2026-09-03-vendor-donor-examples-design.md`)
+  + plan (`docs/superpowers/plans/2026-09-03-author-helpers-donor-vendor.md`,
+  4 tasks) -> `subagent-driven-development` on branch
+  `author-helpers-donor-vendor`. One task-level fix round (Task 3's brief
+  omitted `tests/test_donors.py` from its own commit command, fixed with a
+  follow-up commit). Final whole-branch review (opus): "with fixes" -> one
+  fix wave (7 stale "author.py" doc references left over from the split) ->
+  clean. Fast-forward-merged to `main` (no divergence to reconcile), pushed.
+  Fast suite 424 -> 444.
 
 Older write-ups/log beyond the cap live in
 [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).
 
 ## 📌 Where we stopped
 
-`main` at `cd900f0`, pushed and in sync. v0.5.0 released, AUTHORING split and
-hygiene pass landed. release-please PR #3 (0.6.0) is open, Grayson's to merge.
-Natural stopping point.
+`main` at `54693fb`, pushed and in sync. v0.6.0 released, `author.py` split
+and donor vendoring both landed and merged. Natural stopping point, both
+decisions Grayson was asked to make last session are resolved.
 
 ## ▶️ Next concrete step
 
-Two decisions are waiting on Grayson (both surfaced this session):
-1. **Merge release-please PR #3 to cut v0.6.0.** It captures the guide resource
-   (a feat) plus this session's docs/chore commits. Merge when ready; it is the
-   release-cadence call.
-2. **Decide the two deferred hygiene items:** (a) whether to fold `examples/`
-   into the cookbook (its own scoped project, since it is load-bearing on the
-   frozen test set and the example-serving MCP path), and (b) whether to delete
-   `docs/HANDOFF_ARCHIVE.md` (kill browsable history for git archaeology, and
-   rewire the wrap-up trim convention) or keep it.
-
-Then continue the teardown's v2 order (each is one session or less):
-3. **`quality/author.py` refactor** (teardown Refactor item, not yet done):
-   split the 8 graph-surgery helpers from the 13 Phase-3 builders.
-4. **Cookbook backlog** (glass/plastics category; two-color tweed) now
-   compounds: new materials land in `cookbook/` via `promote_cookbook.py`, then
-   get a card at `cookbook/<category>/<id>.md`.
+Nothing is blocking on Grayson right now. Pick up the teardown's v2 order
+where it left off:
+1. **Cookbook backlog** (glass/plastics category; two-color tweed): new
+   materials land in `cookbook/` via `promote_cookbook.py`, then get a card
+   at `cookbook/<category>/<id>.md`.
+2. **"Material Maker for dummies" — a simplified interface, unscoped.**
+   Grayson's backlog idea (captured in full in
+   `_agent-commons/ideas/Tool-MaterialMaker-MCP.md`): the real node graph
+   can be intimidating to a non-technical viewer; is there a simpler
+   on-ramp? Explicitly deferred pending its own `brainstorming` session,
+   worth checking against `docs/NORTH_STAR.md`'s round-trip-learning-tool
+   framing first, since hiding the graph outright vs. exposing a simplified
+   parameter panel on top of a graph mm-mcp already authored are very
+   different scope bets.
+3. **A. Unreal UE5 export verification** — natural continuation of older
+   work. Unity is proven end to end; Unreal's export mechanism is confirmed
+   real at the file-generation level but needs a live Unreal Editor with the
+   `mcp__unreal-engine__*` MCP bridge connected. Check whether Unreal is
+   working before retrying (Grayson said it wasn't, as of an older session).
 
 The older open backlog, unchanged:
 - **2 findings ruled out, not fixed** (deliberate): #8 (`_cmd_clear_graph`'s
-  guard is correct — `new_material()` creates the generator, doesn't read
+  guard is correct, `new_material()` creates the generator, doesn't read
   one) and #10 (`generic_size or 1` coercion is safer than passing an
   explicit 0). Both annotated in-code. Findings 3-7 and 9 are fixed.
-- **`list_node_types` tool decision — RESOLVED this session: KEEP.** ~5KB name
-  list vs the ~260KB full `catalog://nodes` resource, so it's the cheap discovery
-  lever, not redundant with the resource + `describe_node`. Docstring + README
-  corrected: the `category` arg is a name substring, not a taxonomy.
-- **N. "Material Maker for dummies" — a simplified interface, unscoped.**
-  New backlog idea from Grayson this session (captured in full in
-  `_agent-commons/ideas/Tool-MaterialMaker-MCP.md`): the real node graph can
-  be intimidating to a non-technical viewer; is there a simpler on-ramp?
-  Explicitly deferred pending its own `brainstorming` session — worth
-  checking against `docs/NORTH_STAR.md`'s round-trip-learning-tool framing
-  first, since hiding the graph outright vs. exposing a simplified parameter
-  panel on top of a graph mm-mcp already authored are very different scope
-  bets.
-
-**Older backlog, unchanged, still open:**
-- **A. Unreal UE5 export verification** — the natural continuation of a
-  prior session's work. Unity is proven end to end; Unreal's export
-  mechanism is confirmed real at the file-generation level (same CLI, just
-  `--target "Unreal/Unreal Engine 5"`) but running the generated script
-  needs a live Unreal Editor with the `mcp__unreal-engine__*` MCP bridge
-  connected and Material Maker's `export/mm.py` added to Unreal's Python
-  paths (one-time setup, documented upstream). Grayson said Unreal "is not
-  working right now" as of that session; check whether that's fixed before
-  trying again.
+- **`list_node_types` tool decision — KEEP.** ~5KB name list vs the ~260KB
+  full `catalog://nodes` resource, so it's the cheap discovery lever, not
+  redundant with the resource + `describe_node`.
 - **B. More cookbook categories** — fabrics, organics, sci-fi, terrain, wood,
-  stone, leather, painted-metal are all represented; terrain now includes the
-  natural-surface set (ice/lava/forest floor/pebbles). **Glass and plastics are
-  the remaining uncovered quick-wins.**
-- **C. True cobblestone — DONE.** `s07_cobblestone` (voronoi-plate `dry_earth`
-  approach) closed this in a prior session; the `s05` hex-grid partial is
-  superseded.
-- **D. Wool loop-knit — CLOSED as unreachable (2026-09-03).** An isolation-render
-  probe confirmed no bundled generator makes upright-V stockinette (see the
-  Changed-this-session block); `f04` stays the honest coarse-weave stand-in and
-  `f07_herringbone_tweed` shipped as the probe's byproduct. sf03's
-  circuit-board bleed-through was fixed 2026-09-01 (hard 0/1 opacity mask).
+  stone, leather, painted-metal are all represented; terrain includes the
+  natural-surface set (ice/lava/forest floor/pebbles). **Glass and plastics
+  are the remaining uncovered quick-wins.**
+- **C. True cobblestone — DONE.** `s07_cobblestone` closed this; the `s05`
+  hex-grid partial is superseded.
+- **D. Wool loop-knit — CLOSED as unreachable.** No bundled generator makes
+  upright-V stockinette; `f04` stays the honest coarse-weave stand-in and
+  `f07_herringbone_tweed` shipped as the closing probe's byproduct.
 - **E. Image-to-material decomposition** — Grayson's own backlog idea,
   captured in `_agent-commons/ideas/Tool-MaterialMaker-MCP.md`. Explicitly
-  deferred; likely wants its own `brainstorming` session before any design
-  work, not a cold start here.
+  deferred; likely wants its own `brainstorming` session, not a cold start.
 - **F. PyPI publish** (on hold; GitHub-clone is the current route).
-- **G. Document `render_preview` — DONE this session** (AUTHORING.md workflow
-  step 5). It was already in the README tool table; the gap was the workflow doc.
-- **H and I are done** (`render_node_output`/`live_render_node_output` and
-  `reposition_node`, respectively) — see the Session log's 2026-08-28 and
-  2026-08-29 (later) entries. Renaming an existing node live is a ruled-out
-  non-goal, not an open gap: see `live.reposition_node`'s docstring for why.
 - **J. Load an existing `.ptex` into a live session.** No `live_load`
-  equivalent exists; `live_start`/`connect_or_launch` only ever begin from
-  a default graph or whatever's already open in the attached window. Lowest
-  priority of the remaining live-mode gaps.
+  equivalent exists. Lowest priority of the remaining live-mode gaps.
 
 ## ❓ Open questions
 
-- **New 2026-09-03:** does `backup-ops` exclude the ~1GB of regenerable renders
-  under `output/`, `quality/cookbook/`, `quality/runs/` (plus the 266MB
-  `mm_live_overlay/`)? Flagged by the teardown, not verified.
-- **New 2026-09-03, deferred minors from the cookbook-as-data reviews (all
-  small):** `tests/test_config.py`'s default-dir test reads the real machine env
-  (pre-existing pattern); `_default_cookbook_dir()`'s empty branch is untested;
-  `server.py`'s source-validation error string is near-duplicated between the two
-  example tools; the contact sheet adds a 5MB blob per regeneration.
-- **Resolved this session:** whether to keep expanding live-control's
-  mutation surface. Grayson said keep building it (see item I above) —
-  no longer open.
-- **Resolved this session:** the long-flagged untracked
-  `docs/images/contact-sheet-wood-stone.png` is gone — superseded by the new
-  tracked `docs/images/cookbook-contact-sheet.png` (4×7, all categories) and
-  removed. No longer an open item.
-- **New this session:** the cross-engine North Star wording treats UE4's
+- **New 2026-09-03:** `quality/README.md`'s "Cookbook growth" section was
+  corrected this session (it still said helpers were "imported from
+  `author.py`"), but hasn't been re-read end to end for other drift since
+  the split. Worth a skim next time that file is touched.
+- **New 2026-09-03 (parked, not fixed, no downstream dependency):**
+  `tests/test_donors.py`'s module-level `build_catalog(cfg.nodes_dir)` call
+  means a missing `MM_PROJECT_PATH` fails all 20 donor tests together
+  (including the 10 that don't actually need the catalog), not just the 9
+  catalog-validation ones. Low blast-radius issue, not a correctness bug;
+  worth a `pytest.fixture` split only if it ever actually bites.
+- Still open, unchanged: does `backup-ops` exclude the ~1GB of regenerable
+  renders under `output/`, `quality/cookbook/`, `quality/runs/` (plus the
+  266MB `mm_live_overlay/`)? Flagged by an earlier teardown, not verified.
+- Still open, unchanged, deferred minors from the cookbook-as-data reviews
+  (all small): `tests/test_config.py`'s default-dir test reads the real
+  machine env (pre-existing pattern); `_default_cookbook_dir()`'s empty
+  branch is untested; `server.py`'s source-validation error string is
+  near-duplicated between the two example tools; the contact sheet adds a
+  5MB blob per regeneration.
+- Still open, unchanged: the cross-engine North Star wording treats UE4's
   export path (PNGs + manual in-editor assembly) as a lesser tier, not a
-  real target — Grayson said "sounds good" generally but never explicitly
-  confirmed that specific framing. Worth a quick check before it drives
-  real scope decisions.
-- **Resolved 2026-09-01:** `sf03_circuit_board`'s trace-bleed-through bug is
-  FIXED. It was never a mask-threshold problem (that hypothesis was correctly
-  ruled out earlier). Real cause: the chips' albedo colorize (gray 0.65) was
-  fed as the `blend`'s port-2 opacity, and a blend's opacity is `amount * a`
-  (`blend.mmg`), so chips were 65% opaque and the traces bled through the other
-  35%. Fixed by splitting a dedicated hard 0/1 opacity mask off the albedo
-  (same on the traces). No longer open.
+  real target, Grayson said "sounds good" generally but never explicitly
+  confirmed that specific framing. Worth a quick check before it drives real
+  scope decisions.
 - Still open, unchanged: is `.mcp.json` the right long-term wiring, or
   should it fold into `project-setup`'s standard kit? Not decided.
-- Still open, unchanged: should `render_preview` get documented in
-  `docs/AUTHORING.md` / README, or is it enough as just an MCP tool?
-- **Resolved 2026-09-03:** wool loop-knit (closed as unreachable) and true
-  cobblestone (`s07` done) are both off the open list now.
 - Still open, unchanged: PyPI vs. GitHub-clone-only (leaning GitHub-only);
   cross-platform (macOS/Linux) verification, still untested, no machine
   available; two parked-not-fixed overlay-builder findings from a much
   earlier session (staleness marker, `_append_autoload`'s first-occurrence
   match, both verified low-priority).
+
+## 🗂️ Changed this session (v0.6.0 release + author.py split + donor vendoring)
+
+- **v0.6.0 released:** merged release-please PR #3 (`88dcaa9`), synced local
+  `main`. Pure metadata bump (CHANGELOG + version), no code changes.
+- **Scope correction (the session's key finding):** "fold `examples/` into
+  the cookbook" from last session's handoff was ambiguous between this
+  repo's own local `examples/` showcase folder and `cfg.examples_dir`
+  (Material Maker's 43 bundled demo graphs in the external checkout).
+  Confirmed it meant the latter, then audited every `quality/*.py`
+  `load_example("...")` call site and found only 9 names in real use:
+  `beehive`, `crocodile_skin`, `dry_earth`, `metal_pattern_2`, `rock`,
+  `rusted_metal`, `stone_wall`, `wood`, `wooden_floor`. Grayson chose to
+  vendor just those 9, not all 43, and to keep browsing/the Phase 1 gate
+  live against the external checkout (not also scope those down).
+- **`author.py` split, branch `author-helpers-donor-vendor` (bounded task,
+  no spec):** `quality/author_helpers.py` (new) now holds `load_example`,
+  `node`, `set_gradient`, `set_param`, `save_variant`, `rewire`,
+  `drop_conn`, `add_node`, `retype`, `_grad`, `_from_scratch_noise_material`.
+  `quality/author.py` keeps only the 12 `build_*` functions, `BUILDERS`, and
+  `main()`. 10 files repointed (`from author import ...` -> `from
+  author_helpers import ...`): `cookbook_fabrics.py`, `cookbook_stone.py`,
+  `cookbook_scifi.py`, `cookbook_painted_metal.py`, `cookbook_organics.py`,
+  `cookbook_leather.py`, `cookbook_wood.py`, `cookbook_terrain.py`,
+  `debug_swatches.py`, `noise_gallery.py`, `tests/test_author_helpers.py`.
+- **Donor vendoring:** new tracked `quality/donors/` (9 `.ptex` files,
+  byte-for-byte copies of Material Maker's bundled examples, sha256-verified
+  identical to source, plus a provenance `README.md`). `author_helpers.py`'s
+  `load_example()` now reads from `quality/donors/` instead of
+  `_CFG.examples_dir`. New `tests/test_donors.py` (20 tests: presence + JSON
+  validity + catalog validation + a source-path pin). Config, doctor,
+  `server.py`'s `list_examples`/`load_example` MCP tools, the Phase 1 gate
+  test, and the render/preview smoke tests are all untouched, confirmed by
+  the final review against the plan's explicit out-of-scope list.
+- **Process:** `pickup` chained the merge into `brainstorming` (classified
+  the `author.py` split as bounded, the donor question as architectural)
+  -> spec -> `writing-plans` (4 tasks) -> `subagent-driven-development`.
+  Worked on a feature branch in the main checkout, not a worktree, same
+  reason as the AUTHORING split session (`.venv` is an editable install
+  resolving `mm_mcp` from the main checkout's `src/`). One task-level fix
+  round: Task 3's own brief only staged `quality/donors/` in its commit
+  command, leaving `tests/test_donors.py` uncommitted; fixed with a
+  follow-up commit, not an amend. Final whole-branch review (opus) found 1
+  Important + 6 Minor, all the same shape (stale "author.py" doc references
+  left over from the split, e.g. `quality/README.md`'s "Cookbook growth"
+  section); one fix wave addressed all 7, scoped re-review clean.
+  Fast-forward-merged to `main` (54693fb), pushed, branch deleted, SDD
+  workspace removed. Fast suite 424 -> 444.
+- **Decisions (+ why):** vendor 9 of 43, not all 43, most of the other 34
+  are Material Maker's own art/pattern demos (mandelbrot, skulls,
+  raymarching), not material recipes, folding them into a curated,
+  recipe-carded cookbook would blur what the cookbook is for. Browsing
+  stays live against the external checkout (Option A of two presented) so
+  only the authoring pipeline's own reproducibility improves, not the
+  MCP-facing discovery surface. New commits over amends for the Task 3 fix,
+  per this repo's standing convention.
+- Six rulings made on Claude's own authority during execution (worktree vs.
+  branch; ratifying the implementer's `_grad`/`_ROOT` fix to a gap in the
+  plan's own brief; the Task 3 commit fix; batching the final review's 7
+  findings into one fix dispatch; two parked test-design nits in
+  `tests/test_donors.py`) are listed in full in the commons log
+  `_agent-commons\log\2026-09-03-claude-code-mm-mcp-v060-release-donor-vendor-spec.md`
+  and this session's own wrap-up report.
 
 ## 🗂️ Changed this session (v0.5.0 release + AUTHORING split + hygiene)
 
@@ -238,42 +269,9 @@ The older open backlog, unchanged:
 - Seven rulings made on Grayson's behalf are listed in the commons log
   `_agent-commons\log\2026-09-03-claude-code-mm-mcp-teardown2-cookbook-as-data.md`.
 
-## 🗂️ Changed this session (wool-knit closed, f07 herringbone tweed, +4 terrain)
-
-- Branches/commits: `main`, `8ca2c2b` (f07 herringbone tweed + wool-knit closure)
-  and `6ed5773` (terrain t05-t08), both **pushed** to `origin/main` (CI triggered).
-  Files: `quality/cookbook_fabrics.py` (f07 builder), `quality/cookbook_terrain.py`
-  (`_dry_earth_plates` helper + t05-t08 builders), `docs/AUTHORING.md` (f07 recipe
-  + wool-knit closure; terrain topology-not-donor section + 4 recipes), 5 tracked
-  thumbnails (`docs/images/cookbook-fabrics/f07_herringbone_tweed.png`,
-  `docs/images/cookbook-terrain/t05-t08.png`). Authored `.ptex` + renders (incl.
-  throwaway `scratch-knit/`) stay gitignored. No `src/` change, no gate/phase moved.
-- **Wool loop-knit CLOSED as unreachable.** Isolation-render probe (each candidate
-  generator's raw pattern through a gray ramp, look for the knit tell) tested 4
-  leads: pattern-Bounce + `bricks` Running Bond = staggered pillow honeycomb;
-  `weave2` stitch=1 = basket weave; `weave2` stitch=3 = herringbone chevrons that
-  reverse band-to-band = herringbone, not knit. **Reframe: "offset rows" and
-  "V-columns in aligned wales" are INDEPENDENT; only the second is the knit tell.**
-- **`f07_herringbone_tweed`** = weave2 stitch=3, warm Harris-tweed 3-tone, soft
-  `param1` 0.35 `param4=0`. One-tone limit noted (weave2 emits one grayscale).
-- **Terrain t05-t08 + the topology-not-donor lesson (the durable takeaway).** First
-  pass cloned `dry_earth` 4x -> siblings; Grayson caught it. Fix: pick base by
-  surface TOPOLOGY. Connected crack network (ice, lava) = dry_earth plates (lava
-  glow: `warp_0` crack signal -> `colorize_glow` -> Material emission port 3,
-  `emission_energy` 1.0). Discrete packed cells (pebbles) = voronoi + `warp_0`
-  ~0.02 (recessed contact joints, not crack lines). Scattered pieces (forest floor)
-  = re-based OFF dry_earth onto `fbm` noise=Cellular 4 (the scattered-clump base
-  from the noise gallery). Ice smoothness pass: feed the crack-only signal
-  (`colorize_4`) into the normal instead of the grainy `blend_1` height. New
-  `_dry_earth_plates` helper feeds a FLAT roughness texture so an ORM map exports
-  for the preview (dry_earth leaves the roughness input unconnected otherwise).
-- Process: `brainstorming` (bounded) + `advisor` twice (the chevron reframe on
-  wool, the topology reframe on terrain). Judged every material in 3D via
-  `render_preview` and sent previews to Grayson each pass. `render_preview` has no
-  emission slot, so lava's glow was judged on the exported emission map.
-
-> 📦 **21 older "Changed this session" write-ups archived** (through
-> 2026-09-01, incl. the blend-opacity debug swatches, the painted-metal cookbook, and the v0.4.0 release-unblock
+> 📦 **22 older "Changed this session" write-ups archived** (through
+> 2026-09-01, incl. the wool-knit closure/f07/terrain session, the blend-opacity
+> debug swatches, the painted-metal cookbook, and the v0.4.0 release-unblock
 > + README gallery session) --
 > the pre-release audit/teardown/doc-fix pass,
 > render_node_output/live_render_node_output (item H), saved_graphs/
@@ -285,6 +283,23 @@ The older open backlog, unchanged:
 
 ## ⚠️ Heads-up for the next agent
 
+- **`quality/author.py` is now a builders-only file; graph-surgery helpers
+  live in `quality/author_helpers.py`.** If you're adding a new cookbook
+  category or debug swatch, `from author_helpers import ...` the helpers
+  (`load_example`, `node`, `set_gradient`, `set_param`, `save_variant`,
+  `rewire`, `drop_conn`, `add_node`, `retype`, `_grad`), not `from author
+  import ...`, that module now only exports the 12 Phase-3 `build_*`
+  functions, `BUILDERS`, and `main()`.
+- **Donor graphs (`beehive`, `crocodile_skin`, `dry_earth`, `metal_pattern_2`,
+  `rock`, `rusted_metal`, `stone_wall`, `wood`, `wooden_floor`) load from
+  `quality/donors/`, a tracked directory in this repo, not the external
+  Material Maker checkout anymore.** If you add a 10th donor to any builder,
+  vendor its `.ptex` into `quality/donors/` too (copy from
+  `<MM_PROJECT_PATH>/material_maker/examples/<name>.ptex`), `load_example()`
+  won't find it in the external checkout's path anymore. Browsing all 43 of
+  Material Maker's bundled examples over MCP (`list_examples(source=
+  "material_maker")`) and the Phase 1 gate test are unaffected by any of
+  this, they still read live from the external checkout.
 - **`list_examples` / `load_example` changed shape 2026-09-03.** `list_examples`
   returns `{"ok": True, "examples": [{"name", "source", "category"}]}` (not a list
   of names); `load_example` returns `{"ok": False, "error": ...}` for unknown
@@ -293,7 +308,7 @@ The older open backlog, unchanged:
   `quality/cookbook_<category>.py` then `quality/promote_cookbook.py`; edit the
   builder, never the tracked `.ptex` by hand (`--check` would flag it).
 - **The 2026-08-29 8-angle code review found 10 verified correctness bugs.
-  As of this cleanup session: 7 are fixed (findings 1-7 and 9), and 2 are
+  As of a prior cleanup session: 7 are fixed (findings 1-7 and 9), and 2 are
   ruled out as deliberate non-changes (#8, #10) with in-code reasons. That
   leaves none outstanding.** Recorded here so they aren't tribal knowledge
   living only in a conversation transcript. Ranked most severe first:
@@ -355,228 +370,41 @@ The older open backlog, unchanged:
   those; they were ranked below correctness bugs and not re-verified
   individually here.
 - **`ensure_overlay`'s rebuild path now clears read-only file attributes
-  before `rmtree` -- fixed this session, real and load-bearing, not
+  before `rmtree` -- fixed a prior session, real and load-bearing, not
   theoretical.** The overlay is a full copy of the real git checkout at
   `z-Git\material-maker`; git marks `.git/objects/pack/*.idx` read-only,
   and `shutil.rmtree` can't delete a read-only file on Windows without
-  help. Every rebuild (any `addons/mm_live` change) would have hit this.
-  Fixed via a new `_clear_readonly()` helper in `overlay.py`, called right
-  before `rmtree`. If you're ever tempted to remove it thinking it's
-  unnecessary, don't -- it only reproduces against a *real* git checkout,
-  not the synthetic fixtures most tests use, so its absence is easy to miss
-  until the next real rebuild. If `live_start`/`connect_or_launch` ever
-  fails again with a bare, detail-free MCP error, reproduce directly via
+  help. Fixed via a `_clear_readonly()` helper in `overlay.py`, called right
+  before `rmtree`. If `live_start`/`connect_or_launch` ever fails again with
+  a bare, detail-free MCP error, reproduce directly via
   `.venv\Scripts\python.exe -c "from mm_mcp import live; live.connect_or_launch()"`
   rather than trusting the MCP tool's error message -- it swallows
   exception detail on a raise; the real traceback only shows up outside it.
-- **`ping`'s response now has a `has_graph` field alongside `ready`, and
-  they mean different things -- don't conflate them.** `ready` is still
-  purely "main_window resolved." `has_graph` (new this session) is "a graph
-  tab actually exists" (`get_current_graph_edit()`/`.generator` non-null,
-  same check the five mutating handlers already did). `connect_or_launch`
-  requires both before declaring a session usable. Computed by a new
-  `_has_active_graph()` helper in `live_server.gd`, placed right after
-  `_cmd_ping`. The five mutating command handlers were deliberately left
-  unchanged -- their own `graph_edit == null` guards are now normally
-  unreachable defense-in-depth, not dead code to clean up.
-- **`connect_or_launch` now has THREE ways to give up, not two -- know
-  which one you're touching.** (1) Genuinely still booting: `ping` never
-  reports `ready: true` during the initial grace period -- falls through to
-  the full `launch_timeout` main poll loop, unchanged from before this
-  session. (2) Squatted port: `ping` never answers at all during the grace
-  period -- fails fast with the pre-existing "occupied by an unresponsive
-  process" message, unchanged. (3) **New this session:** responsive but
-  graph-less -- `ping` reports `ready: true` at least once during the grace
-  period but `has_graph` never follows -- fails fast within that same grace
-  period (reusing `_SQUATTED_PORT_GRACE`, no new constant) with a message
-  naming the instance as responsive and pointing at a stale/pre-upgrade
-  addon or a genuinely tab-less instance. `_wait_for_ready_or_give_up`'s
-  return contract grew a fourth value, `main_window_ever_ready`, to let
-  `connect_or_launch` tell (1) apart from (3) -- read its docstring before
-  changing the discriminator again. The "we launched this process
-  ourselves" (fresh-launch) path is completely untouched by (3): it still
-  waits the full `launch_timeout` for both `ready` and `has_graph`, no
-  grace-period ambiguity, since there's no "maybe it's a stale addon"
-  question for a process this session just spawned.
-- **✅ Resolved this session: the readiness-race backlog item from last
-  session is fixed and verified.** A real 4x back-to-back relaunch check
-  (the same technique that originally found the bug) showed zero
-  `"no active graph"` failures, versus 3-of-4 before the fix. See Current
-  state and the two items above for the mechanism.
-- **`server.py` now has four live MCP tools consuming `live.py`:**
+- **`ping`'s response has a `has_graph` field alongside `ready`, and they
+  mean different things -- don't conflate them.** `ready` is purely
+  "main_window resolved." `has_graph` is "a graph tab actually exists"
+  (`get_current_graph_edit()`/`.generator` non-null). `connect_or_launch`
+  requires both before declaring a session usable.
+- **`server.py` has four live MCP tools consuming `live.py`:**
   `live_start`/`live_get_graph`/`live_apply`/`live_render`, all going through
   a shared `_ensure_live_session(cfg, launch_timeout=60.0)` helper that
   calls `live.connect_or_launch` fresh every time. **Do not read
   `server._live_session` directly** to check on a launched process --
-  always call `_ensure_live_session(cfg)` yourself, since the module global
-  is meant as internal bookkeeping, not a public handle. It DOES correctly
-  preserve a previously-launched process's handle across later attach-only
-  calls now (fixed this session), but that's an implementation detail, not
-  a contract to depend on from outside `server.py`.
+  always call `_ensure_live_session(cfg)` yourself, the module global is
+  internal bookkeeping, not a public handle.
 - **`live_apply(ops)` dispatches via `_LIVE_OP_HANDLERS`, a dict keyed by
   `op["op"]`** (`"add_node"`/`"connect_nodes"`/`"set_param"`), stops at the
-  first failing op, and reports a malformed op (not a dict, or missing a
-  required key) as a data-shaped error rather than raising -- consistent
-  with this project's "validation errors are data" convention. If you add a
-  fourth op kind, add its handler to that dict and nowhere else.
-- **`connect_or_launch`'s squatted-port grace period discriminates on
-  whether `ping` ever answered at all during the grace window, not whether
-  it reached `ready`.** This was a real bug this session: `ping` legitimately
-  returns `ready: false` for far longer than the 5s grace period during a
-  normal Material Maker boot (the addon's socket binds at project startup,
-  well before `main_window` resolves), so gating on "ready in time" wrongly
-  told Grayson to taskkill a healthy, booting instance. If you touch this
-  logic again, re-read `_wait_for_ready_or_give_up`'s docstring in
-  `live.py` before changing the discriminator back -- `ever_answered=True`
-  (even with `ready=False`) must fall through to the patient main poll loop,
-  not fail fast. Only a port that *never* answers a single valid ping during
-  the whole grace window is treated as squatted.
-- **✅ Fixed this session: `_terminate` now kills the GUI child process
-  too.** It used to only call `process.terminate()` on the launcher's
-  `Popen` handle, which left the spawned GUI child running (confirmed via
-  `tasklist`/`wmic`: two orphaned `Godot_v4.7.1-stable_win64*.exe` processes
-  after a real integration test passed and `close()` ran). Now runs
-  `taskkill /F /T /PID <pid>` (kills the whole process tree) before the
-  original terminate()/kill() sequence, which still runs after as a
-  fallback. A test double with no real `.pid` attribute skips the taskkill
-  call and falls straight to the fallback, so the existing fake-process
-  tests needed zero changes. Verified manually against 4 real launches in a
-  row (2 successes, 2 mid-test failures from the unrelated race below) --
-  zero leftover Godot processes every time, versus 2 leftover every time
-  before this fix.
-- **✅ Fixed a later session: the gap below (readiness races ahead of graph
-  tab creation) is resolved.** See the top of this section (`has_graph`,
-  the three-way give-up split) for the actual mechanism now in place. Kept
-  the original finding text below for the historical record of how it was
-  found.
-- `connect_or_launch`'s readiness check races ahead of the default graph
-  tab's creation. `ping`'s `ready` field only checks `mm_globals.main_window
-  != null`; it doesn't check whether `get_current_graph_edit()` (and its
-  `generator`) actually exist yet. `add_node`/`get_graph`/etc. all
-  independently check `graph_edit == null or graph_edit.generator == null`
-  and return `{"ok": false, "error": "no active graph"}` when that race
-  loses. Reproduced 3 times in a row this session (after 1 clean pass
-  earlier the same day), confirmed pre-existing and unrelated to the
-  `_terminate` fix via `git stash` against the untouched code.
-- **`addons/mm_live/live_server.gd` now answers all five commands:**
-  `ping`/`get_graph` (read-only, from step 2) plus `add_node`/`connect_nodes`/
-  `set_param`/`render` (mutating, from this session). Still deliberately
-  thin -- no validation logic anywhere in this file; everything mutating
-  arrives pre-validated from the Python side by design. Lazy `main_window`
-  resolution -- never cache it, resolve fresh inside every command handler.
-  **Two node-addressing conventions coexist and must not be confused:**
-  `do_connect_node` (used by `connect_nodes`) addresses the GraphEdit's own
-  scene tree, where node names are `"node_" + generator_name` -- the handler
-  prefixes this internally. `set_node_parameters` (used by `set_param`)
-  takes a **generator**, not a GraphNode, resolved via
-  `graph_edit.generator.get_node(NodePath(name))` with the **plain** name,
-  no prefix. The wire protocol only ever exposes plain names either way.
-- **`render`'s handler calls `graph_edit.get_material_node()` then
-  `material_node.export_material(prefix, profile, 0, true)` directly --
-  NOT `main_window.export_material(...)`.** That was the original approach
-  and it shipped, passed review, and was wrong: `main_window.export_material`
-  has no `await` in its own body, so awaiting it resolves same-frame while
-  the real file-writing coroutine keeps running in the background,
-  unobserved. If you're ever touching this handler again, don't revert to
-  the `main_window` wrapper without re-reading the plan's "Verified against
-  Material Maker source" section (the corrected entry, not the original).
-- **No automated GDScript test harness exists in this repo.** Both real
-  bugs this session (the `:=`/`=` parse error, the un-awaited render call)
-  passed clean task-level reviews because no reviewer could actually execute
-  the script -- only the real integration test caught them. Godot 4.7.1 does
-  support `--headless --check-only --script <path>` against the built
-  overlay as a cheap parse-only smoke check (confirmed by the final review);
-  it would catch a parse error like the first bug but not runtime-semantics
-  bugs like the second. Worth adding as cheap insurance, not a substitute
-  for the integration test.
-- **New module: `src/mm_mcp/live.py`.** `ping()`/`get_graph()` are one-shot
-  connect/send/recv/close calls (`_send_command`), no persistent session
-  state on either side. `add_node`/`connect_nodes`/`set_param` each validate
-  the proposed mutation against `_ensure_catalog(cfg)` (a module-level cache
-  keyed by `cfg.nodes_dir`) via `validate_graph` before calling
-  `_send_command` -- on any `"error"`-severity problem (or, for `set_param`
-  specifically, an unrecognized-parameter warning scoped to that node), the
-  socket is never touched. `render(basename, profile, cfg, ...) -> RenderResult`
-  reuses `render.py`'s own `RenderResult`/`_collect_fresh_images` rather than
-  reimplementing freshness detection. `connect_or_launch(cfg=None, host=LIVE_HOST,
-  port=LIVE_PORT, launch_timeout=60.0) -> LiveSession` is the orchestration
-  entry point: probes the port, launches via `overlay.py`'s `ensure_overlay`
-  if nothing's listening, polls until ready, guards against leaking the
-  process it launched on any exit path (success, timeout, or an unexpected
-  exception). `LiveSession.close()` is a safe no-op when `process is None`
-  (attached, didn't launch).
-- **`overlay.py`'s `ensure_overlay` is now actually consumed** (by
-  `live.py`'s `_launch_overlay`), no longer just unit-tested in isolation.
-  `_ADDON_PATH` resolves to `<repo-root>/addons/mm_live` via 3 `os.path.dirname`
-  calls from `src/mm_mcp/live.py` -- this assumes an editable/source-checkout
-  install, verified correct for that case, not for a real wheel install (see
-  the top-level-`addons/` decision above).
-- **`mm_live_overlay/` (the disposable overlay's default build location) is
-  gitignored.** It's a ~266MB full copy of the Material Maker checkout,
-  rebuilt on every addon change -- don't be surprised it's large, and don't
-  remove the gitignore entry.
-- **`mm_live.log`** (in `cfg.output_dir`, default `./output/mm_live.log`) has
-  the launched Godot process's captured stdout+stderr. Check it first if a
-  live-mode launch fails -- `connect_or_launch` now names this path directly
-  in its error message when the launched process dies before becoming ready.
-- **`_append_autoload` inserts at the end of the `[autoload]` section
-  specifically, not blindly at end-of-file** -- a real bug found and fixed in
-  step 1. If you're ever tempted to "simplify" this function back to a plain
-  append, don't; the real Material Maker `project.godot` has ~10 sections
-  after `[autoload]`, verified.
-- **`ensure_overlay` validates before mutating anything.** It raises
-  `ValueError` if `addon_path` isn't a directory, `mm_project_path` has no
-  `project.godot`, or `overlay_dir` equals/contains either input path
-  (case-insensitive) -- guards against actually deleting the real
-  `z-Git\material-maker` checkout if `live.py` ever misconfigures
-  `overlay_dir`.
-- **New MCP tool (from an earlier session):** `render_preview(albedo_path,
-  normal_path, orm_path, basename="preview", tile=1.0) -> dict`. Call
-  `render_graph` first and feed its output paths in. Renders through
-  `src/mm_mcp/preview_project/`, a small standalone Godot project bundled in
-  this repo, not the `z-Git\material-maker` checkout.
+  first failing op, and reports a malformed op as a data-shaped error rather
+  than raising. If you add a fourth op kind, add its handler to that dict
+  and nowhere else.
 - **Run tests with `.venv\Scripts\python.exe`** (or activate the venv).
-  Fast suite: `pytest -q -m "not integration"` (174 passed, 6 deselected).
-  `pytest -q` adds the Godot-launching integration tests; the squatted-port
-  hardening fixed this session should make running multiple integration
-  tests in one process more reliable than before, but this hasn't been
-  stress-tested specifically -- if you hit a port-race-shaped flake again,
-  check the GUI-child-process-leak item above first (a leaked prior-test
-  process squatting the port is a plausible new cause), then fall back to
-  running integration tests individually (`-k build_and_render`,
-  `-k default_new_material`, `-k live_tools_hold_a_real_session`) for a
-  clean signal.
-- **Godot property-name traps hit in an earlier session** (both caused a
-  script error + hung process, had to `taskkill`): depth of field lives on a
-  `CameraAttributesPractical` resource assigned to `Camera3D.attributes`,
-  not direct `Camera3D` properties; `smooth_faces` exists on `CSGSphere3D`
-  but not `CSGBox3D`. If a Godot script error leaves the console binary
-  hanging, `taskkill //F //IM Godot_v4.7.1-stable_win64_console.exe` clears
-  it (Bash tool, not PowerShell).
-- **Known, honestly-flagged limitations, not bugs:** CSG boolean subtraction
-  cuts sharp edges, no true bevel without a modeled mesh asset. The ground
-  plane's horizon seam issue from an earlier session was a similar "real fix
-  needs more than a parameter tweak" case (already fixed, see session log).
-- **Testable command-building pattern:** `preview.py`'s `_build_command()`
-  and `live.py`'s `_launch_command()` are both pure functions returning a
-  Godot argv list, tested directly without launching Godot, mirroring
-  `render.py`'s `_collect_fresh_images()`.
-- **Server startup is lazy.** Importing `mm_mcp.server` does NOT validate
-  config or build the catalog; `_ensure_ready()` does that on first tool use
-  (or at `mcp.run()`). A test calling a tool under bad config needs
-  `server._reset()` in setup AND teardown.
+  Fast suite: `pytest -q -m "not integration"` (444 passed, 23 deselected).
+  `pytest -q` adds the Godot-launching integration tests.
 - **`mm-mcp --check`** is the setup doctor (green/red preflight); `--version`,
   `--help` also work. Build/release tooling lives in the `release` extra
-  (`pip install -e .[release]` -> build, twine). `dist/` and `build/` are
-  build-artifact scratch, safe to `rm -rf`, not tracked.
-- **Pillow is installed in `.venv` but deliberately NOT in `pyproject.toml`**,
-  a one-time tool for downscaling `examples/images/` previews. Don't add it
-  as a dependency.
+  (`pip install -e .[release]` -> build, twine).
 - All Phase 1-2 render gotchas still hold (see CLAUDE.md): `--export-material`,
   `_console.exe`, no `--headless`, `steam_appid.txt`.
-- **Minor, non-blocking, carried over:** `.gitignore` had no `dist` entry
-  even though CLAUDE.md and this doc call `dist/` gitignored, worth a
-  one-line fix next time packaging is touched.
 - `normal_map` is a compound node; real params `param0` (size), `param1`
   (strength), `param2`, `param4` (0 = real relief for analytic generators,
   1 = flat) -- NOT `amount`/`size`. Voronoi **output port 2** = `rand3`
@@ -598,10 +426,43 @@ The older open backlog, unchanged:
 > section past that cap, the oldest entry moves out verbatim (no
 > summarizing) into [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md)
 > instead of letting this doc grow unbounded -- flagged as a real pickup
-> cost by the 2026-08-29 teardown (Maintainer lens). **29 older entries are
-> now archived there**, from the 2026-08-29 README-images session back
-> through the project's Phase 1-2 kickoff on 2026-08-25.
+> cost by the 2026-08-29 teardown (Maintainer lens). **30 older entries are
+> now archived there**, from the 2026-09-01 blend-opacity-debug-swatches
+> session back through the project's Phase 1-2 kickoff on 2026-08-25.
 
+
+### 2026-09-03 (v0.6.0 release + author.py split + donor vendoring): the pipeline stops depending on the external checkout
+- `pickup` reconciled clean (`main` at `677f852`), then merged release-please
+  PR #3 straight away (0.6.0, pure metadata bump) since it was the standing
+  next step. Grayson picked options 1 + 2 from the briefing: decide the two
+  deferred hygiene items, and scope the `author.py` refactor.
+- Asked Grayson directly: fold `examples/` into the cookbook (chosen), keep
+  `docs/HANDOFF_ARCHIVE.md` (chosen, no longer an open item). `brainstorming`
+  on both remaining tasks surfaced the scope correction: "examples/" meant
+  `cfg.examples_dir` (Material Maker's 43 bundled demos in the external
+  checkout), not this repo's own `examples/` folder. Auditing every
+  `load_example()` call site found only 9 of 43 are load-bearing donors.
+  Grayson chose to vendor just those 9 and keep browsing/the gate live
+  against the external checkout.
+- Spec written and approved
+  (`docs/superpowers/specs/2026-09-03-vendor-donor-examples-design.md`),
+  4-task plan (`docs/superpowers/plans/2026-09-03-author-helpers-donor-vendor.md`)
+  -> `subagent-driven-development` on branch `author-helpers-donor-vendor`
+  (feature branch in the main checkout, not a worktree, same editable-`.venv`
+  reason as the AUTHORING split). Task 1 extracted the helpers into
+  `author_helpers.py` (the implementer caught and fixed a real gap in my own
+  brief: it omitted `_grad`/`_ROOT`, which `author.py`'s own remaining code
+  still needs). Task 2 repointed 10 consumer files. Task 3 vendored the 9
+  donors (one fix round: a required test file was created but never
+  committed, because the plan's own commit command omitted it, fixed with a
+  follow-up commit). Task 4 repointed `load_example()`, proved byte-identical
+  builder output before/after via a real before/after hash comparison.
+- Final whole-branch review (opus): "with fixes" -- 1 Important + 6 Minor,
+  all stale "author.py" doc references left over from the split (e.g.
+  `quality/README.md`'s Cookbook-growth section). One fix wave, scoped
+  re-review clean. Fast-forward-merged to `main` (`54693fb`), pushed, branch
+  deleted, SDD workspace removed. Fast suite 424 -> 444.
+- Then this wrap-up (HANDOFF baton, memory, commons log).
 
 ### 2026-09-04 (v0.5.0 release + AUTHORING split + hygiene): the guide becomes a resource, recipes become cards
 - `pickup` reconciled clean (`main` at `66661f5`); confirmed release PR #2 now
@@ -646,22 +507,6 @@ The older open backlog, unchanged:
   Wrap-up capped STATUS.md's header (old text archived verbatim), wrote memory
   and the commons log.
 
-### 2026-09-03 (wool-knit closed, f07 herringbone tweed, +4 terrain) — topology-not-donor
-- Picked up via `pickup` (clean `main` at `e7bb420`). Grayson chose wool loop-knit
-  lead #1 (offset rows). `brainstorming` + `advisor` reframed it: stockinette's
-  tell is chevron/V in ALIGNED wales, not offset rows. Cheap isolation-render probe
-  (raw generator through a gray ramp) tested 4 leads and confirmed the catalog has
-  NO stockinette-knit generator. Closed wool-knit as unreachable; shipped the
-  probe's byproduct as `f07_herringbone_tweed`. Finalized + pushed (`8ca2c2b`).
-- Grayson: "more natural surfaces." Built terrain t05-t08 (ice/lava/forest floor/
-  pebbles). First pass cloned `dry_earth` 4x -> siblings; Grayson caught it.
-  `advisor` reframe -> pick base by TOPOLOGY not donor. Re-based (crack-network vs
-  packed-cells vs scattered-pieces); lava glow via emission port 3; forest floor
-  onto `fbm` Cellular 4; ice smoothness pass; flat-roughness-texture for ORM export.
-  All 4 authored -> rendered -> 3D-previewed -> locked. Finalized + pushed (`6ed5773`).
-- Wrote `_agent-commons/log/2026-09-03-claude-code-mm-mcp-herringbone-tweed-knit-probe.md`.
-  Then this wrap-up (HANDOFF/STATUS baton).
-
 ### 2026-09-01 (noise-vocab gallery + 2 backlog + wool take-two) — closed #3/#4, quantified the sameness, wool still open
 - Picked up via `pickup` (clean `main` at `198e2ad`, in sync). Grayson batched
   4 items: #2 wool, #3 list_node_types, #4 render_preview, plus "test different
@@ -683,26 +528,4 @@ The older open backlog, unchanged:
   Changed-this-session block. Then wrapped.
 - Wrote `_agent-commons\log\2026-09-01-claude-code-mm-mcp-noise-vocab-backlog-batch.md`.
 
-### 2026-09-01 (blend-opacity debug swatches) — +2 known-answer diagnostics, all pass
-- Picked up via `pickup`; Grayson pre-picked the move in the args (build the
-  blend-opacity debug swatch). Clean `main` at `c0b96d7`, in sync.
-- Read `blend.mmg` FIRST to derive the known-answers from source: Normal-mode
-  output `opacity*s1 + (1-opacity)*s2`, `opacity = amount × mask × s1.alpha`,
-  port 0 = Foreground, port 1 = Background, port 2 = Mask.
-- Called `advisor` before writing the checks. It caught two would-be-shipped
-  bugs: (1) `.mmg` `blend_type` default is 13 (AddSub), so a swatch omitting it
-  renders wrong colors and ships a bogus known-answer, both builders now set
-  `blend_type=0` explicitly; (2) both swatches at amount=1 would leave the
-  `amount` factor unasserted, so swatch 2 moved to amount=0.5.
-- Built `blend_mask_polarity` (hard mask, polarity case) + `blend_opacity_ramp`
-  (ramp mask, amount=0.5, the partial-opacity/sf03 shape) in
-  `quality/debug_swatches.py` + their pixel checks + registry entries. Rendered
-  both via `render_one.py` (one Godot at a time), eyeballed, sampled real pixels
-  to calibrate thresholds, sent both previews to Grayson.
-- Tests: the 2 new blend integration checks pass live (auto-parametrized), fast
-  suite 262. Docs: new blend family section in `docs/DEBUG_SWATCHES.md` +
-  AUTHORING.md cross-ref. Committed `80256d0`, pushed to `origin/main`, in sync.
-- Wrote `_agent-commons\log\2026-09-01-claude-code-mm-mcp-blend-opacity-debug-swatch.md`.
-
 _(Older entries continue in [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).)_
-
