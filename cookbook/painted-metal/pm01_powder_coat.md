@@ -10,6 +10,28 @@ Clones `rock` for its isotropic voronoi-warp-normal chain, but the donor's stock
 
 Pitfall: this material is a dielectric paint coat over metal, so metallic stays 0 across the whole surface here; there is no bare-metal exposure in this recipe (that is pm03's job).
 
+## Subgraph structure
+
+Grouped per the "Grouping into subgraphs" lever in `docs/AUTHORING.md`.
+Opening the graph shows 3 top-level nodes (two groups plus `Material`)
+instead of the raw 11-node graph:
+
+- **Orange Peel Pattern** — the donor's own voronoi/warp noise chain
+  (`voronoi_0`, `voronoi_1`, `warp_0`, `perlin_0`, `perlin_1`) plus
+  `blend_0` and the albedo `colorize_0`. `blend_0` is `rock`'s own
+  noise-mix step (not a paint-over-metal composite): its port0/port1
+  sources are `voronoi_0`'s own two output ports and its port2 mask is
+  `perlin_0` — all three are inside this same group, so the blend is
+  fully self-contained; only its single output edge into `colorize_0`
+  needed to cross anything, and that stayed internal too. Exposed:
+  `Paint color`, `Peel density`.
+- **Surface Finish** — `colorize_1` (metallic, flat 0), `colorize_2`
+  (roughness), `normal_map_0`. `perlin_0` (inside Orange Peel Pattern)
+  also feeds this group's `colorize_1`/`colorize_2` directly — one
+  upstream node feeding multiple downstream groups, producing the
+  expected extra boundary output ports on `perlin_0`. Exposed:
+  `Roughness`, `Relief strength`.
+
 ## See also
 
 The invariant guide (`guide://authoring` resource, or `docs/AUTHORING.md`) for

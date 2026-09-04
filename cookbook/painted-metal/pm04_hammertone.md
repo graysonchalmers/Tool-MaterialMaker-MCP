@@ -10,6 +10,23 @@ Clones `rock`, using the same normal chain as pm01's powder coat but at a medium
 
 Pitfall: this material runs a little dark in the preview scene; lift the bronze albedo stops if a brighter finish is wanted.
 
+## Subgraph structure
+
+Grouped per the "Grouping into subgraphs" lever in `docs/AUTHORING.md`.
+Opening the graph shows 3 top-level nodes (two groups plus `Material`)
+instead of the raw 11-node graph:
+
+- **Hammer Dimple Pattern** — `voronoi_0`, `voronoi_1`, `warp_0`,
+  `perlin_0`, `perlin_1`, `blend_0`, `colorize_0` (albedo). Same `rock`
+  donor blend as pm01/pm02: `blend_0`'s port0/port1 sources are
+  `voronoi_0`'s two output ports and its port2 mask is `perlin_0`, all
+  three inside this group, so it is fully self-contained. Exposed:
+  `Paint color`, `Dimple size`.
+- **Surface Finish** — `colorize_1` (metallic, flat 0), `colorize_2`
+  (roughness), `normal_map_0`. `perlin_0` (inside Hammer Dimple Pattern)
+  also feeds this group's `colorize_1`/`colorize_2` directly — the
+  expected shared-upstream-node case. Exposed: `Sheen`, `Dimple depth`.
+
 ## See also
 
 The invariant guide (`guide://authoring` resource, or `docs/AUTHORING.md`) for

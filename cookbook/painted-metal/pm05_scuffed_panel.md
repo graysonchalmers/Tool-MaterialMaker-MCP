@@ -10,6 +10,27 @@ Clones `wood` for its directional grain and working normal chain, the same donor
 
 Pitfall specific to this material, and the fix that mattered most: the key move over the first pass was octave count. 8 iterations rendered a grainy fbm noise with only a weak directional axis; dropping to 2 iterations made the streaks read as smooth brushed lines with a clear direction. Honest note: the streaks are quite regular, closer to a brushed finish than random scuffing; add a low-frequency perlin break-up if true random scuffs are wanted.
 
+## Subgraph structure
+
+Grouped per the "Grouping into subgraphs" lever in `docs/AUTHORING.md`.
+Opening the graph shows 3 top-level nodes (two groups plus `Material`)
+instead of the raw 11-node graph:
+
+- **Scuff Pattern** — `perlin_0`, `perlin_1`, `warp_0`, `voronoi_0`,
+  `colorize_1`, `warp_1`, `perlin_2`, `blend_0`, `colorize_2` (albedo).
+  `blend_0` is `wood`'s own node (Multiply, constant mask): both its
+  port0 and port1 read from the same straightened `perlin_2` (the
+  builder's `rewire` killed the donor's knot-warp branch by pointing
+  both blend inputs at it), so there is no "which layer is on top"
+  question — both content inputs are the same source. The old knot-warp
+  chain (`perlin_0`, `perlin_1`, `warp_0`, `voronoi_0`, `colorize_1`,
+  `warp_1`) is left with no path to `Material` at all, a pre-existing
+  quirk of the rewire rather than something this retrofit introduced;
+  it rides into this group rather than sitting as loose unconnected
+  top-level nodes. Exposed: `Paint color`, `Scuff length`.
+- **Surface Finish** — `colorize_0` (roughness), `normal_map_0`.
+  Exposed: `Roughness contrast`, `Scuff depth`.
+
 ## See also
 
 The invariant guide (`guide://authoring` resource, or `docs/AUTHORING.md`) for
