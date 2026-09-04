@@ -16,6 +16,26 @@ Worth remembering generally: `fbm`'s `noise` enum (Value / Perlin / Cellular
 x6) is a whole family of generator shapes, an alternative to `voronoi` any
 time a cell-like pattern is needed.
 
+## Subgraph structure
+
+Grouped per the "Grouping into subgraphs" lever in `docs/AUTHORING.md`,
+sharing a helper (`_group_crocodile_skin_pattern` in
+`quality/cookbook_organics.py`) with `o04_snake_scales` since both clone
+`crocodile_skin`'s identical 6-node graph (the `fbm` retype above changes
+`voronoi_0`'s noise, not its name or wiring). Opening the graph shows 4
+top-level nodes instead of the raw 6-node `crocodile_skin` tangle:
+
+- **Surface Pattern** — `voronoi_0` (the retyped `fbm` cellular generator)
+  plus `colorize_1` (its albedo colorize). Exposed: `Cell size` (the
+  cellular pattern scale) and `Coral color` (the pink/orange gradient).
+- **Surface Finish** — `colorize_0` (explicitly set to an identity ramp,
+  feeds the normal chain), `colorize_3` (the matte roughness colorize), and
+  `normal_map_0`. Exposed: `Surface tone` (the roughness gradient) and
+  `Pore relief` (the pronounced `normal_map_0` strength for the pitted
+  bumps).
+- `uniform_0` (Material's metallic scalar, an untouched donor default
+  feeding one port directly) is left top-level, ungrouped.
+
 ## See also
 
 The invariant guide (`guide://authoring` resource, or `docs/AUTHORING.md`) for

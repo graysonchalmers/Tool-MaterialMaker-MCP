@@ -12,12 +12,44 @@ import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
 from author_helpers import (load_example, node, set_gradient, set_param, retype,
-                     rewire, drop_conn, add_node, save_variant)
+                     rewire, drop_conn, add_node, save_variant, group_into_subgraph)
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+from mm_mcp.catalog_builder import build_catalog
+from mm_mcp.config import load_config
 
 _LABEL = "cookbook-organics"
 
 
-def build_o03_tree_bark() -> str:
+def _group_crocodile_skin_pattern(g, catalog, *, pattern_size_label,
+                                   pattern_color_label, sheen_label,
+                                   relief_label):
+    """Shared grouping for o04_snake_scales/o05_coral: both clone
+    `crocodile_skin`'s identical 6-node graph (voronoi_0 -> colorize_0/1/3,
+    normal_map_0, uniform_0) unmodified structurally -- o04 keeps voronoi_0
+    as a voronoi and o05 retypes it to fbm, but the node NAMES and wiring are
+    the same either way, so the two `group_into_subgraph` calls are shared
+    here instead of being duplicated verbatim in both builders (the friendly
+    labels differ per material since "scale size" doesn't describe coral's
+    cellular pattern). `uniform_0` (Material's untouched metallic scalar) is
+    left top-level -- it is a single donor-default node feeding one port
+    directly, not a generative/compositing chain worth collapsing."""
+    group_into_subgraph(
+        g, ["voronoi_0", "colorize_1"], "surface_pattern", "Surface Pattern",
+        [("voronoi_0", "scale_x", "param0", pattern_size_label),
+         ("colorize_1", "gradient", "param1", pattern_color_label)],
+        catalog,
+    )
+    group_into_subgraph(
+        g, ["colorize_0", "colorize_3", "normal_map_0"],
+        "surface_finish", "Surface Finish",
+        [("colorize_3", "gradient", "param0", sheen_label),
+         ("normal_map_0", "param1", "param1", relief_label)],
+        catalog,
+    )
+
+
+def build_o03_tree_bark(catalog: dict) -> str:
     """Tree bark: clone `wood` UNMODIFIED structurally (unlike m02 aluminum,
     which straightens out the knots) -- bark wants the grain AND the knotty
     waviness, so keep wood's blend_0<-warp_1 knot-overlay chain as-is. Just
@@ -35,10 +67,34 @@ def build_o03_tree_bark() -> str:
         (0.0, 0.80, 0.80, 0.80),
         (1.0, 0.95, 0.95, 0.95),
     ])
+
+    # Same donor (`wood`, unmodified structurally, per the docstring) and
+    # same identical 11-node graph as cookbook_wood.py's w04/w05, which grouped
+    # it into the noise/pattern generator + albedo colorize ("Wood Grain")
+    # and the roughness ramp + normal map ("Surface Finish") -- see that
+    # file's build_w04_driftwood_gray for the full reasoning on why
+    # colorize_2 rides into the generator group rather than being left with
+    # only untouched donor defaults. Bark reuses the identical grouping,
+    # relabeled for the bark context.
+    group_into_subgraph(
+        g,
+        ["perlin_0", "perlin_1", "perlin_2", "voronoi_0", "colorize_1",
+         "warp_0", "warp_1", "blend_0", "colorize_2"],
+        "bark_grain", "Bark Grain",
+        [("colorize_2", "gradient", "param0", "Bark color")],
+        catalog,
+    )
+    group_into_subgraph(
+        g,
+        ["colorize_0", "normal_map_0"],
+        "surface_finish", "Surface Finish",
+        [("colorize_0", "gradient", "param0", "Bark sheen")],
+        catalog,
+    )
     return save_variant(g, _LABEL, "o03_tree_bark", 1)
 
 
-def build_o04_snake_scales() -> str:
+def build_o04_snake_scales(catalog: dict) -> str:
     """Snake scales: crocodile_skin's OWN default voronoi cellular pattern is
     already a reptile-scale layout (it's what it was built for) -- no
     retype, just the recolor lever. Two-tone olive-to-khaki for a subtle
@@ -60,10 +116,20 @@ def build_o04_snake_scales() -> str:
     ])
     node(g, "normal_map_0")["parameters"] = {
         "param0": 11, "param1": 0.3, "param2": 0, "param4": 0}
+
+    # See _group_crocodile_skin_pattern's docstring: shared with o05_coral,
+    # both clone crocodile_skin's identical 6-node graph. `uniform_0`
+    # (Material's metallic scalar, untouched donor default) is left
+    # top-level.
+    _group_crocodile_skin_pattern(
+        g, catalog,
+        pattern_size_label="Scale size", pattern_color_label="Scale color",
+        sheen_label="Sheen", relief_label="Scale relief",
+    )
     return save_variant(g, _LABEL, "o04_snake_scales", 1)
 
 
-def build_o05_coral() -> str:
+def build_o05_coral(catalog: dict) -> str:
     """Coral: retype the generator to `fbm` with Cellular noise (enum value
     2) -- a porous, bumpy, organic cell pattern distinct from voronoi's flat-
     faceted cells, closer to coral's irregular pitted surface. Coral
@@ -84,10 +150,21 @@ def build_o05_coral() -> str:
     set_gradient(g, "colorize_0", [(0.0, 0, 0, 0), (1.0, 1, 1, 1)])
     node(g, "normal_map_0")["parameters"] = {
         "param0": 11, "param1": 0.5, "param2": 0, "param4": 0}
+
+    # See _group_crocodile_skin_pattern's docstring: shared with
+    # o04_snake_scales, both clone crocodile_skin's identical 6-node graph
+    # (the fbm retype of voronoi_0 changes its noise, not its name/wiring).
+    # `uniform_0` (Material's metallic scalar, untouched donor default) is
+    # left top-level.
+    _group_crocodile_skin_pattern(
+        g, catalog,
+        pattern_size_label="Cell size", pattern_color_label="Coral color",
+        sheen_label="Surface tone", relief_label="Pore relief",
+    )
     return save_variant(g, _LABEL, "o05_coral", 1)
 
 
-def build_o06_lichen_crusted_rock() -> str:
+def build_o06_lichen_crusted_rock(catalog: dict) -> str:
     """Lichen-crusted rock: clone `rusted_metal`'s two-layer masked-blend
     structure (proven in m01 weathered copper) but recolor to stone+lichen
     instead of metal+patina: base (colorize_2) -> gray stone, patch
@@ -115,6 +192,39 @@ def build_o06_lichen_crusted_rock() -> str:
         {"from": "colorize_3", "from_port": 0, "to": "normal_map_lichen", "to_port": 0})
     g["connections"].append(
         {"from": "normal_map_lichen", "from_port": 0, "to": "Material", "to_port": 4})
+
+    # rusted_metal's two-layer masked-blend structure (base colorize_2 +
+    # patch colorize_1, composited by blend_0 through the colorize_3 mask)
+    # plus this builder's own additions: the widened mask threshold and the
+    # new normal_map_lichen relief chain. `colorize_3` (the mask) is a true
+    # shared generator -- it feeds blend_0's mask port (surface_color),
+    # colorize_4's roughness variant (surface_finish), AND
+    # normal_map_lichen's relief input (also surface_finish) -- so rather
+    # than folding it into one of those (which would just relabel two of the
+    # three consumers as boundary ports instead of one), it gets its own
+    # small group since its gradient is a real, explicitly-tuned knob (the
+    # widened threshold), not an untouched donor default. `colorize_0` and
+    # `colorize_4` are untouched rusted_metal defaults but stay inside
+    # surface_finish as internal-only members (same pattern as w04's
+    # untouched colorize_1/warp_0/warp_1 riding inside wood_grain).
+    group_into_subgraph(
+        g, ["perlin_1", "colorize_2", "colorize_1", "blend_0"],
+        "surface_color", "Surface Color",
+        [("colorize_2", "gradient", "param0", "Stone color"),
+         ("colorize_1", "gradient", "param1", "Lichen color")],
+        catalog,
+    )
+    group_into_subgraph(
+        g, ["perlin_2", "colorize_3"], "lichen_mask", "Lichen Coverage",
+        [("colorize_3", "gradient", "param0", "Coverage")],
+        catalog,
+    )
+    group_into_subgraph(
+        g, ["perlin_0", "colorize_0", "colorize_4", "blend_1", "normal_map_lichen"],
+        "surface_finish", "Surface Finish",
+        [("normal_map_lichen", "param1", "param0", "Relief strength")],
+        catalog,
+    )
     return save_variant(g, _LABEL, "o06_lichen_crusted_rock", 1)
 
 
@@ -128,8 +238,11 @@ BUILDERS = {
 
 def main() -> int:
     targets = sys.argv[1:] or list(BUILDERS.keys())
+    # Loaded once per script run (not once per builder) since this category
+    # now has 4 materials, all of which need it for group_into_subgraph.
+    catalog = build_catalog(load_config().nodes_dir)
     for case in targets:
-        path = BUILDERS[case]()
+        path = BUILDERS[case](catalog)
         print(f"{case}: {path}")
     return 0
 
