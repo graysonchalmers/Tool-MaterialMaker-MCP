@@ -24,7 +24,11 @@ incidental render-sweep churn.
   the dark seam_shade lands in the recessed seams instead of on the pad
   centers. The `sin*sin` pattern makes compact round peaks, so the result
   reads as round grain pads on a dark seam grid; Grayson reviewed before/after
-  and chose the swap over relabeling (documented honestly in the card).
+  and chose the swap over relabeling (documented honestly in the card). **A
+  follow-up (`6d460c4`) then fixed l05's inverted height weighting:
+  `blend_h_q.amount` 0.35 to 0.85, so the quilt pads drive the relief instead
+  of the crocodile grain overpowering them; confirmed in a 3D preview (puffy
+  padded bumps with recessed channels).**
 - Recipe cards for all three rewritten to describe the fixed behavior (they
   had previously asserted the broken behavior as intentional).
 
@@ -140,10 +144,11 @@ Older write-ups/log beyond the cap live in
 
 ## 📌 Where we stopped
 
-`main` at `5cd9e0b`, pushed and in sync. All three retrofit-surfaced cookbook
-bugs (t01 metallic, l02 reversed layers, l05 seam polarity) fixed, promoted,
-carded, committed as one bug-fix commit and pushed. Natural stopping point, no
-open decision blocking the next session.
+`main` pushed and in sync. All three retrofit-surfaced cookbook bugs (t01
+metallic `5cd9e0b`, l02 reversed layers `5cd9e0b`, l05 seam polarity `5cd9e0b`)
+fixed, plus the l05 height-weighting follow-up (`6d460c4`), all promoted,
+carded, and pushed. Natural stopping point, no open decision blocking the next
+session.
 
 ## ▶️ Next concrete step
 
@@ -267,7 +272,13 @@ The older open backlog, unchanged unless noted:
   round grain pads on a dark seam grid (round/small pads, not big puffy
   diamonds). Grayson reviewed the before/after and chose the swap over
   relabeling the material; the geometry limitation is documented honestly in
-  the card.
+  the card. **Then a follow-up commit (`6d460c4`): `blend_h_q.amount` 0.35 ->
+  0.85, so the quilt pads drive the relief instead of the high-frequency
+  crocodile grain overpowering the smooth pads in the normal. 0.65 (the
+  docstring-literal ratio) wasn't enough visually, so pushed to 0.85 and
+  confirmed on a real surface via `render_preview` (puffy padded bumps with
+  recessed channels, sent to Grayson). The exposed "Quilt puffiness" slider IS
+  this amount, so higher now reads as puffier.**
 - **Recipe cards** `cookbook/terrain/t01_sand_dunes.md`,
   `cookbook/leather/l02_distressed_two_tone.md`,
   `cookbook/leather/l05_quilted_leather.md` rewritten: each had asserted the
@@ -636,7 +647,12 @@ The older open backlog, unchanged unless noted:
 - Builder-only edits, `render_one.py` per fixed case to dodge the sweep, three
   cards rewritten, fast suite 505 passed, `promote --check` in sync, `git status`
   clean of incidental churn. One commit (`5cd9e0b`), pushed on "push it and wrap
-  up." Then this wrap-up.
+  up." Then a first wrap-up (`bda24f8`).
+- **Follow-up (Grayson: "fix the l05 height weighting"):** the deferred
+  `blend_h_q` inversion. Bumped `amount` 0.35 -> 0.85 (pads dominant, grain
+  ~0.15 detail); 0.65 wasn't enough visually so pushed to 0.85, confirmed in a
+  3D `render_preview` (puffy padded bumps, sent to Grayson). Promoted, card
+  updated, suite 505, committed `6d460c4`, pushed. Then this final wrap-up.
 
 ### 2026-09-04 (cookbook subgraph retrofit): the node graph stops scaring people, one Ctrl+G at a time
 - `pickup` reconciled clean (`main` at `c3cc3f2`). Grayson picked backlog item

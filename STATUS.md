@@ -6,7 +6,7 @@
 
 Gate ledger. Three states only: ✅ verified · 🔌 wired · ⬜ not started.
 
-_Last updated: 2026-09-04 (fixed the three cookbook bugs the subgraph retrofit surfaced: t01_sand_dunes metallic wire, l02_distressed_two_tone reversed composite layers, l05_quilted_leather seam polarity; builder-only fixes, cards rewritten, fast suite 505, committed 5cd9e0b and pushed. Session detail lives in HANDOFF.md, releases in CHANGELOG.md)._
+_Last updated: 2026-09-04 (fixed the three cookbook bugs the subgraph retrofit surfaced: t01_sand_dunes metallic wire, l02_distressed_two_tone reversed composite layers, l05_quilted_leather seam polarity, commit 5cd9e0b; plus an l05 height-weighting follow-up, blend_h_q amount 0.35->0.85 so the quilt pads drive the relief, commit 6d460c4, confirmed in a 3D preview. Builder-only fixes, cards rewritten, fast suite 505, pushed. Session detail lives in HANDOFF.md, releases in CHANGELOG.md)._
 
 ## Phases
 
