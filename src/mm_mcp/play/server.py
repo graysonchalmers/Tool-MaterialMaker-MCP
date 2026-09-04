@@ -70,6 +70,22 @@ def make_handler(cfg, catalog, outdir, static_dir):
                     return self._send_json({"ok": False, "error": "not found"}, 404)
                 with open(fp, "rb") as fh:
                     return self._send_bytes(fh.read(), "image/png")
+            if path == "/api/export":
+                from urllib.parse import parse_qs, urlparse
+                q = parse_qs(urlparse(self.path).query)
+                name = (q.get("material_id") or [""])[0]
+                data, fname = api.export(cfg, catalog,
+                                         {"material_id": name, "values": {}}, outdir)
+                if data is None:
+                    return self._send_json({"ok": False, "error": fname}, 404)
+                self.send_response(200)
+                self.send_header("Content-Type", "application/zip")
+                self.send_header("Content-Disposition",
+                                 f'attachment; filename="{fname}"')
+                self.send_header("Content-Length", str(len(data)))
+                self.end_headers()
+                self.wfile.write(data)
+                return
             if path.startswith("/static/"):
                 return self._serve_static(path[len("/static/"):])
             return self._send_json({"ok": False, "error": "not found"}, 404)
@@ -111,3 +127,7 @@ def serve(cfg=None, open_browser=False):
 def main(argv=None):
     serve(open_browser=True)
     return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

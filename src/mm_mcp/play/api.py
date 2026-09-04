@@ -1,7 +1,9 @@
 """Pure request handlers for the play surface. Each takes already-parsed input
 and returns JSON-serializable data; no socket, no HTTP. Errors are data."""
+import io
 import json
 import os
+import zipfile
 
 from mm_mcp import cookbook
 from mm_mcp.play import renderer, sliders
@@ -59,3 +61,21 @@ def render_request(cfg, catalog, body, outdir, render_fn=renderer.render_materia
         return {"ok": False, "error": result.get("error") or "render failed"}
     return {"ok": True, "path": result.get("path"),
             "maps": [os.path.basename(p) for p in result.get("images", [])]}
+
+
+def export(cfg, catalog, body, outdir):
+    """Zip the current maps in outdir plus the material's applied .ptex.
+    Returns (zip_bytes, filename). On unknown material, returns (None, error)."""
+    name = body.get("material_id")
+    values = body.get("values") or {}
+    graph, err = _load_graph(cfg, name)
+    if err:
+        return None, err["error"]
+    applied = sliders.apply_values(graph, values)
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+        for fn in sorted(os.listdir(outdir)):
+            if fn.lower().endswith(".png"):
+                z.write(os.path.join(outdir, fn), fn)
+        z.writestr(f"{name}.ptex", json.dumps(applied, indent=1))
+    return buf.getvalue(), f"{name}.zip"

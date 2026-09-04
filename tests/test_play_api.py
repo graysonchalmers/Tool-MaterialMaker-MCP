@@ -1,4 +1,6 @@
+import io
 import os
+import zipfile
 from mm_mcp.play import api
 from mm_mcp.config import load_config
 from mm_mcp.catalog_builder import build_catalog
@@ -66,3 +68,24 @@ def test_render_request_unknown_material_is_error_data(tmp_path):
     body = {"material_id": "nope", "values": {}, "size": 256}
     out = api.render_request(cfg, _catalog(cfg), body, str(tmp_path))
     assert out["ok"] is False and "error" in out
+
+
+def test_export_zips_maps_and_ptex(tmp_path):
+    cfg = _cfg()
+    # seed a fake rendered map in the outdir
+    open(tmp_path / "play_albedo.png", "wb").write(b"\x89PNG fake")
+    data, fname = api.export(cfg, _catalog(cfg),
+                             {"material_id": "t01_sand_dunes", "values": {}},
+                             str(tmp_path))
+    assert fname.endswith(".zip")
+    z = zipfile.ZipFile(io.BytesIO(data))
+    names = z.namelist()
+    assert any(n.endswith("play_albedo.png") for n in names)
+    assert any(n.endswith(".ptex") for n in names)
+
+
+def test_export_unknown_material_is_error_data(tmp_path):
+    cfg = _cfg()
+    data, fname = api.export(cfg, _catalog(cfg),
+                             {"material_id": "nope", "values": {}}, str(tmp_path))
+    assert data is None and fname

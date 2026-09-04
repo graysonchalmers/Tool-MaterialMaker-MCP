@@ -54,6 +54,19 @@ def test_static_assets_served(running_server, name):
     assert len(body) > 0
 
 
+def test_export_returns_zip(running_server):
+    url = running_server + "/api/export?material_id=t01_sand_dunes"
+    with urllib.request.urlopen(url) as r:
+        assert r.headers.get("Content-Type") == "application/zip"
+        assert r.read()  # non-empty (contains at least the .ptex)
+
+
+def test_export_unknown_material_404(running_server):
+    with pytest.raises(urllib.error.HTTPError) as exc:
+        _get(running_server + "/api/export?material_id=nope")
+    assert exc.value.code == 404
+
+
 @pytest.mark.integration
 def test_render_endpoint_produces_maps(running_server):
     payload = json.dumps({"material_id": "t01_sand_dunes",
