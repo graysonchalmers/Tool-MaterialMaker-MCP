@@ -50,12 +50,54 @@ def _parse_generic_node(data: dict, type_name: str) -> dict | None:
             pname = w.get("name")
             if pname is None:
                 continue
-            parameters.append({
+            param = {
                 "name": pname, "type": None, "default": None,
                 "desc": w.get("shortdesc") or w.get("longdesc") or "",
-            })
+            }
+            resolved = _resolve_widget_range(child_nodes, w)
+            if resolved is not None:
+                # Keep this compound param's own name/desc; take the rest
+                # (type/default/min/max/step/values) from the resolved
+                # inner shader param.
+                for k, v in resolved.items():
+                    if k not in ("name", "desc"):
+                        param[k] = v
+            parameters.append(param)
     return {"type": type_name, "inputs": inputs,
             "outputs": outputs, "parameters": parameters}
+
+
+def _resolve_widget_range(child_nodes: list, widget: dict) -> dict | None:
+    """A compound/"generic" node's `remote` widgets only carry `name`/`desc`;
+    the real range (type/min/max/step/default) lives on the inner node the
+    widget is wired to via `linked_widgets`. Follow the first linked widget
+    to that inner node and, if it is an inline `shader`-type node (i.e. it
+    carries its own `shader_model`), look up the matching shader parameter
+    and parse it the same way a leaf node's own parameters are parsed.
+
+    Returns None (graceful fallback, never raises) when the widget has no
+    `linked_widgets`, the inner node can't be found, or the inner node has
+    no inline `shader_model` (e.g. it is itself a nested compound/type
+    reference) -- callers should leave the range fields unset in that case.
+    """
+    linked_widgets = widget.get("linked_widgets") or []
+    if not linked_widgets:
+        return None
+    linked = linked_widgets[0]
+    inner_name = linked.get("node")
+    inner_param_name = linked.get("widget")
+    if not inner_name or not inner_param_name:
+        return None
+    inner_node = next((n for n in child_nodes if n.get("name") == inner_name), None)
+    if inner_node is None:
+        return None
+    inner_sm = inner_node.get("shader_model")
+    if not inner_sm:
+        return None
+    for p in inner_sm.get("parameters", []):
+        if p.get("name") == inner_param_name:
+            return _parse_param(p)
+    return None
 
 
 def parse_node(mmg_path: str) -> dict | None:
