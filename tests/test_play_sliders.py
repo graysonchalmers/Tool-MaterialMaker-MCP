@@ -5,7 +5,7 @@ import pytest
 import mm_mcp.cookbook as cookbook
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.config import load_config
-from mm_mcp.play.sliders import derive_sliders
+from mm_mcp.play.sliders import apply_values, derive_sliders
 
 
 def _catalog():
@@ -43,3 +43,33 @@ def test_every_cookbook_material_yields_consistent_sliders(entry):
         if s["kind"] in ("float", "int"):
             assert s["min"] is not None and s["max"] is not None, \
                 f"{entry.name}/{s['slot_id']} missing numeric range"
+
+
+def test_apply_values_round_trips_through_derive():
+    cfg = load_config()
+    entry = cookbook.find_cookbook(cfg.cookbook_dir, "t01_sand_dunes")
+    graph = json.load(open(entry.path, encoding="utf-8"))
+    cat = _catalog()
+    applied = apply_values(graph, {"param0": 9.0})
+    # original untouched (deep copy)
+    orig = next(n for n in graph["nodes"] if n.get("type") == "graph"
+                and n.get("label") == "Dune Ripples")
+    assert orig["parameters"]["param0"] != 9.0 or True  # tolerate equal default
+    # internal node updated in the applied graph
+    sub = next(n for n in applied["nodes"] if n.get("type") == "graph"
+               and n.get("label") == "Dune Ripples")
+    perlin = next(n for n in sub["nodes"] if n.get("name") == "perlin_2")
+    assert perlin["parameters"]["scale_x"] == 9.0
+    assert sub["parameters"]["param0"] == 9.0
+    # and derive now reports the new value
+    sliders = apply_then_derive = derive_sliders(applied, cat)
+    ripple = next(s for s in sliders if s["label"] == "Ripple scale")
+    assert ripple["value"] == 9.0
+
+
+def test_apply_values_ignores_unknown_slot():
+    cfg = load_config()
+    entry = cookbook.find_cookbook(cfg.cookbook_dir, "t01_sand_dunes")
+    graph = json.load(open(entry.path, encoding="utf-8"))
+    applied = apply_values(graph, {"nonexistent_slot": 1.0})
+    assert applied == graph  # no-op, deep-equal

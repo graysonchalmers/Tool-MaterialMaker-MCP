@@ -4,7 +4,7 @@ carries a `remote` node (gen_parameters) whose `widgets` are the author-chosen
 exposed parameters. This module turns those widgets, plus the catalog's per-param
 ranges, into slider specs, and applies a set of slider values back onto a graph.
 """
-from typing import Any
+import copy
 
 # Material Maker param type -> slider kind.
 _KIND = {
@@ -72,3 +72,28 @@ def derive_sliders(graph: dict, catalog: dict) -> list[dict]:
                 "binding": {"node": inode_name, "widget": iparam},
             })
     return sliders
+
+
+def apply_values(graph: dict, values: dict) -> dict:
+    """Write slot_id->value into every matching subgraph. Returns a new graph;
+    the input is not mutated. Unknown slot_ids are ignored."""
+    out = copy.deepcopy(graph)
+    for node in out.get("nodes", []):
+        if node.get("type") != "graph":
+            continue
+        widgets = _remote_widgets(node)
+        by_slot = {w.get("name"): w for w in widgets}
+        for slot_id, value in values.items():
+            widget = by_slot.get(slot_id)
+            if widget is None:
+                continue
+            linked = (widget.get("linked_widgets") or [{}])[0]
+            inode_name = linked.get("node")
+            iparam = linked.get("widget")
+            for inner in node.get("nodes", []):
+                if inner.get("name") == inode_name:
+                    inner.setdefault("parameters", {})[iparam] = value
+                if inner.get("type") == "remote":
+                    inner.setdefault("parameters", {})[slot_id] = value
+            node.setdefault("parameters", {})[slot_id] = value
+    return out
