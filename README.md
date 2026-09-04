@@ -61,16 +61,20 @@ graphs and flat swatches are in [`examples/`](examples/).
 
 ## Material cookbook
 
-Beyond the frozen gallery above, the [`quality/`](quality/) cookbook builds a
-wider spread of materials across seven categories. These are the flat rendered
-swatches; the full recipes and the levers behind them are in
-[docs/AUTHORING.md](docs/AUTHORING.md).
+Beyond the frozen gallery above, the cookbook is 43 more materials across
+eight categories, each one a real graph this server authored and then locked
+after a 3D-preview pass. Every one ships as a tracked `.ptex` under
+[`cookbook/`](cookbook/): open `cookbook/<category>/<id>.ptex` in Material
+Maker to see the node network, or start from it over MCP with
+`load_example("f07_herringbone_tweed")`. The recipes and the levers behind them
+are in [docs/AUTHORING.md](docs/AUTHORING.md); the builders that regenerate
+them live in [`quality/`](quality/).
 
 <details>
-<summary><b>Show the cookbook contact sheet</b> (28 materials: fabrics, leather, organics, sci-fi, stone, terrain, wood)</summary>
+<summary><b>Show the cookbook contact sheet</b> (43 materials: fabrics, leather, organics, painted metal, sci-fi, stone, terrain, wood)</summary>
 
 <p align="center">
-  <img src="docs/images/cookbook-contact-sheet.png" alt="Contact sheet of 28 cookbook materials across seven categories" width="100%">
+  <img src="docs/images/cookbook-contact-sheet.png" alt="Contact sheet of 43 cookbook materials across eight categories" width="100%">
 </p>
 
 </details>
@@ -138,6 +142,11 @@ directories), the server refuses to read or write paths outside those roots.
 When unset (the default), paths are unrestricted. Either way, node/example
 `name` and `basename` arguments are always rejected if they contain a path
 separator or `..`.
+
+`MM_COOKBOOK_DIR` is also optional. It points the server at a cookbook of
+authored graphs (see [cookbook/README.md](cookbook/README.md)) and defaults
+to the checkout's own `cookbook/` folder, so a git clone needs nothing set.
+Set it only if you want the server to serve a cookbook from somewhere else.
 
 Either way you get an `mm-mcp` command on your PATH. (A `pip install mm-mcp`
 from PyPI is packaged and ready but not yet published; the clone above is the
@@ -221,8 +230,8 @@ The server exposes ten batch-mode tools and one resource (plus six more in Live 
 | `render_node_output` | Render one node's output in isolation, without editing the real graph |
 | `render_preview` | Composite already-rendered maps onto a sphere/cube/cutaway-ball preview scene |
 | `save_graph` | Write a `.ptex` graph to a path |
-| `list_examples` | List the bundled Material Maker examples |
-| `load_example` | Load a bundled example as a `.ptex` graph |
+| `list_examples` | List starting graphs from both sources: Material Maker's bundled examples and this repo's `cookbook/` (filter with `source`) |
+| `load_example` | Load one starting graph by name as a `.ptex` (cookbook first, then bundled) |
 | `inspect_project` | Read-only metrics for a `.ptex` on disk (hash, node/connection counts, type histogram, material outputs) |
 
 Resource `catalog://nodes` exposes the full node catalog.

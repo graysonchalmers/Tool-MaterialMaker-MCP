@@ -33,10 +33,87 @@ def test_validate_flags_unknown_type():
 
 
 def test_list_and_load_example():
-    names = server.list_examples()
+    res = server.list_examples()
+    assert res["ok"] is True
+    names = [e["name"] for e in res["examples"]]
     assert "bricks" in names
     d = server.load_example("bricks")
     assert d["type"] == "graph"
+
+
+def test_list_examples_tags_both_sources():
+    res = server.list_examples()
+    by_source = {}
+    for e in res["examples"]:
+        by_source.setdefault(e["source"], []).append(e)
+    assert "bricks" in [e["name"] for e in by_source["material_maker"]]
+    cookbook_names = [e["name"] for e in by_source["cookbook"]]
+    assert "f07_herringbone_tweed" in cookbook_names
+    tweed = next(e for e in by_source["cookbook"] if e["name"] == "f07_herringbone_tweed")
+    assert tweed["category"] == "fabrics"
+    assert all(e["category"] is None for e in by_source["material_maker"])
+
+
+def test_list_examples_source_filter():
+    only_cookbook = server.list_examples(source="cookbook")["examples"]
+    assert only_cookbook and all(e["source"] == "cookbook" for e in only_cookbook)
+    only_mm = server.list_examples(source="material_maker")["examples"]
+    assert only_mm and all(e["source"] == "material_maker" for e in only_mm)
+
+
+def test_list_examples_unknown_source_is_data_not_exception():
+    res = server.list_examples(source="nope")
+    assert res["ok"] is False and "nope" in res["error"]
+
+
+def test_load_example_finds_cookbook_graph_by_default():
+    d = server.load_example("f07_herringbone_tweed")
+    assert d["type"] == "graph"
+    assert any(n.get("type") == "weave2" for n in d["nodes"])
+
+
+def test_load_example_source_restricts_lookup():
+    res = server.load_example("f07_herringbone_tweed", source="material_maker")
+    assert res["ok"] is False
+    res = server.load_example("bricks", source="cookbook")
+    assert res["ok"] is False
+
+
+def test_load_example_unknown_name_is_data_not_exception():
+    res = server.load_example("no_such_material_anywhere")
+    assert res["ok"] is False and "no_such_material_anywhere" in res["error"]
+
+
+def test_load_example_unknown_source_is_data_not_exception():
+    res = server.load_example("bricks", source="nope")
+    assert res["ok"] is False and "nope" in res["error"]
+
+
+def test_list_examples_without_cookbook_dir_serves_only_bundled(monkeypatch):
+    monkeypatch.setenv("MM_COOKBOOK_DIR", os.path.join(os.getcwd(), "no-such-cookbook-dir"))
+    server._reset()
+    try:
+        res = server.list_examples()
+        assert res["ok"] is True
+        assert all(e["source"] == "material_maker" for e in res["examples"])
+    finally:
+        monkeypatch.delenv("MM_COOKBOOK_DIR", raising=False)
+
+
+def test_load_example_malformed_cookbook_file_is_data_not_exception(tmp_path, monkeypatch):
+    stone_dir = tmp_path / "stone"
+    stone_dir.mkdir()
+    (stone_dir / "bad.ptex").write_text("{not json", encoding="utf-8")
+    monkeypatch.setenv("MM_COOKBOOK_DIR", str(tmp_path))
+    server._reset()
+    try:
+        res = server.load_example("bad")
+        assert isinstance(res, dict)
+        assert res.get("ok") is False
+        assert "cannot load" in res["error"]
+    finally:
+        monkeypatch.delenv("MM_COOKBOOK_DIR", raising=False)
+        server._reset()
 
 
 def test_save_graph_writes_file(tmp_path):

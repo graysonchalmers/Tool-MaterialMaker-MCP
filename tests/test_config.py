@@ -91,3 +91,19 @@ def test_allowed_roots_drops_empty_segments():
     raw = _os.pathsep.join([r"C:\a", "", r"C:\b"])
     cfg = _load_config(overrides={"MM_ALLOWED_ROOTS": raw})
     assert cfg.allowed_roots == [r"C:\a", r"C:\b"]
+
+
+def test_cookbook_dir_defaults_to_repo_cookbook_when_present():
+    cfg = load_config()
+    assert cfg.cookbook_dir.endswith("cookbook")
+    assert os.path.isdir(cfg.cookbook_dir)
+
+
+def test_cookbook_dir_override_wins(tmp_path):
+    cfg = load_config(overrides={"MM_COOKBOOK_DIR": str(tmp_path)})
+    assert cfg.cookbook_dir == str(tmp_path)
+
+
+def test_cookbook_dir_env_var_wins(monkeypatch, tmp_path):
+    monkeypatch.setenv("MM_COOKBOOK_DIR", str(tmp_path))
+    assert load_config().cookbook_dir == str(tmp_path)

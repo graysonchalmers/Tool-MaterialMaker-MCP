@@ -8,6 +8,7 @@ from mm_mcp import __version__, live
 from mm_mcp.config import load_config, require_valid
 from mm_mcp.paths import ensure_within_roots, reject_path_fragment, PathNotAllowed
 from mm_mcp.catalog_builder import build_catalog
+from mm_mcp.cookbook import list_cookbook, find_cookbook
 from mm_mcp.graph import find_material_node, isolate_node_output
 from mm_mcp.validator import validate_graph
 from mm_mcp.render import render
@@ -195,21 +196,65 @@ def inspect_project(path: str) -> dict:
     return {"ok": True, **inspect_ptex(ptex, file_bytes=raw)}
 
 
-def list_examples() -> list:
+_EXAMPLE_SOURCES = ("material_maker", "cookbook")
+
+
+def _bundled_examples(cfg) -> list[dict]:
+    return [{"name": os.path.splitext(os.path.basename(p))[0],
+             "source": "material_maker", "category": None}
+            for p in sorted(glob.glob(os.path.join(cfg.examples_dir, "*.ptex")))]
+
+
+def list_examples(source: str = "all") -> dict:
+    """Starting graphs from two sources: Material Maker's bundled examples
+    (`material_maker`) and this repo's tracked cookbook of authored materials
+    (`cookbook`, see cookbook/ and docs/AUTHORING.md). `source` is `all`,
+    `material_maker`, or `cookbook`. Returns {"ok": True, "examples": [
+    {"name", "source", "category"}]}; `category` is None for bundled
+    examples. Prefer a cookbook graph as the starting pattern when one is
+    close to the prompt: it already encodes a recipe that rendered well."""
+    if source not in ("all",) + _EXAMPLE_SOURCES:
+        return {"ok": False, "error": f"unknown source '{source}'; expected one of: "
+                                      f"all, {', '.join(_EXAMPLE_SOURCES)}"}
     cfg, _ = _ensure_ready()
-    return sorted(os.path.splitext(os.path.basename(p))[0]
-                  for p in glob.glob(os.path.join(cfg.examples_dir, "*.ptex")))
+    examples: list[dict] = []
+    if source in ("all", "material_maker"):
+        examples += _bundled_examples(cfg)
+    if source in ("all", "cookbook"):
+        examples += [{"name": e.name, "source": "cookbook", "category": e.category}
+                     for e in list_cookbook(cfg.cookbook_dir)]
+    return {"ok": True, "examples": examples}
 
 
-def load_example(name: str) -> dict:
+def load_example(name: str, source: str = "auto") -> dict:
+    """Load one starting graph by name as a .ptex dict. `source` is `auto`
+    (cookbook first, then bundled), `material_maker`, or `cookbook`. Unknown
+    name or source returns {"ok": False, "error": ...} as data."""
+    if source not in ("auto",) + _EXAMPLE_SOURCES:
+        return {"ok": False, "error": f"unknown source '{source}'; expected one of: "
+                                      f"auto, {', '.join(_EXAMPLE_SOURCES)}"}
     cfg, _ = _ensure_ready()
     try:
         name = reject_path_fragment(name)
     except PathNotAllowed as exc:
         return {"ok": False, "error": str(exc)}
-    path = os.path.join(cfg.examples_dir, name + ".ptex")
-    with open(path, encoding="utf-8") as fh:
-        return json.load(fh)
+    path = None
+    if source in ("auto", "cookbook"):
+        entry = find_cookbook(cfg.cookbook_dir, name)
+        if entry is not None:
+            path = entry.path
+    if path is None and source in ("auto", "material_maker"):
+        candidate = os.path.join(cfg.examples_dir, name + ".ptex")
+        if os.path.isfile(candidate):
+            path = candidate
+    if path is None:
+        return {"ok": False, "error": f"no example named '{name}' (source={source}); "
+                                      "call list_examples to see what exists"}
+    try:
+        with open(path, encoding="utf-8") as fh:
+            return json.load(fh)
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        return {"ok": False, "error": f"cannot load '{path}': {exc}"}
 
 
 _live_session: live.LiveSession | None = None

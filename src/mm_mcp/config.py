@@ -15,6 +15,7 @@ _DEFAULTS = {
     "MM_OUTPUT_DIR": "",
     "MM_LIVE_OVERLAY_DIR": "",
     "MM_ALLOWED_ROOTS": "",
+    "MM_COOKBOOK_DIR": "",
 }
 
 
@@ -35,6 +36,7 @@ class Config:
     examples_dir: str
     live_overlay_dir: str
     allowed_roots: list[str]
+    cookbook_dir: str = ""
 
 
 def _resolve_console(godot_binary: str) -> str:
@@ -43,6 +45,18 @@ def _resolve_console(godot_binary: str) -> str:
         if os.path.exists(candidate):
             return candidate
     return godot_binary
+
+
+def _default_cookbook_dir() -> str:
+    """<repo>/cookbook when running from a source checkout (this file is
+    src/mm_mcp/config.py, so three dirname hops up is the repo root). Empty
+    when that directory does not exist, e.g. an installed wheel, which does
+    not package the cookbook; the example tools then serve only Material
+    Maker's bundled examples."""
+    here = os.path.abspath(__file__)
+    repo = os.path.dirname(os.path.dirname(os.path.dirname(here)))
+    candidate = os.path.join(repo, "cookbook")
+    return candidate if os.path.isdir(candidate) else ""
 
 
 def require_valid(cfg: "Config") -> None:
@@ -84,6 +98,7 @@ def load_config(overrides: dict | None = None) -> Config:
     output_dir = env["MM_OUTPUT_DIR"] or os.path.join(os.getcwd(), "output")
     live_overlay_dir = env["MM_LIVE_OVERLAY_DIR"] or os.path.join(os.getcwd(), "mm_live_overlay")
     allowed_roots = [p for p in env["MM_ALLOWED_ROOTS"].split(os.pathsep) if p]
+    cookbook_dir = env["MM_COOKBOOK_DIR"] or _default_cookbook_dir()
     return Config(
         godot_binary=env["MM_GODOT_BINARY"],
         console_binary=_resolve_console(env["MM_GODOT_BINARY"]),
@@ -93,4 +108,5 @@ def load_config(overrides: dict | None = None) -> Config:
         examples_dir=os.path.join(project_path, "material_maker", "examples"),
         live_overlay_dir=live_overlay_dir,
         allowed_roots=allowed_roots,
+        cookbook_dir=cookbook_dir,
     )

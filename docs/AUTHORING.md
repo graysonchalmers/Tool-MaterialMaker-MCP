@@ -41,8 +41,10 @@ open. Concretely:
 
 ## Authoring workflow (invariant across phases)
 
-1. Read the prompt; pick the closest bundled example(s) with `list_examples` /
-   `load_example` as a starting pattern.
+1. Read the prompt; pick the closest starting graph with `list_examples` /
+   `load_example`. Two sources: Material Maker's bundled examples and the
+   tracked `cookbook/` (`source="cookbook"`). Prefer a cookbook graph when one
+   is close: it already encodes a recipe that rendered well.
 2. Draft 2-3 variant graphs using the catalog (`list_node_types`,
    `describe_node`, or the `catalog://nodes` resource) for exact ports/params.
 3. `validate` each variant; fix every error-severity problem.
