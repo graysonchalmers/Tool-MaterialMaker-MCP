@@ -63,6 +63,64 @@ open. Concretely:
    scale.
 6. Judge the maps against the rubric; log why any miss missed.
 
+## Authoring from a reference photo
+
+_Added 2026-09-03, first exercised by `cookbook/glass/gl01_frosted_glass.md`._
+
+When the input is one or more reference photos instead of (or alongside) a
+text description, step 1 of the workflow above ("pick the closest starting
+graph") becomes a decomposition pass: read the photo against a short rubric,
+then use the *same* vocabulary this guide already documents (the noise table
+below, the cross-material lessons) to pick a donor and levers. This is not a
+separate pipeline or a new tool, it is the existing authoring loop with a
+richer step 1.
+
+**Decomposition rubric.** Read the photo for:
+
+- **Color/tone.** Base hue, saturation, value range. Is it uniform across the
+  surface, or does it vary by region (a patina, a weathered patch, a grain
+  color shift)?
+- **Pattern topology.** This is the highest-leverage read, and it reuses the
+  "pick the base generator by surface topology, not by grabbing a familiar
+  donor" lesson in the Cross-material lessons section below: is the surface a
+  CONNECTED CRACK NETWORK (dry_earth's voronoi-plate family), DISCRETE PACKED
+  CELLS (voronoi with recessed contact joints), SCATTERED OVERLAPPING PIECES
+  (`fbm` Cellular 4), or a DIRECTIONAL/STREAKED pattern (`noise_anisotropic`,
+  brushed/woven/grain-direction materials)? Naming the topology narrows the
+  donor choice before touching any node.
+- **Scale/frequency.** How fine or coarse is the repeating unit, relative to
+  materials already in the cookbook (e.g. granite's fine-fleck voronoi at
+  scale 44, gravel's pebble scale at 14)? A photo's pattern is often much
+  finer or coarser than the nearest-topology donor's default.
+- **Roughness/gloss read.** Matte and diffuse, or does it show specular
+  highlights and reflections? This sets the Material's roughness value (and
+  whether it should vary across the surface via a texture, or stay a uniform
+  scalar).
+- **Relief cues.** Does the photo show real macro-scale bump (cracks, weave,
+  brick coursing), or is the visible detail a color/tone pattern with little
+  to no actual surface height (a printed pattern, a micro-surface scattering
+  effect like frosted glass)? Don't assume relief just because the pattern
+  is visually crisp in the photo, physical reasoning about the real material
+  matters here, not just what reads sharp in a 2D image.
+
+**From observations to a graph.** Once the topology, scale, and roughness
+read are named, the rest of the workflow is unchanged: clone the
+nearest-topology donor (`list_examples`/`load_example`), retune its
+scale/warp/roughness/normal parameters toward the photo's read, recolor via
+the recolor lever, and judge in 3D per step 5 above. The photo is a richer
+starting *description*, not a different authoring path.
+
+**Worked example.** `cookbook/glass/gl01_frosted_glass.md` walks a real photo
+(a macro shot of sandblasted glass) through this rubric end to end: connected
+crack network topology (same family as `dry_earth`), pushed to a much finer
+scale than any existing dry_earth-derived material, cool low-saturation
+color, high uniform roughness, and deliberately subtle relief because the
+photo's crisp facet edges are a 2D read of what is physically a near-flat,
+micro-scattering surface, not a macro bump to chase literally. That last
+point is worth restating as its own lesson: a photo can make a pattern look
+like it has more physical relief than it does, reason about the real
+material, not just the pixels.
+
 ## Noise vocabulary (reach past voronoi + perlin)
 
 _Added 2026-09-01 after "a lot of the stuff is looking kind of similar."_
