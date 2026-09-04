@@ -19,6 +19,40 @@ doc's window.
 
 ## Archived "Changed this session" write-ups
 
+## 🗂️ Changed this session (noise-vocab gallery + 2 backlog items + wool take-two)
+
+- Branch: `main`. Commit `20e485d`, **pushed** to `origin/main` (CI triggered).
+  Files: `quality/noise_gallery.py` (new), `docs/AUTHORING.md` (new "Noise
+  vocabulary" section + a render_preview workflow step), `src/mm_mcp/server.py`
+  (list_node_types docstring), `README.md` (tool-table wording), 2 tracked
+  contact sheets under `docs/images/noise-gallery/`. Rendered outputs under
+  `quality/cookbook/noise-gallery/` + `quality/authored/noise-gallery/` are
+  gitignored by the existing cookbook convention. No gate/phase state moved.
+- **The noise diagnosis (why the materials look alike), quantified:** 38 cookbook
+  builders, 69% clone 3 donors (crocodile_skin x12, rock x7, wood x5), only base
+  noise added by hand is perlin x9 + voronoi x1, zero fbm/anisotropic/shard/
+  wavelet/truchet out of 47 noise nodes. The fix is a wider base-noise vocabulary,
+  not more recolors. Biggest lever: `fbm`'s `noise` enum (8 bases; Value/Perlin
+  are close cousins, Cellular 2-7 are the untapped multi-octave range that plain
+  voronoi can't do). Cross-family: anisotropic (directional), truchet Line/Circle
+  (circuits/pipes), voronoi_triangle (scales/gems), wavelet (fine grain).
+  Caveats: `shard_fbm` reads soft at defaults (push `sharp`/`folds`);
+  `fbm_variations` has unresolved `$?1..$?4` enum labels, check its `.mmg` first.
+- **Wool take-two recipe (kept for next session, NOT committed):** retype
+  crocodile_skin's `voronoi_0` to `pattern` with `mix=0` (Multiply), `x_wave=5`
+  (Bounce), `y_wave=5` (Bounce), `x_scale=8`, `y_scale=8`; normal_map `param1=0.5
+  param4=0`; heathered-oatmeal albedo. Result: pillowy TUFTED/QUILTED upholstery
+  (a square bump lattice), not interlocking knit loops. The square grid is
+  inherent to `pattern` multiplying two axis-aligned waves. Reverted f04 to the
+  committed weave partial. Next-steps: offset alternate rows into V-columns, or
+  `truchet` Circle, or keep the quilted look as its own new slot. The
+  pattern-Bounce lever DOES produce real pillow relief, worth reusing for any
+  padded/tufted/cushioned material.
+- Process: `advisor` before rendering shaped the noise work (diagnose with a
+  histogram first, ship a reference gallery not a pixel-checked swatch, lead with
+  the fbm sweep, watch the param4=0 flat-normal trap). `brainstorming` (bounded)
+  locked the wool approach before authoring.
+
 ## 🗂️ Changed this session (painted-metal cookbook +5)
 
 - Branch: `main`. Commit `4d72c8b`, **pushed** to `origin/main` (CI triggered).
@@ -632,6 +666,26 @@ doc's window.
 ---
 
 ## Archived session log
+
+### 2026-09-01 (painted-metal cookbook) — new category, +5 materials, all HIT
+- Picked up via `pickup` (clean `main` at `a849784`, in sync). Grayson chose the
+  pick: a new cookbook category. Ran `brainstorming` (bounded), he chose painted
+  metal, 5 materials.
+- Called `advisor` before committing to the set. Key steer: painted metal's
+  variation is surface finish, so five gloss-only variants read as one gray panel
+  five times; design each around a distinct STRUCTURAL read. Presented the set
+  (pm01-pm05, each with its structural read named), Grayson approved.
+- Built `quality/cookbook_painted_metal.py`, validated all 5 against the catalog
+  (fast, no Godot), then rendered + 3D-previewed each one Godot at a time via
+  `render_one.py` + a scratchpad preview helper. pm01 needed a warp-flatten pass
+  (wormy crackle -> fine pebbling); pm03 needed two mask-polarity passes before
+  the blend port-1/port-0 semantics were pinned; pm05 needed octaves dropped 8->2
+  for clean directional scuffs. Sent Grayson all 5 previews; he locked them.
+- Finalized: 5 tracked albedo thumbnails to `docs/images/cookbook-painted-metal/`,
+  the 5 recipes into `docs/AUTHORING.md`, memory (`authoring-recipes` + index)
+  updated with the blend-port fact. Committed `4d72c8b`, pushed to `origin/main`
+  (CI triggered), confirmed in sync.
+- Wrote `_agent-commons\log\2026-09-01-claude-code-mm-mcp-painted-metal-cookbook.md`.
 
 ### 2026-08-30 (v0.4.0 release + gallery) — unblocked release-please, shipped 0.4.0, enlarged README gallery
 - Picked up via `pickup` (clean `main` at `6b2a070`, in sync). Grayson chose

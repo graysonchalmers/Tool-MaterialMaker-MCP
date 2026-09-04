@@ -1,68 +1,68 @@
 # 🧭 Session Handoff: Tool-MaterialMaker-MCP
 
-_Last updated: 2026-09-03 (teardown #2, cookbook-as-data merged, STATUS header capped) CT (America/Chicago)_
+_Last updated: 2026-09-04 (v0.5.0 released, AUTHORING split landed, hygiene pass) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**Teardown #2 ran, and its top recommendation is built, reviewed, and merged:
-the cookbook is now tracked data the MCP server serves.** Merge commit
-`530ad0f` on `main`, pushed; CI on that commit: success (tests workflow on windows-latest, run 2026-09-03).
-- **Teardown #2 (2026-09-03) verdict:** no Rebuild calls. Keep the `src/` core,
-  live-control (frozen: zero uses since the 08-28 verification, so close backlog
-  J as won't-do), debug swatches, noise gallery, the frozen test set, the
-  HANDOFF trim convention. Refactor: the cookbook (DONE this session),
-  `quality/author.py` (split the 8 graph-surgery helpers from the 13 phase-3
-  builders), `docs/AUTHORING.md` (invariant guide vs per-material recipes, serve
-  the guide as an MCP resource), STATUS.md's header (capped this session), the
-  three overlapping image sets, the release cadence. Kill: `examples/` (fold into
-  the cookbook), `docs/HANDOFF_ARCHIVE.md` (git is the archive). Full report
-  delivered to Grayson as a file, not committed (same convention as teardown #1).
-- **Cookbook as data (merged, 11 commits):** `cookbook/<category>/<id>.ptex`
-  (43 graphs, 8 categories); `quality/promote_cookbook.py` (copies builder
-  output in; `--check` is a JSON-content regression diff, so the 28 informal
-  materials finally have a baseline); `src/mm_mcp/cookbook.py`;
-  `Config.cookbook_dir` / `MM_COOKBOOK_DIR` (defaults to the checkout's
-  `cookbook/`); `list_examples(source=...)` now returns
-  `{"ok", "examples": [{"name", "source", "category"}]}` (breaking, `feat!`);
-  `load_example(name, source="auto")` tries the cookbook first and returns every
-  error as data; `mm-mcp --check` reports the cookbook count;
-  `tests/test_cookbook_gate.py` validates all 43 in the fast suite (378 tests,
-  was 262). Docs: README (43 materials, eight categories, how to open one),
-  `cookbook/README.md`, `quality/README.md`, AUTHORING step 1, `.env.example`,
-  contact sheet regenerated at 43 tiles.
-- **Release-please guard:** the final review caught that the `feat!` commit
-  would have made release-please cut 1.0.0 on merge. `bump-minor-pre-major:
-  true` is now set; the release PR should propose 0.5.0. Check it before merging.
-- **STATUS.md header capped** (teardown 🔴 finding): the 7.3KB "Last updated"
-  run-on moved verbatim to the archive; the header is one line now.
+**Three teardown-order items landed in one session: v0.5.0 was released, the
+AUTHORING split shipped, and a hygiene pass followed.** `main` is at `cd900f0`,
+pushed and in sync. release-please PR #3 proposes 0.6.0 (open, Grayson's to merge).
+- **v0.5.0 released** by merging release-please PR #2 (the cookbook-as-data
+  milestone). `bump-minor-pre-major` held: it cut 0.5.0, not 1.0.0.
+- **AUTHORING split (merge `6c2edf0`, 6 commits, subagent-driven):** the
+  996-line `docs/AUTHORING.md` monolith became a 308-line invariant guide plus
+  43 per-material recipe cards at `cookbook/<category>/<id>.md`. The guide is
+  now served as the `guide://authoring` MCP resource (`server.py`:
+  `_authoring_guide_path`/`read_authoring_guide` + a one-line `@mcp.resource`
+  wrapper mirroring `catalog://nodes`; resolves `<repo>/docs/AUTHORING.md`,
+  graceful notice when absent). Cross-material lessons (topology-not-donor,
+  masonry diagnostics, blend port/opacity) were lifted UP into a new
+  "Cross-material lessons" guide section; per-material recipes moved down to the
+  cards. A `test_cookbook_graph_has_recipe_card` parity gate requires every
+  cookbook `.ptex` to carry a card. Fast suite 424 (was 378). README lists two
+  resources now. Final whole-branch review clean on opus.
+- **Hygiene pass (`cd900f0`):** `quality/README.md` dropped the stale "informal"
+  framing and swept its em dashes; `docs/superpowers/README.md` labels that
+  directory as execution history; the contact sheet shrank 5.45MB to 0.99MB via
+  256-color palette; one em dash swept from `server.py`'s render_preview
+  docstring.
+- **Deferred, surfaced to Grayson (NOT done):** folding `examples/` into the
+  cookbook (it is load-bearing: `server.py`'s `_bundled_examples`/`list_examples`
+  serve `cfg.examples_dir`, and it holds the frozen Phase-3 test-set graphs and
+  is referenced by 7 test files, config, doctor, and quality tooling, so it is
+  its own scoped project, not hygiene) and deleting `docs/HANDOFF_ARCHIVE.md`
+  (a workflow call: it trades a browsable 2015-line history for git archaeology,
+  which matters more for a non-SWE, and rewrites the wrap-up trim convention).
 
 Older write-ups/log beyond the cap live in
 [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).
 
 ## 📌 Where we stopped
 
-Merged, pushed, `main` clean and in sync at `530ad0f` plus this wrap-up baton
-commit. Natural stopping point.
+`main` at `cd900f0`, pushed and in sync. v0.5.0 released, AUTHORING split and
+hygiene pass landed. release-please PR #3 (0.6.0) is open, Grayson's to merge.
+Natural stopping point.
 
 ## ▶️ Next concrete step
 
-Continue the teardown's v2 order (each is one session or less):
-1. **AUTHORING split + `guide://authoring` MCP resource.** The invariant guide
-   (rubric, workflow, pitfalls, the `param4=0` fix, blend port semantics, noise
-   vocabulary, topology-not-donor: about 15KB) stays in `docs/AUTHORING.md` and is
-   served as a resource so the assistant reads it on demand; the ~50KB of
-   per-material recipes move to cards beside their graphs
-   (`cookbook/<category>/<id>.md`). Depends on nothing now that the cookbook is
-   tracked.
-2. **Hygiene pass** (about an hour): fold `examples/` into the cookbook, delete
-   `docs/HANDOFF_ARCHIVE.md`, label `docs/superpowers/` as execution history,
-   fix `quality/README.md`'s "informal" heading, run the 5.4MB contact sheet
-   through an optimizer, decide the release cadence (merge the 0.5.0 PR or stop
-   release-please opening PRs on docs-only pushes).
-3. **Cookbook backlog** (glass/plastics category; two-color tweed) now
-   compounds: new materials land in `cookbook/` via `promote_cookbook.py`.
+Two decisions are waiting on Grayson (both surfaced this session):
+1. **Merge release-please PR #3 to cut v0.6.0.** It captures the guide resource
+   (a feat) plus this session's docs/chore commits. Merge when ready; it is the
+   release-cadence call.
+2. **Decide the two deferred hygiene items:** (a) whether to fold `examples/`
+   into the cookbook (its own scoped project, since it is load-bearing on the
+   frozen test set and the example-serving MCP path), and (b) whether to delete
+   `docs/HANDOFF_ARCHIVE.md` (kill browsable history for git archaeology, and
+   rewire the wrap-up trim convention) or keep it.
+
+Then continue the teardown's v2 order (each is one session or less):
+3. **`quality/author.py` refactor** (teardown Refactor item, not yet done):
+   split the 8 graph-surgery helpers from the 13 Phase-3 builders.
+4. **Cookbook backlog** (glass/plastics category; two-color tweed) now
+   compounds: new materials land in `cookbook/` via `promote_cookbook.py`, then
+   get a card at `cookbook/<category>/<id>.md`.
 
 The older open backlog, unchanged:
 - **2 findings ruled out, not fixed** (deliberate): #8 (`_cmd_clear_graph`'s
@@ -162,6 +162,45 @@ The older open backlog, unchanged:
   earlier session (staleness marker, `_append_autoload`'s first-occurrence
   match, both verified low-priority).
 
+## 🗂️ Changed this session (v0.5.0 release + AUTHORING split + hygiene)
+
+- **v0.5.0 released:** merged release-please PR #2 (`35484e3`), synced local
+  `main`. `bump-minor-pre-major` cut 0.5.0 not 1.0.0, as intended.
+- **AUTHORING split, feature branch `authoring-split` merged `--no-ff` as
+  `6c2edf0`, pushed; branch deleted.** 6 commits `ec72228..a2455b8`. Files:
+  `src/mm_mcp/server.py` (the `guide://authoring` resource: `_authoring_guide_path`
+  / `read_authoring_guide` pure helpers + the `@mcp.resource` wrapper),
+  `tests/test_guide_resource.py` (new), `docs/AUTHORING.md` (996 to 308 lines,
+  now the invariant guide with a new "Cross-material lessons" section),
+  `cookbook/**/*.md` (43 new recipe cards, one per graph),
+  `tests/test_cookbook_gate.py` (new `test_cookbook_graph_has_recipe_card`
+  parity gate), plus reference fixups in `README.md`, `quality/README.md`,
+  `cookbook/README.md`, `src/mm_mcp/cookbook.py`. Fast suite 424 (was 378).
+- **Hygiene pass (`cd900f0`):** `quality/README.md` (dropped "informal", swept
+  em dashes), `docs/superpowers/README.md` (new, labels the dir as execution
+  history), `docs/images/cookbook-contact-sheet.png` (5.45MB to 0.99MB, 256-color
+  palette), `src/mm_mcp/server.py` (one docstring em dash).
+- **Process:** `pickup` reconciled clean (0.5.0 PR correctly at 0.5.0 confirming
+  the earlier `bump-minor-pre-major` fix). `phased-rebuild` -> `writing-plans`
+  (spec-in-plan + 11 tasks, `docs/superpowers/plans/2026-09-04-authoring-split.md`)
+  -> `subagent-driven-development`. The 8 per-category card tasks were batched
+  into 3 dispatches by independence (disjoint dirs, add-only); every dispatch
+  reviewed as a unit; final whole-branch review clean on opus. All card and
+  guide prose written em-dash-free (the repo pre-commit hook checks added lines).
+- **Decisions (+ why):** cards live at `cookbook/<category>/<id>.md` because all
+  three cookbook tools glob `*.ptex` specifically (verified), so `.md` siblings
+  are invisible to `list_cookbook`, the gate, and `promote --check`. Residue
+  rule: a single-material recipe becomes a card, a cross-material lesson stays in
+  or moves up into the guide (topology-not-donor, masonry diagnostics, blend
+  port/opacity all lifted). Worked on a feature branch in the main checkout, not
+  a worktree, because the editable `.venv` resolves `mm_mcp` from the main
+  checkout's `src/`. Deferred `examples/` fold (load-bearing) and
+  `HANDOFF_ARCHIVE.md` deletion (Grayson's workflow call), both surfaced.
+- One parked minor from the final review: the voronoi port-0 polarity
+  cross-material note stayed in the cards (l04 full, l01/s04 reference it) rather
+  than being lifted to the guide. Not content loss; a one-line guide addition
+  could close it later.
+
 ## 🗂️ Changed this session (teardown #2 + cookbook-as-data)
 
 - Branch: feature branch `cookbook-as-data` (11 commits `6c3083c..f31d753`),
@@ -232,40 +271,6 @@ The older open backlog, unchanged:
   wool, the topology reframe on terrain). Judged every material in 3D via
   `render_preview` and sent previews to Grayson each pass. `render_preview` has no
   emission slot, so lava's glow was judged on the exported emission map.
-
-## 🗂️ Changed this session (noise-vocab gallery + 2 backlog items + wool take-two)
-
-- Branch: `main`. Commit `20e485d`, **pushed** to `origin/main` (CI triggered).
-  Files: `quality/noise_gallery.py` (new), `docs/AUTHORING.md` (new "Noise
-  vocabulary" section + a render_preview workflow step), `src/mm_mcp/server.py`
-  (list_node_types docstring), `README.md` (tool-table wording), 2 tracked
-  contact sheets under `docs/images/noise-gallery/`. Rendered outputs under
-  `quality/cookbook/noise-gallery/` + `quality/authored/noise-gallery/` are
-  gitignored by the existing cookbook convention. No gate/phase state moved.
-- **The noise diagnosis (why the materials look alike), quantified:** 38 cookbook
-  builders, 69% clone 3 donors (crocodile_skin x12, rock x7, wood x5), only base
-  noise added by hand is perlin x9 + voronoi x1, zero fbm/anisotropic/shard/
-  wavelet/truchet out of 47 noise nodes. The fix is a wider base-noise vocabulary,
-  not more recolors. Biggest lever: `fbm`'s `noise` enum (8 bases; Value/Perlin
-  are close cousins, Cellular 2-7 are the untapped multi-octave range that plain
-  voronoi can't do). Cross-family: anisotropic (directional), truchet Line/Circle
-  (circuits/pipes), voronoi_triangle (scales/gems), wavelet (fine grain).
-  Caveats: `shard_fbm` reads soft at defaults (push `sharp`/`folds`);
-  `fbm_variations` has unresolved `$?1..$?4` enum labels, check its `.mmg` first.
-- **Wool take-two recipe (kept for next session, NOT committed):** retype
-  crocodile_skin's `voronoi_0` to `pattern` with `mix=0` (Multiply), `x_wave=5`
-  (Bounce), `y_wave=5` (Bounce), `x_scale=8`, `y_scale=8`; normal_map `param1=0.5
-  param4=0`; heathered-oatmeal albedo. Result: pillowy TUFTED/QUILTED upholstery
-  (a square bump lattice), not interlocking knit loops. The square grid is
-  inherent to `pattern` multiplying two axis-aligned waves. Reverted f04 to the
-  committed weave partial. Next-steps: offset alternate rows into V-columns, or
-  `truchet` Circle, or keep the quilted look as its own new slot. The
-  pattern-Bounce lever DOES produce real pillow relief, worth reusing for any
-  padded/tufted/cushioned material.
-- Process: `advisor` before rendering shaped the noise work (diagnose with a
-  histogram first, ship a reference gallery not a pixel-checked swatch, lead with
-  the fbm sweep, watch the param4=0 flat-normal trap). `brainstorming` (bounded)
-  locked the wool approach before authoring.
 
 > 📦 **21 older "Changed this session" write-ups archived** (through
 > 2026-09-01, incl. the blend-opacity debug swatches, the painted-metal cookbook, and the v0.4.0 release-unblock
@@ -598,6 +603,26 @@ The older open backlog, unchanged:
 > through the project's Phase 1-2 kickoff on 2026-08-25.
 
 
+### 2026-09-04 (v0.5.0 release + AUTHORING split + hygiene): the guide becomes a resource, recipes become cards
+- `pickup` reconciled clean (`main` at `66661f5`); confirmed release PR #2 now
+  correctly proposed 0.5.0 (the `bump-minor-pre-major` fix from last session held).
+  Grayson picked briefing options 1, 2, 3 (AUTHORING split, merge release, hygiene).
+- Sequenced 2 -> 1 -> 3 (advisor confirmed merge-first avoids a PR rebase). Merged
+  release-please PR #2 -> v0.5.0; synced local `main`.
+- AUTHORING split via `phased-rebuild` -> `writing-plans` (11-task plan) ->
+  `subagent-driven-development`. Phase-0 investigation cleared the advisor's blocker
+  (all cookbook tooling globs `*.ptex`, so `.md` cards are safe beside graphs).
+  Task 1 = the `guide://authoring` resource; 3 batched card dispatches = 43 cards;
+  Task 10 = guide trim (996->308, cross-material lessons lifted); Task 11 =
+  references + parity gate + em-dash/backtick sweeps. Every dispatch reviewed;
+  final whole-branch review clean on opus. Merged `--no-ff` (`6c2edf0`), pushed,
+  branch deleted, SDD workspace removed.
+- Hygiene pass (`cd900f0`): quality/README "informal" fix + em-dash sweep,
+  docs/superpowers/README execution-history label, contact sheet 5.45->0.99MB,
+  server.py docstring em dash. Deferred (surfaced): `examples/` fold (load-bearing)
+  and `HANDOFF_ARCHIVE.md` deletion (Grayson's call).
+- release-please opened PR #3 (0.6.0), left for Grayson. Then this wrap-up.
+
 ### 2026-09-03 (teardown #2 + cookbook-as-data): the cookbook becomes tracked, MCP-served data
 - `pickup` (clean `main` at `4136c9e`) chained into `teardown` #2. Evidence: full
   tree, git log, per-area line counts, GitHub API (0 stars, 8 unique viewers in
@@ -678,26 +703,6 @@ The older open backlog, unchanged:
   suite 262. Docs: new blend family section in `docs/DEBUG_SWATCHES.md` +
   AUTHORING.md cross-ref. Committed `80256d0`, pushed to `origin/main`, in sync.
 - Wrote `_agent-commons\log\2026-09-01-claude-code-mm-mcp-blend-opacity-debug-swatch.md`.
-
-### 2026-09-01 (painted-metal cookbook) — new category, +5 materials, all HIT
-- Picked up via `pickup` (clean `main` at `a849784`, in sync). Grayson chose the
-  pick: a new cookbook category. Ran `brainstorming` (bounded), he chose painted
-  metal, 5 materials.
-- Called `advisor` before committing to the set. Key steer: painted metal's
-  variation is surface finish, so five gloss-only variants read as one gray panel
-  five times; design each around a distinct STRUCTURAL read. Presented the set
-  (pm01-pm05, each with its structural read named), Grayson approved.
-- Built `quality/cookbook_painted_metal.py`, validated all 5 against the catalog
-  (fast, no Godot), then rendered + 3D-previewed each one Godot at a time via
-  `render_one.py` + a scratchpad preview helper. pm01 needed a warp-flatten pass
-  (wormy crackle -> fine pebbling); pm03 needed two mask-polarity passes before
-  the blend port-1/port-0 semantics were pinned; pm05 needed octaves dropped 8->2
-  for clean directional scuffs. Sent Grayson all 5 previews; he locked them.
-- Finalized: 5 tracked albedo thumbnails to `docs/images/cookbook-painted-metal/`,
-  the 5 recipes into `docs/AUTHORING.md`, memory (`authoring-recipes` + index)
-  updated with the blend-port fact. Committed `4d72c8b`, pushed to `origin/main`
-  (CI triggered), confirmed in sync.
-- Wrote `_agent-commons\log\2026-09-01-claude-code-mm-mcp-painted-metal-cookbook.md`.
 
 _(Older entries continue in [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).)_
 
