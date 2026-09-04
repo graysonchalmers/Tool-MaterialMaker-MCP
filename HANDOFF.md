@@ -1,25 +1,27 @@
 # 🧭 Session Handoff: Tool-MaterialMaker-MCP
 
-_Last updated: 2026-09-04 (live web play surface shipped) CT (America/Chicago)_
+_Last updated: 2026-09-04 (play-surface verified + one-click play.bat) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**The live web play surface shipped and merged (PR #5, `main` at `9b0e64e`,
-in sync).** A new `src/mm_mcp/play/` package (stdlib `http.server` + a vendored
-three.js frontend, launched by the new `mm-play` console command) turns each
-cookbook material's exposed subgraph parameters into friendly web sliders driving
-a live WebGL PBR sphere. Aimed at a non-technical person tweaking a finished
-material without ever touching the node graph. This closed sub-project 2 of the
-"Material Maker for dummies" idea, so that whole idea is now done. Built via
-`subagent-driven-development` (10 tasks, per-task review, final whole-branch
-review on opus, one Important live-path bug found and fixed). Fast suite 559 ->
-579, stdlib only, no new runtime deps. **Live-verified in a browser by the agent
-(gallery of 46 materials, subgraph-grouped author-named sliders, sphere shading
-real maps, changed-value renders, unique-id addressing confirmed); the STATUS row
-is `wired`, not verified, because promoting it needs Grayson's own hands-on
-`mm-play` run.**
+**The live web play surface is now VERIFIED, and there's a one-click
+`play.bat` launcher at the repo root (`main` at `27bf78f`, in sync).**
+Grayson ran `mm-play` hands-on via `play.bat` (double-click -> starts the
+server, auto-opens the browser at `http://127.0.0.1:8788/`), so the STATUS
+`mm-play` row moved from `wired` to `verified`. That closes the whole
+"Material Maker for dummies" idea end to end. Two non-blocking UI nits are
+recorded in STATUS: the slider panel docks at the bottom of the left sidebar
+(scroll past the gallery to reach it), and the WebGL canvas does not reliably
+re-fill the viewport on a mid-session browser resize (sizes correctly at load).
+
+The play surface itself: a `src/mm_mcp/play/` package (stdlib `http.server`
++ a vendored three.js frontend, launched by the `mm-play` console command,
+or `play.bat`) turns each cookbook material's exposed subgraph parameters into
+friendly web sliders driving a live WebGL PBR sphere. Aimed at a non-technical
+person tweaking a finished material without touching the node graph. Fast suite
+579, stdlib only, no new runtime deps.
 
 **Before this, the three cookbook bugs the subgraph retrofit surfaced were all
 fixed,
@@ -160,40 +162,29 @@ Older write-ups/log beyond the cap live in
 
 ## 📌 Where we stopped
 
-Play surface merged to `main` (`9b0e64e`) via PR #5 (now merged), pushed, feature
-branch deleted (local and remote), SDD workspace cleaned. `main` in sync with
-origin. Natural stopping point. The only thing waiting on Grayson is a hands-on
-`mm-play` run to promote the play-surface STATUS row from `wired` to `verified`.
+`play.bat` + the STATUS verified-promotion committed (`27bf78f`) and pushed;
+`main` in sync with origin. Everything is closed out. Nothing is in flight and
+nothing is waiting on Grayson.
 
 ## ▶️ Next concrete step
 
-Nothing is blocking on Grayson right now.
-1. **Run `mm-play` hands-on** (the pick). Launch the play surface yourself
-   (`mm-play`, or `.venv\Scripts\python.exe -m mm_mcp.play.server`), click a few
-   materials, drag the sliders, spin the sphere. If it behaves, that promotes the
-   STATUS row from `wired` to `verified`. One known nit to watch: the WebGL canvas
-   does not reliably re-fill the viewport if you resize the browser window
-   mid-session (it sizes correctly at load); worth a small follow-up if it bugs
-   you. The live path (driving a running Material Maker session) is the least
-   exercised branch, worth a look if you have MM open.
-2. **Sub-project 2 of "Material Maker for dummies" is DONE** (this session's play
-   surface). The whole idea is closed. A natural NEXT extension, if wanted: a
-   "push the picked material into a live MM session first" flow (currently the
-   live path only drives MM when the picked material already matches what is
-   loaded there; otherwise it falls back to headless). That overlaps the deferred
+Nothing is blocking. Pick a fresh thread:
+1. **A follow-up on the two play-surface UI nits** (small, optional): make the
+   slider panel easier to find (it's currently below the whole gallery in the
+   left sidebar) and fix the WebGL canvas not re-filling the viewport on a
+   mid-session browser resize. Both are cosmetic, neither blocks use.
+2. **Check Unreal UE5 export** now that `mcp__unreal-engine__*` tools show
+   connected (blocked for several sessions on "needs a live bridge"). Bigger,
+   needs a live Unreal Editor open.
+3. **A NEXT extension of the play surface, if wanted:** a "push the picked
+   material into a live MM session first" flow (currently the live path only
+   drives MM when the picked material already matches what is loaded there;
+   otherwise it falls back to headless). That overlaps the deferred
    `live_load` backlog item and would need its own scoping.
-3. **This session's tool list showed `mcp__unreal-engine__*` tools
-   connected** (see the drift note an earlier pickup briefing surfaced).
-   **Unreal UE5 export verification** has been blocked for multiple
-   sessions on "needs a live Unreal Editor with the MCP bridge connected" —
-   worth a live check now that the bridge appears to be up, before assuming
-   it's still blocked.
-4. **More cookbook categories/materials** remain an open-ended, no
-   specific quick-win flagged right now. New materials land in `cookbook/`
-   via `promote_cookbook.py`, then get a card at `cookbook/<category>/<id>.md`
-   — and should call `group_into_subgraph` before `save_variant` returns
-   from now on (see `docs/AUTHORING.md`'s "Grouping into subgraphs"
-   section), so future categories don't need a second retrofit pass.
+4. **More cookbook categories/materials** remain open-ended, no specific
+   quick-win flagged. New materials land in `cookbook/` via
+   `promote_cookbook.py`, get a card, and should call `group_into_subgraph`
+   before `save_variant` returns (see `docs/AUTHORING.md`).
 
 The older open backlog, unchanged unless noted:
 - **2 findings ruled out, not fixed** (deliberate): #8 (`_cmd_clear_graph`'s
@@ -654,6 +645,26 @@ The older open backlog, unchanged unless noted:
 > session back through the project's Phase 1-2 kickoff on 2026-08-25.
 
 
+### 2026-09-04 (play.bat + play-surface verified): the last loose end closed
+- `pickup` reconciled clean (`main` at `2369eb9`, one wrap-up-doc commit past
+  the baton's stated `9b0e64e`, tree clean, in sync). Grayson picked next move
+  #1 (run `mm-play` hands-on) and asked for a one-click bat.
+- Wrote `play.bat` at the repo root: double-click launcher that cd's to its own
+  dir (`%~dp0`), checks `.venv\Scripts\python.exe`, and runs `python -m
+  mm_mcp.play.server` (which auto-opens the browser at `http://127.0.0.1:8788/`
+  via `open_browser=True`). CRLF line endings for a Windows `.bat`.
+- Re-drove the play surface in the in-app browser before handing it over:
+  gallery of all 46 materials, author-named sliders on `l04_reptile_exotic`,
+  a live re-render on a slider drag (Scale relief 0.7 -> 2, scales visibly
+  deepened), WebGL sphere shading the real maps. Stopped the background server
+  so the port was free for Grayson's bat.
+- Grayson ran `play.bat` hands-on and confirmed, so the play-surface STATUS row
+  moved from `wired` to `verified`, closing the whole "Material Maker for
+  dummies" idea end to end. Two non-blocking UI nits recorded in STATUS (slider
+  panel at the bottom of the sidebar, canvas resize).
+- Committed `play.bat` + STATUS.md (`27bf78f`) and pushed on "commit this and
+  push it + wrap." Commons log written. Then this wrap-up.
+
 ### 2026-09-04 (live web play surface): the node graph gets a slider panel a non-coder can use
 - `pickup` reconciled clean (`main` at `108c6e0`). Grayson picked next move #1:
   scope the deferred live web companion (sub-project 2 of "MM for dummies").
@@ -767,32 +778,5 @@ The older open backlog, unchanged unless noted:
   (render non-determinism, not a real change) before committing. Fast
   suite 447 -> 453. Committed (`68c51dc`) and pushed on explicit
   instruction ("push it + wrap"). Then this wrap-up.
-
-### 2026-09-03 (reference-photo authoring workflow + glass cookbook): the assistant learns to read a photo, not just a sentence
-- `pickup` reconciled clean (`main` at `692057b`). Grayson picked backlog
-  item #4, "image-to-material decomposition," from the briefing's numbered
-  options.
-- `brainstorming` classified it architectural at first (a new subsystem),
-  then a scoping question collapsed it to bounded: the decomposition
-  reasoning happens in Claude's own vision during the chat session itself,
-  not a new server-side vision tool, so the real deliverable is a
-  documented workflow addition to `docs/AUTHORING.md`, not a subsystem.
-  Grayson also chose to include a worked proof (not guidance-only) and to
-  commit the proof as a real cookbook entry (not throwaway).
-- Sourced a CC-BY-SA 4.0 reference photo. An early attempt to browse
-  `ambientcg.com` hit a malicious ad redirect to a fake "McAfee Security"
-  scareware page (`securesweep.pro`); closed the tab immediately without
-  interacting and switched to Wikimedia Commons, which worked cleanly.
-- Wrote the "Authoring from a reference photo" section, then authored
-  `cookbook/glass/gl01_frosted_glass` end to end from the photo: decomposed
-  it against the new rubric, matched it to `dry_earth`'s connected-crack-
-  network topology at a much finer scale, built and rendered the graph,
-  judged it in the 3D preview (sent to Grayson for a look), promoted it
-  through `promote_cookbook.py`. Fast suite 444 -> 447. Committed and
-  pushed to `main` (`9a02a8d`) on Grayson's explicit go-ahead.
-- Wrote the session's commons log entry, then Grayson asked for one more
-  fix: a stale gitignored build artifact (`f04_wool_knit`, unrelated to
-  this session) was making `promote_cookbook.py --check` report false
-  drift. Cleared it, confirmed clean, then this wrap-up.
 
 _(Older entries continue in [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).)_

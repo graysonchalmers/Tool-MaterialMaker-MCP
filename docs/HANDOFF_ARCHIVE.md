@@ -923,6 +923,33 @@ doc's window.
 
 ## Archived session log
 
+### 2026-09-03 (reference-photo authoring workflow + glass cookbook): the assistant learns to read a photo, not just a sentence
+- `pickup` reconciled clean (`main` at `692057b`). Grayson picked backlog
+  item #4, "image-to-material decomposition," from the briefing's numbered
+  options.
+- `brainstorming` classified it architectural at first (a new subsystem),
+  then a scoping question collapsed it to bounded: the decomposition
+  reasoning happens in Claude's own vision during the chat session itself,
+  not a new server-side vision tool, so the real deliverable is a
+  documented workflow addition to `docs/AUTHORING.md`, not a subsystem.
+  Grayson also chose to include a worked proof (not guidance-only) and to
+  commit the proof as a real cookbook entry (not throwaway).
+- Sourced a CC-BY-SA 4.0 reference photo. An early attempt to browse
+  `ambientcg.com` hit a malicious ad redirect to a fake "McAfee Security"
+  scareware page (`securesweep.pro`); closed the tab immediately without
+  interacting and switched to Wikimedia Commons, which worked cleanly.
+- Wrote the "Authoring from a reference photo" section, then authored
+  `cookbook/glass/gl01_frosted_glass` end to end from the photo: decomposed
+  it against the new rubric, matched it to `dry_earth`'s connected-crack-
+  network topology at a much finer scale, built and rendered the graph,
+  judged it in the 3D preview (sent to Grayson for a look), promoted it
+  through `promote_cookbook.py`. Fast suite 444 -> 447. Committed and
+  pushed to `main` (`9a02a8d`) on Grayson's explicit go-ahead.
+- Wrote the session's commons log entry, then Grayson asked for one more
+  fix: a stale gitignored build artifact (`f04_wool_knit`, unrelated to
+  this session) was making `promote_cookbook.py --check` report false
+  drift. Cleared it, confirmed clean, then this wrap-up.
+
 ### 2026-09-03 (v0.6.0 release + author.py split + donor vendoring): the pipeline stops depending on the external checkout
 - `pickup` reconciled clean (`main` at `677f852`), then merged release-please
   PR #3 straight away (0.6.0, pure metadata bump) since it was the standing
