@@ -674,3 +674,33 @@ def test_live_apply_rejects_a_non_dict_op_without_raising(monkeypatch):
     result = server.live_apply(["not_a_dict"])
     assert result["ok"] is False
     assert result["results"][0]["ok"] is False
+
+
+def test_live_load_delegates_to_load_graph_on_success(monkeypatch):
+    monkeypatch.setattr(server, "_ensure_ready", lambda: (cfg, {}))
+    monkeypatch.setattr(live, "connect_or_launch",
+                        lambda **kw: live.LiveSession(ok=True, process=None))
+    captured = {}
+
+    def fake_load(**kw):
+        captured.update(kw)
+        return live.LiveResult(ok=True)
+
+    monkeypatch.setattr(live, "load_graph", fake_load)
+    result = server.live_load(graph={"nodes": [], "connections": []})
+    assert result["ok"]
+    assert captured["graph"] == {"nodes": [], "connections": []}
+
+
+def test_live_load_reports_session_failure_without_calling_load_graph(monkeypatch):
+    monkeypatch.setattr(server, "_ensure_ready", lambda: (cfg, {}))
+    monkeypatch.setattr(live, "connect_or_launch",
+                        lambda **kw: live.LiveSession(ok=False, error="no session"))
+
+    def _boom(**kw):
+        raise AssertionError("load_graph should not be called when the session failed")
+
+    monkeypatch.setattr(live, "load_graph", _boom)
+    result = server.live_load(graph={"nodes": [], "connections": []})
+    assert not result["ok"]
+    assert result["error"] == "no session"

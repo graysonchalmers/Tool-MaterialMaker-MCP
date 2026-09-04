@@ -494,6 +494,22 @@ def live_render(basename: str = "material", profile: str = "Godot/Godot 4 Standa
             "log_tail": result.log_tail}
 
 
+def live_load(graph: dict | None = None, path: str | None = None) -> dict:
+    """Replace the graph shown in the running Material Maker session with one
+    you supply, in place (no new tab). Pass a graph dict (the {nodes,
+    connections, ...} shape live_get_graph returns) or a .ptex file path:
+    exactly one. The graph is validated against the catalog before loading.
+    This changes only what is shown: it never saves a file. Closes the loop for
+    driving a specific material live (e.g. the play surface pushing a picked
+    material). Requires a Claude Code restart to appear, like every live tool."""
+    cfg, _ = _ensure_ready()
+    session = _ensure_live_session(cfg)
+    if not session.ok:
+        return {"ok": False, "error": session.error}
+    result = live.load_graph(graph=graph, path=path, cfg=cfg)
+    return {"ok": result.ok, "error": result.error, "data": result.data}
+
+
 # Register the plain functions as MCP tools.
 mcp.tool()(list_node_types)
 mcp.tool()(describe_node)
@@ -511,6 +527,7 @@ mcp.tool()(live_apply)
 mcp.tool()(live_render)
 mcp.tool()(live_render_node_output)
 mcp.tool()(live_clear)
+mcp.tool()(live_load)
 
 
 @mcp.resource("catalog://nodes")
