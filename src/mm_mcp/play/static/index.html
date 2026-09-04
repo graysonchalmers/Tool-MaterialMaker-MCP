@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Material Maker Play</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div id="layout">
+    <aside id="left">
+      <h1>Material Maker Play</h1>
+      <div id="gallery"></div>
+      <div id="controls" hidden>
+        <h2 id="material-name"></h2>
+        <div id="sliders"></div>
+        <div id="actions">
+          <button id="full">Render full quality</button>
+          <button id="download">Download</button>
+          <span id="status"></span>
+        </div>
+      </div>
+    </aside>
+    <main id="viewport"></main>
+  </div>
+  <script src="/static/three.min.js"></script>
+  <script src="/static/app.js"></script>
+</body>
+</html>

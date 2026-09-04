@@ -33,6 +33,7 @@ release = ["build>=1.0", "twine>=5.0"]
 
 [project.scripts]
 mm-mcp = "mm_mcp.server:main"
+mm-play = "mm_mcp.play.server:main"
 
 [project.urls]
 Homepage = "https://github.com/graysonchalmers/Tool-MaterialMaker-MCP"
@@ -47,7 +48,7 @@ build-backend = "setuptools.build_meta"
 where = ["src"]
 
 [tool.setuptools.package-data]
-mm_mcp = ["preview_project/*"]
+mm_mcp = ["preview_project/*", "play/static/*"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]

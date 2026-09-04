@@ -148,6 +148,14 @@ def test_check_setup_cookbook_missing_is_informational_not_failing(tmp_path):
     assert "not found" in cookbook.detail
 
 
+def test_check_setup_reports_play_surface_port():
+    cfg = load_config(overrides={"MM_PLAY_PORT": "9999"})
+    play = next(c for c in check_setup(cfg) if c.name == "play surface")
+    assert play.ok
+    assert "9999" in play.detail
+    assert "mm-play" in play.detail.lower()
+
+
 def test_check_setup_cookbook_read_error_is_reported_not_raised(monkeypatch):
     import mm_mcp.doctor as doctor_mod
 

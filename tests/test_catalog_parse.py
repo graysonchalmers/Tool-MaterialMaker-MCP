@@ -44,3 +44,33 @@ def test_generic_input_expansion_produces_distinct_dicts():
 
     h_entries[0]["name"] = "h0"
     assert h_entries[1]["name"] == "h#"
+
+
+def test_compound_param_resolves_range_from_linked_inner_shader_node():
+    """normal_map is a compound ("generic") node: no shader_model of its own,
+    just a nested graph. Its remote widget param1 ("Strength") is wired via
+    linked_widgets to edge_detect_1.amount, an inline shader node whose own
+    shader_model declares min/max/step. The compound param should carry that
+    real range through, not leave it null."""
+    node = parse_node(_mmg("normal_map"))
+    params = {p["name"]: p for p in node["parameters"]}
+    strength = params["param1"]
+    assert strength["desc"] == "Strength"  # own name/desc kept
+    assert strength["type"] == "float"
+    assert strength["min"] == 0
+    assert strength["max"] == 2
+    assert strength["step"] == 0.01
+    assert strength["default"] == 0.5
+
+
+def test_compound_param_falls_back_to_none_when_inner_node_unresolvable():
+    """normal_map's param0 ("Resolution") links to the 'buffer' inner node,
+    which has no inline shader_model (buffer is a SPECIAL_TYPE). Resolution
+    must gracefully fall back to an unranged param, not crash."""
+    node = parse_node(_mmg("normal_map"))
+    params = {p["name"]: p for p in node["parameters"]}
+    resolution = params["param0"]
+    assert resolution["desc"] == "Resolution"
+    assert resolution["type"] is None
+    assert resolution.get("min") is None
+    assert resolution.get("max") is None
