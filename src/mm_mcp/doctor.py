@@ -49,12 +49,16 @@ def check_setup(cfg: Config) -> list[Check]:
         checks.append(Check("examples", False, f"missing: '{cfg.examples_dir}'"))
 
     if cfg.cookbook_dir and os.path.isdir(cfg.cookbook_dir):
-        n = len(list_cookbook(cfg.cookbook_dir))
-        checks.append(Check("cookbook", True, f"{n} materials in '{cfg.cookbook_dir}'"))
+        try:
+            n = len(list_cookbook(cfg.cookbook_dir))
+            checks.append(Check("cookbook", True, f"{n} materials in '{cfg.cookbook_dir}'"))
+        except Exception as exc:  # optional feature: an unreadable dir is reported, never a crash
+            checks.append(Check("cookbook", True,
+                                f"could not read '{cfg.cookbook_dir}': {exc}"))
     else:
         checks.append(Check("cookbook", True,
-                            "not found (optional: cookbook/ ships with the git checkout; "
-                            "set MM_COOKBOOK_DIR to point at one)"))
+                            f"not found at '{cfg.cookbook_dir or '<unset>'}' (optional: cookbook/ ships "
+                            "with the git checkout; set MM_COOKBOOK_DIR to point at one)"))
 
     appid_path = os.path.join(pp, "steam_appid.txt") if pp else "steam_appid.txt"
     appid_hint = ("Without it (containing 4110830) Material Maker self-relaunches "

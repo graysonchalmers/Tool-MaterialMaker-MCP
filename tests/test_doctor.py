@@ -141,3 +141,16 @@ def test_check_setup_cookbook_missing_is_informational_not_failing(tmp_path):
     cookbook = next(c for c in check_setup(cfg) if c.name == "cookbook")
     assert cookbook.ok
     assert "not found" in cookbook.detail
+
+
+def test_check_setup_cookbook_read_error_is_reported_not_raised(monkeypatch):
+    import mm_mcp.doctor as doctor_mod
+
+    def boom(_dir):
+        raise OSError("simulated unreadable cookbook dir")
+
+    monkeypatch.setattr(doctor_mod, "list_cookbook", boom)
+    cookbook = next(c for c in check_setup(load_config()) if c.name == "cookbook")
+    assert cookbook.ok
+    assert "could not read" in cookbook.detail
+    assert "simulated unreadable cookbook dir" in cookbook.detail
