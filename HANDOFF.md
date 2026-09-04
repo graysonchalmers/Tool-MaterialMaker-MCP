@@ -1,13 +1,35 @@
 # 🧭 Session Handoff: Tool-MaterialMaker-MCP
 
-_Last updated: 2026-09-04 (cookbook subgraph retrofit) CT (America/Chicago)_
+_Last updated: 2026-09-04 (leather + terrain bug fixes) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**All 46 existing cookbook materials retrofitted to use Material Maker's
-native subgraph mechanism.** `main` is at `034aeaf`, pushed and in sync.
+**The three cookbook bugs the subgraph retrofit surfaced are all fixed,
+verified, promoted, committed, and pushed.** `main` is at `5cd9e0b`, in sync
+with origin. Fast suite 505 passed, `promote_cookbook.py --check` in sync, no
+incidental render-sweep churn.
+- **t01_sand_dunes (terrain):** the `wood` donor wired `blend_0` (the master
+  ripple pattern) into Material's metallic port, and Material's metallic
+  scalar defaults to 1, so parts of the sand read as metal. Fixed by dropping
+  the wire AND `set_param(Material, metallic, 0)`. Verified by reading the
+  exported ORM's metallic (B) channel directly: flat 0.
+- **l02_distressed_two_tone (leather):** swapped port0/port1 on both blends so
+  the dark saddle base is the majority and the lighter worn rubs are the
+  scattered minority (was reversed). Before/after render confirmed the flip.
+  Bonus: the exposed "Wear blend strength" param now controls the wear layer
+  as its label claims.
+- **l05_quilted_leather (leather):** swapped port0/port1 on `blend_alb_q` so
+  the dark seam_shade lands in the recessed seams instead of on the pad
+  centers. The `sin*sin` pattern makes compact round peaks, so the result
+  reads as round grain pads on a dark seam grid; Grayson reviewed before/after
+  and chose the swap over relabeling (documented honestly in the card).
+- Recipe cards for all three rewritten to describe the fixed behavior (they
+  had previously asserted the broken behavior as intentional).
+
+**Before this (2026-09-04), all 46 existing cookbook materials were
+retrofitted to use Material Maker's native subgraph mechanism.**
 Opening any cookbook material now shows a handful of friendly, labeled
 nodes instead of a wall of raw ones (524 -> 179 top-level nodes across the
 cookbook, 66% fewer, average 11.4 -> 3.9 per material), purely
@@ -52,9 +74,9 @@ organizational, zero materials failed to reduce, zero regressions.
   (documented in their own recipe cards): `l02_distressed_two_tone` and
   `l05_quilted_leather`'s visible composite layers are reversed from what
   their own names/docstrings describe; `t01_sand_dunes`'s wood-donor wires
-  a `blend_0` node directly to the Material's metallic port. **Neither is
-  fixed yet -- flagging both here so they don't only live in a recipe
-  card.**
+  a `blend_0` node directly to the Material's metallic port. **All three
+  FIXED 2026-09-04 in the next session (`5cd9e0b`); see this doc's top
+  Current-state section.**
 - Fast suite 453 -> 505 (Task 1's +6, Task 12's +46 parametrized gate
   cases). Merged `--no-ff` (`034aeaf`), pushed, feature branch deleted.
 
@@ -118,23 +140,21 @@ Older write-ups/log beyond the cap live in
 
 ## 📌 Where we stopped
 
-`main` at `034aeaf`, pushed and in sync. Cookbook subgraph retrofit
-complete across all 46 materials, final whole-branch review clean, merged
-and pushed. Natural stopping point, no open decision blocking the next
-session.
+`main` at `5cd9e0b`, pushed and in sync. All three retrofit-surfaced cookbook
+bugs (t01 metallic, l02 reversed layers, l05 seam polarity) fixed, promoted,
+carded, committed as one bug-fix commit and pushed. Natural stopping point, no
+open decision blocking the next session.
 
 ## ▶️ Next concrete step
 
 Nothing is blocking on Grayson right now.
-1. **Fix the two pre-existing bugs the retrofit surfaced (real, not
-   theoretical, both scoped and easy):**
-   - `cookbook/leather/l02_distressed_two_tone` and
-     `cookbook/leather/l05_quilted_leather`'s visible composite layers are
-     reversed from what their own names/docstrings describe (their `blend`
-     nodes' port assignments don't match the stated intent). See each
-     card's own trace against `blend.mmg`'s shader model for the exact fix.
-   - `cookbook/terrain/t01_sand_dunes`'s wood-donor wires a `blend_0` node
-     directly to the Material's metallic port, likely unintended.
+1. **l05's `blend_h_q` height weighting (optional follow-up, its own item).**
+   The advisor caught during the bug-fix session that `blend_h_q` weights the
+   quilt pads at only 35% of the height (`amount=0.35`, `pattern_q` on port0)
+   vs the docstring's claim of pad-driven relief. If the padding reads weak in
+   the 3D preview, that inverted weighting is why. A quilt look could also be
+   improved by swapping the `pattern` node to a Bounce wave for broad diamond
+   pads instead of `sin*sin`'s compact round ones (a larger redesign, deferred).
 2. **Sub-project 2 of the "Material Maker for dummies" idea: the live web
    companion.** Now unblocked (sub-project 1, this session's retrofit, is
    the prerequisite). A local server bundled with `mm-mcp`, opened in a
@@ -224,6 +244,52 @@ The older open backlog, unchanged unless noted:
   available; two parked-not-fixed overlay-builder findings from a much
   earlier session (staleness marker, `_append_autoload`'s first-occurrence
   match, both verified low-priority).
+
+## 🗂️ Changed this session (leather + terrain bug fixes)
+
+- **`quality/cookbook_terrain.py`** (`build_t01_sand_dunes`): drop the
+  `blend_0 -> Material:1` metallic wire (`drop_conn(g, "Material", 1)`) and
+  `set_param(g, "Material", "metallic", 0)`. The `wood` donor pipes its master
+  ripple pattern into the metallic port and Material's metallic scalar defaults
+  to 1, so sand read partly metallic. Doing both edits is correct under every
+  Material-node port/scalar semantic. Verified by reading the exported ORM's
+  metallic (B) channel: flat 0 (`min=max=mean=0`). Albedo/normal unaffected.
+- **`quality/cookbook_leather.py`** (`build_l02_distressed_two_tone`): swap
+  port0/port1 on both `blend_alb` and `blend_rgh`. `colorize_wm`'s mask is 1
+  only in the small high-perlin patches, so the worn tone (minority) belongs on
+  port0 and the dark saddle base (majority) on port1; the original wiring was
+  reversed. Before/after render confirmed the field flipped from mostly-light
+  to mostly-dark-saddle with lighter worn rubs scattered through it. In-code
+  port trace updated.
+- **`quality/cookbook_leather.py`** (`build_l05_quilted_leather`): swap
+  port0/port1 on `blend_alb_q` so the dark `seam_shade` lands where the mask is
+  1 (the recessed seams) instead of on the pad centers. The `sin*sin` `pattern`
+  makes compact round peaks with broad valleys, so the fixed result reads as
+  round grain pads on a dark seam grid (round/small pads, not big puffy
+  diamonds). Grayson reviewed the before/after and chose the swap over
+  relabeling the material; the geometry limitation is documented honestly in
+  the card.
+- **Recipe cards** `cookbook/terrain/t01_sand_dunes.md`,
+  `cookbook/leather/l02_distressed_two_tone.md`,
+  `cookbook/leather/l05_quilted_leather.md` rewritten: each had asserted the
+  broken behavior as intentional/documented, now they describe the fix and its
+  reasoning. Thumbnails regenerated for l02 and l05 (t01's albedo is unchanged).
+- **Process:** `pickup` (`+ fix the leather and terrain bugs`) then a single
+  advisor consult before editing, which confirmed the t01/l02 fixes, flagged
+  the whole-label render-sweep hazard, re-promotion (non-zero diffs are the
+  goal this time, inverse of the retrofit), and the card rewrites. Worked
+  directly on `main` (this repo's cookbook convention), builder-only edits,
+  `render_one.py` for just the fixed case each time to avoid the sweep. Fast
+  suite 505 passed, `promote --check` in sync, `git status` showed only the
+  three intended materials changed. Committed as one bug-fix commit (`5cd9e0b`)
+  and pushed on Grayson's "push it and wrap up."
+- **Decisions (+ why):** do both the wire-drop and the scalar-zero on t01 (so
+  the fix is correct regardless of MM's port/scalar semantics); verify metallic
+  by reading the ORM channel, not by eye (metallic is near-invisible on tan
+  diffuse); ship the l05 swap rather than relabel (it matches the material's
+  name and stated intent, round pads accepted as a minor stylization); leave
+  l05's `blend_h_q` 35% height weighting as a separate follow-up rather than
+  fold it in.
 
 ## 🗂️ Changed this session (cookbook subgraph retrofit)
 
@@ -339,112 +405,8 @@ The older open backlog, unchanged unless noted:
   pushed to `main` on Grayson's explicit go-ahead (design approval and push
   approval given separately).
 
-## 🗂️ Changed this session (reference-photo authoring workflow + glass cookbook)
-
-- **`docs/AUTHORING.md`**: new "Authoring from a reference photo" section,
-  slotted right after the existing "Authoring workflow" (extends step 1,
-  "pick the closest starting graph," to cover a photo instead of just a
-  text prompt). A decomposition rubric (color/tone, pattern topology, scale,
-  roughness, relief cues) that reuses the noise vocabulary and
-  cross-material lessons already in the guide rather than a new taxonomy.
-- **`cookbook/glass/gl01_frosted_glass`**: first glass-category material,
-  authored end to end from a real CC-BY-SA 4.0 macro photo of sandblasted
-  glass (J. Koopstra, Wikimedia Commons). Clones `dry_earth`'s connected-
-  crack-network topology at a much finer scale (`voronoi_0` scale 60 vs.
-  the default 4), recolored cool blue-gray, high uniform roughness, subtle
-  relief (`normal_map` `param4=0` at low `param1=0.15`). Card documents an
-  honest limitation: Material Maker has no true transparency/refraction
-  model, so this approximates frosted glass as an opaque matte diffuse
-  surface, which is right for how it will be used but not a light-
-  transmission simulation. `quality/cookbook_glass.py` new builder,
-  promoted through the normal `promote_cookbook.py` path.
-- **`README.md`**: material/category counts bumped 43/eight to 44/nine; the
-  contact-sheet caption now notes it has not been regenerated to include
-  glass yet (real cost, a multi-MB image rebuild, left as a deliberate
-  follow-up).
-- Cleared a pre-existing stale local build artifact
-  (`quality/authored/cookbook-fabrics/f04_wool_knit/`, gitignored, left
-  over from the 2026-09-01 wool-knit exploration) that was making
-  `promote_cookbook.py --check` report false drift on an unrelated
-  category. Local-only fix, nothing to commit (the path is gitignored).
-- **Process:** `pickup` -> `brainstorming` on the "image-to-material
-  decomposition" backlog idea. Two scoping questions collapsed the task
-  from architectural to bounded: the decomposition reasoning happens in
-  Claude's own vision during a chat session (no new server code, no new
-  MCP tool, no new dependency), so the actual deliverable is a documented
-  workflow, not a subsystem. Sourced the reference photo via `WebSearch` +
-  `WebFetch` against Wikimedia Commons after an early attempt to browse
-  `ambientcg.com` hit a malicious ad redirect to a fake "McAfee Security"
-  scareware page (`securesweep.pro`); closed the tab immediately without
-  interacting. Implemented directly (bounded path, no plan doc), committed
-  and pushed to `main` on Grayson's explicit approval of both the design
-  and the push.
-- Fast suite 444 -> 447.
-
-## 🗂️ Changed this session (v0.6.0 release + author.py split + donor vendoring)
-
-- **v0.6.0 released:** merged release-please PR #3 (`88dcaa9`), synced local
-  `main`. Pure metadata bump (CHANGELOG + version), no code changes.
-- **Scope correction (the session's key finding):** "fold `examples/` into
-  the cookbook" from last session's handoff was ambiguous between this
-  repo's own local `examples/` showcase folder and `cfg.examples_dir`
-  (Material Maker's 43 bundled demo graphs in the external checkout).
-  Confirmed it meant the latter, then audited every `quality/*.py`
-  `load_example("...")` call site and found only 9 names in real use:
-  `beehive`, `crocodile_skin`, `dry_earth`, `metal_pattern_2`, `rock`,
-  `rusted_metal`, `stone_wall`, `wood`, `wooden_floor`. Grayson chose to
-  vendor just those 9, not all 43, and to keep browsing/the Phase 1 gate
-  live against the external checkout (not also scope those down).
-- **`author.py` split, branch `author-helpers-donor-vendor` (bounded task,
-  no spec):** `quality/author_helpers.py` (new) now holds `load_example`,
-  `node`, `set_gradient`, `set_param`, `save_variant`, `rewire`,
-  `drop_conn`, `add_node`, `retype`, `_grad`, `_from_scratch_noise_material`.
-  `quality/author.py` keeps only the 12 `build_*` functions, `BUILDERS`, and
-  `main()`. 10 files repointed (`from author import ...` -> `from
-  author_helpers import ...`): `cookbook_fabrics.py`, `cookbook_stone.py`,
-  `cookbook_scifi.py`, `cookbook_painted_metal.py`, `cookbook_organics.py`,
-  `cookbook_leather.py`, `cookbook_wood.py`, `cookbook_terrain.py`,
-  `debug_swatches.py`, `noise_gallery.py`, `tests/test_author_helpers.py`.
-- **Donor vendoring:** new tracked `quality/donors/` (9 `.ptex` files,
-  byte-for-byte copies of Material Maker's bundled examples, sha256-verified
-  identical to source, plus a provenance `README.md`). `author_helpers.py`'s
-  `load_example()` now reads from `quality/donors/` instead of
-  `_CFG.examples_dir`. New `tests/test_donors.py` (20 tests: presence + JSON
-  validity + catalog validation + a source-path pin). Config, doctor,
-  `server.py`'s `list_examples`/`load_example` MCP tools, the Phase 1 gate
-  test, and the render/preview smoke tests are all untouched, confirmed by
-  the final review against the plan's explicit out-of-scope list.
-- **Process:** `pickup` chained the merge into `brainstorming` (classified
-  the `author.py` split as bounded, the donor question as architectural)
-  -> spec -> `writing-plans` (4 tasks) -> `subagent-driven-development`.
-  Worked on a feature branch in the main checkout, not a worktree, same
-  reason as the AUTHORING split session (`.venv` is an editable install
-  resolving `mm_mcp` from the main checkout's `src/`). One task-level fix
-  round: Task 3's own brief only staged `quality/donors/` in its commit
-  command, leaving `tests/test_donors.py` uncommitted; fixed with a
-  follow-up commit, not an amend. Final whole-branch review (opus) found 1
-  Important + 6 Minor, all the same shape (stale "author.py" doc references
-  left over from the split, e.g. `quality/README.md`'s "Cookbook growth"
-  section); one fix wave addressed all 7, scoped re-review clean.
-  Fast-forward-merged to `main` (54693fb), pushed, branch deleted, SDD
-  workspace removed. Fast suite 424 -> 444.
-- **Decisions (+ why):** vendor 9 of 43, not all 43, most of the other 34
-  are Material Maker's own art/pattern demos (mandelbrot, skulls,
-  raymarching), not material recipes, folding them into a curated,
-  recipe-carded cookbook would blur what the cookbook is for. Browsing
-  stays live against the external checkout (Option A of two presented) so
-  only the authoring pipeline's own reproducibility improves, not the
-  MCP-facing discovery surface. New commits over amends for the Task 3 fix,
-  per this repo's standing convention.
-- Six rulings made on Claude's own authority during execution (worktree vs.
-  branch; ratifying the implementer's `_grad`/`_ROOT` fix to a gap in the
-  plan's own brief; the Task 3 commit fix; batching the final review's 7
-  findings into one fix dispatch; two parked test-design nits in
-  `tests/test_donors.py`) are listed in full in the commons log
-  `_agent-commons\log\2026-09-03-claude-code-mm-mcp-v060-release-donor-vendor-spec.md`
-  and this session's own wrap-up report.
-
-> 📦 **25 older "Changed this session" write-ups archived**, newest first the
+> 📦 **26 older "Changed this session" write-ups archived**, newest first the
+> 2026-09-03 reference-photo authoring + glass cookbook session, then the
 > 2026-09-03 v0.6.0 release + author.py split + donor vendoring session, then the
 > 2026-09-04 v0.5.0 release + AUTHORING split + hygiene session, then the
 > 2026-09-03 teardown #2 + cookbook-as-data session, then through
@@ -649,10 +611,33 @@ The older open backlog, unchanged unless noted:
 > section past that cap, the oldest entry moves out verbatim (no
 > summarizing) into [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md)
 > instead of letting this doc grow unbounded -- flagged as a real pickup
-> cost by the 2026-08-29 teardown (Maintainer lens). **32 older entries are
-> now archived there**, from the 2026-09-03 teardown #2 + cookbook-as-data
+> cost by the 2026-08-29 teardown (Maintainer lens). **33 older entries are
+> now archived there**, from the 2026-09-04 v0.5.0 release + AUTHORING split
 > session back through the project's Phase 1-2 kickoff on 2026-08-25.
 
+
+### 2026-09-04 (leather + terrain bug fixes): the three bugs the retrofit left behind, closed
+- `pickup` reconciled clean (`main` at `8cf496a`); Grayson's command was
+  `+ fix the leather and terrain bugs`, the three pre-existing bugs the
+  subgraph retrofit surfaced and correctly left unfixed.
+- Read the three recipe cards + both builders + the `wood` donor wiring, then
+  one advisor consult before editing. Advisor confirmed t01/l02, flagged the
+  whole-label render-sweep hazard, re-promotion (non-zero diffs on purpose this
+  time), and rewriting the three now-wrong cards.
+- **t01_sand_dunes:** dropped the `blend_0 -> Material:1` metallic wire and set
+  `Material.metallic = 0` (donor scalar defaults to 1). Verified the ORM
+  metallic channel reads flat 0.
+- **l02_distressed_two_tone:** swapped port0/port1 on both blends; before/after
+  render confirmed the field flipped to mostly-dark-saddle with lighter worn
+  rubs. Bonus: the exposed wear-strength param now controls the wear layer.
+- **l05_quilted_leather:** swapped port0/port1 on `blend_alb_q` (dark now in the
+  seams). Sent Grayson before/after; the `sin*sin` geometry makes round pads on
+  a dark grid, and he chose the swap (option 1) over relabeling. Documented the
+  geometry limitation and the deferred `blend_h_q` 35% height-weighting question.
+- Builder-only edits, `render_one.py` per fixed case to dodge the sweep, three
+  cards rewritten, fast suite 505 passed, `promote --check` in sync, `git status`
+  clean of incidental churn. One commit (`5cd9e0b`), pushed on "push it and wrap
+  up." Then this wrap-up.
 
 ### 2026-09-04 (cookbook subgraph retrofit): the node graph stops scaring people, one Ctrl+G at a time
 - `pickup` reconciled clean (`main` at `c3cc3f2`). Grayson picked backlog item
@@ -774,25 +759,5 @@ The older open backlog, unchanged unless noted:
   re-review clean. Fast-forward-merged to `main` (`54693fb`), pushed, branch
   deleted, SDD workspace removed. Fast suite 424 -> 444.
 - Then this wrap-up (HANDOFF baton, memory, commons log).
-
-### 2026-09-04 (v0.5.0 release + AUTHORING split + hygiene): the guide becomes a resource, recipes become cards
-- `pickup` reconciled clean (`main` at `66661f5`); confirmed release PR #2 now
-  correctly proposed 0.5.0 (the `bump-minor-pre-major` fix from last session held).
-  Grayson picked briefing options 1, 2, 3 (AUTHORING split, merge release, hygiene).
-- Sequenced 2 -> 1 -> 3 (advisor confirmed merge-first avoids a PR rebase). Merged
-  release-please PR #2 -> v0.5.0; synced local `main`.
-- AUTHORING split via `phased-rebuild` -> `writing-plans` (11-task plan) ->
-  `subagent-driven-development`. Phase-0 investigation cleared the advisor's blocker
-  (all cookbook tooling globs `*.ptex`, so `.md` cards are safe beside graphs).
-  Task 1 = the `guide://authoring` resource; 3 batched card dispatches = 43 cards;
-  Task 10 = guide trim (996->308, cross-material lessons lifted); Task 11 =
-  references + parity gate + em-dash/backtick sweeps. Every dispatch reviewed;
-  final whole-branch review clean on opus. Merged `--no-ff` (`6c2edf0`), pushed,
-  branch deleted, SDD workspace removed.
-- Hygiene pass (`cd900f0`): quality/README "informal" fix + em-dash sweep,
-  docs/superpowers/README execution-history label, contact sheet 5.45->0.99MB,
-  server.py docstring em dash. Deferred (surfaced): `examples/` fold (load-bearing)
-  and `HANDOFF_ARCHIVE.md` deletion (Grayson's call).
-- release-please opened PR #3 (0.6.0), left for Grayson. Then this wrap-up.
 
 _(Older entries continue in [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).)_

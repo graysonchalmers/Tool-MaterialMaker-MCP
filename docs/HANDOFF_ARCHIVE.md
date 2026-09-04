@@ -19,6 +19,48 @@ doc's window.
 
 ## Archived "Changed this session" write-ups
 
+## 🗂️ Changed this session (reference-photo authoring workflow + glass cookbook)
+
+- **`docs/AUTHORING.md`**: new "Authoring from a reference photo" section,
+  slotted right after the existing "Authoring workflow" (extends step 1,
+  "pick the closest starting graph," to cover a photo instead of just a
+  text prompt). A decomposition rubric (color/tone, pattern topology, scale,
+  roughness, relief cues) that reuses the noise vocabulary and
+  cross-material lessons already in the guide rather than a new taxonomy.
+- **`cookbook/glass/gl01_frosted_glass`**: first glass-category material,
+  authored end to end from a real CC-BY-SA 4.0 macro photo of sandblasted
+  glass (J. Koopstra, Wikimedia Commons). Clones `dry_earth`'s connected-
+  crack-network topology at a much finer scale (`voronoi_0` scale 60 vs.
+  the default 4), recolored cool blue-gray, high uniform roughness, subtle
+  relief (`normal_map` `param4=0` at low `param1=0.15`). Card documents an
+  honest limitation: Material Maker has no true transparency/refraction
+  model, so this approximates frosted glass as an opaque matte diffuse
+  surface, which is right for how it will be used but not a light-
+  transmission simulation. `quality/cookbook_glass.py` new builder,
+  promoted through the normal `promote_cookbook.py` path.
+- **`README.md`**: material/category counts bumped 43/eight to 44/nine; the
+  contact-sheet caption now notes it has not been regenerated to include
+  glass yet (real cost, a multi-MB image rebuild, left as a deliberate
+  follow-up).
+- Cleared a pre-existing stale local build artifact
+  (`quality/authored/cookbook-fabrics/f04_wool_knit/`, gitignored, left
+  over from the 2026-09-01 wool-knit exploration) that was making
+  `promote_cookbook.py --check` report false drift on an unrelated
+  category. Local-only fix, nothing to commit (the path is gitignored).
+- **Process:** `pickup` -> `brainstorming` on the "image-to-material
+  decomposition" backlog idea. Two scoping questions collapsed the task
+  from architectural to bounded: the decomposition reasoning happens in
+  Claude's own vision during a chat session (no new server code, no new
+  MCP tool, no new dependency), so the actual deliverable is a documented
+  workflow, not a subsystem. Sourced the reference photo via `WebSearch` +
+  `WebFetch` against Wikimedia Commons after an early attempt to browse
+  `ambientcg.com` hit a malicious ad redirect to a fake "McAfee Security"
+  scareware page (`securesweep.pro`); closed the tab immediately without
+  interacting. Implemented directly (bounded path, no plan doc), committed
+  and pushed to `main` on Grayson's explicit approval of both the design
+  and the push.
+- Fast suite 444 -> 447.
+
 ## 🗂️ Changed this session (v0.6.0 release + author.py split + donor vendoring)
 
 - **v0.6.0 released:** merged release-please PR #3 (`88dcaa9`), synced local
@@ -839,6 +881,26 @@ doc's window.
 ---
 
 ## Archived session log
+
+### 2026-09-04 (v0.5.0 release + AUTHORING split + hygiene): the guide becomes a resource, recipes become cards
+- `pickup` reconciled clean (`main` at `66661f5`); confirmed release PR #2 now
+  correctly proposed 0.5.0 (the `bump-minor-pre-major` fix from last session held).
+  Grayson picked briefing options 1, 2, 3 (AUTHORING split, merge release, hygiene).
+- Sequenced 2 -> 1 -> 3 (advisor confirmed merge-first avoids a PR rebase). Merged
+  release-please PR #2 -> v0.5.0; synced local `main`.
+- AUTHORING split via `phased-rebuild` -> `writing-plans` (11-task plan) ->
+  `subagent-driven-development`. Phase-0 investigation cleared the advisor's blocker
+  (all cookbook tooling globs `*.ptex`, so `.md` cards are safe beside graphs).
+  Task 1 = the `guide://authoring` resource; 3 batched card dispatches = 43 cards;
+  Task 10 = guide trim (996->308, cross-material lessons lifted); Task 11 =
+  references + parity gate + em-dash/backtick sweeps. Every dispatch reviewed;
+  final whole-branch review clean on opus. Merged `--no-ff` (`6c2edf0`), pushed,
+  branch deleted, SDD workspace removed.
+- Hygiene pass (`cd900f0`): quality/README "informal" fix + em-dash sweep,
+  docs/superpowers/README execution-history label, contact sheet 5.45->0.99MB,
+  server.py docstring em dash. Deferred (surfaced): `examples/` fold (load-bearing)
+  and `HANDOFF_ARCHIVE.md` deletion (Grayson's call).
+- release-please opened PR #3 (0.6.0), left for Grayson. Then this wrap-up.
 
 ### 2026-09-03 (teardown #2 + cookbook-as-data): the cookbook becomes tracked, MCP-served data
 - `pickup` (clean `main` at `4136c9e`) chained into `teardown` #2. Evidence: full

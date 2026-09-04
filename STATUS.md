@@ -6,7 +6,7 @@
 
 Gate ledger. Three states only: ✅ verified · 🔌 wired · ⬜ not started.
 
-_Last updated: 2026-09-04 (all 46 cookbook materials retrofitted to use Material Maker's native subgraph mechanism, grouping related nodes into a collapsed node with curated exposed parameters; 524 -> 179 top-level nodes across the cookbook, purely organizational, zero regressions. Session detail lives in HANDOFF.md, releases in CHANGELOG.md)._
+_Last updated: 2026-09-04 (fixed the three cookbook bugs the subgraph retrofit surfaced: t01_sand_dunes metallic wire, l02_distressed_two_tone reversed composite layers, l05_quilted_leather seam polarity; builder-only fixes, cards rewritten, fast suite 505, committed 5cd9e0b and pushed. Session detail lives in HANDOFF.md, releases in CHANGELOG.md)._
 
 ## Phases
 
