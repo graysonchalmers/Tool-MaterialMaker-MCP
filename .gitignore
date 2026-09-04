@@ -37,3 +37,6 @@ quality/cookbook/
 Thumbs.db
 Desktop.ini
 .DS_Store
+
+# Local Godot binary copied for host-side play.bat rendering (large, not tracked)
+_godot/

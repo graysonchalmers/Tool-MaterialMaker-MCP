@@ -6,7 +6,35 @@ The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**`live_load` shipped and merged to `main` (`d523ad6`, pushed, in sync).**
+**LATER same session: the play surface does NOT render on Grayson's real
+host, and we found why.** When Grayson ran `play.bat` himself, every render
+failed. Root cause (confirmed by running the exact Godot command by hand on his
+host): Godot's `RenderingServer.create_local_rendering_device()`
+(`multi_renderer.gd:167`) returns null on his machine under BOTH Vulkan and
+D3D12 (RTX 4060 Laptop, Vulkan 1.4.325), so Material Maker's compute pipeline
+gets no device and exports blank maps (`shader_compile_spirv_from_source` on a
+null value, `pipeline.gd:108`). This is a Godot/host compatibility issue, NOT
+our code. Two environment facts surfaced along the way: (a)
+`C:\Users\Grayson\AppData\Local\Godot` (the `.env` Godot path) exists only in
+the AGENT environment, not on Grayson's host, so every render in this project
+ran agent-side, never on his machine; (b) the agent shares the project folder
+with the host (my code edits reach his `play.bat`) but has its own separate
+system drive. Because MM's own GUI uses the same compute pipeline, the Material
+Maker editor likely cannot render on his host either, so the North Star's local
+round-trip has never actually run on his machine. **Play-server hardening
+shipped and pushed (commit `991f958`, fast suite 590):** `serve()` runs
+`require_valid` at startup (names the exact bad Godot path instead of a cryptic
+`WinError 2`), request handlers return `{ok:false,error}` JSON instead of a
+bubbled traceback, and the client surfaces failed renders / 3D-init failures
+instead of hanging on "rendering...". STATUS `mm-play` row downgraded ✅ -> 🔌.
+Next lead: NVIDIA driver update or a different Godot build. Temporary diag files
+and a copied `_godot/` binary were used and cleaned up; `.env` reverted to the
+agent-side Godot path.
+
+**Before this, `live_load` shipped and merged to `main` (`d523ad6`, pushed, in sync).**
+A new `live_load` MCP tool (the seventh live tool) replaces the graph shown in
+a running Material Maker session in place, from a graph dict or a `.ptex` path,
+validated against the catalog first, no save. It closes backlog item J. The
 A new `live_load` MCP tool (the seventh live tool) replaces the graph shown in
 a running Material Maker session in place, from a graph dict or a `.ptex` path,
 validated against the catalog first, no save. It closes backlog item J. The
@@ -406,6 +434,21 @@ The older open backlog, unchanged unless noted:
 
 ## ⚠️ Heads-up for the next agent
 
+- **BLOCKER: local rendering does not work on Grayson's host (Godot compute
+  device is null).** `RenderingServer.create_local_rendering_device()`
+  (`multi_renderer.gd:167`) returns null on his machine under BOTH Vulkan and
+  D3D12, so Material Maker exports blank maps (`shader_compile_spirv_from_source`
+  on null, `pipeline.gd:108`). It is NOT our code -- the render command is
+  correct and works agent-side. Every render in this project ran agent-side; the
+  `.env` Godot path (`C:\Users\Grayson\AppData\Local\Godot`) exists only in the
+  agent env, not on the host. To reproduce/diagnose, run the render command by
+  hand on the host with the `_console.exe` (it prints the real errors the server
+  hides). Likely fixes to try: NVIDIA driver update (Vulkan 1.4.325 is very new),
+  or a different Godot build. This also implies the MM GUI itself may not render
+  on his host, so the whole local round-trip is in question -- worth its own
+  focused session. The play-server code was hardened (`991f958`) so this now
+  fails loudly (fail-fast `require_valid` naming the bad path, JSON errors,
+  client error surfacing) instead of hanging on "rendering...".
 - **The play surface lives in `src/mm_mcp/play/` (new this session).** Launch it
   with `mm-play` (or `.venv\Scripts\python.exe -m mm_mcp.play.server`, which now
   works thanks to the `__main__` guard). It serves `http://127.0.0.1:8788/`
@@ -641,6 +684,18 @@ The older open backlog, unchanged unless noted:
   branch) deferred (its raise is covered in `test_paths.py`). Merged `--no-ff`
   (`d523ad6`), pushed, branch + SDD workspace deleted. Fast suite 579 -> 588.
   Then this wrap-up.
+- **Post-wrap follow-up (same session): Grayson ran the play surface himself and
+  it would not render.** `systematic-debugging` traced it end to end: the render
+  request reached the server but Godot exported blank maps because
+  `create_local_rendering_device()` returns null on his host (both Vulkan and
+  D3D12). Along the way we established the agent env and his host share the
+  project folder but not the system drive (the `.env` Godot path exists only
+  agent-side), so all renders were agent-side. Shipped play-server hardening
+  (`991f958`, fast suite 590): fail-fast `require_valid` at startup, JSON error
+  responses, client error surfacing. Corrected STATUS/HANDOFF (mm-play ✅ -> 🔌,
+  local render BLOCKED on host). Cleaned up the temp diag files + copied `_godot`
+  binary; reverted `.env`. Local rendering on the host stays open (next lead:
+  NVIDIA driver update or a different Godot build).
 
 ### 2026-09-04 (play-surface UI nits): the two cosmetic loose ends, closed
 - `pickup` (`+ fix the two play-surface UI nits`) reconciled clean (`main` at
