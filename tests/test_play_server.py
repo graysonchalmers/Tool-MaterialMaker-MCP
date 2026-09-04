@@ -47,6 +47,13 @@ def test_unknown_path_404(running_server):
     assert exc.value.code == 404
 
 
+@pytest.mark.parametrize("name", ["app.js", "style.css", "three.min.js"])
+def test_static_assets_served(running_server, name):
+    status, body = _get(running_server + "/static/" + name)
+    assert status == 200
+    assert len(body) > 0
+
+
 @pytest.mark.integration
 def test_render_endpoint_produces_maps(running_server):
     payload = json.dumps({"material_id": "t01_sand_dunes",
