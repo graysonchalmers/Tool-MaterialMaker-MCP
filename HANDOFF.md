@@ -1,15 +1,67 @@
 # 🧭 Session Handoff: Tool-MaterialMaker-MCP
 
-_Last updated: 2026-09-03 (plastics category + Donegal tweed cookbook additions) CT (America/Chicago)_
+_Last updated: 2026-09-04 (cookbook subgraph retrofit) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**Plastics (new category) and a second, differently-flecked tweed both
-landed in the cookbook: `p01_glossy_plastic` and `f08_donegal_tweed`.**
-`main` is at `68c51dc`, pushed and in sync. Cookbook is now 46 materials
-across ten categories (was 44/nine).
+**All 46 existing cookbook materials retrofitted to use Material Maker's
+native subgraph mechanism.** `main` is at `034aeaf`, pushed and in sync.
+Opening any cookbook material now shows a handful of friendly, labeled
+nodes instead of a wall of raw ones (524 -> 179 top-level nodes across the
+cookbook, 66% fewer, average 11.4 -> 3.9 per material), purely
+organizational, zero materials failed to reduce, zero regressions.
+- Picked up Grayson's backlog idea ("Material Maker for dummies" -- a raw
+  node graph "scared the shit out of" a non-technical viewer he showed it
+  to) via `pickup` -> `brainstorming`. Investigating a dead-end lead
+  ("generic parameters") surfaced the real answer: Material Maker already
+  has a native subgraph mechanism (`Ctrl+G` groups nodes into one collapsed
+  node exposing a curated, named set of parameters), the same shape its own
+  50 bundled compound nodes (`normal_map`, `occlusion`) already use. No new
+  infrastructure needed.
+- Decomposed into two sequenced sub-projects: (1) a subgraph
+  authoring/retrofit lever (this session), (2) a later live web companion
+  that will read its slider definitions from (1)'s exposed parameters
+  (deferred, unscoped). Grayson chose to retrofit all 46 existing
+  materials, not just apply the lever going forward, which upgraded
+  sub-project 1 from bounded to architectural.
+- Spec + 12-task plan -> `subagent-driven-development` on branch
+  `cookbook-subgraph-retrofit`. Task 1 built `group_into_subgraph` (a new
+  primitive in `quality/author_helpers.py`, pure JSON graph surgery, no
+  Godot dependency) plus a tolerance-based render comparison utility
+  (`quality/render_compare.py`, since Godot's render isn't perfectly
+  deterministic run to run). A pilot task proved the whole process on
+  `glass` (1 material) before fanning out to the other 9 categories, one
+  dispatch per category, largest last (`stone` 8, `terrain` 8). A final
+  task added a permanent regression gate: every cookbook material must
+  carry at least one subgraph node, `pytest`-enforced across all 46.
+- Every task hit an exact `grid_mean_abs_diff == 0.0` render match (not
+  merely under tolerance). The final whole-branch review went further:
+  it built an independent flatten-diff harness (resolves every subgraph's
+  boundary threading back to a flat graph, diffs node types/params/
+  connections against pre-branch `main`) across all 46 materials in all 13
+  commits. 45/46 matched byte-for-byte; the one exception
+  (`f04_wool_knit`) was an incidental, disclosed correction of an
+  already-stale tracked artifact (its committed `.ptex` predated a 2026-08
+  builder/card fix and had never been re-promoted), not a retrofit-caused
+  change -- fixed by correcting the recipe card's parity claim, not the
+  artifact (already correct).
+- Two real, pre-existing, unrelated bugs surfaced during the retrofit and
+  correctly left unfixed per each task's organizational-only scope
+  (documented in their own recipe cards): `l02_distressed_two_tone` and
+  `l05_quilted_leather`'s visible composite layers are reversed from what
+  their own names/docstrings describe; `t01_sand_dunes`'s wood-donor wires
+  a `blend_0` node directly to the Material's metallic port. **Neither is
+  fixed yet -- flagging both here so they don't only live in a recipe
+  card.**
+- Fast suite 453 -> 505 (Task 1's +6, Task 12's +46 parametrized gate
+  cases). Merged `--no-ff` (`034aeaf`), pushed, feature branch deleted.
+
+**Before this, plastics (new category) and a second, differently-flecked
+tweed both landed in the cookbook: `p01_glossy_plastic` and
+`f08_donegal_tweed`.** Cookbook grew to 46 materials across ten categories
+(was 44/nine).
 - Picked up on the two smallest open backlog items from the prior session's
   briefing (plastics, two-color tweed). Scoped via `brainstorming` (bounded
   path): plastics differentiates through the ABSENCE of visible
@@ -61,71 +113,49 @@ cookbook material.**
   over from the 2026-09-01 wool-knit exploration) that was making
   `promote_cookbook.py --check` report false drift.
 
-**Before this, v0.6.0 was released and both items surfaced two sessions ago
-were done: the `author.py` split and the donor-vendoring project.**
-- **v0.6.0 released** by merging release-please PR #3, a pure metadata bump
-  (CHANGELOG + version, no code changes). Fast-forwarded local `main`.
-- **`quality/author.py` split (bounded task, no spec doc):** the file mixed
-  ~11 pure graph-surgery helpers with the 12 Phase-3 `build_*` case builders.
-  Extracted the helpers into a new `quality/author_helpers.py`; `author.py`
-  now holds only the builders, the `BUILDERS` registry, and the CLI. 10
-  consumer files (`quality/cookbook_*.py` x8, `debug_swatches.py`,
-  `noise_gallery.py`, plus `tests/test_author_helpers.py`) repointed at the
-  new module. Pure move, zero behavior change, verified byte-identical.
-- **Donor-vendoring project (the scope-corrected "fold examples" item):**
-  "`examples/`" in the last handoff meant `cfg.examples_dir`, Material
-  Maker's own 43 bundled upstream demo graphs inside the external, un-tracked
-  `z-Git\material-maker` checkout, not this repo's local `examples/`
-  showcase folder (unrelated, never code-referenced). Auditing every
-  `load_example()` call site found only **9 of the 43 are load-bearing**
-  donors for the Phase 3 authoring pipeline. Vendored just those 9 into a
-  new tracked `quality/donors/` directory; `load_example()` now reads from
-  there. Everything else that reads `cfg.examples_dir` (the MCP
-  browse-examples feature, the setup doctor, the Phase 1 gate test
-  validating all 43, two render/preview smoke tests) is deliberately
-  untouched and still reads live from the external checkout.
-- **Process:** spec (`docs/superpowers/specs/2026-09-03-vendor-donor-examples-design.md`)
-  + plan (`docs/superpowers/plans/2026-09-03-author-helpers-donor-vendor.md`,
-  4 tasks) -> `subagent-driven-development` on branch
-  `author-helpers-donor-vendor`. One task-level fix round (Task 3's brief
-  omitted `tests/test_donors.py` from its own commit command, fixed with a
-  follow-up commit). Final whole-branch review (opus): "with fixes" -> one
-  fix wave (7 stale "author.py" doc references left over from the split) ->
-  clean. Fast-forward-merged to `main` (no divergence to reconcile), pushed.
-  Fast suite 424 -> 444.
-
 Older write-ups/log beyond the cap live in
 [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).
 
 ## 📌 Where we stopped
 
-`main` at `68c51dc`, pushed and in sync. Plastics category and Donegal tweed
-both promoted, carded, and green on the fast suite. Natural stopping point,
-no open decision blocking the next session.
+`main` at `034aeaf`, pushed and in sync. Cookbook subgraph retrofit
+complete across all 46 materials, final whole-branch review clean, merged
+and pushed. Natural stopping point, no open decision blocking the next
+session.
 
 ## ▶️ Next concrete step
 
 Nothing is blocking on Grayson right now.
-1. **This session's tool list showed `mcp__unreal-engine__*` tools
+1. **Fix the two pre-existing bugs the retrofit surfaced (real, not
+   theoretical, both scoped and easy):**
+   - `cookbook/leather/l02_distressed_two_tone` and
+     `cookbook/leather/l05_quilted_leather`'s visible composite layers are
+     reversed from what their own names/docstrings describe (their `blend`
+     nodes' port assignments don't match the stated intent). See each
+     card's own trace against `blend.mmg`'s shader model for the exact fix.
+   - `cookbook/terrain/t01_sand_dunes`'s wood-donor wires a `blend_0` node
+     directly to the Material's metallic port, likely unintended.
+2. **Sub-project 2 of the "Material Maker for dummies" idea: the live web
+   companion.** Now unblocked (sub-project 1, this session's retrofit, is
+   the prerequisite). A local server bundled with `mm-mcp`, opened in a
+   real browser, driving Phase 5's existing live-control tools
+   (`live_apply`/`live_render`/`set_param`), with slider definitions read
+   directly from each graph's exposed subgraph parameters rather than a
+   separate curation step. Needs its own `brainstorming` session to nail
+   down the UI shape before building (was explicitly deferred pending
+   sub-project 1's completion, see the 2026-09-04 session log entry).
+3. **This session's tool list showed `mcp__unreal-engine__*` tools
    connected** (see the drift note an earlier pickup briefing surfaced).
-   **A. Unreal UE5 export verification** has been blocked for multiple
-   sessions on "needs a live Unreal Editor with the MCP bridge connected,
-   Grayson said it wasn't as of an older session" — worth a live check now
-   that the bridge appears to be up, before assuming it's still blocked.
-2. **"Material Maker for dummies" — a simplified interface, unscoped.**
-   Grayson's backlog idea (captured in full in
-   `_agent-commons/ideas/Tool-MaterialMaker-MCP.md`): the real node graph
-   can be intimidating to a non-technical viewer; is there a simpler
-   on-ramp? Explicitly deferred pending its own `brainstorming` session,
-   worth checking against `docs/NORTH_STAR.md`'s round-trip-learning-tool
-   framing first, since hiding the graph outright vs. exposing a simplified
-   parameter panel on top of a graph mm-mcp already authored are very
-   different scope bets.
-3. **More cookbook categories/materials** remain an open-ended, no
-   specific quick-win flagged right now (glass, plastics, and a second
-   tweed variant all landed across the last two sessions). New materials
-   land in `cookbook/` via `promote_cookbook.py`, then get a card at
-   `cookbook/<category>/<id>.md`.
+   **Unreal UE5 export verification** has been blocked for multiple
+   sessions on "needs a live Unreal Editor with the MCP bridge connected" —
+   worth a live check now that the bridge appears to be up, before assuming
+   it's still blocked.
+4. **More cookbook categories/materials** remain an open-ended, no
+   specific quick-win flagged right now. New materials land in `cookbook/`
+   via `promote_cookbook.py`, then get a card at `cookbook/<category>/<id>.md`
+   — and should call `group_into_subgraph` before `save_variant` returns
+   from now on (see `docs/AUTHORING.md`'s "Grouping into subgraphs"
+   section), so future categories don't need a second retrofit pass.
 
 The older open backlog, unchanged unless noted:
 - **2 findings ruled out, not fixed** (deliberate): #8 (`_cmd_clear_graph`'s
@@ -136,10 +166,17 @@ The older open backlog, unchanged unless noted:
   full `catalog://nodes` resource, so it's the cheap discovery lever, not
   redundant with the resource + `describe_node`.
 - **B. More cookbook categories** — fabrics, organics, sci-fi, terrain, wood,
-  stone, leather, painted-metal, glass, and now plastics are all
-  represented (ten categories, 46 materials); terrain includes the
-  natural-surface set (ice/lava/forest floor/pebbles). No specific
-  remaining gap flagged right now.
+  stone, leather, painted-metal, glass, and plastics are all represented
+  (ten categories, 46 materials); terrain includes the natural-surface set
+  (ice/lava/forest floor/pebbles). No specific remaining gap flagged right
+  now. All 46 now grouped into subgraphs (see 2026-09-04 below).
+- **K. Cookbook subgraph retrofit — DONE, 2026-09-04.** All 46 existing
+  materials grouped into Material Maker's native subgraph mechanism; new
+  materials should do the same at authoring time going forward (see
+  `docs/AUTHORING.md`).
+- **L. "Material Maker for dummies" — sub-project 1 DONE (this session),
+  sub-project 2 open.** Decomposed into subgraph retrofit (done) + a live
+  web companion (open, see Next concrete step above).
 - **C. True cobblestone — DONE.** `s07_cobblestone` closed this; the `s05`
   hex-grid partial is superseded.
 - **D. Wool loop-knit — CLOSED as unreachable.** No bundled generator makes
@@ -187,6 +224,79 @@ The older open backlog, unchanged unless noted:
   available; two parked-not-fixed overlay-builder findings from a much
   earlier session (staleness marker, `_append_autoload`'s first-occurrence
   match, both verified low-priority).
+
+## 🗂️ Changed this session (cookbook subgraph retrofit)
+
+- **`quality/author_helpers.py`**: new `group_into_subgraph(graph, member_names,
+  name, label, exposed, catalog)` primitive. Pure JSON graph surgery, no Godot
+  dependency: partitions a group's connections into internal/incoming/outgoing/
+  untouched, builds `ios`-type `gen_inputs`/`gen_outputs` nodes (port types looked
+  up from the catalog), a `remote`-type `gen_parameters` node whose `widgets`
+  expose a curated subset of internal parameters under friendly labels, and
+  collapses the named nodes into one `type: "graph"` node, the exact shape
+  Material Maker's own `Ctrl+G` grouping produces and the same shape its 50
+  bundled compound nodes (`normal_map`, `occlusion`) already use.
+- **`quality/render_compare.py`** (new): `grid_mean_abs_diff`/`renders_match`,
+  a 16x16-sample tolerance comparison (default 3.0) between two rendered PNGs,
+  using the existing pure-stdlib `pngread.py` (no Pillow). Needed since Godot's
+  render isn't perfectly deterministic run to run; the regression bar for this
+  retrofit was "renders the same," not byte-identical.
+- **All 46 existing cookbook materials retrofitted**, one dispatch per category
+  (glass pilot, then plastics, wood, organics, sci-fi, painted-metal, fabrics,
+  leather, stone, terrain): every `quality/cookbook_<category>.py` builder now
+  ends its `build_*` functions with `group_into_subgraph` calls before
+  `save_variant`. 524 -> 179 top-level nodes across the cookbook (66% fewer,
+  11.4 -> 3.9 average per material), zero materials failed to reduce. Every
+  category-level render check hit an exact `grid_mean_abs_diff == 0.0`.
+  Category-specific cautions all held: `sf03_circuit_board`'s blend/opacity
+  mask wiring (documented history of a real bleed-through bug), `stone`'s
+  `warp_0`-sensitive materials (kept ungrouped-from-consumer, never exposed),
+  `f08_donegal_tweed`'s fleck voronoi kept separate from the base weave,
+  `t06_cooled_lava`'s emission glow chain kept as one unit -- all independently
+  re-verified by task-level review, none regressed.
+- **`tests/test_cookbook_subgraph_gate.py`** (new): parametrized across all 46
+  cookbook entries via `mm_mcp.cookbook.list_cookbook`, asserts every material
+  has at least one top-level `type: "graph"` node -- a permanent floor against
+  future drift.
+- **`docs/AUTHORING.md`**: new "Grouping into subgraphs" section (added
+  alongside the glass pilot) documenting the lever for future materials.
+  **`quality/README.md`**: one-line pointer added at the end of the retrofit.
+- **Real bug found, disclosed, left unfixed (organizational-only task scope):**
+  the final whole-branch review built an independent flatten-diff harness
+  (resolves every subgraph's boundary threading back to a flat graph, diffs
+  against pre-branch `main`) across all 46 materials. 45/46 matched
+  byte-for-byte; `f04_wool_knit` didn't -- its tracked `.ptex` was a stale
+  promotion (predating this series, from the 2026-09-01 wool-knit exploration)
+  that disagreed with its own already-`weave`-based builder and card. The
+  retrofit's rebuild-from-builder step incidentally corrected it as a side
+  effect. Fixed via disclosure, not an artifact change: corrected
+  `f04_wool_knit.md`'s parity claim to state what the `0.0` comparison does and
+  does not prove (commit `73cf8d0`).
+- **Two other real, pre-existing, unrelated bugs surfaced and correctly left
+  unfixed** (each task's scope was organizational only): `l02_distressed_two_tone`
+  and `l05_quilted_leather`'s visible composite layers are reversed from what
+  their names describe (traced against `blend.mmg`'s shader model in each
+  card); `t01_sand_dunes`'s wood donor wires `blend_0` directly to the
+  Material's metallic port.
+- **Process:** `pickup` -> `brainstorming` (architectural: a new interaction
+  surface, no existing flow to extend). Investigating a dead-end lead ("generic
+  parameters," which turned out to be an unrelated variadic-port mechanism)
+  surfaced the real, already-native answer (subgraphs). Decomposed into two
+  sequenced sub-projects; Grayson chose the larger retrofit scope (all 46
+  existing materials, not just going forward), upgrading sub-project 1 from
+  bounded to architectural. Spec + 12-task plan (pilot-first, smallest category
+  before largest) -> `subagent-driven-development` on branch
+  `cookbook-subgraph-retrofit`. One task-level fix round (Task 7/painted-metal:
+  a commit message gave a factually-backwards explanation for a real thumbnail
+  file-size change; the reviewer independently found the true, benign cause --
+  old thumbnails were un-downscaled 2048x2048, new ones correctly 512x512 --
+  fixed via a new documentation commit, not an amend). Final whole-branch
+  review (opus) found 1 Important (the f04 disclosure gap above) + several
+  Minor (boundary-port duplication in the primitive, builder-signature
+  inconsistency across categories, exposed-parameter label drift); one fix
+  wave addressed the Important finding, scoped re-review clean. Merged
+  `--no-ff` to `main` (`034aeaf`), pushed, branch deleted, SDD workspace
+  removed. Fast suite 453 -> 505.
 
 ## 🗂️ Changed this session (plastics category + Donegal tweed)
 
@@ -334,7 +444,8 @@ The older open backlog, unchanged unless noted:
   `_agent-commons\log\2026-09-03-claude-code-mm-mcp-v060-release-donor-vendor-spec.md`
   and this session's own wrap-up report.
 
-> 📦 **24 older "Changed this session" write-ups archived**, newest first the
+> 📦 **25 older "Changed this session" write-ups archived**, newest first the
+> 2026-09-03 v0.6.0 release + author.py split + donor vendoring session, then the
 > 2026-09-04 v0.5.0 release + AUTHORING split + hygiene session, then the
 > 2026-09-03 teardown #2 + cookbook-as-data session, then through
 > 2026-09-01, incl. the wool-knit closure/f07/terrain session, the blend-opacity
@@ -350,6 +461,31 @@ The older open backlog, unchanged unless noted:
 
 ## ⚠️ Heads-up for the next agent
 
+- **Every cookbook material now uses subgraphs (`group_into_subgraph` in
+  `quality/author_helpers.py`); a new material should too, from the start.**
+  Call it before `save_variant` returns, following `docs/AUTHORING.md`'s
+  "Grouping into subgraphs" section, so it doesn't need a second retrofit
+  pass later. `tests/test_cookbook_subgraph_gate.py` enforces this
+  permanently (every cookbook material must carry >=1 `type: "graph"` node).
+- **`quality/render_compare.py`'s `renders_match`/`grid_mean_abs_diff` proves
+  builder-output-before matches builder-output-after -- it does NOT prove the
+  tracked `.ptex` on disk matches what was there before your change.** If a
+  builder's own graph is already stale/wrong before you touch it (as
+  `f04_wool_knit`'s was), the comparison will still report a clean `0.0` even
+  though the tracked artifact changes. If you're not sure whether a material
+  was already stale, diff the tracked `.ptex` against a fresh build from the
+  current builder BEFORE making any other change.
+- **Run `quality/*.py` scripts from the repo root, not from inside
+  `quality/`.** Running from inside `quality/` breaks `.env` lookup and
+  produces spurious "unknown node type" errors.
+- **`quality/cookbook_wood.py`/`cookbook_glass.py`/`cookbook_plastics.py`
+  still build the catalog inside each builder function** (pre-dating the
+  "build once, thread through" convention the other 7 categories use). Not
+  broken, just inconsistent; wood is the natural first cleanup target (3
+  rebuilds per run).
+- **`group_into_subgraph` fails silently on a mistyped `member_names`
+  entry** -- the intended node just stays top-level, no error raised. Double
+  check member names against the actual node list before calling it.
 - **`render_cookbook.py <label>` and `_make_previews.py <label>` operate on
   the WHOLE label, not just the case you're adding.** Adding one material to
   an existing category (e.g. `f08_donegal_tweed` to `cookbook-fabrics`) and
@@ -513,10 +649,49 @@ The older open backlog, unchanged unless noted:
 > section past that cap, the oldest entry moves out verbatim (no
 > summarizing) into [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md)
 > instead of letting this doc grow unbounded -- flagged as a real pickup
-> cost by the 2026-08-29 teardown (Maintainer lens). **31 older entries are
-> now archived there**, from the 2026-09-01 noise-vocab-gallery session back
-> through the project's Phase 1-2 kickoff on 2026-08-25.
+> cost by the 2026-08-29 teardown (Maintainer lens). **32 older entries are
+> now archived there**, from the 2026-09-03 teardown #2 + cookbook-as-data
+> session back through the project's Phase 1-2 kickoff on 2026-08-25.
 
+
+### 2026-09-04 (cookbook subgraph retrofit): the node graph stops scaring people, one Ctrl+G at a time
+- `pickup` reconciled clean (`main` at `c3cc3f2`). Grayson picked backlog item
+  #2 from the briefing, "scope Material Maker for dummies."
+- `brainstorming` classified it architectural (a new interaction surface, no
+  existing flow to extend). A dead-end investigation ("generic parameters,"
+  which turned out to be Material Maker's unrelated variadic-port mechanism)
+  surfaced the real answer: a native subgraph/`Ctrl+G` mechanism already used
+  by 50 of Material Maker's own bundled compound nodes. Decomposed into two
+  sequenced sub-projects (a subgraph authoring lever now, a live web companion
+  later that reads its slider definitions from the first). Grayson chose to
+  retrofit all 46 existing materials, not just apply the lever going forward,
+  upgrading sub-project 1 from bounded to architectural.
+- Spec + 12-task plan -> `subagent-driven-development` on branch
+  `cookbook-subgraph-retrofit` (feature branch in the main checkout, not a
+  worktree, same editable-`.venv` reason as prior sessions). Task 1 built
+  `group_into_subgraph` + a tolerance-based render comparison utility. A
+  pilot task proved the whole process on `glass` before fanning out to the
+  other 9 categories, smallest first, `stone`/`terrain` (8 materials each)
+  last. Every category hit an exact `0.0` render match; every category's
+  named risk (sf03's blend mask, stone's `warp_0` sensitivity, f08's fleck
+  separation, t06's glow chain) was independently re-verified by task review
+  and held.
+- One task-level fix round (Task 7/painted-metal): a commit message claimed
+  a real thumbnail file-size change was explained by a stale pre-fix render;
+  the reviewer found the chronology was backwards and traced the actual,
+  benign cause (old thumbnails were un-downscaled 2048x2048, new ones
+  correctly 512x512). Fixed via a new documentation commit, not an amend.
+- Final whole-branch review (opus) built an independent flatten-diff harness
+  across all 46 materials in all 13 commits: 45/46 matched pre-branch `main`
+  byte-for-byte; `f04_wool_knit` didn't, but the change was a real, incidental
+  correction of an already-stale tracked artifact, not a regression -- fixed
+  via disclosure (a corrected recipe-card parity claim), not an artifact
+  change. Two other real, pre-existing, unrelated bugs surfaced during the
+  retrofit and correctly left unfixed (leather's l02/l05 reversed composite
+  layers, terrain's t01 wood-donor metallic wiring) -- flagged in this
+  handoff's Next-step section so they don't only live in a recipe card.
+- Merged `--no-ff` (`034aeaf`), pushed, branch deleted, SDD workspace
+  removed. Fast suite 453 -> 505. Then this wrap-up.
 
 ### 2026-09-03 (plastics category + Donegal tweed): a smooth surface and a fleck lever, both closing out the same backlog batch
 - `pickup` reconciled clean (`main` at `5239283`). Grayson picked "1 + 4"
@@ -619,28 +794,5 @@ The older open backlog, unchanged unless noted:
   server.py docstring em dash. Deferred (surfaced): `examples/` fold (load-bearing)
   and `HANDOFF_ARCHIVE.md` deletion (Grayson's call).
 - release-please opened PR #3 (0.6.0), left for Grayson. Then this wrap-up.
-
-### 2026-09-03 (teardown #2 + cookbook-as-data): the cookbook becomes tracked, MCP-served data
-- `pickup` (clean `main` at `4136c9e`) chained into `teardown` #2. Evidence: full
-  tree, git log, per-area line counts, GitHub API (0 stars, 8 unique viewers in
-  14 days, release PR #2 open since 08-30). Headline: the 43 cookbook graphs were
-  gitignored build output invisible to the MCP tools while 21MB of their PNGs
-  were tracked; STATUS.md header a 7.3KB paragraph; README said 28 materials /
-  seven categories vs 43 / eight on disk; live-control unused since 08-28.
-  Verdicts: keep core + live (frozen) + swatches + gallery + test set; refactor
-  cookbook, `author.py`, AUTHORING, STATUS header, image sets, release cadence;
-  kill `examples/` and the archive. Report sent as a file.
-- Grayson picked #1. `phased-rebuild` -> `writing-plans` (spec + 7-task plan) ->
-  `subagent-driven-development` on branch `cookbook-as-data`. Task reviews caught
-  two real issues (dropped `quality/cookbook/` ignore rule; unguarded doctor
-  call). Final review (most capable model): "with fixes", the big one being that
-  release-please lacked `bump-minor-pre-major`, so the `feat!` commit would have
-  cut 1.0.0; also `glob.escape` on the user-configurable cookbook dir, a
-  `--check` false-positive "in sync" on a missing/unmatched authored dir, a
-  byte-vs-JSON compare, `load_example` raising on malformed JSON. One fix wave,
-  scoped re-review clean. Fast suite 378.
-- Merged `--no-ff` (`530ad0f`), pushed, branch deleted, SDD workspace removed.
-  Wrap-up capped STATUS.md's header (old text archived verbatim), wrote memory
-  and the commons log.
 
 _(Older entries continue in [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).)_

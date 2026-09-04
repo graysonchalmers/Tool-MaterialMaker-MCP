@@ -19,6 +19,69 @@ doc's window.
 
 ## Archived "Changed this session" write-ups
 
+## 🗂️ Changed this session (v0.6.0 release + author.py split + donor vendoring)
+
+- **v0.6.0 released:** merged release-please PR #3 (`88dcaa9`), synced local
+  `main`. Pure metadata bump (CHANGELOG + version), no code changes.
+- **Scope correction (the session's key finding):** "fold `examples/` into
+  the cookbook" from last session's handoff was ambiguous between this
+  repo's own local `examples/` showcase folder and `cfg.examples_dir`
+  (Material Maker's 43 bundled demo graphs in the external checkout).
+  Confirmed it meant the latter, then audited every `quality/*.py`
+  `load_example("...")` call site and found only 9 names in real use:
+  `beehive`, `crocodile_skin`, `dry_earth`, `metal_pattern_2`, `rock`,
+  `rusted_metal`, `stone_wall`, `wood`, `wooden_floor`. Grayson chose to
+  vendor just those 9, not all 43, and to keep browsing/the Phase 1 gate
+  live against the external checkout (not also scope those down).
+- **`author.py` split, branch `author-helpers-donor-vendor` (bounded task,
+  no spec):** `quality/author_helpers.py` (new) now holds `load_example`,
+  `node`, `set_gradient`, `set_param`, `save_variant`, `rewire`,
+  `drop_conn`, `add_node`, `retype`, `_grad`, `_from_scratch_noise_material`.
+  `quality/author.py` keeps only the 12 `build_*` functions, `BUILDERS`, and
+  `main()`. 10 files repointed (`from author import ...` -> `from
+  author_helpers import ...`): `cookbook_fabrics.py`, `cookbook_stone.py`,
+  `cookbook_scifi.py`, `cookbook_painted_metal.py`, `cookbook_organics.py`,
+  `cookbook_leather.py`, `cookbook_wood.py`, `cookbook_terrain.py`,
+  `debug_swatches.py`, `noise_gallery.py`, `tests/test_author_helpers.py`.
+- **Donor vendoring:** new tracked `quality/donors/` (9 `.ptex` files,
+  byte-for-byte copies of Material Maker's bundled examples, sha256-verified
+  identical to source, plus a provenance `README.md`). `author_helpers.py`'s
+  `load_example()` now reads from `quality/donors/` instead of
+  `_CFG.examples_dir`. New `tests/test_donors.py` (20 tests: presence + JSON
+  validity + catalog validation + a source-path pin). Config, doctor,
+  `server.py`'s `list_examples`/`load_example` MCP tools, the Phase 1 gate
+  test, and the render/preview smoke tests are all untouched, confirmed by
+  the final review against the plan's explicit out-of-scope list.
+- **Process:** `pickup` chained the merge into `brainstorming` (classified
+  the `author.py` split as bounded, the donor question as architectural)
+  -> spec -> `writing-plans` (4 tasks) -> `subagent-driven-development`.
+  Worked on a feature branch in the main checkout, not a worktree, same
+  reason as the AUTHORING split session (`.venv` is an editable install
+  resolving `mm_mcp` from the main checkout's `src/`). One task-level fix
+  round: Task 3's own brief only staged `quality/donors/` in its commit
+  command, leaving `tests/test_donors.py` uncommitted; fixed with a
+  follow-up commit, not an amend. Final whole-branch review (opus) found 1
+  Important + 6 Minor, all the same shape (stale "author.py" doc references
+  left over from the split, e.g. `quality/README.md`'s "Cookbook growth"
+  section); one fix wave addressed all 7, scoped re-review clean.
+  Fast-forward-merged to `main` (54693fb), pushed, branch deleted, SDD
+  workspace removed. Fast suite 424 -> 444.
+- **Decisions (+ why):** vendor 9 of 43, not all 43, most of the other 34
+  are Material Maker's own art/pattern demos (mandelbrot, skulls,
+  raymarching), not material recipes, folding them into a curated,
+  recipe-carded cookbook would blur what the cookbook is for. Browsing
+  stays live against the external checkout (Option A of two presented) so
+  only the authoring pipeline's own reproducibility improves, not the
+  MCP-facing discovery surface. New commits over amends for the Task 3 fix,
+  per this repo's standing convention.
+- Six rulings made on Claude's own authority during execution (worktree vs.
+  branch; ratifying the implementer's `_grad`/`_ROOT` fix to a gap in the
+  plan's own brief; the Task 3 commit fix; batching the final review's 7
+  findings into one fix dispatch; two parked test-design nits in
+  `tests/test_donors.py`) are listed in full in the commons log
+  `_agent-commons\log\2026-09-03-claude-code-mm-mcp-v060-release-donor-vendor-spec.md`
+  and this session's own wrap-up report.
+
 ## 🗂️ Changed this session (v0.5.0 release + AUTHORING split + hygiene)
 
 - **v0.5.0 released:** merged release-please PR #2 (`35484e3`), synced local
@@ -776,6 +839,29 @@ doc's window.
 ---
 
 ## Archived session log
+
+### 2026-09-03 (teardown #2 + cookbook-as-data): the cookbook becomes tracked, MCP-served data
+- `pickup` (clean `main` at `4136c9e`) chained into `teardown` #2. Evidence: full
+  tree, git log, per-area line counts, GitHub API (0 stars, 8 unique viewers in
+  14 days, release PR #2 open since 08-30). Headline: the 43 cookbook graphs were
+  gitignored build output invisible to the MCP tools while 21MB of their PNGs
+  were tracked; STATUS.md header a 7.3KB paragraph; README said 28 materials /
+  seven categories vs 43 / eight on disk; live-control unused since 08-28.
+  Verdicts: keep core + live (frozen) + swatches + gallery + test set; refactor
+  cookbook, `author.py`, AUTHORING, STATUS header, image sets, release cadence;
+  kill `examples/` and the archive. Report sent as a file.
+- Grayson picked #1. `phased-rebuild` -> `writing-plans` (spec + 7-task plan) ->
+  `subagent-driven-development` on branch `cookbook-as-data`. Task reviews caught
+  two real issues (dropped `quality/cookbook/` ignore rule; unguarded doctor
+  call). Final review (most capable model): "with fixes", the big one being that
+  release-please lacked `bump-minor-pre-major`, so the `feat!` commit would have
+  cut 1.0.0; also `glob.escape` on the user-configurable cookbook dir, a
+  `--check` false-positive "in sync" on a missing/unmatched authored dir, a
+  byte-vs-JSON compare, `load_example` raising on malformed JSON. One fix wave,
+  scoped re-review clean. Fast suite 378.
+- Merged `--no-ff` (`530ad0f`), pushed, branch deleted, SDD workspace removed.
+  Wrap-up capped STATUS.md's header (old text archived verbatim), wrote memory
+  and the commons log.
 
 ### 2026-09-01 (noise-vocab gallery + 2 backlog + wool take-two) — closed #3/#4, quantified the sameness, wool still open
 - Picked up via `pickup` (clean `main` at `198e2ad`, in sync). Grayson batched
