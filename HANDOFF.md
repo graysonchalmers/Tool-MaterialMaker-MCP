@@ -1,12 +1,27 @@
 # 🧭 Session Handoff: Tool-MaterialMaker-MCP
 
-_Last updated: 2026-09-04 (play-surface UI nits fixed) CT (America/Chicago)_
+_Last updated: 2026-09-04 (live_load shipped) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**The two non-blocking play-surface UI nits are now FIXED and
+**`live_load` shipped and merged to `main` (`d523ad6`, pushed, in sync).**
+A new `live_load` MCP tool (the seventh live tool) replaces the graph shown in
+a running Material Maker session in place, from a graph dict or a `.ptex` path,
+validated against the catalog first, no save. It closes backlog item J. The
+play surface now pushes the picked material into a live session on a pick
+change (inside the render lock), so its live path drives the material you
+actually picked instead of only working on a coincidental match. Built via the
+full stack: `live.load_graph` client -> `load_graph` GDScript addon command
+(in-place replace via `set_new_generator`, no tab pileup, proven by a
+real-Godot round-trip) -> `live_load` MCP tool -> `play/renderer.py` wiring.
+Fast suite 588; a mid-session process restart during the addon task cost
+nothing (git reconciled, the interrupted task re-ran clean). Built
+subagent-driven: 5 tasks, each reviewed, opus whole-branch review cleared it to
+merge with only cosmetic minors (one fixed inline, one deferred).
+
+**Before this, the two non-blocking play-surface UI nits were FIXED and
 browser-verified (`main` at `c7e85ee`, in sync).** The slider panel docks
 always-visible at the bottom of the sidebar (gallery scrolls above it in its
 own region), and the WebGL sphere re-fills the viewport reliably on a
@@ -168,9 +183,10 @@ Older write-ups/log beyond the cap live in
 
 ## 📌 Where we stopped
 
-Both play-surface UI nits fixed, committed (`c7e85ee`) and pushed; `main` in
-sync with origin. Everything is closed out. Nothing is in flight and nothing is
-waiting on Grayson.
+`live_load` merged to `main` (`d523ad6`) and pushed; `main` in sync with
+origin. The feature branch `live-load` is merged and deleted, the SDD workspace
+removed. Everything is closed out. Nothing is in flight and nothing is waiting
+on Grayson.
 
 ## ▶️ Next concrete step
 
@@ -178,11 +194,11 @@ Nothing is blocking. Pick a fresh thread:
 1. **Check Unreal UE5 export** now that `mcp__unreal-engine__*` tools show
    connected (blocked for several sessions on "needs a live bridge"). Bigger,
    needs a live Unreal Editor open.
-2. **A NEXT extension of the play surface, if wanted:** a "push the picked
-   material into a live MM session first" flow (currently the live path only
-   drives MM when the picked material already matches what is loaded there;
-   otherwise it falls back to headless). That overlaps the deferred
-   `live_load` backlog item and would need its own scoping.
+2. **Hands-on verify `live_load` / the new live play path.** The addon
+   round-trip is proven by an integration test, but a hands-on run (drive the
+   play surface against a live MM session, pick a material that differs from
+   what is loaded, watch it switch in-app then tweak sliders) would promote the
+   play-surface live path from "tested" to "you saw it work."
 3. **More cookbook categories/materials** remain open-ended, no specific
    quick-win flagged. New materials land in `cookbook/` via
    `promote_cookbook.py`, get a card, and should call `group_into_subgraph`
@@ -205,9 +221,9 @@ The older open backlog, unchanged unless noted:
   materials grouped into Material Maker's native subgraph mechanism; new
   materials should do the same at authoring time going forward (see
   `docs/AUTHORING.md`).
-- **L. "Material Maker for dummies" — sub-project 1 DONE (this session),
-  sub-project 2 open.** Decomposed into subgraph retrofit (done) + a live
-  web companion (open, see Next concrete step above).
+- **L. "Material Maker for dummies" — DONE.** Subgraph retrofit + the live
+  web play surface both shipped; `live_load` (2026-09-04) closed the last
+  gap by letting the play surface push the picked material into a live session.
 - **C. True cobblestone — DONE.** `s07_cobblestone` closed this; the `s05`
   hex-grid partial is superseded.
 - **D. Wool loop-knit — CLOSED as unreachable.** No bundled generator makes
@@ -219,8 +235,9 @@ The older open backlog, unchanged unless noted:
   Claude's own vision doing the decomposition in-session, no new server
   code or MCP tool.
 - **F. PyPI publish** (on hold; GitHub-clone is the current route).
-- **J. Load an existing `.ptex` into a live session.** No `live_load`
-  equivalent exists. Lowest priority of the remaining live-mode gaps.
+- **J. Load an existing `.ptex` into a live session — DONE, 2026-09-04.**
+  Shipped as the `live_load` MCP tool (dict or path), the `load_graph` addon
+  command, and the play-surface pick-change wiring.
 
 ## ❓ Open questions
 
@@ -255,6 +272,54 @@ The older open backlog, unchanged unless noted:
   available; two parked-not-fixed overlay-builder findings from a much
   earlier session (staleness marker, `_append_autoload`'s first-occurrence
   match, both verified low-priority).
+
+## 🗂️ Changed this session (live_load)
+
+- **`src/mm_mcp/live.py`**: new `load_graph(graph=None, path=None, *, cfg=None,
+  timeout=30.0)` client. Exactly one of graph/path; a `path` is bounded with
+  `paths.ensure_within_roots` (NOT `reject_path_fragment`, which rejects any
+  string with a separator, so it cannot take a real path); the dict is validated
+  against the catalog before the socket; sends `{"cmd":"load_graph","data":<json>}`.
+  The mutation-op timeout comment now lists `load_graph`.
+- **`addons/mm_live/live_server.gd`**: new `_cmd_load_graph` + dispatch arm.
+  Replaces the current tab's graph IN PLACE via
+  `MMLoader.string_to_dict_tree` -> `await mm_loader.create_gen` ->
+  `graph_edit.set_new_generator`. Deliberately not `do_load_material_from_data`
+  (spawns a new tab per pick) and not `load_file` (blocking `.mmcr` dialog).
+  No real save-path set (a stray Ctrl+S must not overwrite a tracked `.ptex`);
+  `_has_active_graph()` re-probe after load. `create_gen` is awaited (the
+  un-awaited-coroutine trap).
+- **`src/mm_mcp/server.py`**: new `live_load` MCP tool (seventh live tool) +
+  `mcp.tool()(live_load)` registration; thin wrapper over `live.load_graph`
+  through `_ensure_live_session`.
+- **`src/mm_mcp/play/renderer.py` + `api.py`**: `render_material` gains
+  keyword-only `material_id` + a `live_load` seam; a module `_last_pushed_id`
+  (read/written only under `_RENDER_LOCK`) drives a load-once-per-pick-change:
+  on a new pick with a live session up, `live_load(graph=applied_graph)` first,
+  then the existing per-param `set_param` loop. A load/param failure falls
+  through to headless (the safe fallback); a manual in-app tab switch degrades
+  the same way. `api.render_request` passes `material_id=name`.
+- **Docs**: README live-tools table gained a `live_load` row; STATUS live row +
+  item J closed; spec `docs/superpowers/specs/2026-09-04-live-load-design.md`,
+  plan `docs/superpowers/plans/2026-09-04-live-load.md`.
+- **Tests**: 5 client + 1 real-Godot integration round-trip + 2 tool + 2 play
+  unit tests. Fast suite 579 -> 588.
+- **Decisions (+ why):** general MCP tool over play-internal (Grayson's call,
+  closes item J and gives the play surface its wiring free); accept both dict
+  and path (Grayson's call); in-place replace over new-tab (matches `clear_graph`
+  precedent, no pileup); `ensure_within_roots` only on the path (spec bug caught:
+  it said `reject_path_fragment`, which raises on any real path); v1 accepts the
+  stale-belief -> headless degrade rather than re-verifying every render.
+- **Process:** `pickup` -> `brainstorming` (architectural, 2 clarifying
+  questions) -> `writing-plans` -> `subagent-driven-development` on branch
+  `live-load`. 5 tasks each per-task-reviewed; a mid-session process restart hit
+  the addon task (nothing committed, only a correct uncommitted test survived) --
+  reconciled from git, kept the test, re-dispatched fresh, the real-Godot
+  round-trip then ran and passed. Final opus whole-branch review: ready to merge,
+  no Critical/Important. One Minor fixed inline (timeout comment), one deferred
+  (the `PathNotAllowed` client branch is untested; `ensure_within_roots`'s raise
+  is already covered in `test_paths.py`). Merged `--no-ff` (`d523ad6`), pushed,
+  branch + SDD workspace deleted.
 
 ## 🗂️ Changed this session (play-surface UI nits)
 
@@ -320,59 +385,8 @@ The older open backlog, unchanged unless noted:
   Merged via PR #5 (merged) + local `--no-ff` to `main`, pushed, branch and SDD
   workspace cleaned. Fast suite 559 -> 579.
 
-## 🗂️ Changed this session (leather + terrain bug fixes)
-
-- **`quality/cookbook_terrain.py`** (`build_t01_sand_dunes`): drop the
-  `blend_0 -> Material:1` metallic wire (`drop_conn(g, "Material", 1)`) and
-  `set_param(g, "Material", "metallic", 0)`. The `wood` donor pipes its master
-  ripple pattern into the metallic port and Material's metallic scalar defaults
-  to 1, so sand read partly metallic. Doing both edits is correct under every
-  Material-node port/scalar semantic. Verified by reading the exported ORM's
-  metallic (B) channel: flat 0 (`min=max=mean=0`). Albedo/normal unaffected.
-- **`quality/cookbook_leather.py`** (`build_l02_distressed_two_tone`): swap
-  port0/port1 on both `blend_alb` and `blend_rgh`. `colorize_wm`'s mask is 1
-  only in the small high-perlin patches, so the worn tone (minority) belongs on
-  port0 and the dark saddle base (majority) on port1; the original wiring was
-  reversed. Before/after render confirmed the field flipped from mostly-light
-  to mostly-dark-saddle with lighter worn rubs scattered through it. In-code
-  port trace updated.
-- **`quality/cookbook_leather.py`** (`build_l05_quilted_leather`): swap
-  port0/port1 on `blend_alb_q` so the dark `seam_shade` lands where the mask is
-  1 (the recessed seams) instead of on the pad centers. The `sin*sin` `pattern`
-  makes compact round peaks with broad valleys, so the fixed result reads as
-  round grain pads on a dark seam grid (round/small pads, not big puffy
-  diamonds). Grayson reviewed the before/after and chose the swap over
-  relabeling the material; the geometry limitation is documented honestly in
-  the card. **Then a follow-up commit (`6d460c4`): `blend_h_q.amount` 0.35 ->
-  0.85, so the quilt pads drive the relief instead of the high-frequency
-  crocodile grain overpowering the smooth pads in the normal. 0.65 (the
-  docstring-literal ratio) wasn't enough visually, so pushed to 0.85 and
-  confirmed on a real surface via `render_preview` (puffy padded bumps with
-  recessed channels, sent to Grayson). The exposed "Quilt puffiness" slider IS
-  this amount, so higher now reads as puffier.**
-- **Recipe cards** `cookbook/terrain/t01_sand_dunes.md`,
-  `cookbook/leather/l02_distressed_two_tone.md`,
-  `cookbook/leather/l05_quilted_leather.md` rewritten: each had asserted the
-  broken behavior as intentional/documented, now they describe the fix and its
-  reasoning. Thumbnails regenerated for l02 and l05 (t01's albedo is unchanged).
-- **Process:** `pickup` (`+ fix the leather and terrain bugs`) then a single
-  advisor consult before editing, which confirmed the t01/l02 fixes, flagged
-  the whole-label render-sweep hazard, re-promotion (non-zero diffs are the
-  goal this time, inverse of the retrofit), and the card rewrites. Worked
-  directly on `main` (this repo's cookbook convention), builder-only edits,
-  `render_one.py` for just the fixed case each time to avoid the sweep. Fast
-  suite 505 passed, `promote --check` in sync, `git status` showed only the
-  three intended materials changed. Committed as one bug-fix commit (`5cd9e0b`)
-  and pushed on Grayson's "push it and wrap up."
-- **Decisions (+ why):** do both the wire-drop and the scalar-zero on t01 (so
-  the fix is correct regardless of MM's port/scalar semantics); verify metallic
-  by reading the ORM channel, not by eye (metallic is near-invisible on tan
-  diffuse); ship the l05 swap rather than relabel (it matches the material's
-  name and stated intent, round pads accepted as a minor stylization); leave
-  l05's `blend_h_q` 35% height weighting as a separate follow-up rather than
-  fold it in.
-
-> 📦 **28 older "Changed this session" write-ups archived**, newest first the
+> 📦 **29 older "Changed this session" write-ups archived**, newest first the
+> 2026-09-04 leather + terrain bug fixes session, then the
 > 2026-09-04 cookbook subgraph retrofit session, then the
 > 2026-09-03 plastics category + Donegal tweed session, then the
 > 2026-09-03 reference-photo authoring + glass cookbook session, then the
@@ -601,6 +615,33 @@ The older open backlog, unchanged unless noted:
 > session back through the project's Phase 1-2 kickoff on 2026-08-25.
 
 
+### 2026-09-04 (live_load): the live session finally takes a whole graph
+- `pickup` reconciled clean (`main` at `e78457d`); Grayson picked next-move #2,
+  the deferred "push the picked material into a live session" flow.
+- `brainstorming` classified it architectural (new command across the frozen
+  live stack). Two clarifying questions locked scope: a general `live_load` MCP
+  tool (not play-internal), accepting both a graph dict and a `.ptex` path.
+  Grounded feasibility in MM's own source: `create_gen` takes the graph shape we
+  have; cookbook `.ptex` files are string-form (safe for `load_from_data`);
+  `do_load_material_from_data` spawns a new tab, so the addon uses
+  `set_new_generator` for an in-place replace. Advisor consult before writing
+  caught the round-trip shape question and the `set_save_path`/`.mmcr`/await
+  traps.
+- Spec + 5-task plan -> `subagent-driven-development` on branch `live-load`
+  (feature branch in the main checkout, the repo's editable-`.venv` convention).
+  Tasks: `live.load_graph` client, `load_graph` addon command (real-Godot
+  round-trip), `live_load` tool, play-surface pick-change wiring, docs. Each
+  per-task-reviewed clean.
+- A process restart interrupted the addon task mid-run: nothing committed, only
+  a correct uncommitted integration test on disk. Reconciled from git (not the
+  lost notification), confirmed no orphaned Godot, kept the test, re-dispatched a
+  fresh implementer -- the round-trip then launched real MM and passed.
+- Final opus whole-branch review: ready to merge, no Critical/Important. Minor 1
+  (timeout comment) fixed inline; Minor 2 (untested `PathNotAllowed` client
+  branch) deferred (its raise is covered in `test_paths.py`). Merged `--no-ff`
+  (`d523ad6`), pushed, branch + SDD workspace deleted. Fast suite 579 -> 588.
+  Then this wrap-up.
+
 ### 2026-09-04 (play-surface UI nits): the two cosmetic loose ends, closed
 - `pickup` (`+ fix the two play-surface UI nits`) reconciled clean (`main` at
   `de0711b`, tree clean, in sync). The two nits were named in the `mm-play`
@@ -690,44 +731,5 @@ The older open backlog, unchanged unless noted:
   ~0.15 detail); 0.65 wasn't enough visually so pushed to 0.85, confirmed in a
   3D `render_preview` (puffy padded bumps, sent to Grayson). Promoted, card
   updated, suite 505, committed `6d460c4`, pushed. Then this final wrap-up.
-
-### 2026-09-04 (cookbook subgraph retrofit): the node graph stops scaring people, one Ctrl+G at a time
-- `pickup` reconciled clean (`main` at `c3cc3f2`). Grayson picked backlog item
-  #2 from the briefing, "scope Material Maker for dummies."
-- `brainstorming` classified it architectural (a new interaction surface, no
-  existing flow to extend). A dead-end investigation ("generic parameters,"
-  which turned out to be Material Maker's unrelated variadic-port mechanism)
-  surfaced the real answer: a native subgraph/`Ctrl+G` mechanism already used
-  by 50 of Material Maker's own bundled compound nodes. Decomposed into two
-  sequenced sub-projects (a subgraph authoring lever now, a live web companion
-  later that reads its slider definitions from the first). Grayson chose to
-  retrofit all 46 existing materials, not just apply the lever going forward,
-  upgrading sub-project 1 from bounded to architectural.
-- Spec + 12-task plan -> `subagent-driven-development` on branch
-  `cookbook-subgraph-retrofit` (feature branch in the main checkout, not a
-  worktree, same editable-`.venv` reason as prior sessions). Task 1 built
-  `group_into_subgraph` + a tolerance-based render comparison utility. A
-  pilot task proved the whole process on `glass` before fanning out to the
-  other 9 categories, smallest first, `stone`/`terrain` (8 materials each)
-  last. Every category hit an exact `0.0` render match; every category's
-  named risk (sf03's blend mask, stone's `warp_0` sensitivity, f08's fleck
-  separation, t06's glow chain) was independently re-verified by task review
-  and held.
-- One task-level fix round (Task 7/painted-metal): a commit message claimed
-  a real thumbnail file-size change was explained by a stale pre-fix render;
-  the reviewer found the chronology was backwards and traced the actual,
-  benign cause (old thumbnails were un-downscaled 2048x2048, new ones
-  correctly 512x512). Fixed via a new documentation commit, not an amend.
-- Final whole-branch review (opus) built an independent flatten-diff harness
-  across all 46 materials in all 13 commits: 45/46 matched pre-branch `main`
-  byte-for-byte; `f04_wool_knit` didn't, but the change was a real, incidental
-  correction of an already-stale tracked artifact, not a regression -- fixed
-  via disclosure (a corrected recipe-card parity claim), not an artifact
-  change. Two other real, pre-existing, unrelated bugs surfaced during the
-  retrofit and correctly left unfixed (leather's l02/l05 reversed composite
-  layers, terrain's t01 wood-donor metallic wiring) -- flagged in this
-  handoff's Next-step section so they don't only live in a recipe card.
-- Merged `--no-ff` (`034aeaf`), pushed, branch deleted, SDD workspace
-  removed. Fast suite 453 -> 505. Then this wrap-up.
 
 _(Older entries continue in [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).)_

@@ -19,6 +19,58 @@ doc's window.
 
 ## Archived "Changed this session" write-ups
 
+## 🗂️ Changed this session (leather + terrain bug fixes)
+
+- **`quality/cookbook_terrain.py`** (`build_t01_sand_dunes`): drop the
+  `blend_0 -> Material:1` metallic wire (`drop_conn(g, "Material", 1)`) and
+  `set_param(g, "Material", "metallic", 0)`. The `wood` donor pipes its master
+  ripple pattern into the metallic port and Material's metallic scalar defaults
+  to 1, so sand read partly metallic. Doing both edits is correct under every
+  Material-node port/scalar semantic. Verified by reading the exported ORM's
+  metallic (B) channel: flat 0 (`min=max=mean=0`). Albedo/normal unaffected.
+- **`quality/cookbook_leather.py`** (`build_l02_distressed_two_tone`): swap
+  port0/port1 on both `blend_alb` and `blend_rgh`. `colorize_wm`'s mask is 1
+  only in the small high-perlin patches, so the worn tone (minority) belongs on
+  port0 and the dark saddle base (majority) on port1; the original wiring was
+  reversed. Before/after render confirmed the field flipped from mostly-light
+  to mostly-dark-saddle with lighter worn rubs scattered through it. In-code
+  port trace updated.
+- **`quality/cookbook_leather.py`** (`build_l05_quilted_leather`): swap
+  port0/port1 on `blend_alb_q` so the dark `seam_shade` lands where the mask is
+  1 (the recessed seams) instead of on the pad centers. The `sin*sin` `pattern`
+  makes compact round peaks with broad valleys, so the fixed result reads as
+  round grain pads on a dark seam grid (round/small pads, not big puffy
+  diamonds). Grayson reviewed the before/after and chose the swap over
+  relabeling the material; the geometry limitation is documented honestly in
+  the card. **Then a follow-up commit (`6d460c4`): `blend_h_q.amount` 0.35 ->
+  0.85, so the quilt pads drive the relief instead of the high-frequency
+  crocodile grain overpowering the smooth pads in the normal. 0.65 (the
+  docstring-literal ratio) wasn't enough visually, so pushed to 0.85 and
+  confirmed on a real surface via `render_preview` (puffy padded bumps with
+  recessed channels, sent to Grayson). The exposed "Quilt puffiness" slider IS
+  this amount, so higher now reads as puffier.**
+- **Recipe cards** `cookbook/terrain/t01_sand_dunes.md`,
+  `cookbook/leather/l02_distressed_two_tone.md`,
+  `cookbook/leather/l05_quilted_leather.md` rewritten: each had asserted the
+  broken behavior as intentional/documented, now they describe the fix and its
+  reasoning. Thumbnails regenerated for l02 and l05 (t01's albedo is unchanged).
+- **Process:** `pickup` (`+ fix the leather and terrain bugs`) then a single
+  advisor consult before editing, which confirmed the t01/l02 fixes, flagged
+  the whole-label render-sweep hazard, re-promotion (non-zero diffs are the
+  goal this time, inverse of the retrofit), and the card rewrites. Worked
+  directly on `main` (this repo's cookbook convention), builder-only edits,
+  `render_one.py` for just the fixed case each time to avoid the sweep. Fast
+  suite 505 passed, `promote --check` in sync, `git status` showed only the
+  three intended materials changed. Committed as one bug-fix commit (`5cd9e0b`)
+  and pushed on Grayson's "push it and wrap up."
+- **Decisions (+ why):** do both the wire-drop and the scalar-zero on t01 (so
+  the fix is correct regardless of MM's port/scalar semantics); verify metallic
+  by reading the ORM channel, not by eye (metallic is near-invisible on tan
+  diffuse); ship the l05 swap rather than relabel (it matches the material's
+  name and stated intent, round pads accepted as a minor stylization); leave
+  l05's `blend_h_q` 35% height weighting as a separate follow-up rather than
+  fold it in.
+
 ### 🗂️ Changed this session (cookbook subgraph retrofit)
 
 - **`quality/author_helpers.py`**: new `group_into_subgraph(graph, member_names,
@@ -995,6 +1047,45 @@ doc's window.
 ---
 
 ## Archived session log
+
+### 2026-09-04 (cookbook subgraph retrofit): the node graph stops scaring people, one Ctrl+G at a time
+- `pickup` reconciled clean (`main` at `c3cc3f2`). Grayson picked backlog item
+  #2 from the briefing, "scope Material Maker for dummies."
+- `brainstorming` classified it architectural (a new interaction surface, no
+  existing flow to extend). A dead-end investigation ("generic parameters,"
+  which turned out to be Material Maker's unrelated variadic-port mechanism)
+  surfaced the real answer: a native subgraph/`Ctrl+G` mechanism already used
+  by 50 of Material Maker's own bundled compound nodes. Decomposed into two
+  sequenced sub-projects (a subgraph authoring lever now, a live web companion
+  later that reads its slider definitions from the first). Grayson chose to
+  retrofit all 46 existing materials, not just apply the lever going forward,
+  upgrading sub-project 1 from bounded to architectural.
+- Spec + 12-task plan -> `subagent-driven-development` on branch
+  `cookbook-subgraph-retrofit` (feature branch in the main checkout, not a
+  worktree, same editable-`.venv` reason as prior sessions). Task 1 built
+  `group_into_subgraph` + a tolerance-based render comparison utility. A
+  pilot task proved the whole process on `glass` before fanning out to the
+  other 9 categories, smallest first, `stone`/`terrain` (8 materials each)
+  last. Every category hit an exact `0.0` render match; every category's
+  named risk (sf03's blend mask, stone's `warp_0` sensitivity, f08's fleck
+  separation, t06's glow chain) was independently re-verified by task review
+  and held.
+- One task-level fix round (Task 7/painted-metal): a commit message claimed
+  a real thumbnail file-size change was explained by a stale pre-fix render;
+  the reviewer found the chronology was backwards and traced the actual,
+  benign cause (old thumbnails were un-downscaled 2048x2048, new ones
+  correctly 512x512). Fixed via a new documentation commit, not an amend.
+- Final whole-branch review (opus) built an independent flatten-diff harness
+  across all 46 materials in all 13 commits: 45/46 matched pre-branch `main`
+  byte-for-byte; `f04_wool_knit` didn't, but the change was a real, incidental
+  correction of an already-stale tracked artifact, not a regression -- fixed
+  via disclosure (a corrected recipe-card parity claim), not an artifact
+  change. Two other real, pre-existing, unrelated bugs surfaced during the
+  retrofit and correctly left unfixed (leather's l02/l05 reversed composite
+  layers, terrain's t01 wood-donor metallic wiring) -- flagged in this
+  handoff's Next-step section so they don't only live in a recipe card.
+- Merged `--no-ff` (`034aeaf`), pushed, branch deleted, SDD workspace
+  removed. Fast suite 453 -> 505. Then this wrap-up.
 
 ### 2026-09-03 (plastics category + Donegal tweed): a smooth surface and a fleck lever, both closing out the same backlog batch
 - `pickup` reconciled clean (`main` at `5239283`). Grayson picked "1 + 4"
