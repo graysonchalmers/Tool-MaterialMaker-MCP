@@ -10,6 +10,29 @@ Clones `rusted_metal`'s two-layer masked-blend structure, the same template `o06
 
 Pitfall specific to this material: v1 moved the mask threshold down to 0.22, reasoning by analogy with how other recipes widen their patch layer by lowering the threshold. That rendered almost the opposite of the intended look: near-total soil with only tiny green flecks, confirmed by a nearly flat normal map showing the mask was saturated one way across almost the whole image rather than shifting gradually. Flipping the threshold up to 0.65 instead produced the intended dominant-grass-with-dirt-patches look on the first try.
 
+## Subgraph structure
+
+Grouped per the "Grouping into subgraphs" lever in `docs/AUTHORING.md`, the
+exact `o06_lichen_crusted_rock` template (organics category): the mask
+signal (`colorize_3`) is a true three-way fan-out -- it feeds
+`blend_0`'s mask port, `colorize_4`'s roughness variant, AND
+`normal_map_grass`'s relief input -- so rather than folding it into any
+one of those three consumers, it gets its own small group.
+
+- **Soil & Grass Color** -- `perlin_1`, `colorize_2`, `colorize_1`,
+  `blend_0`. Exposed: `Soil color` (`colorize_2.gradient`), `Grass color`
+  (`colorize_1.gradient`).
+- **Grass Coverage** -- `perlin_2`, `colorize_3`. Exposed: `Coverage`
+  (`colorize_3.gradient`, the explicitly-widened 0.65 threshold).
+- **Surface Finish** -- `perlin_0`, `colorize_0`, `colorize_4`, `blend_1`,
+  `normal_map_grass`. Exposed: `Relief strength`
+  (`normal_map_grass.param1`).
+
+Verified after building: `renders_match` against this material's own
+pre-retrofit baseline came back at an exact `grid_mean_abs_diff` of `0.0`
+on all three exported maps (albedo, normal, orm), confirming the three-way
+mask fan-out wired correctly across the group split.
+
 ## See also
 
 The invariant guide (`guide://authoring` resource, or `docs/AUTHORING.md`) for
