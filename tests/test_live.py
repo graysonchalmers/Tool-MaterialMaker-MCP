@@ -947,6 +947,41 @@ def test_clear_graph_resets_a_built_graph_to_the_default_material_node(tmp_path)
         session.close()
 
 
+@pytest.mark.integration
+def test_load_graph_round_trips_a_cookbook_material(tmp_path):
+    # Isolated overlay dir so this test never collides with (or clobbers) a
+    # manual session's overlay, matching this file's other integration tests.
+    from mm_mcp import cookbook
+
+    isolated_cfg = replace(cfg, live_overlay_dir=str(tmp_path / "mm_live_overlay"))
+    entry = cookbook.find_cookbook(isolated_cfg.cookbook_dir, "f03_canvas_burlap")
+    assert entry is not None, "f03_canvas_burlap must exist in the tracked cookbook"
+    with open(entry.path, encoding="utf-8") as fh:
+        material = json.load(fh)
+    expected_names = sorted(n["name"] for n in material["nodes"])
+
+    session = live.connect_or_launch(cfg=isolated_cfg, launch_timeout=90.0)
+    try:
+        assert session.ok, session.error
+        assert session.process is not None, (
+            "attached to a pre-existing instance on port 8765 -- close it and rerun; "
+            "this test must launch its own overlay to prove the committed addon works"
+        )
+
+        load_res = live.load_graph(graph=material, cfg=isolated_cfg)
+        assert load_res.ok, load_res.error
+
+        got = live.get_graph()
+        assert got.ok, got.error
+        got_names = sorted(n["name"] for n in got.data["graph"]["nodes"])
+        # In-place replace: the loaded material's top-level nodes must now be
+        # what's shown, not the default single-Material graph new_material()
+        # would leave behind.
+        assert got_names == expected_names
+    finally:
+        session.close()
+
+
 def test_load_graph_sends_validated_dict_as_json_data():
     received = {}
 
