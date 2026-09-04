@@ -1,4 +1,4 @@
-"""Unit tests for quality/author.py's graph-surgery helpers (rewire, drop_conn).
+"""Unit tests for quality/author_helpers.py's graph-surgery helpers (rewire, drop_conn).
 
 These are pure JSON-graph transforms with no Godot/render dependency, but they
 back every Phase 3 authoring recipe (denim's weave graft, granite's port-2
@@ -12,7 +12,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "quality"))
 
-from author import rewire, drop_conn, node, add_node  # noqa: E402
+from author_helpers import rewire, drop_conn, node, add_node  # noqa: E402
 
 
 def _graph():
