@@ -148,13 +148,12 @@ open decision blocking the next session.
 ## ▶️ Next concrete step
 
 Nothing is blocking on Grayson right now.
-1. **l05's `blend_h_q` height weighting (optional follow-up, its own item).**
-   The advisor caught during the bug-fix session that `blend_h_q` weights the
-   quilt pads at only 35% of the height (`amount=0.35`, `pattern_q` on port0)
-   vs the docstring's claim of pad-driven relief. If the padding reads weak in
-   the 3D preview, that inverted weighting is why. A quilt look could also be
-   improved by swapping the `pattern` node to a Bounce wave for broad diamond
-   pads instead of `sin*sin`'s compact round ones (a larger redesign, deferred).
+1. **l05's `blend_h_q` height weighting: DONE (2026-09-04, `6d460c4`).** Bumped
+   `amount` from 0.35 to 0.85 so the quilt pads drive the relief instead of the
+   crocodile grain overpowering them; confirmed in a 3D preview (puffy padded
+   bumps with recessed channels). Only optional remainder here: swapping the
+   `pattern` node to a Bounce wave for broad diamond pads instead of `sin*sin`'s
+   compact round ones (a larger redesign, still deferred, not needed).
 2. **Sub-project 2 of the "Material Maker for dummies" idea: the live web
    companion.** Now unblocked (sub-project 1, this session's retrofit, is
    the prerequisite). A local server bundled with `mm-mcp`, opened in a
