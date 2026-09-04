@@ -66,9 +66,11 @@ eight categories, each one a real graph this server authored and then locked
 after a 3D-preview pass. Every one ships as a tracked `.ptex` under
 [`cookbook/`](cookbook/): open `cookbook/<category>/<id>.ptex` in Material
 Maker to see the node network, or start from it over MCP with
-`load_example("f07_herringbone_tweed")`. The recipes and the levers behind them
-are in [docs/AUTHORING.md](docs/AUTHORING.md); the builders that regenerate
-them live in [`quality/`](quality/).
+`load_example("f07_herringbone_tweed")`. The invariants that apply across
+materials are in [docs/AUTHORING.md](docs/AUTHORING.md), also served as the
+`guide://authoring` MCP resource; the recipe for each material lives next to
+its graph as `cookbook/<category>/<id>.md`. The builders that regenerate the
+graphs live in [`quality/`](quality/).
 
 <details>
 <summary><b>Show the cookbook contact sheet</b> (43 materials: fabrics, leather, organics, painted metal, sci-fi, stone, terrain, wood)</summary>
@@ -219,7 +221,7 @@ through a render.
 
 ## Tools
 
-The server exposes ten batch-mode tools and one resource (plus six more in Live mode, below):
+The server exposes ten batch-mode tools and two resources (plus six more in Live mode, below):
 
 | Tool | What it does |
 |---|---|
@@ -234,7 +236,9 @@ The server exposes ten batch-mode tools and one resource (plus six more in Live 
 | `load_example` | Load one starting graph by name as a `.ptex` (cookbook first, then bundled) |
 | `inspect_project` | Read-only metrics for a `.ptex` on disk (hash, node/connection counts, type histogram, material outputs) |
 
-Resource `catalog://nodes` exposes the full node catalog.
+Resource `catalog://nodes` exposes the full node catalog. Resource
+`guide://authoring` exposes the authoring guide (the invariants; see
+"Material cookbook" above for the per-material recipe cards).
 
 ## Live mode (optional)
 

@@ -208,7 +208,9 @@ def _bundled_examples(cfg) -> list[dict]:
 def list_examples(source: str = "all") -> dict:
     """Starting graphs from two sources: Material Maker's bundled examples
     (`material_maker`) and this repo's tracked cookbook of authored materials
-    (`cookbook`, see cookbook/ and docs/AUTHORING.md). `source` is `all`,
+    (`cookbook`, see cookbook/). Invariants are in docs/AUTHORING.md (also
+    served as the `guide://authoring` resource); each cookbook graph has its
+    own recipe card at `cookbook/<category>/<id>.md`. `source` is `all`,
     `material_maker`, or `cookbook`. Returns {"ok": True, "examples": [
     {"name", "source", "category"}]}; `category` is None for bundled
     examples. Prefer a cookbook graph as the starting pattern when one is

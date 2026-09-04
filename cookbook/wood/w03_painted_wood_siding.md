@@ -1,6 +1,6 @@
 # w03_painted_wood_siding - Painted plank siding, worn
 
-_Category: wood. Open the graph: cookbook/wood/w03_painted_wood_siding.ptex._
+_Category: wood. Open the graph: `cookbook/wood/w03_painted_wood_siding.ptex`._
 
 Worn painted plank siding: mostly painted with sparse worn patches showing
 the wood grain underneath, built from a masked paint-over-wood composite.

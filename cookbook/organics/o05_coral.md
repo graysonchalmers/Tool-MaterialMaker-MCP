@@ -1,6 +1,6 @@
 # o05_coral - Coral
 
-_Category: organics. Open the graph: cookbook/organics/o05_coral.ptex._
+_Category: organics. Open the graph: `cookbook/organics/o05_coral.ptex`._
 
 A pink/orange, matte, porous coral surface with pronounced pitted relief.
 

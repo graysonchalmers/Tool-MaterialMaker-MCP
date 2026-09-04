@@ -51,3 +51,10 @@ def test_cookbook_graph_has_thumbnail(entry):
     thumb = os.path.join(_ROOT, "docs", "images", f"cookbook-{entry.category}",
                          f"{entry.name}.png")
     assert os.path.isfile(thumb), f"missing thumbnail {thumb}"
+
+
+@pytest.mark.parametrize("entry", ENTRIES, ids=[e.name for e in ENTRIES])
+def test_cookbook_graph_has_recipe_card(entry):
+    card = os.path.join(os.path.dirname(entry.path), f"{entry.name}.md")
+    assert os.path.isfile(card), f"missing recipe card {card}"
+    assert os.path.getsize(card) > 200, f"card too small to be a real recipe: {card}"

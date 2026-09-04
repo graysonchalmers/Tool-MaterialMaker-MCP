@@ -1,6 +1,6 @@
 # f07_herringbone_tweed - Herringbone tweed
 
-_Category: fabrics. Open the graph: cookbook/fabrics/f07_herringbone_tweed.ptex._
+_Category: fabrics. Open the graph: `cookbook/fabrics/f07_herringbone_tweed.ptex`._
 
 A warm woven wool fabric with the classic herringbone chevron pattern:
 diagonal ribbons that reverse direction band to band. This is the material

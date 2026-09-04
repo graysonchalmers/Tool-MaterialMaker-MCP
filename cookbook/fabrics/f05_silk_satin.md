@@ -1,6 +1,6 @@
 # f05_silk_satin - Silk / satin
 
-_Category: fabrics. Open the graph: cookbook/fabrics/f05_silk_satin.ptex._
+_Category: fabrics. Open the graph: `cookbook/fabrics/f05_silk_satin.ptex`._
 
 A glossy, smooth woven fabric where the differentiator from a coarser fabric
 like denim or canvas is not visible thread texture but low roughness and

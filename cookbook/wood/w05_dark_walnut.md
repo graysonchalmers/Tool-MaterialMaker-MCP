@@ -1,6 +1,6 @@
 # w05_dark_walnut - Dark walnut, semi-gloss
 
-_Category: wood. Open the graph: cookbook/wood/w05_dark_walnut.ptex._
+_Category: wood. Open the graph: `cookbook/wood/w05_dark_walnut.ptex`._
 
 Deep saturated brown walnut with a sealed, finished look, lower roughness
 than a raw weathered wood surface.

@@ -1,6 +1,6 @@
 # w04_driftwood_gray - Bleached driftwood
 
-_Category: wood. Open the graph: cookbook/wood/w04_driftwood_gray.ptex._
+_Category: wood. Open the graph: `cookbook/wood/w04_driftwood_gray.ptex`._
 
 Pale, low-saturation gray driftwood, sun-bleached and weathered.
 

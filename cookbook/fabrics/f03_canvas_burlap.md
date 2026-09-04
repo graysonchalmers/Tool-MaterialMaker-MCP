@@ -1,6 +1,6 @@
 # f03_canvas_burlap - Canvas / burlap
 
-_Category: fabrics. Open the graph: cookbook/fabrics/f03_canvas_burlap.ptex._
+_Category: fabrics. Open the graph: `cookbook/fabrics/f03_canvas_burlap.ptex`._
 
 A coarse, natural-tan woven fabric with visible gaps between thick threads,
 the kind of weave you'd expect from canvas or burlap sacking.

@@ -1,6 +1,6 @@
 # o04_snake_scales - Snake scales
 
-_Category: organics. Open the graph: cookbook/organics/o04_snake_scales.ptex._
+_Category: organics. Open the graph: `cookbook/organics/o04_snake_scales.ptex`._
 
 An olive-to-khaki reptile scale surface with faceted per-cell relief that
 reads as scales through the normal map rather than the albedo.

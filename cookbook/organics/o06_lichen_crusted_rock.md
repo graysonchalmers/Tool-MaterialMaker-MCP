@@ -1,6 +1,6 @@
 # o06_lichen_crusted_rock - Lichen-crusted rock
 
-_Category: organics. Open the graph: cookbook/organics/o06_lichen_crusted_rock.ptex._
+_Category: organics. Open the graph: `cookbook/organics/o06_lichen_crusted_rock.ptex`._
 
 Gray stone with a patchy green-gray lichen crust, using a two-layer masked
 blend to composite the crust over the base stone.

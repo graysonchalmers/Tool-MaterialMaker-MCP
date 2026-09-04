@@ -1,10 +1,11 @@
 """Lookup for the tracked cookbook: <cookbook_dir>/<category>/<id>.ptex.
 
 These are graphs this project authored (see quality/cookbook_*.py and
-docs/AUTHORING.md), promoted into the repo by quality/promote_cookbook.py.
-The server serves them next to Material Maker's own bundled examples so an
-assistant can start from the nearest cookbook graph, and a person can open
-the same file in Material Maker.
+docs/AUTHORING.md for the invariants), promoted into the repo by
+quality/promote_cookbook.py. Each graph has its own recipe card at
+<cookbook_dir>/<category>/<id>.md. The server serves them next to Material
+Maker's own bundled examples so an assistant can start from the nearest
+cookbook graph, and a person can open the same file in Material Maker.
 """
 import glob
 import os

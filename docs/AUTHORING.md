@@ -1,4 +1,4 @@
-# AUTHORING.md — how to author a Material Maker graph from a prompt
+# AUTHORING.md: how to author a Material Maker graph from a prompt
 
 > **Phase 3 status:** done. The recipe sections below were filled in during
 > sub-phase 3C from the baseline miss taxonomy, and the frozen 15-case test
@@ -23,7 +23,7 @@ A prompt-to-graph attempt is scored per `quality/test_set.json`:
 ## Human-editability constraint (invariant, added 2026-08-28)
 
 Every authored graph must be legible to Grayson if he opens it cold in
-Material Maker, per `docs/NORTH_STAR.md`'s round-trip loop — step 3 only
+Material Maker, per `docs/NORTH_STAR.md`'s round-trip loop: step 3 only
 teaches him anything if the graph reads as "how would I build this," not as
 a technically-correct tangle. This is a real constraint, not just a nicety:
 a graph can pass validation and render correctly while still being a mess to
@@ -36,7 +36,7 @@ open. Concretely:
   calls for more than one or two of the same type.
 - Lay out `node_position` so related nodes sit near each other and
   connections don't have to cross the whole canvas to be traced by eye.
-- When a recipe has a real simpler equivalent, prefer it — cleverness that
+- When a recipe has a real simpler equivalent, prefer it: cleverness that
   only pays off in fewer nodes but costs readability is the wrong trade here.
 
 ## Authoring workflow (invariant across phases)
@@ -136,7 +136,7 @@ names a base example and the edit that turns it toward a prompt._
 Many materials differ from a bundled example only in COLOR, not structure. A
 `colorize` node holds a `gradient.points` list of `{pos, r, g, b, a}`. Find the
 colorize whose points are **saturated** (not gray): that is the albedo color
-ramp. The gray-valued colorize nodes feed roughness/height/metallic — leave them
+ramp. The gray-valued colorize nodes feed roughness/height/metallic: leave them
 unless you mean to change surface response.
 
 Verified conversions (baseline MISS → iter1 HIT):
@@ -161,13 +161,13 @@ metallic down on the patches. Recolor both layers to retarget the weathering:
 ### Surface pattern generators (brick, tile, hex, planks)
 
 - **Brick / block coursing**: `bricks` / `improved_brick` (running bond, mortar
-  in normal+height) — a HIT for red brick as-is; recolor for other brick tones.
-- **Cracked ground**: `dry_earth` (voronoi plates + recessed cracks) — a HIT for
+  in normal+height), a HIT for red brick as-is; recolor for other brick tones.
+- **Cracked ground**: `dry_earth` (voronoi plates + recessed cracks), a HIT for
   dry mud as-is.
 - Planks: `wooden_floor` gives plank divisions but weak grain; the `wood`
-  example has strong grain but no divisions. Oak planks wants BOTH (open item —
+  example has strong grain but no divisions. Oak planks wants BOTH (open item:
   needs a blend of plank cuts over strong grain).
-- Hex cells (grating, hex tiles) are an open item — no single example ships a
+- Hex cells (grating, hex tiles) are an open item: no single example ships a
   hexagon generator wired to a material; needs `shape`/`pattern` hex authored in.
 
 ## Common pitfalls (from the miss taxonomy)
@@ -176,7 +176,7 @@ metallic down on the patches. Recolor both layers to retarget the weathering:
   material (e.g. `tiles` is fish-scale scallops, not hexagons; `marble` is veined
   + gold-framed, not speckled granite). Check the render, don't trust the name.
 - **Albedo-only examples**: some examples (e.g. `paper`) emit only an albedo, no
-  normal/height/orm — unusable under the "all four maps" rule. Build the material
+  normal/height/orm, unusable under the "all four maps" rule. Build the material
   outputs explicitly.
 - **Transient Godot crash**: renders intermittently die with exit `0xC0000005` /
   `0xC0000409` mid-export (GPU, not the graph). `render.py` now retries these
@@ -184,7 +184,7 @@ metallic down on the patches. Recolor both layers to retarget the weathering:
 - **Normals need a SHARP-EDGED source (resolved)**: a hand-assembled
   `perlin -> normal_map -> Material.normal` chain renders a FLAT normal, and so
   does cloning a *smooth* example (`rock`). The fix that works: CLONE a working
-  example whose generator has **sharp edges** — `dry_earth` (voronoi cracks)
+  example whose generator has **sharp edges**: `dry_earth` (voronoi cracks)
   gives the `normal_map` real gradients to work from, so recoloring it to green
   produced a moss with rich ground relief (`o01`). Rule of thumb: for a material
   that needs surface relief, start from a sharp-edged example (cracks, bricks,
@@ -291,7 +291,7 @@ Practical guidance now:
   voronoi): set `normal_map` `param4=0` and tune `param1`.
 - Even a chain that *looks* buffered (a `blend` node ahead of `normal_map`) can
   still be directly-fed if the blend's real input is an un-warped, un-buffered
-  generator — the switch cares about what the buffer actually renders, not the
+  generator: the switch cares about what the buffer actually renders, not the
   node type sitting in front of it. `m02` brushed aluminum is the example: its
   `blend_0 -> normal_map_0` chain looked like the "working" pattern, but once
   `blend_0` was straightened to take `perlin_2` directly (killing the warp), the

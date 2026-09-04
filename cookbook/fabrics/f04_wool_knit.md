@@ -1,6 +1,6 @@
 # f04_wool_knit - Wool / chunky knit
 
-_Category: fabrics. Open the graph: cookbook/fabrics/f04_wool_knit.ptex._
+_Category: fabrics. Open the graph: `cookbook/fabrics/f04_wool_knit.ptex`._
 
 An honest coarse-weave stand-in for chunky knitwear, not a true knit. This
 graph does not produce real stockinette knit loops: the catalog has no

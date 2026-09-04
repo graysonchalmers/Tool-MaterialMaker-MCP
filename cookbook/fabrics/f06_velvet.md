@@ -1,6 +1,6 @@
 # f06_velvet - Velvet
 
-_Category: fabrics. Open the graph: cookbook/fabrics/f06_velvet.ptex._
+_Category: fabrics. Open the graph: `cookbook/fabrics/f06_velvet.ptex`._
 
 A soft fibrous pile fabric with no grid pattern at all, deep saturated color,
 and a subtle nap relief instead of hard thread crossings.

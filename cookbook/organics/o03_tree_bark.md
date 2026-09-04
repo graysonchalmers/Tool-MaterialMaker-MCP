@@ -1,6 +1,6 @@
 # o03_tree_bark - Tree bark
 
-_Category: organics. Open the graph: cookbook/organics/o03_tree_bark.ptex._
+_Category: organics. Open the graph: `cookbook/organics/o03_tree_bark.ptex`._
 
 A weathered, knotty gray-brown bark surface with real grain relief carried
 over unmodified from the wood donor.
