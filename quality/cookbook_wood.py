@@ -13,7 +13,12 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
-from author_helpers import load_example, set_gradient, set_param, add_node, rewire, save_variant, _grad
+from author_helpers import (load_example, set_gradient, set_param, add_node, rewire,
+                             save_variant, _grad, group_into_subgraph)
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+from mm_mcp.catalog_builder import build_catalog
+from mm_mcp.config import load_config
 
 _LABEL = "cookbook-wood"
 
@@ -74,6 +79,38 @@ def build_w03_painted_wood_siding() -> str:
     ]
     rewire(g, "Material", 0, "blend_alb", 0)   # albedo <- paint-over-planks
     rewire(g, "Material", 2, "blend_rgh", 0)   # roughness <- paint-over-planks
+
+    catalog = build_catalog(load_config().nodes_dir)
+    # Group the 16-node tangle (10 from the wooden_floor donor + 6 for the
+    # paint-over composite) into two named subgraphs: the bare-plank
+    # generation chain (structure + AO + the plank normal, which the
+    # docstring notes is deliberately left untouched by paint) and the
+    # paint-coat-over-planks composite. normal_map_0 reads the plank relief
+    # from blend_0 and feeds Material's normal port directly -- it belongs
+    # with board_structure (it IS the plank's own relief, unaffected by
+    # paint) rather than with the paint chain. combine_0 is dead code
+    # inherited from the wooden_floor donor (no downstream connection,
+    # confirmed by inspecting the built graph) -- folded into
+    # board_structure with its source uniform_0 rather than left as an
+    # orphaned top-level node, same precedent as gl01_frosted_glass's dead
+    # colorize_3.
+    group_into_subgraph(
+        g,
+        ["bricks_0", "decompose_0", "transform_1", "perlin_0", "colorize_0",
+         "blend_0", "uniform_0", "combine_0", "normal_map_0"],
+        "board_structure", "Board Structure",
+        [("colorize_0", "gradient", "param0", "Wood color")],
+        catalog,
+    )
+    group_into_subgraph(
+        g,
+        ["perlin_pm", "colorize_pm", "paint_alb", "paint_rgh", "blend_alb", "blend_rgh"],
+        "paint_overlay", "Paint Overlay",
+        [("paint_alb", "gradient", "param0", "Paint color"),
+         ("perlin_pm", "scale_x", "param1", "Wear grain size"),
+         ("colorize_pm", "gradient", "param2", "Wear coverage")],
+        catalog,
+    )
     return save_variant(g, _LABEL, "w03_painted_wood_siding", 1)
 
 
@@ -91,6 +128,33 @@ def build_w04_driftwood_gray() -> str:
     ])
     set_gradient(g, "colorize_0", [    # weather-smoothed, moderate roughness
         (0.0, 0.55, 0.55, 0.55), (1.0, 0.72, 0.72, 0.72)])
+
+    # Group `wood`'s 11-node graph into two named subgraphs: the noise/
+    # pattern generator that produces the grain mask (blend_0's output) plus
+    # the albedo colorize that paints it (colorize_2 -- both this builder's
+    # explicit gradient calls sit at a colorize node, so colorize_2's
+    # "Wood color" knob lives with the generator that feeds it), and the two
+    # remaining surface-mapping nodes (roughness ramp + relief). blend_0
+    # feeds 4 consumers (normal_map_0, colorize_0, colorize_2, and Material
+    # port 1 directly); colorize_2 rides along with it into wood_grain so
+    # that group carries a real knob rather than exposing nothing, while
+    # surface_finish keeps its own knob (colorize_0's roughness gradient).
+    catalog = build_catalog(load_config().nodes_dir)
+    group_into_subgraph(
+        g,
+        ["perlin_0", "perlin_1", "perlin_2", "voronoi_0", "colorize_1",
+         "warp_0", "warp_1", "blend_0", "colorize_2"],
+        "wood_grain", "Wood Grain",
+        [("colorize_2", "gradient", "param0", "Wood color")],
+        catalog,
+    )
+    group_into_subgraph(
+        g,
+        ["colorize_0", "normal_map_0"],
+        "surface_finish", "Surface Finish",
+        [("colorize_0", "gradient", "param0", "Finish sheen")],
+        catalog,
+    )
     return save_variant(g, _LABEL, "w04_driftwood_gray", 1)
 
 
@@ -107,6 +171,27 @@ def build_w05_dark_walnut() -> str:
     ])
     set_gradient(g, "colorize_0", [    # semi-gloss, sealed finish
         (0.0, 0.18, 0.18, 0.18), (1.0, 0.34, 0.34, 0.34)])
+
+    # Same grouping as w04_driftwood_gray (both clone `wood`'s identical
+    # 11-node graph, differing only in the two gradients this builder sets)
+    # -- see that function's comment for why colorize_2 rides into wood_grain
+    # alongside blend_0.
+    catalog = build_catalog(load_config().nodes_dir)
+    group_into_subgraph(
+        g,
+        ["perlin_0", "perlin_1", "perlin_2", "voronoi_0", "colorize_1",
+         "warp_0", "warp_1", "blend_0", "colorize_2"],
+        "wood_grain", "Wood Grain",
+        [("colorize_2", "gradient", "param0", "Wood color")],
+        catalog,
+    )
+    group_into_subgraph(
+        g,
+        ["colorize_0", "normal_map_0"],
+        "surface_finish", "Surface Finish",
+        [("colorize_0", "gradient", "param0", "Finish sheen")],
+        catalog,
+    )
     return save_variant(g, _LABEL, "w05_dark_walnut", 1)
 
 
