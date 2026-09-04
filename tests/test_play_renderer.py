@@ -1,3 +1,5 @@
+import os
+
 from mm_mcp.play import renderer
 
 
@@ -68,3 +70,38 @@ def test_falls_back_to_headless_when_live_set_param_fails():
         ping=fake_ping, live_set_param=fake_set_param, headless_render=fake_headless)
     assert out["ok"] and out["path"] == "headless"
     assert out["images"] == ["fallback_albedo.png"]
+
+
+def test_live_render_copies_images_into_play_outdir(tmp_path):
+    # live.py always writes into cfg.output_dir (the parent), never into the
+    # play subdir. The play server serves /api/maps/<name> from
+    # cfg.output_dir/play, so a successful live render must land a copy of
+    # each image there or the browser preview 404s.
+    parent_dir = tmp_path / "parent"
+    parent_dir.mkdir()
+    play_dir = tmp_path / "play"  # deliberately not pre-created
+
+    src_image = parent_dir / "play_albedo.png"
+    src_image.write_bytes(b"fake-png-bytes")
+
+    def fake_ping(timeout=1.0):
+        return _Result(True, data={"has_graph": True})
+
+    def fake_set_param(name, parameters, cfg=None):
+        return _Result(True)
+
+    def fake_live_render(basename="material", cfg=None):
+        return _Result(True, images=[str(src_image)])
+
+    out = renderer.render_material(
+        {"nodes": [], "connections": []}, [], 256, _cfg(), outdir=str(play_dir),
+        ping=fake_ping, live_set_param=fake_set_param, live_render=fake_live_render)
+
+    assert out["ok"] and out["path"] == "live"
+    assert len(out["images"]) == 1
+    copied = out["images"][0]
+    assert os.path.isfile(copied)
+    assert os.path.dirname(os.path.abspath(copied)) == os.path.abspath(str(play_dir))
+    assert os.path.basename(copied) == "play_albedo.png"
+    # original file untouched, this is a copy not a move
+    assert src_image.is_file()
