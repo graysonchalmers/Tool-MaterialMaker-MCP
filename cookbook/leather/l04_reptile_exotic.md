@@ -1,0 +1,17 @@
+# l04_reptile_exotic - Exotic reptile scale
+
+_Category: leather. Open the graph: `cookbook/leather/l04_reptile_exotic.ptex`._
+
+An exotic bronze-olive reptile scale leather with fewer, bigger, slightly elongated scales and strong relief, so the scale edges cast real depth rather than reading as a fine uniform grain.
+
+## Recipe
+
+Clones `crocodile_skin` and leans into the voronoi cell scale rather than keeping the donor's default fine grain: drop `voronoi_0` scale to around 7x9 for fewer, bigger, slightly elongated scales, recolor to an exotic bronze-olive, and use strong relief (`param1` around 0.7, still `param4=0`).
+
+Pitfall, and the one specific to this card: the albedo ramp hit the same voronoi port-0 polarity trap the height ramp needs fixing on every cell-based leather here, but it matters more for this material because the color contrast is high (unlike the near-monochrome l01). `colorize_1` is fed by `voronoi_0` port 0, which is low at the cell centers (the scale bodies) and high at the borders. The first pass mapped low to dark and high to bronze, so the scale bodies came out dark and only the thin border seams got color, reading olive with no bronze at all. Fix: reverse the ramp too, centers to bronze-olive body, borders to dark seam, so the scales carry the color and the seams read as dark grooves. Also dropped the roughness from semi-gloss to a drier matte, since the semi-gloss pass read wet or plastic. Remaining open knob: the bronze still skews olive because the voronoi field rarely reaches the ramp's top stop.
+
+## See also
+
+The invariant guide (`guide://authoring` resource, or `docs/AUTHORING.md`) for
+the rubric, the authoring workflow, the noise vocabulary, and the `param4=0`
+flat-normal fix.

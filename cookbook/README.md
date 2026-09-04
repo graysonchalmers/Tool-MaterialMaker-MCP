@@ -2,7 +2,7 @@
 
 Tracked, authored Material Maker graphs: one `.ptex` per material, grouped by
 category. These are the shipped form of the cookbook that `quality/cookbook_*.py`
-builds and `docs/AUTHORING.md` explains.
+builds; the invariants behind them are in `docs/AUTHORING.md`.
 
 ## Use
 
@@ -14,6 +14,11 @@ builds and `docs/AUTHORING.md` explains.
 - **Config:** the server finds this folder automatically from a source
   checkout. Set `MM_COOKBOOK_DIR` to point it somewhere else.
 
+## Recipe cards
+
+Each graph has a recipe card beside it, `<category>/<id>.md`, describing what
+it is, the levers that made it work, and where to look in the graph.
+
 ## Regenerate
 
 The builders are the source; this folder is their locked output.
@@ -23,4 +28,5 @@ The builders are the source; this folder is their locked output.
 3. Accept new output: `.venv\Scripts\python.exe quality\promote_cookbook.py`
 
 `tests/test_cookbook_gate.py` validates every graph here against the node
-catalog and checks that each has a thumbnail under `docs/images/cookbook-<category>/`.
+catalog and checks that each has a thumbnail under `docs/images/cookbook-<category>/`
+and a recipe card.

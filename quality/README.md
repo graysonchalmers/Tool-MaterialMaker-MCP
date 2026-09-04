@@ -40,8 +40,11 @@ touching frozen infra, use the `cookbook_fabrics.py` pattern instead of
 graph-surgery helpers, imported from `author.py`) writes variants to
 `quality/authored/cookbook-<category>/`, and `render_cookbook.py <label>`
 validates + renders them to `quality/cookbook/<label>/` for eyeballing — no
-`test_set.json` entry, no scorecard, no gate. Recipes that pan out get written
-up in `docs/AUTHORING.md`; both output dirs are gitignored (regenerable).
+`test_set.json` entry, no scorecard, no gate. Invariants that generalize
+across materials belong in `docs/AUTHORING.md` (the lean guide, also served
+as the `guide://authoring` resource); a recipe that pans out for one material
+gets written up in that graph's own card, `cookbook/<category>/<id>.md`.
+Both output dirs are gitignored (regenerable).
 
 When a material is locked (rendered, 3D-previewed, written up), promote it:
 `python quality/promote_cookbook.py` copies each `v1.ptex` into the tracked

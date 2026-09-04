@@ -208,7 +208,9 @@ def _bundled_examples(cfg) -> list[dict]:
 def list_examples(source: str = "all") -> dict:
     """Starting graphs from two sources: Material Maker's bundled examples
     (`material_maker`) and this repo's tracked cookbook of authored materials
-    (`cookbook`, see cookbook/ and docs/AUTHORING.md). `source` is `all`,
+    (`cookbook`, see cookbook/). Invariants are in docs/AUTHORING.md (also
+    served as the `guide://authoring` resource); each cookbook graph has its
+    own recipe card at `cookbook/<category>/<id>.md`. `source` is `all`,
     `material_maker`, or `cookbook`. Returns {"ok": True, "examples": [
     {"name", "source", "category"}]}; `category` is None for bundled
     examples. Prefer a cookbook graph as the starting pattern when one is
@@ -515,6 +517,36 @@ mcp.tool()(live_clear)
 def catalog_resource() -> str:
     _, catalog = _ensure_ready()
     return json.dumps(catalog, indent=1)
+
+
+def _authoring_guide_path() -> str:
+    """<repo>/docs/AUTHORING.md when running from a source checkout (this
+    file is src/mm_mcp/server.py, so three dirname hops up is the repo root).
+    Empty string when that file does not exist, e.g. an installed wheel,
+    which does not package docs/."""
+    here = os.path.abspath(__file__)
+    repo = os.path.dirname(os.path.dirname(os.path.dirname(here)))
+    candidate = os.path.join(repo, "docs", "AUTHORING.md")
+    return candidate if os.path.isfile(candidate) else ""
+
+
+def read_authoring_guide() -> str:
+    """The authoring guide markdown, or a short unavailable notice when
+    docs/AUTHORING.md is not on disk (e.g. an installed wheel)."""
+    path = _authoring_guide_path()
+    if not path:
+        return (
+            "# Authoring guide unavailable\n\n"
+            "docs/AUTHORING.md was not found next to this install. The wheel "
+            "does not package docs/; use a source checkout to read the guide."
+        )
+    with open(path, encoding="utf-8") as fh:
+        return fh.read()
+
+
+@mcp.resource("guide://authoring")
+def authoring_guide_resource() -> str:
+    return read_authoring_guide()
 
 
 _USAGE = (
