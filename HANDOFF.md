@@ -1,56 +1,68 @@
-# 🧭 Session Handoff — Tool-MaterialMaker-MCP
+# 🧭 Session Handoff: Tool-MaterialMaker-MCP
 
-_Last updated: 2026-09-03 (wool-knit closed, f07 herringbone tweed, +4 terrain via topology-not-donor) CT (America/Chicago)_
+_Last updated: 2026-09-03 (teardown #2, cookbook-as-data merged, STATUS header capped) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**Closed wool loop-knit as unreachable, shipped f07 herringbone tweed, then added
-4 natural-terrain materials via a new "topology-not-donor" lesson.** Two commits,
-both pushed (`8ca2c2b` f07, `6ed5773` terrain).
-- **Wool loop-knit CLOSED.** An isolation-render probe (each candidate generator's
-  raw pattern through a gray ramp) tested the 4 best leads: pattern-Bounce and
-  `bricks` Running Bond = staggered pillow honeycomb; `weave2` stitch=1 = basket
-  weave; `weave2` stitch=3 = herringbone chevrons but they reverse band-to-band =
-  herringbone, not knit. No bundled generator makes upright-V stockinette. The
-  reframe: "offset rows" and "V-columns in aligned wales" are INDEPENDENT and only
-  the second is the knit tell.
-- **`f07_herringbone_tweed` shipped** (the probe's silver lining): `weave2`
-  stitch=3, warm Harris-tweed 3-tone, soft `param1` 0.35 `param4=0`. Honest limit:
-  weave2 emits one grayscale so it reads one-tone; true two-color tweed needs two
-  colorizes blended through the weave over/under mask.
-- **Terrain t05-t08 (the main event): cracked ice, cooled lava, forest floor,
-  riverbed pebbles.** First pass cloned `dry_earth` 4x and they read as siblings;
-  Grayson caught it. Advisor reframe: pick base by surface TOPOLOGY, not donor.
-  Connected crack network (ice, lava) = dry_earth plates; lava glow via `warp_0`
-  crack signal -> colorize -> Material emission port 3. Discrete packed cells
-  (pebbles) = voronoi + `warp_0` ~0.02 for recessed contact joints. Scattered
-  pieces (forest floor) = re-based OFF dry_earth onto `fbm` noise=Cellular 4.
-  Ice got a smoothness pass (crack-only signal into the normal). All 4 authored ->
-  rendered -> 3D-previewed -> locked.
+**Teardown #2 ran, and its top recommendation is built, reviewed, and merged:
+the cookbook is now tracked data the MCP server serves.** Merge commit
+`530ad0f` on `main`, pushed; CI on that commit: success (tests workflow on windows-latest, run 2026-09-03).
+- **Teardown #2 (2026-09-03) verdict:** no Rebuild calls. Keep the `src/` core,
+  live-control (frozen: zero uses since the 08-28 verification, so close backlog
+  J as won't-do), debug swatches, noise gallery, the frozen test set, the
+  HANDOFF trim convention. Refactor: the cookbook (DONE this session),
+  `quality/author.py` (split the 8 graph-surgery helpers from the 13 phase-3
+  builders), `docs/AUTHORING.md` (invariant guide vs per-material recipes, serve
+  the guide as an MCP resource), STATUS.md's header (capped this session), the
+  three overlapping image sets, the release cadence. Kill: `examples/` (fold into
+  the cookbook), `docs/HANDOFF_ARCHIVE.md` (git is the archive). Full report
+  delivered to Grayson as a file, not committed (same convention as teardown #1).
+- **Cookbook as data (merged, 11 commits):** `cookbook/<category>/<id>.ptex`
+  (43 graphs, 8 categories); `quality/promote_cookbook.py` (copies builder
+  output in; `--check` is a JSON-content regression diff, so the 28 informal
+  materials finally have a baseline); `src/mm_mcp/cookbook.py`;
+  `Config.cookbook_dir` / `MM_COOKBOOK_DIR` (defaults to the checkout's
+  `cookbook/`); `list_examples(source=...)` now returns
+  `{"ok", "examples": [{"name", "source", "category"}]}` (breaking, `feat!`);
+  `load_example(name, source="auto")` tries the cookbook first and returns every
+  error as data; `mm-mcp --check` reports the cookbook count;
+  `tests/test_cookbook_gate.py` validates all 43 in the fast suite (378 tests,
+  was 262). Docs: README (43 materials, eight categories, how to open one),
+  `cookbook/README.md`, `quality/README.md`, AUTHORING step 1, `.env.example`,
+  contact sheet regenerated at 43 tiles.
+- **Release-please guard:** the final review caught that the `feat!` commit
+  would have made release-please cut 1.0.0 on merge. `bump-minor-pre-major:
+  true` is now set; the release PR should propose 0.5.0. Check it before merging.
+- **STATUS.md header capped** (teardown 🔴 finding): the 7.3KB "Last updated"
+  run-on moved verbatim to the archive; the header is one line now.
 
 Older write-ups/log beyond the cap live in
 [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).
 
 ## 📌 Where we stopped
 
-All four terrain materials + f07 locked, finalized (thumbnails, AUTHORING.md
-recipes, memory), and pushed. `main` clean and in sync at `6ed5773` plus this
-wrap-up baton commit. Natural stopping point.
+Merged, pushed, `main` clean and in sync at `530ad0f` plus this wrap-up baton
+commit. Natural stopping point.
 
 ## ▶️ Next concrete step
 
-Nothing blocked; pick a quick-win:
-1. **New cookbook category: glass or plastics** (still uncovered). The
-   topology-not-donor lesson from this session applies directly: glass wants a
-   continuous/smooth base (perlin/fbm), not a cell donor.
-2. **Two-color herringbone tweed** as an f07 follow-up: blend two colorizes through
-   the weave over/under mask for a real Harris-tweed two-thread read (deferred as a
-   nicety this session).
-3. **Unreal UE5 export verification** (backlog A): still blocked on a live Unreal
-   Editor + the `mcp__unreal-engine__*` bridge; check whether that's connectable
-   before trying.
+Continue the teardown's v2 order (each is one session or less):
+1. **AUTHORING split + `guide://authoring` MCP resource.** The invariant guide
+   (rubric, workflow, pitfalls, the `param4=0` fix, blend port semantics, noise
+   vocabulary, topology-not-donor: about 15KB) stays in `docs/AUTHORING.md` and is
+   served as a resource so the assistant reads it on demand; the ~50KB of
+   per-material recipes move to cards beside their graphs
+   (`cookbook/<category>/<id>.md`). Depends on nothing now that the cookbook is
+   tracked.
+2. **Hygiene pass** (about an hour): fold `examples/` into the cookbook, delete
+   `docs/HANDOFF_ARCHIVE.md`, label `docs/superpowers/` as execution history,
+   fix `quality/README.md`'s "informal" heading, run the 5.4MB contact sheet
+   through an optimizer, decide the release cadence (merge the 0.5.0 PR or stop
+   release-please opening PRs on docs-only pushes).
+3. **Cookbook backlog** (glass/plastics category; two-color tweed) now
+   compounds: new materials land in `cookbook/` via `promote_cookbook.py`.
 
 The older open backlog, unchanged:
 - **2 findings ruled out, not fixed** (deliberate): #8 (`_cmd_clear_graph`'s
@@ -111,6 +123,14 @@ The older open backlog, unchanged:
 
 ## ❓ Open questions
 
+- **New 2026-09-03:** does `backup-ops` exclude the ~1GB of regenerable renders
+  under `output/`, `quality/cookbook/`, `quality/runs/` (plus the 266MB
+  `mm_live_overlay/`)? Flagged by the teardown, not verified.
+- **New 2026-09-03, deferred minors from the cookbook-as-data reviews (all
+  small):** `tests/test_config.py`'s default-dir test reads the real machine env
+  (pre-existing pattern); `_default_cookbook_dir()`'s empty branch is untested;
+  `server.py`'s source-validation error string is near-duplicated between the two
+  example tools; the contact sheet adds a 5MB blob per regeneration.
 - **Resolved this session:** whether to keep expanding live-control's
   mutation surface. Grayson said keep building it (see item I above) —
   no longer open.
@@ -141,6 +161,43 @@ The older open backlog, unchanged:
   available; two parked-not-fixed overlay-builder findings from a much
   earlier session (staleness marker, `_append_autoload`'s first-occurrence
   match, both verified low-priority).
+
+## 🗂️ Changed this session (teardown #2 + cookbook-as-data)
+
+- Branch: feature branch `cookbook-as-data` (11 commits `6c3083c..f31d753`),
+  merged `--no-ff` into `main` as `530ad0f`, **pushed**; branch deleted locally
+  and on origin. Files: `cookbook/**/*.ptex` (43, new) + `cookbook/README.md`;
+  `quality/promote_cookbook.py`; `src/mm_mcp/cookbook.py`, `config.py`,
+  `server.py`, `doctor.py`; `tests/test_cookbook.py`, `test_cookbook_gate.py`,
+  `test_promote_cookbook.py` (new), `test_config.py`, `test_doctor.py`,
+  `test_server_tools.py`; `README.md`, `quality/README.md`, `docs/AUTHORING.md`,
+  `.env.example`, `.gitignore` (comment), `docs/images/cookbook-contact-sheet.png`
+  (43 tiles), `release-please-config.json`; spec + plan under `docs/superpowers/`.
+  This wrap-up also capped STATUS.md's header and moved its old text to the
+  archive.
+- **Process:** `pickup` chained into `teardown` (six lenses, verdict table, v2
+  sketch; report sent as a file). Grayson chose next-move #1. `phased-rebuild`
+  framed three gated phases; `writing-plans` produced the spec + 7-task plan;
+  `subagent-driven-development` executed it: fresh subagent per task, a task
+  review per task (two fix rounds total: Task 1 had dropped the
+  `quality/cookbook/` ignore rule, Task 6's doctor call was unguarded), a final
+  whole-branch review on the most capable model, one fix wave, one scoped
+  re-review, clean.
+- **Gates recorded:** Phase A `promote --check` in sync + gate test 88 passed;
+  Phase B fast suite green + a real render of `load_example("f07_herringbone_tweed")`
+  byte-identical to the locked cookbook render (3 maps: f07 wires no height
+  input, so the spec's "4 PNGs" wording was corrected); Phase C README counts
+  match the tree, CI success (tests workflow on windows-latest, run 2026-09-03).
+- **Decisions (+ why):** promote-not-unignore (a tracked copy is a regression
+  baseline; `quality/authored/` stays build output); `MM_COOKBOOK_DIR` defaults
+  from the package location so a clone needs no config, and the wheel does not
+  package `cookbook/` (GitHub-clone is the distribution route); `list_examples`
+  shape change accepted as a 0.x breaking change with zero external users;
+  `--check` compares parsed JSON, not bytes, because builders write CRLF on
+  Windows while git checks out LF (do not pin `*.ptex eol=lf` without keeping
+  that); `promote --check` left to fail loudly on malformed JSON (dev tooling).
+- Seven rulings made on Grayson's behalf are listed in the commons log
+  `_agent-commons\log\2026-09-03-claude-code-mm-mcp-teardown2-cookbook-as-data.md`.
 
 ## 🗂️ Changed this session (wool-knit closed, f07 herringbone tweed, +4 terrain)
 
@@ -210,32 +267,8 @@ The older open backlog, unchanged:
   the fbm sweep, watch the param4=0 flat-normal trap). `brainstorming` (bounded)
   locked the wool approach before authoring.
 
-## 🗂️ Changed this session (blend-opacity debug swatches +2)
-
-- Branch: `main`. Commit `80256d0`, **pushed** to `origin/main` (CI triggered),
-  plus this wrap-up baton commit. Files: `quality/debug_swatches.py` (2 builders
-  + 2 pixel checks + 2 registry entries), `docs/DEBUG_SWATCHES.md` (new blend
-  family section), `docs/AUTHORING.md` (cross-ref from the pm03 writeup). Rendered
-  outputs under `quality/cookbook/debug-swatches/blend_*/` stay gitignored/
-  regenerable, matching the existing debug-swatch convention (no tracked
-  thumbnails, the doc is the reference). No `src/` change, no gate/phase moved.
-- Swatches: `blend_mask_polarity` (amount=1, hard left/right mask -> LEFT blue
-  /port-1/background, RIGHT red/port-0/foreground; proves which port shows at
-  mask 0 vs 1) and `blend_opacity_ramp` (amount=0.5, ramp mask -> pure blue at
-  left, purple that never reaches full red at right; proves opacity = amount ×
-  mask, the partial-opacity shape of the sf03 bug).
-- Process (+ why): read `blend.mmg` before designing, so the known-answers are
-  derived from source, not guessed. Called `advisor` before writing the checks;
-  it caught two would-be-shipped bugs: (1) the `.mmg` `blend_type` default is 13
-  (AddSub), not 0, so a swatch omitting it would render wrong colors and ship as
-  a bogus known-answer, both builders now set `blend_type=0` explicitly; (2) both
-  swatches at amount=1 would leave the `amount` factor of `opacity = amount ×
-  mask` documented-but-unasserted, so swatch 2 moved to amount=0.5 to assert the
-  multiply. Calibrated the check thresholds against the real rendered pixels
-  (polarity: left `(30,56,229)`, right `(229,30,30)`; ramp right `(118,44,141)`).
-
-> 📦 **20 older "Changed this session" write-ups archived** (through
-> 2026-09-01, incl. the painted-metal cookbook, and the v0.4.0 release-unblock
+> 📦 **21 older "Changed this session" write-ups archived** (through
+> 2026-09-01, incl. the blend-opacity debug swatches, the painted-metal cookbook, and the v0.4.0 release-unblock
 > + README gallery session) --
 > the pre-release audit/teardown/doc-fix pass,
 > render_node_output/live_render_node_output (item H), saved_graphs/
@@ -247,6 +280,13 @@ The older open backlog, unchanged:
 
 ## ⚠️ Heads-up for the next agent
 
+- **`list_examples` / `load_example` changed shape 2026-09-03.** `list_examples`
+  returns `{"ok": True, "examples": [{"name", "source", "category"}]}` (not a list
+  of names); `load_example` returns `{"ok": False, "error": ...}` for unknown
+  names instead of raising, and tries `cookbook/` before Material Maker's bundled
+  examples. Cookbook materials are edited by rebuilding with
+  `quality/cookbook_<category>.py` then `quality/promote_cookbook.py`; edit the
+  builder, never the tracked `.ptex` by hand (`--check` would flag it).
 - **The 2026-08-29 8-angle code review found 10 verified correctness bugs.
   As of this cleanup session: 7 are fixed (findings 1-7 and 9), and 2 are
   ruled out as deliberate non-changes (#8, #10) with in-code reasons. That
@@ -553,10 +593,33 @@ The older open backlog, unchanged:
 > section past that cap, the oldest entry moves out verbatim (no
 > summarizing) into [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md)
 > instead of letting this doc grow unbounded -- flagged as a real pickup
-> cost by the 2026-08-29 teardown (Maintainer lens). **28 older entries are
+> cost by the 2026-08-29 teardown (Maintainer lens). **29 older entries are
 > now archived there**, from the 2026-08-29 README-images session back
 > through the project's Phase 1-2 kickoff on 2026-08-25.
 
+
+### 2026-09-03 (teardown #2 + cookbook-as-data): the cookbook becomes tracked, MCP-served data
+- `pickup` (clean `main` at `4136c9e`) chained into `teardown` #2. Evidence: full
+  tree, git log, per-area line counts, GitHub API (0 stars, 8 unique viewers in
+  14 days, release PR #2 open since 08-30). Headline: the 43 cookbook graphs were
+  gitignored build output invisible to the MCP tools while 21MB of their PNGs
+  were tracked; STATUS.md header a 7.3KB paragraph; README said 28 materials /
+  seven categories vs 43 / eight on disk; live-control unused since 08-28.
+  Verdicts: keep core + live (frozen) + swatches + gallery + test set; refactor
+  cookbook, `author.py`, AUTHORING, STATUS header, image sets, release cadence;
+  kill `examples/` and the archive. Report sent as a file.
+- Grayson picked #1. `phased-rebuild` -> `writing-plans` (spec + 7-task plan) ->
+  `subagent-driven-development` on branch `cookbook-as-data`. Task reviews caught
+  two real issues (dropped `quality/cookbook/` ignore rule; unguarded doctor
+  call). Final review (most capable model): "with fixes", the big one being that
+  release-please lacked `bump-minor-pre-major`, so the `feat!` commit would have
+  cut 1.0.0; also `glob.escape` on the user-configurable cookbook dir, a
+  `--check` false-positive "in sync" on a missing/unmatched authored dir, a
+  byte-vs-JSON compare, `load_example` raising on malformed JSON. One fix wave,
+  scoped re-review clean. Fast suite 378.
+- Merged `--no-ff` (`530ad0f`), pushed, branch deleted, SDD workspace removed.
+  Wrap-up capped STATUS.md's header (old text archived verbatim), wrote memory
+  and the commons log.
 
 ### 2026-09-03 (wool-knit closed, f07 herringbone tweed, +4 terrain) — topology-not-donor
 - Picked up via `pickup` (clean `main` at `e7bb420`). Grayson chose wool loop-knit
@@ -635,42 +698,6 @@ The older open backlog, unchanged:
   updated with the blend-port fact. Committed `4d72c8b`, pushed to `origin/main`
   (CI triggered), confirmed in sync.
 - Wrote `_agent-commons\log\2026-09-01-claude-code-mm-mcp-painted-metal-cookbook.md`.
-
-### 2026-09-01 (masonry cookbook + render pipe-hang fix) — +5 stone materials, fixed a latent render hang
-- Picked up via `pickup` (clean `main` at `d946942`, in sync). Grayson chose to
-  do all 5 masonry materials; ran `brainstorming` (bounded, extends the existing
-  `cookbook_stone.py`), locked the set (cobblestone anchor + 4 he picked).
-- **s07 cobblestone** first: built + rendered, hit the render hang (below),
-  then two visual passes — widened the muted per-cobble tone gradient and
-  dropped `warp_0` 0.4→0.12 to kill a crack-smear haze (a high-contrast test
-  gradient was the diagnostic that proved the haze was the warp, not the ramp).
-  3D-previewed, locked. Closes backlog C (true irregular cobblestone).
-- **s08–s11** each authored → rendered → 3D-previewed → locked, one Godot at a
-  time: s08 fieldstone (grayer/denser, warp kept 0.12 after 0.20 re-introduced
-  haze without adding angularity), s09 ashlar (switched donor to `stone_wall`'s
-  Bricks node — voronoi can't do coursed rectangles; Bricks port 1 = per-brick
-  random), s10 flagstone (big flat slabs, normal `param1` 0.99→0.5 for flat
-  tops), s11 marble (dry_earth veins, `warp` pushed to 0.5 — the one place the
-  smear IS the look — metallic zeroed, roughness 0.15).
-- **Render-hang investigation (reversed once):** first blamed `render.py`; a
-  clean A/B proved the 180s hangs were a `python -c` harness artifact (the same
-  `render()` runs in 7.4s from a script FILE). But the detour found a REAL
-  latent bug — `_run_godot`'s `communicate()` blocks on a pipe held by MM's
-  lingering child. Fixed via temp-file redirect + `process.wait()` (TDD: a
-  real-subprocess RED test that the old mocks couldn't catch, + a
-  timeout-teardown test). Kept as MCP-server hardening. Added
-  `quality/render_one.py` and the "render via a script file, never `python -c`"
-  rule. Fast suite 262 green.
-- Docs: 5 recipes + a tooling note in `docs/AUTHORING.md`, a `render_one` note
-  in `quality/README.md`, 5 doc thumbnails, STATUS/HANDOFF/memory. Committed +
-  pushed (`4c14f8f`).
-- **Then closed sf03 (backlog D)** via `systematic-debugging`. Reproduced the
-  trace-bleed-through, root-caused it from `blend.mmg` (opacity = `amount * a`,
-  port 2 = the mask) + the wiring + a render matching the predicted 65% opacity:
-  the chips' albedo colorize (0.65) was reused as the opacity mask. Fixed by
-  splitting a hard 0/1 mask off the albedo; same fix on the traces (Grayson
-  asked to make them solid gold too). AUTHORING.md + memory updated to resolved.
-  Committed + pushed (`6667b4b`).
 
 _(Older entries continue in [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).)_
 

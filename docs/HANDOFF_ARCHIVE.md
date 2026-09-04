@@ -1936,3 +1936,80 @@ doc's window.
 - Wrote the Phase 1-2 implementation plan, then executed it subagent-driven: 9 TDD tasks,
   each reviewed for spec + quality; fix loops on Tasks 3/5/7/9; whole-branch review (Opus)
   + one fix wave. All reviews clean. Merged to `main`, pushed, branch deleted.
+
+---
+
+## 📦 Archived 2026-09-03 (teardown #2 + cookbook-as-data wrap-up)
+
+Moved verbatim out of HANDOFF.md and STATUS.md by the trim convention.
+
+### STATUS.md "Last updated" header as of 2026-09-03 (before the cap)
+
+_Last updated: 2026-09-03 (wool-knit closed + f07 herringbone tweed + 4 terrain natural surfaces) - CLOSED wool loop-knit as unreachable: an isolation-render probe (each candidate generator's raw pattern through a gray ramp) proved no bundled generator makes upright-V stockinette (pattern-Bounce + bricks Running Bond = staggered pillow honeycomb; weave2 stitch=1 = basket weave; weave2 stitch=3 = herringbone chevrons that reverse band-to-band). Reframe: "offset rows" and "V-columns in aligned wales" are INDEPENDENT and only the second is the knit tell. Shipped the probe's byproduct as `f07_herringbone_tweed` (weave2 stitch=3, Harris-tweed 3-tone). Then added 4 natural-terrain materials `cookbook_terrain.py` t05-t08 (cracked ice, cooled lava, forest floor, riverbed pebbles) via a new **topology-not-donor** lesson: the first pass cloned dry_earth 4x and read as siblings, fixed by picking base by surface TOPOLOGY (connected crack network = dry_earth plates [ice/lava, lava glow via Material emission port 3]; discrete packed cells = voronoi + warp~0.02 for contact joints [pebbles]; scattered pieces = fbm Cellular 4 off dry_earth [forest floor]); ice smoothness pass feeds the crack-only signal into the normal; a shared `_dry_earth_plates` helper feeds a flat roughness texture so an ORM map exports for the 3D preview. All authored/rendered/3D-previewed/locked; AUTHORING.md + memory updated. Quality/docs-only, no `src/` change, so no gate/phase state moved (commits `8ca2c2b` f07, `6ed5773` terrain, both pushed). Previous update: 2026-09-01 (noise-vocab gallery + 2 backlog items + wool take-two) - closed backlog #3 (`list_node_types`: KEEP, it's a ~5KB name list vs the ~260KB `catalog://nodes` resource, so a cheap discovery lever, not redundant; docstring + README corrected to say the `category` arg is a NAME substring, not a taxonomy) and #4/G (`render_preview` documented in AUTHORING.md's workflow as a "judge in 3D" step). Shipped a noise-vocabulary REFERENCE gallery (`quality/noise_gallery.py` + 2 tracked contact sheets under `docs/images/noise-gallery/` + a new AUTHORING.md "Noise vocabulary" section) after quantifying the "everything looks similar" complaint: 38 cookbook builders, 69% clone 3 donors, only base noise added by hand is perlin/voronoi, zero of the other 45 noise nodes; biggest untapped lever is `fbm`'s 8-base `noise` enum. Deliberately NOT a pixel-checked debug swatch (noise has no known-answer). Took a second crack at wool loop-knit (backlog D) via the `pattern`-Bounce lever: reads tufted/quilted (square bump lattice), not knit loops, so reverted f04 to the committed weave partial; recipe + next-steps captured in HANDOFF. Fast suite 262. Quality/docs-only + a docstring, no gate/phase state moved (batch commit `20e485d`, pushed). Previous update: 2026-09-01 (blend-opacity debug swatches +2) - added two known-answer diagnostic swatches to `quality/debug_swatches.py` that memorialize the `blend` port/opacity trap which cost real debugging twice (sf03, pm03): `blend_mask_polarity` (amount=1, hard mask, proves port-0/foreground shows where the mask is 1 and port-1/background where it is 0) and `blend_opacity_ramp` (amount=0.5, ramp mask, proves opacity = amount × mask so the foreground caps at half-strength, the sf03 partial-opacity shape). Both set `blend_type=0` (Normal) explicitly since `blend.mmg` defaults to 13 (AddSub). Pixel checks auto-parametrize into the live integration test; new blend family section in `docs/DEBUG_SWATCHES.md` + an AUTHORING.md cross-ref. Fast suite 262; the 2 new blend integration checks pass live. Quality/docs-only, no `src/` change, so no gate/phase state moved (commit `80256d0`, pushed). Previous update: 2026-09-01 (painted-metal cookbook +5) — new informal cookbook category `quality/cookbook_painted_metal.py` (pm01 powder coat, pm02 automotive enamel, pm03 paint-chipped-to-bare-metal, pm04 hammertone, pm05 scuffed panel), all authored/rendered/3D-previewed/locked, recipes in `docs/AUTHORING.md`, 5 tracked thumbnails under `docs/images/cookbook-painted-metal/`. Docs/quality-only, no `src/` change, so no gate/phase state moved (commit `4d72c8b`, pushed). Pinned MM `blend` port semantics: a blend shows port-1 where its port-2 mask is 0 and port-0 where it's 1; metallic is a paint-vs-metal decision, never global. Previous update: 2026-09-01 (masonry cookbook + render pipe-hang fix + sf03 fix) — also RESOLVED the long-standing sf03 circuit-board trace-bleed-through bug (backlog D): a `blend`'s opacity is `amount * a` (port-2 mask), and the recipe fed the chips' albedo colorize (gray 0.65) as that mask, so chips were 65% opaque and traces bled through; fixed by splitting a hard 0/1 opacity mask off the albedo, same on the traces (commit 6667b4b). Added 5 masonry cookbook materials to `quality/cookbook_stone.py` (s07 true cobblestone [closes the s05 gap], s08 dry-stone/fieldstone wall, s09 ashlar/castle block wall, s10 flagstone/slate, s11 polished marble); all rendered + 3D-previewed + written up in `docs/AUTHORING.md`. Fixed a real latent hang in `render.py`'s `_run_godot`: `communicate()` blocked on stdout/stderr pipe EOF held open by Material Maker's lingering child, timing out at 180s despite ~8s of real work — now redirects to temp FILES and waits on the process (2 new real-subprocess regression tests; fast suite 262). New `quality/render_one.py` single-case renderer. No gate/phase state changed (cookbook growth is informal; the render fix is a correctness fix in an already-verified component). Previous update: 2026-08-30 (v0.4.0 release + gallery) — **v0.4.0 shipped.** The release-please blocker (repo "Allow GitHub Actions to create and approve pull requests" toggle was off) is resolved: Grayson flipped it, the re-run opened PR #1, it was merged, and release-please tagged v0.4.0 + cut the GitHub Release (Latest) with the built wheel + sdist attached. CI (`tests`) is green on `main`. Also enlarged the README gallery (4-col→2-col, dropped captions). Gate state unchanged (🔌 — cross-platform macOS/Linux still unverified; that is the only thing between Phase 4 and ✅). Previous update: 2026-08-30 (Phase 4 hardening) — added opt-in allowed-roots path bounding (`paths.py`, always-on traversal guard) wired into the five path-touching batch tools, a new `inspect_project` batch tool (`inspect.py`), a windows-latest CI fast-test workflow, and release-please (GitHub Release artifacts, no PyPI); version now single-sourced via `importlib.metadata`. Previous update: 2026-08-29 (render timeout fix) — fixed the latent process-tree leak in `render.py`'s `_run_godot` timeout path (root cause of the `render-orphan-contention` cascade): now `Popen` + `communicate()` with a shared `_kill_tree` (`taskkill /F /T /PID` the whole tree while the launcher is still alive) before re-raising `_GodotTimeout`; `live.py`'s `_terminate` deduped onto the same helper. Verified live (zero leftover Godot after a forced timeout; next render succeeds). No gate states changed — correctness fix in an already-verified component. Merged into `main`. Previous update: 2026-08-29 (cleanup session) — resolved 6 of the 8 remaining pre-release code-review findings and documented 2 as deliberate non-changes, then did 4 teardown-blessed cleanup passes; fast suite 226 passed_
+
+### HANDOFF.md "Changed this session" write-up, moved 2026-09-03
+
+## 🗂️ Changed this session (blend-opacity debug swatches +2)
+
+- Branch: `main`. Commit `80256d0`, **pushed** to `origin/main` (CI triggered),
+  plus this wrap-up baton commit. Files: `quality/debug_swatches.py` (2 builders
+  + 2 pixel checks + 2 registry entries), `docs/DEBUG_SWATCHES.md` (new blend
+  family section), `docs/AUTHORING.md` (cross-ref from the pm03 writeup). Rendered
+  outputs under `quality/cookbook/debug-swatches/blend_*/` stay gitignored/
+  regenerable, matching the existing debug-swatch convention (no tracked
+  thumbnails, the doc is the reference). No `src/` change, no gate/phase moved.
+- Swatches: `blend_mask_polarity` (amount=1, hard left/right mask -> LEFT blue
+  /port-1/background, RIGHT red/port-0/foreground; proves which port shows at
+  mask 0 vs 1) and `blend_opacity_ramp` (amount=0.5, ramp mask -> pure blue at
+  left, purple that never reaches full red at right; proves opacity = amount ×
+  mask, the partial-opacity shape of the sf03 bug).
+- Process (+ why): read `blend.mmg` before designing, so the known-answers are
+  derived from source, not guessed. Called `advisor` before writing the checks;
+  it caught two would-be-shipped bugs: (1) the `.mmg` `blend_type` default is 13
+  (AddSub), not 0, so a swatch omitting it would render wrong colors and ship as
+  a bogus known-answer, both builders now set `blend_type=0` explicitly; (2) both
+  swatches at amount=1 would leave the `amount` factor of `opacity = amount ×
+  mask` documented-but-unasserted, so swatch 2 moved to amount=0.5 to assert the
+  multiply. Calibrated the check thresholds against the real rendered pixels
+  (polarity: left `(30,56,229)`, right `(229,30,30)`; ramp right `(118,44,141)`).
+
+
+### HANDOFF.md session-log entry, moved 2026-09-03
+
+### 2026-09-01 (masonry cookbook + render pipe-hang fix) — +5 stone materials, fixed a latent render hang
+- Picked up via `pickup` (clean `main` at `d946942`, in sync). Grayson chose to
+  do all 5 masonry materials; ran `brainstorming` (bounded, extends the existing
+  `cookbook_stone.py`), locked the set (cobblestone anchor + 4 he picked).
+- **s07 cobblestone** first: built + rendered, hit the render hang (below),
+  then two visual passes — widened the muted per-cobble tone gradient and
+  dropped `warp_0` 0.4→0.12 to kill a crack-smear haze (a high-contrast test
+  gradient was the diagnostic that proved the haze was the warp, not the ramp).
+  3D-previewed, locked. Closes backlog C (true irregular cobblestone).
+- **s08–s11** each authored → rendered → 3D-previewed → locked, one Godot at a
+  time: s08 fieldstone (grayer/denser, warp kept 0.12 after 0.20 re-introduced
+  haze without adding angularity), s09 ashlar (switched donor to `stone_wall`'s
+  Bricks node — voronoi can't do coursed rectangles; Bricks port 1 = per-brick
+  random), s10 flagstone (big flat slabs, normal `param1` 0.99→0.5 for flat
+  tops), s11 marble (dry_earth veins, `warp` pushed to 0.5 — the one place the
+  smear IS the look — metallic zeroed, roughness 0.15).
+- **Render-hang investigation (reversed once):** first blamed `render.py`; a
+  clean A/B proved the 180s hangs were a `python -c` harness artifact (the same
+  `render()` runs in 7.4s from a script FILE). But the detour found a REAL
+  latent bug — `_run_godot`'s `communicate()` blocks on a pipe held by MM's
+  lingering child. Fixed via temp-file redirect + `process.wait()` (TDD: a
+  real-subprocess RED test that the old mocks couldn't catch, + a
+  timeout-teardown test). Kept as MCP-server hardening. Added
+  `quality/render_one.py` and the "render via a script file, never `python -c`"
+  rule. Fast suite 262 green.
+- Docs: 5 recipes + a tooling note in `docs/AUTHORING.md`, a `render_one` note
+  in `quality/README.md`, 5 doc thumbnails, STATUS/HANDOFF/memory. Committed +
+  pushed (`4c14f8f`).
+- **Then closed sf03 (backlog D)** via `systematic-debugging`. Reproduced the
+  trace-bleed-through, root-caused it from `blend.mmg` (opacity = `amount * a`,
+  port 2 = the mask) + the wiring + a render matching the predicted 65% opacity:
+  the chips' albedo colorize (0.65) was reused as the opacity mask. Fixed by
+  splitting a hard 0/1 mask off the albedo; same fix on the traces (Grayson
+  asked to make them solid gold too). AUTHORING.md + memory updated to resolved.
+  Committed + pushed (`6667b4b`).
+
+
