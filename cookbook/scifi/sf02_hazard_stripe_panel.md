@@ -10,6 +10,21 @@ Built from scratch using the `pattern` node (independent x/y wave generators, Si
 
 Pitfall: none beyond the port-type ordering above, this recipe hit target on the intended structure.
 
+## Subgraph structure
+
+Grouped per the "Grouping into subgraphs" lever in `docs/AUTHORING.md`.
+Opening the graph shows 3 top-level nodes (two groups plus `Material`)
+instead of the raw 6-node graph:
+
+- **Stripe Pattern** — `pattern_0`, `colorize_0`, `transform_0`. `pattern_0`
+  also feeds `colorize_rgh` in Surface Finish directly (one upstream node
+  feeding multiple downstream groups, producing an expected extra boundary
+  output port). Exposed: `Stripe count` (`pattern_0`'s `x_scale`), `Stripe
+  colors` (`colorize_0`'s gradient), `Stripe angle` (`transform_0`'s
+  `rotate`).
+- **Surface Finish** — `colorize_rgh`, `normal_map_0`. Exposed: `Surface
+  sheen`, `Relief strength`.
+
 ## See also
 
 The invariant guide (`guide://authoring` resource, or `docs/AUTHORING.md`) for

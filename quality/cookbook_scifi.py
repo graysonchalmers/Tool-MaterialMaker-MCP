@@ -20,7 +20,12 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
-from author_helpers import load_example, node, set_gradient, set_param, add_node, rewire, save_variant
+from author_helpers import (load_example, node, set_gradient, set_param, add_node,
+                             rewire, save_variant, group_into_subgraph)
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+from mm_mcp.catalog_builder import build_catalog
+from mm_mcp.config import load_config
 
 _LABEL = "cookbook-scifi"
 
@@ -35,7 +40,7 @@ def _new_graph() -> dict:
             "connections": [], "nodes": []}
 
 
-def build_sf01_hull_plating() -> str:
+def build_sf01_hull_plating(catalog: dict) -> str:
     """Diamond-plate hull panel: clone `metal_pattern_2` (a bundled example
     with a working grid-line normal chain, but NO albedo texture at all --
     it relies entirely on Material's flat scalar albedo_color). Graft the
@@ -62,10 +67,34 @@ def build_sf01_hull_plating() -> str:
     ]
     set_param(g, "normal_map_0", "param4", 0)
     set_param(g, "normal_map_0", "param1", 0.45)
+
+    # metal_pattern_2's own pattern chain (pattern_0/pattern_1 -> colorize_0
+    # -> transform_2 -> blend_0) is unmodified structurally, so none of those
+    # nodes have an explicit builder-set value of their own; blend_0's output
+    # is what colorize_alb recolors, so folding the whole donor chain into
+    # the albedo group gives it an anchor (colorize_alb's explicit gradient)
+    # rather than leaving a group with only untouched donor defaults.
+    # blend_0 also feeds normal_map_0 and colorize_rgh outside this group --
+    # the single-upstream-node-feeds-multiple-groups case the retrofit's
+    # standing guidance calls out, producing extra boundary output ports on
+    # blend_0's single port, which is expected.
+    group_into_subgraph(
+        g, ["pattern_0", "pattern_1", "colorize_0", "transform_2", "blend_0",
+            "colorize_alb"],
+        "panel_pattern", "Panel Pattern",
+        [("colorize_alb", "gradient", "param0", "Seam color")],
+        catalog,
+    )
+    group_into_subgraph(
+        g, ["colorize_rgh", "normal_map_0"], "surface_finish", "Surface Finish",
+        [("colorize_rgh", "gradient", "param0", "Seam roughness contrast"),
+         ("normal_map_0", "param1", "param1", "Relief strength")],
+        catalog,
+    )
     return save_variant(g, _LABEL, "sf01_hull_plating", 1)
 
 
-def build_sf02_hazard_stripe_panel() -> str:
+def build_sf02_hazard_stripe_panel(catalog: dict) -> str:
     """Diagonal yellow/black hazard stripe panel, built fresh (no donor has
     stripes). `pattern` node: x_wave=Square for alternating bars, y_wave=
     Constant so bars run along Y before rotation. Feed through `colorize`
@@ -103,10 +132,29 @@ def build_sf02_hazard_stripe_panel() -> str:
         {"from": "transform_0", "from_port": 0, "to": "normal_map_0", "to_port": 0},
         {"from": "normal_map_0", "from_port": 0, "to": "Material", "to_port": 4},
     ]
+
+    # Built from scratch, so every node here has an explicit builder value.
+    # pattern_0 feeds colorize_rgh directly in addition to the stripe chain
+    # below (the single-upstream-node-feeds-multiple-groups case) -- that
+    # produces an extra boundary output port on pattern_0, expected.
+    group_into_subgraph(
+        g, ["pattern_0", "colorize_0", "transform_0"], "stripe_pattern",
+        "Stripe Pattern",
+        [("pattern_0", "x_scale", "param0", "Stripe count"),
+         ("colorize_0", "gradient", "param1", "Stripe colors"),
+         ("transform_0", "rotate", "param2", "Stripe angle")],
+        catalog,
+    )
+    group_into_subgraph(
+        g, ["colorize_rgh", "normal_map_0"], "surface_finish", "Surface Finish",
+        [("colorize_rgh", "gradient", "param0", "Surface sheen"),
+         ("normal_map_0", "param1", "param1", "Relief strength")],
+        catalog,
+    )
     return save_variant(g, _LABEL, "sf02_hazard_stripe_panel", 1)
 
 
-def build_sf03_circuit_board() -> str:
+def build_sf03_circuit_board(catalog: dict) -> str:
     """PCB circuit board: dark green base, thin bright traces (fine `pattern`
     Square wave, hard-thresholded, reused as its own mask), plus a few
     brighter chip blocks on top. PARTIAL, not a clean HIT -- see the
@@ -193,10 +241,51 @@ def build_sf03_circuit_board() -> str:
         {"from": "blend_traces", "from_port": 0, "to": "normal_map_0", "to_port": 0},
         {"from": "normal_map_0", "from_port": 0, "to": "Material", "to_port": 4},
     ]
+
+    # Grouping care for the documented blend/opacity-mask bug (see the
+    # colorize_traces_mask/colorize_chips_mask comments above and
+    # AUTHORING.md): `blend`'s opacity is amount * the port-2 mask, and this
+    # recipe's whole fix was splitting each mask off into its OWN hard 0/1
+    # colorize rather than reusing the albedo colorize as the mask. Each
+    # mask colorize here has exactly ONE consumer (its own blend's port 2),
+    # unlike o06's colorize_3 (a genuinely shared 3-way signal) -- so each
+    # mask is grouped together with the blend it feeds and nothing else,
+    # keeping the mask -> blend port-2 connection fully INTERNAL to one
+    # subgraph (group_into_subgraph copies internal connections verbatim, so
+    # this cannot change from/to/port). Critically, neither mask colorize's
+    # gradient is exposed as a friendly parameter below -- only the ALBEDO
+    # colorize's gradient is exposed in each group, so an end user turning a
+    # "trace color"/"chip color" knob can never touch the hard-threshold
+    # opacity mask that the bug fix depends on. Verified after building via
+    # renders_match against this material's own pre-retrofit baseline (see
+    # the task report) rather than assuming the general process's 0.0-diff
+    # track record carries over automatically.
+    group_into_subgraph(
+        g, ["perlin_0", "colorize_base", "pattern_traces", "colorize_traces",
+            "colorize_traces_mask", "blend_traces"],
+        "circuit_traces", "Circuit Traces",
+        [("colorize_base", "gradient", "param0", "Board color"),
+         ("pattern_traces", "x_scale", "param1", "Trace density"),
+         ("colorize_traces", "gradient", "param2", "Trace color")],
+        catalog,
+    )
+    group_into_subgraph(
+        g, ["voronoi_chips", "colorize_chips", "colorize_chips_mask", "blend_chips"],
+        "chip_blocks", "Chip Blocks",
+        [("voronoi_chips", "scale_x", "param0", "Chip size"),
+         ("colorize_chips", "gradient", "param1", "Chip color")],
+        catalog,
+    )
+    group_into_subgraph(
+        g, ["colorize_rgh", "normal_map_0"], "surface_finish", "Surface Finish",
+        [("colorize_rgh", "gradient", "param0", "Surface sheen"),
+         ("normal_map_0", "param1", "param1", "Relief strength")],
+        catalog,
+    )
     return save_variant(g, _LABEL, "sf03_circuit_board", 1)
 
 
-def build_sf04_vent_grille_panel() -> str:
+def build_sf04_vent_grille_panel(catalog: dict) -> str:
     """Perforated square-hole vent grille: ONE `pattern` node with BOTH
     x_wave and y_wave set to Square and mix=Min gives a grid of small square
     holes in a single node (Min of two square waves = their intersection).
@@ -228,6 +317,23 @@ def build_sf04_vent_grille_panel() -> str:
         {"from": "pattern_holes", "from_port": 0, "to": "normal_map_0", "to_port": 0},
         {"from": "normal_map_0", "from_port": 0, "to": "Material", "to_port": 4},
     ]
+
+    # Built from scratch; pattern_holes feeds colorize_rgh and normal_map_0
+    # directly in addition to colorize_0 below (single-upstream-node-feeds-
+    # multiple-groups case), producing extra boundary output ports on
+    # pattern_holes, expected.
+    group_into_subgraph(
+        g, ["pattern_holes", "colorize_0"], "hole_pattern", "Hole Pattern",
+        [("pattern_holes", "x_scale", "param0", "Hole density"),
+         ("colorize_0", "gradient", "param1", "Hole vs plate color")],
+        catalog,
+    )
+    group_into_subgraph(
+        g, ["colorize_rgh", "normal_map_0"], "surface_finish", "Surface Finish",
+        [("colorize_rgh", "gradient", "param0", "Recess roughness"),
+         ("normal_map_0", "param1", "param1", "Relief strength")],
+        catalog,
+    )
     return save_variant(g, _LABEL, "sf04_vent_grille_panel", 1)
 
 
@@ -241,8 +347,11 @@ BUILDERS = {
 
 def main() -> int:
     targets = sys.argv[1:] or list(BUILDERS.keys())
+    # Loaded once per script run (not once per builder), same as
+    # cookbook_organics.py -- all 4 materials need it for group_into_subgraph.
+    catalog = build_catalog(load_config().nodes_dir)
     for case in targets:
-        path = BUILDERS[case]()
+        path = BUILDERS[case](catalog)
         print(f"{case}: {path}")
     return 0
 

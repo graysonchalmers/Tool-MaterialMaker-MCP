@@ -9,73 +9,59 @@
  "parameters": {},
  "connections": [
   {
-   "from": "pattern_0",
-   "from_port": 0,
-   "to": "colorize_rgh",
+   "from": "stripe_pattern",
+   "from_port": 1,
+   "to": "Material",
    "to_port": 0
   },
   {
-   "from": "colorize_rgh",
+   "from": "stripe_pattern",
+   "from_port": 0,
+   "to": "surface_finish",
+   "to_port": 0
+  },
+  {
+   "from": "stripe_pattern",
+   "from_port": 2,
+   "to": "surface_finish",
+   "to_port": 1
+  },
+  {
+   "from": "surface_finish",
    "from_port": 0,
    "to": "Material",
    "to_port": 2
   },
   {
-   "from": "pattern_0",
-   "from_port": 0,
-   "to": "colorize_0",
-   "to_port": 0
-  },
-  {
-   "from": "colorize_0",
-   "from_port": 0,
-   "to": "transform_0",
-   "to_port": 0
-  },
-  {
-   "from": "transform_0",
-   "from_port": 0,
-   "to": "Material",
-   "to_port": 0
-  },
-  {
-   "from": "transform_0",
-   "from_port": 0,
-   "to": "normal_map_0",
-   "to_port": 0
-  },
-  {
-   "from": "normal_map_0",
-   "from_port": 0,
+   "from": "surface_finish",
+   "from_port": 1,
    "to": "Material",
    "to_port": 4
   }
  ],
  "nodes": [
   {
-   "name": "pattern_0",
-   "type": "pattern",
+   "name": "Material",
+   "type": "material",
    "node_position": {
     "x": 0,
     "y": 0
    },
    "parameters": {
-    "mix": 0,
-    "x_wave": 2,
-    "x_scale": 14,
-    "y_wave": 4,
-    "y_scale": 1
+    "metallic": 0
    }
   },
   {
-   "name": "colorize_0",
-   "type": "colorize",
+   "name": "stripe_pattern",
+   "label": "Stripe Pattern",
+   "type": "graph",
    "node_position": {
-    "x": 0,
-    "y": 0
+    "x": 0.0,
+    "y": 0.0
    },
    "parameters": {
-    "gradient": {
+    "param0": 14,
+    "param1": {
      "interpolation": 1,
      "points": [
       {
@@ -108,34 +94,254 @@
       }
      ],
      "type": "Gradient"
+    },
+    "param2": 45
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": -400.0,
+      "y": 0.0
+     },
+     "parameters": {},
+     "ports": [],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 400.0,
+      "y": 0.0
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "out0",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "out1",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "out2",
+       "type": "rgba",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -400.0,
+      "y": 200.0
+     },
+     "parameters": {
+      "param0": 14,
+      "param1": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0.06,
+         "g": 0.06,
+         "b": 0.05,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.06,
+         "g": 0.06,
+         "b": 0.05,
+         "pos": 0.48
+        },
+        {
+         "a": 1,
+         "r": 0.95,
+         "g": 0.74,
+         "b": 0.05,
+         "pos": 0.52
+        },
+        {
+         "a": 1,
+         "r": 0.95,
+         "g": 0.74,
+         "b": 0.05,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      },
+      "param2": 45
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Stripe count",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "pattern_0",
+         "widget": "x_scale"
+        }
+       ]
+      },
+      {
+       "name": "param1",
+       "shortdesc": "Stripe colors",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "colorize_0",
+         "widget": "gradient"
+        }
+       ]
+      },
+      {
+       "name": "param2",
+       "shortdesc": "Stripe angle",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "transform_0",
+         "widget": "rotate"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "pattern_0",
+     "type": "pattern",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "mix": 0,
+      "x_wave": 2,
+      "x_scale": 14,
+      "y_wave": 4,
+      "y_scale": 1
+     }
+    },
+    {
+     "name": "colorize_0",
+     "type": "colorize",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0.06,
+         "g": 0.06,
+         "b": 0.05,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.06,
+         "g": 0.06,
+         "b": 0.05,
+         "pos": 0.48
+        },
+        {
+         "a": 1,
+         "r": 0.95,
+         "g": 0.74,
+         "b": 0.05,
+         "pos": 0.52
+        },
+        {
+         "a": 1,
+         "r": 0.95,
+         "g": 0.74,
+         "b": 0.05,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      }
+     }
+    },
+    {
+     "name": "transform_0",
+     "type": "transform",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "rotate": 45,
+      "repeat": true,
+      "scale_x": 1,
+      "scale_y": 1,
+      "translate_x": 0,
+      "translate_y": 0
+     }
     }
-   }
+   ],
+   "connections": [
+    {
+     "from": "pattern_0",
+     "from_port": 0,
+     "to": "colorize_0",
+     "to_port": 0
+    },
+    {
+     "from": "colorize_0",
+     "from_port": 0,
+     "to": "transform_0",
+     "to_port": 0
+    },
+    {
+     "from": "pattern_0",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    },
+    {
+     "from": "transform_0",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 1
+    },
+    {
+     "from": "transform_0",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 2
+    }
+   ]
   },
   {
-   "name": "transform_0",
-   "type": "transform",
+   "name": "surface_finish",
+   "label": "Surface Finish",
+   "type": "graph",
    "node_position": {
-    "x": 0,
-    "y": 0
+    "x": 0.0,
+    "y": 0.0
    },
    "parameters": {
-    "rotate": 45,
-    "repeat": true,
-    "scale_x": 1,
-    "scale_y": 1,
-    "translate_x": 0,
-    "translate_y": 0
-   }
-  },
-  {
-   "name": "colorize_rgh",
-   "type": "colorize",
-   "node_position": {
-    "x": 0,
-    "y": 0
-   },
-   "parameters": {
-    "gradient": {
+    "param0": {
      "interpolation": 1,
      "points": [
       {
@@ -154,33 +360,185 @@
       }
      ],
      "type": "Gradient"
+    },
+    "param1": 0.15
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": -400.0,
+      "y": 0.0
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "in0",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "in1",
+       "type": "f",
+       "group_size": 0
+      }
+     ],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 400.0,
+      "y": 0.0
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "out0",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "out1",
+       "type": "rgb",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -400.0,
+      "y": 200.0
+     },
+     "parameters": {
+      "param0": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0.62,
+         "g": 0.62,
+         "b": 0.62,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.58,
+         "g": 0.58,
+         "b": 0.58,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      },
+      "param1": 0.15
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Surface sheen",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "colorize_rgh",
+         "widget": "gradient"
+        }
+       ]
+      },
+      {
+       "name": "param1",
+       "shortdesc": "Relief strength",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "normal_map_0",
+         "widget": "param1"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "colorize_rgh",
+     "type": "colorize",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0.62,
+         "g": 0.62,
+         "b": 0.62,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.58,
+         "g": 0.58,
+         "b": 0.58,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      }
+     }
+    },
+    {
+     "name": "normal_map_0",
+     "type": "normal_map",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "param0": 10,
+      "param1": 0.15,
+      "param2": 0,
+      "param4": 0
+     }
     }
-   }
-  },
-  {
-   "name": "normal_map_0",
-   "type": "normal_map",
-   "node_position": {
-    "x": 0,
-    "y": 0
-   },
-   "parameters": {
-    "param0": 10,
-    "param1": 0.15,
-    "param2": 0,
-    "param4": 0
-   }
-  },
-  {
-   "name": "Material",
-   "type": "material",
-   "node_position": {
-    "x": 0,
-    "y": 0
-   },
-   "parameters": {
-    "metallic": 0
-   }
+   ],
+   "connections": [
+    {
+     "from": "gen_inputs",
+     "from_port": 0,
+     "to": "colorize_rgh",
+     "to_port": 0
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 1,
+     "to": "normal_map_0",
+     "to_port": 0
+    },
+    {
+     "from": "colorize_rgh",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    },
+    {
+     "from": "normal_map_0",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 1
+    }
+   ]
   }
  ]
 }

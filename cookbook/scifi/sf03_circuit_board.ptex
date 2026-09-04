@@ -9,125 +9,64 @@
  "parameters": {},
  "connections": [
   {
-   "from": "perlin_0",
+   "from": "circuit_traces",
    "from_port": 0,
-   "to": "colorize_base",
+   "to": "chip_blocks",
    "to_port": 0
   },
   {
-   "from": "pattern_traces",
-   "from_port": 0,
-   "to": "colorize_traces",
-   "to_port": 0
-  },
-  {
-   "from": "pattern_traces",
-   "from_port": 0,
-   "to": "colorize_traces_mask",
-   "to_port": 0
-  },
-  {
-   "from": "colorize_traces",
-   "from_port": 0,
-   "to": "blend_traces",
-   "to_port": 0
-  },
-  {
-   "from": "colorize_base",
-   "from_port": 0,
-   "to": "blend_traces",
-   "to_port": 1
-  },
-  {
-   "from": "colorize_traces_mask",
-   "from_port": 0,
-   "to": "blend_traces",
-   "to_port": 2
-  },
-  {
-   "from": "voronoi_chips",
-   "from_port": 2,
-   "to": "colorize_chips",
-   "to_port": 0
-  },
-  {
-   "from": "voronoi_chips",
-   "from_port": 2,
-   "to": "colorize_chips_mask",
-   "to_port": 0
-  },
-  {
-   "from": "colorize_chips",
-   "from_port": 0,
-   "to": "blend_chips",
-   "to_port": 0
-  },
-  {
-   "from": "blend_traces",
-   "from_port": 0,
-   "to": "blend_chips",
-   "to_port": 1
-  },
-  {
-   "from": "colorize_chips_mask",
-   "from_port": 0,
-   "to": "blend_chips",
-   "to_port": 2
-  },
-  {
-   "from": "blend_chips",
+   "from": "chip_blocks",
    "from_port": 0,
    "to": "Material",
    "to_port": 0
   },
   {
-   "from": "blend_chips",
-   "from_port": 0,
-   "to": "colorize_rgh",
+   "from": "circuit_traces",
+   "from_port": 1,
+   "to": "surface_finish",
    "to_port": 0
   },
   {
-   "from": "colorize_rgh",
+   "from": "chip_blocks",
+   "from_port": 1,
+   "to": "surface_finish",
+   "to_port": 1
+  },
+  {
+   "from": "surface_finish",
    "from_port": 0,
    "to": "Material",
    "to_port": 2
   },
   {
-   "from": "blend_traces",
-   "from_port": 0,
-   "to": "normal_map_0",
-   "to_port": 0
-  },
-  {
-   "from": "normal_map_0",
-   "from_port": 0,
+   "from": "surface_finish",
+   "from_port": 1,
    "to": "Material",
    "to_port": 4
   }
  ],
  "nodes": [
   {
-   "name": "perlin_0",
-   "type": "perlin",
+   "name": "Material",
+   "type": "material",
    "node_position": {
     "x": 0,
     "y": 0
    },
    "parameters": {
-    "scale_x": 6,
-    "scale_y": 6,
-    "iterations": 3
+    "metallic": 0.15
    }
   },
   {
-   "name": "colorize_base",
-   "type": "colorize",
+   "name": "circuit_traces",
+   "label": "Circuit Traces",
+   "type": "graph",
    "node_position": {
-    "x": 0,
-    "y": 0
+    "x": 0.0,
+    "y": 0.0
    },
    "parameters": {
-    "gradient": {
+    "param0": {
      "interpolation": 1,
      "points": [
       {
@@ -146,33 +85,9 @@
       }
      ],
      "type": "Gradient"
-    }
-   }
-  },
-  {
-   "name": "pattern_traces",
-   "type": "pattern",
-   "node_position": {
-    "x": 0,
-    "y": 0
-   },
-   "parameters": {
-    "mix": 0,
-    "x_wave": 2,
-    "x_scale": 28,
-    "y_wave": 4,
-    "y_scale": 1
-   }
-  },
-  {
-   "name": "colorize_traces",
-   "type": "colorize",
-   "node_position": {
-    "x": 0,
-    "y": 0
-   },
-   "parameters": {
-    "gradient": {
+    },
+    "param1": 28,
+    "param2": {
      "interpolation": 1,
      "points": [
       {
@@ -206,89 +121,368 @@
      ],
      "type": "Gradient"
     }
-   }
-  },
-  {
-   "name": "colorize_traces_mask",
-   "type": "colorize",
-   "node_position": {
-    "x": 0,
-    "y": 0
    },
-   "parameters": {
-    "gradient": {
-     "interpolation": 1,
-     "points": [
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": -400.0,
+      "y": 0.0
+     },
+     "parameters": {},
+     "ports": [],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 400.0,
+      "y": 0.0
+     },
+     "parameters": {},
+     "ports": [
       {
-       "a": 1,
-       "r": 0,
-       "g": 0,
-       "b": 0,
-       "pos": 0.0
+       "name": "out0",
+       "type": "rgba",
+       "group_size": 0
       },
       {
-       "a": 1,
-       "r": 0,
-       "g": 0,
-       "b": 0,
-       "pos": 0.48
-      },
-      {
-       "a": 1,
-       "r": 1,
-       "g": 1,
-       "b": 1,
-       "pos": 0.52
-      },
-      {
-       "a": 1,
-       "r": 1,
-       "g": 1,
-       "b": 1,
-       "pos": 1.0
+       "name": "out1",
+       "type": "rgba",
+       "group_size": 0
       }
      ],
-     "type": "Gradient"
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -400.0,
+      "y": 200.0
+     },
+     "parameters": {
+      "param0": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0.03,
+         "g": 0.1,
+         "b": 0.05,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.05,
+         "g": 0.16,
+         "b": 0.08,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      },
+      "param1": 28,
+      "param2": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0,
+         "g": 0,
+         "b": 0,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0,
+         "g": 0,
+         "b": 0,
+         "pos": 0.48
+        },
+        {
+         "a": 1,
+         "r": 0.72,
+         "g": 0.55,
+         "b": 0.2,
+         "pos": 0.52
+        },
+        {
+         "a": 1,
+         "r": 0.72,
+         "g": 0.55,
+         "b": 0.2,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      }
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Board color",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "colorize_base",
+         "widget": "gradient"
+        }
+       ]
+      },
+      {
+       "name": "param1",
+       "shortdesc": "Trace density",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "pattern_traces",
+         "widget": "x_scale"
+        }
+       ]
+      },
+      {
+       "name": "param2",
+       "shortdesc": "Trace color",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "colorize_traces",
+         "widget": "gradient"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "perlin_0",
+     "type": "perlin",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "scale_x": 6,
+      "scale_y": 6,
+      "iterations": 3
+     }
+    },
+    {
+     "name": "colorize_base",
+     "type": "colorize",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0.03,
+         "g": 0.1,
+         "b": 0.05,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.05,
+         "g": 0.16,
+         "b": 0.08,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      }
+     }
+    },
+    {
+     "name": "pattern_traces",
+     "type": "pattern",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "mix": 0,
+      "x_wave": 2,
+      "x_scale": 28,
+      "y_wave": 4,
+      "y_scale": 1
+     }
+    },
+    {
+     "name": "colorize_traces",
+     "type": "colorize",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0,
+         "g": 0,
+         "b": 0,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0,
+         "g": 0,
+         "b": 0,
+         "pos": 0.48
+        },
+        {
+         "a": 1,
+         "r": 0.72,
+         "g": 0.55,
+         "b": 0.2,
+         "pos": 0.52
+        },
+        {
+         "a": 1,
+         "r": 0.72,
+         "g": 0.55,
+         "b": 0.2,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      }
+     }
+    },
+    {
+     "name": "colorize_traces_mask",
+     "type": "colorize",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0,
+         "g": 0,
+         "b": 0,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0,
+         "g": 0,
+         "b": 0,
+         "pos": 0.48
+        },
+        {
+         "a": 1,
+         "r": 1,
+         "g": 1,
+         "b": 1,
+         "pos": 0.52
+        },
+        {
+         "a": 1,
+         "r": 1,
+         "g": 1,
+         "b": 1,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      }
+     }
+    },
+    {
+     "name": "blend_traces",
+     "type": "blend",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "blend_type": 0,
+      "amount": 1
+     }
     }
-   }
+   ],
+   "connections": [
+    {
+     "from": "perlin_0",
+     "from_port": 0,
+     "to": "colorize_base",
+     "to_port": 0
+    },
+    {
+     "from": "pattern_traces",
+     "from_port": 0,
+     "to": "colorize_traces",
+     "to_port": 0
+    },
+    {
+     "from": "pattern_traces",
+     "from_port": 0,
+     "to": "colorize_traces_mask",
+     "to_port": 0
+    },
+    {
+     "from": "colorize_traces",
+     "from_port": 0,
+     "to": "blend_traces",
+     "to_port": 0
+    },
+    {
+     "from": "colorize_base",
+     "from_port": 0,
+     "to": "blend_traces",
+     "to_port": 1
+    },
+    {
+     "from": "colorize_traces_mask",
+     "from_port": 0,
+     "to": "blend_traces",
+     "to_port": 2
+    },
+    {
+     "from": "blend_traces",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    },
+    {
+     "from": "blend_traces",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 1
+    }
+   ]
   },
   {
-   "name": "blend_traces",
-   "type": "blend",
+   "name": "chip_blocks",
+   "label": "Chip Blocks",
+   "type": "graph",
    "node_position": {
-    "x": 0,
-    "y": 0
+    "x": 0.0,
+    "y": 0.0
    },
    "parameters": {
-    "blend_type": 0,
-    "amount": 1
-   }
-  },
-  {
-   "name": "voronoi_chips",
-   "type": "voronoi",
-   "node_position": {
-    "x": 0,
-    "y": 0
-   },
-   "parameters": {
-    "scale_x": 18,
-    "scale_y": 18,
-    "randomness": 1,
-    "intensity": 1,
-    "stretch_x": 1,
-    "stretch_y": 1
-   }
-  },
-  {
-   "name": "colorize_chips",
-   "type": "colorize",
-   "node_position": {
-    "x": 0,
-    "y": 0
-   },
-   "parameters": {
-    "gradient": {
+    "param0": 18,
+    "param1": {
      "interpolation": 1,
      "points": [
       {
@@ -322,73 +516,293 @@
      ],
      "type": "Gradient"
     }
-   }
-  },
-  {
-   "name": "colorize_chips_mask",
-   "type": "colorize",
-   "node_position": {
-    "x": 0,
-    "y": 0
    },
-   "parameters": {
-    "gradient": {
-     "interpolation": 1,
-     "points": [
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": -400.0,
+      "y": 0.0
+     },
+     "parameters": {},
+     "ports": [
       {
-       "a": 1,
-       "r": 0,
-       "g": 0,
-       "b": 0,
-       "pos": 0.0
-      },
-      {
-       "a": 1,
-       "r": 0,
-       "g": 0,
-       "b": 0,
-       "pos": 0.735
-      },
-      {
-       "a": 1,
-       "r": 1,
-       "g": 1,
-       "b": 1,
-       "pos": 0.74
-      },
-      {
-       "a": 1,
-       "r": 1,
-       "g": 1,
-       "b": 1,
-       "pos": 1.0
+       "name": "in0",
+       "type": "rgba",
+       "group_size": 0
       }
      ],
-     "type": "Gradient"
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 400.0,
+      "y": 0.0
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "out0",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "out1",
+       "type": "rgba",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -400.0,
+      "y": 200.0
+     },
+     "parameters": {
+      "param0": 18,
+      "param1": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0,
+         "g": 0,
+         "b": 0,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0,
+         "g": 0,
+         "b": 0,
+         "pos": 0.735
+        },
+        {
+         "a": 1,
+         "r": 0.65,
+         "g": 0.66,
+         "b": 0.68,
+         "pos": 0.74
+        },
+        {
+         "a": 1,
+         "r": 0.65,
+         "g": 0.66,
+         "b": 0.68,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      }
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Chip size",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "voronoi_chips",
+         "widget": "scale_x"
+        }
+       ]
+      },
+      {
+       "name": "param1",
+       "shortdesc": "Chip color",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "colorize_chips",
+         "widget": "gradient"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "voronoi_chips",
+     "type": "voronoi",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "scale_x": 18,
+      "scale_y": 18,
+      "randomness": 1,
+      "intensity": 1,
+      "stretch_x": 1,
+      "stretch_y": 1
+     }
+    },
+    {
+     "name": "colorize_chips",
+     "type": "colorize",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0,
+         "g": 0,
+         "b": 0,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0,
+         "g": 0,
+         "b": 0,
+         "pos": 0.735
+        },
+        {
+         "a": 1,
+         "r": 0.65,
+         "g": 0.66,
+         "b": 0.68,
+         "pos": 0.74
+        },
+        {
+         "a": 1,
+         "r": 0.65,
+         "g": 0.66,
+         "b": 0.68,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      }
+     }
+    },
+    {
+     "name": "colorize_chips_mask",
+     "type": "colorize",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0,
+         "g": 0,
+         "b": 0,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0,
+         "g": 0,
+         "b": 0,
+         "pos": 0.735
+        },
+        {
+         "a": 1,
+         "r": 1,
+         "g": 1,
+         "b": 1,
+         "pos": 0.74
+        },
+        {
+         "a": 1,
+         "r": 1,
+         "g": 1,
+         "b": 1,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      }
+     }
+    },
+    {
+     "name": "blend_chips",
+     "type": "blend",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "blend_type": 0,
+      "amount": 1
+     }
     }
-   }
+   ],
+   "connections": [
+    {
+     "from": "voronoi_chips",
+     "from_port": 2,
+     "to": "colorize_chips",
+     "to_port": 0
+    },
+    {
+     "from": "voronoi_chips",
+     "from_port": 2,
+     "to": "colorize_chips_mask",
+     "to_port": 0
+    },
+    {
+     "from": "colorize_chips",
+     "from_port": 0,
+     "to": "blend_chips",
+     "to_port": 0
+    },
+    {
+     "from": "colorize_chips_mask",
+     "from_port": 0,
+     "to": "blend_chips",
+     "to_port": 2
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 0,
+     "to": "blend_chips",
+     "to_port": 1
+    },
+    {
+     "from": "blend_chips",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    },
+    {
+     "from": "blend_chips",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 1
+    }
+   ]
   },
   {
-   "name": "blend_chips",
-   "type": "blend",
+   "name": "surface_finish",
+   "label": "Surface Finish",
+   "type": "graph",
    "node_position": {
-    "x": 0,
-    "y": 0
+    "x": 0.0,
+    "y": 0.0
    },
    "parameters": {
-    "blend_type": 0,
-    "amount": 1
-   }
-  },
-  {
-   "name": "colorize_rgh",
-   "type": "colorize",
-   "node_position": {
-    "x": 0,
-    "y": 0
-   },
-   "parameters": {
-    "gradient": {
+    "param0": {
      "interpolation": 1,
      "points": [
       {
@@ -407,33 +821,185 @@
       }
      ],
      "type": "Gradient"
+    },
+    "param1": 0.15
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": -400.0,
+      "y": 0.0
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "in0",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "in1",
+       "type": "f",
+       "group_size": 0
+      }
+     ],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 400.0,
+      "y": 0.0
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "out0",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "out1",
+       "type": "rgb",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -400.0,
+      "y": 200.0
+     },
+     "parameters": {
+      "param0": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0.55,
+         "g": 0.55,
+         "b": 0.55,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.25,
+         "g": 0.25,
+         "b": 0.25,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      },
+      "param1": 0.15
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Surface sheen",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "colorize_rgh",
+         "widget": "gradient"
+        }
+       ]
+      },
+      {
+       "name": "param1",
+       "shortdesc": "Relief strength",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "normal_map_0",
+         "widget": "param1"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "colorize_rgh",
+     "type": "colorize",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0.55,
+         "g": 0.55,
+         "b": 0.55,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.25,
+         "g": 0.25,
+         "b": 0.25,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      }
+     }
+    },
+    {
+     "name": "normal_map_0",
+     "type": "normal_map",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "param0": 10,
+      "param1": 0.15,
+      "param2": 0,
+      "param4": 0
+     }
     }
-   }
-  },
-  {
-   "name": "normal_map_0",
-   "type": "normal_map",
-   "node_position": {
-    "x": 0,
-    "y": 0
-   },
-   "parameters": {
-    "param0": 10,
-    "param1": 0.15,
-    "param2": 0,
-    "param4": 0
-   }
-  },
-  {
-   "name": "Material",
-   "type": "material",
-   "node_position": {
-    "x": 0,
-    "y": 0
-   },
-   "parameters": {
-    "metallic": 0.15
-   }
+   ],
+   "connections": [
+    {
+     "from": "gen_inputs",
+     "from_port": 0,
+     "to": "normal_map_0",
+     "to_port": 0
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 1,
+     "to": "colorize_rgh",
+     "to_port": 0
+    },
+    {
+     "from": "colorize_rgh",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    },
+    {
+     "from": "normal_map_0",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 1
+    }
+   ]
   }
  ]
 }
