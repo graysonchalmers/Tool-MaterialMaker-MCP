@@ -266,6 +266,31 @@ edits from both sides at once. See
 [docs/superpowers/specs/2026-08-26-live-control-addon-design.md](docs/superpowers/specs/2026-08-26-live-control-addon-design.md)
 for the full design.
 
+## Play surface (optional)
+
+`mm-play` is a small local web page for a non-technical person who wants to
+tweak a cookbook material without touching a node graph: a gallery of the 46
+cookbook materials, each opening to friendly sliders (derived from the
+material's author-chosen subgraph parameters) with a WebGL sphere preview
+that re-renders as you drag. It deliberately hides the node graph; it is a
+companion for the secondary audience described in
+[docs/NORTH_STAR.md](docs/NORTH_STAR.md), not a replacement for Material
+Maker's UI or the core round-trip loop.
+
+Launch it with:
+
+```bash
+mm-play
+```
+
+This starts a local server (default `http://127.0.0.1:8788/`, `MM_PLAY_PORT`
+to change it). It works two ways: standalone and headless, driving the same
+Godot render path as the MCP tools, with no Material Maker GUI needed; or, if
+a live Material Maker session is already up, it drives that live session
+instead and you can watch the parameter changes land in the GUI. Downloading
+a result includes the real editable `.ptex`, so the play surface still hands
+you a graph you can open in Material Maker, not just a flattened image.
+
 ## Notes and gotchas
 
 Learned while getting headless rendering to work reliably (all verified on this

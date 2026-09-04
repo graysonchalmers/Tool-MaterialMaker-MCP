@@ -84,6 +84,14 @@ underlying tool.
 - **Not replacing Material Maker's own UI.** This automates the parts that
   are tedious to start from scratch (blank-canvas node selection), not the
   parts where hands-on tweaking is the point.
+- **A secondary "play surface" companion exists** (`mm-play`, see
+  `docs/superpowers/specs/2026-09-04-play-surface-design.md`): a local web page
+  that exposes each cookbook material's author-chosen subgraph parameters as
+  friendly sliders for a non-technical person, deliberately hiding the node
+  graph. It is aimed at the secondary audience above and is a companion, not a
+  replacement for Material Maker's UI or the core round-trip loop. Its export
+  still hands back the real editable `.ptex`, so it does not sever the learning
+  loop; it just offers a lower-friction way in.
 - **Not a fully autonomous pipeline.** The human finishing and owning the
   graph in step 3 above is load-bearing, not a placeholder for "eventually
   we'll skip this step."

@@ -115,6 +115,9 @@ def check_setup(cfg: Config) -> list[Check]:
     else:
         checks.append(Check("node catalog", False, "skipped (node definitions missing)"))
 
+    checks.append(Check("play surface", True,
+                        f"mm-play serves http://127.0.0.1:{cfg.play_port}/"))
+
     if cfg.allowed_roots:
         checks.append(Check("MM_ALLOWED_ROOTS", True, os.pathsep.join(cfg.allowed_roots)))
     else:
