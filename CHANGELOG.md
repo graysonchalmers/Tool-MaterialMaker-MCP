@@ -1,5 +1,81 @@
 # Changelog
 
+## [0.7.0](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/compare/v0.6.0...v0.7.0) (2026-09-04)
+
+
+### Features
+
+* **cookbook:** add plastics category + Donegal tweed ([68c51dc](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/68c51dcbba9ffe293d7ad0f00f24d060101f26b8))
+* **cookbook:** add reference-photo authoring workflow + first glass material ([9a02a8d](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/9a02a8d4b15281f33a6413d4462342fa3086c143))
+* **cookbook:** retrofit fabrics category with subgraph grouping ([6c1d894](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/6c1d894d9d66a0956b5bdcb06fb2b5c72234002b))
+* **cookbook:** retrofit glass category with subgraph grouping ([b468bf3](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/b468bf3c973d20124a990d9c849edfc90700ae77))
+* **cookbook:** retrofit leather category with subgraph grouping ([2d928b6](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/2d928b67c5e58ae7e5b40d11cc8eb9a64e4cff86))
+* **cookbook:** retrofit organics category with subgraph grouping ([7be7a81](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/7be7a81a03e3cc1ea38e189ee45305c09e394041))
+* **cookbook:** retrofit painted-metal category with subgraph grouping ([78fdf68](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/78fdf68604e16a8682fad2541d565bc7cde09728))
+* **cookbook:** retrofit plastics category with subgraph grouping ([4e9cda8](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/4e9cda876b4ebb530542816cc6a06bdf065c896b))
+* **cookbook:** retrofit sci-fi category with subgraph grouping ([98fbf16](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/98fbf16ce50b16a4ff1e8fe1484163c4a3f3c2b8))
+* **cookbook:** retrofit stone category with subgraph grouping ([b264ea1](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/b264ea1cd4db4d43813c7604877a468b2d2c7ce4))
+* **cookbook:** retrofit terrain category with subgraph grouping ([c1f80c4](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/c1f80c498e2897f8a2d02f68fc51ac93faa836d6))
+* **cookbook:** retrofit wood category with subgraph grouping ([0983184](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/09831843fa9a66076fcba1e256b6c4fd6bc3e753))
+* **live:** add live.load_graph client (dict or .ptex path, validated) ([a282f27](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/a282f27e6e4041f3e88406e92cfdbcd7b8e2b04a))
+* **live:** add load_graph addon command (in-place tab replace) ([740dd4e](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/740dd4ec7539a85e2a6e70f48ee4a0d74e8ae526))
+* **play:** add MM_PLAY_PORT config field ([4bbdb0d](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/4bbdb0dcdde5a546260f51e3f275a406cf958fd6))
+* **play:** add play.bat one-click launcher; promote mm-play to verified ([27bf78f](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/27bf78ff04a166c979430f9b688394d9c57316aa))
+* **play:** apply slider values back onto a material graph ([86862ff](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/86862ff02a59a2d0605c61cd0d087bd447c93e98))
+* **play:** derive web sliders from subgraph widgets + catalog ranges ([942af5a](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/942af5a5616798f022bd749f5d70684c6af403cd))
+* **play:** download current material as a maps + .ptex zip ([5b8406b](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/5b8406bca24a107b7fa08cfb2500f8bf997d3373))
+* **play:** gallery, sliders, and WebGL PBR sphere frontend ([4d3ea8c](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/4d3ea8c1a9bdde7e7e3560b536a933ee538650a3))
+* **play:** pure API handlers for materials list, sliders, and render ([a4588e8](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/a4588e85f8adc44135a6653a1a155f32ac5c0cd5))
+* **play:** push the picked material into a live session on pick change ([2bc46b9](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/2bc46b916d2e4696c8fb8bab1f67263bad875dec))
+* **play:** render facade with live auto-detect and serialized renders ([b38648f](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/b38648fcbbc87a1e98a137a0d1917b57909d77f8))
+* **play:** stdlib http server, routing, mm-play entry, packaging ([5179538](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/5179538acc6bd2f60cea0c94ec6b4de1c910f60b))
+* **quality:** add group_into_subgraph and tolerance-based render comparison ([15a73b0](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/15a73b0de5249469194e341ade37a8310a8a4b30))
+* **quality:** vendor the 9 load-bearing donor examples ([94b44b2](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/94b44b23982617c763c93f6b3245ee6aa1e100a6))
+* **server:** add live_load MCP tool (closes backlog item J) ([c58fdf5](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/c58fdf5d2c9517b6c7e316e02056a21463632b3d))
+
+
+### Bug Fixes
+
+* **catalog:** resolve compound param ranges from linked inner shader nodes ([3ab0929](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/3ab0929ad09422fcd7b95cb1e15cfecb2c0f4f26))
+* **cookbook:** correct leather/terrain bugs surfaced by the subgraph retrofit ([5cd9e0b](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/5cd9e0bcd0f2af6bc40308e433c59442087d1c47))
+* **cookbook:** make l05 quilt pads drive the relief (blend_h_q amount 0.35 -&gt; 0.85) ([6d460c4](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/6d460c42392398fd69d226e6f510326ff307a1f8))
+* **docs:** mark play-surface STATUS row wired, not verified ([5439c36](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/5439c36b7dfc24805de771847074d317a37325cc))
+* **play:** address sliders by unique id, not slot_id, to stop cross-subgraph fan-out ([d0b7556](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/d0b7556f72c9ae04721aed10c6995bb2732811c5))
+* **play:** copy live-render images into the play outdir ([365856a](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/365856afda44f12a675f016250cdbe7f1789d9f6))
+* **play:** dock slider panel + reliable canvas resize ([c7e85ee](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/c7e85eee8c476fb4d291d378b21d988364e0e456))
+* **play:** fail fast on bad config, return handler errors as JSON ([991f958](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/991f958d7657750811f4ed5de0e95eac21f444cd))
+
+
+### Documentation
+
+* correct the host-render blocker (it does not reproduce) ([b016f1b](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/b016f1bda45d11072060f02a032435d01bef9490))
+* document live_load and close backlog item J ([2994765](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/2994765e700557b7d01fe89aeb9e0960b070b010))
+* **fabrics:** correct f04's parity claim to disclose the pattern-&gt;weave artifact fix ([73cf8d0](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/73cf8d03b7c2e1a4506af59999707354c6af74d1))
+* implementation plan for author.py split + donor vendoring ([36ab975](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/36ab9759016a5f644359f28728bdc4c273ef181e))
+* implementation plan for live_load ([6dd0aca](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/6dd0aca09497a2ee227417f5d99b753fddc10c84))
+* implementation plan for the live web play surface ([e6134ef](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/e6134ef24fac4d3ff1629a08fec39f0b051bb3a4))
+* **live:** note load_graph in the mutation-op timeout comment ([56bec19](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/56bec19d56da6bf2dc4d2b1e8c5381c7365198a2))
+* mark l05 height-weighting follow-up done in the baton ([899d09b](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/899d09b6591e9d3edf0cbddaed94560689ba43de))
+* **painted-metal:** correct thumbnail-size-change explanation ([80e013f](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/80e013f4e76773d9b67438a47da7fb0c53170efc))
+* **plan:** write the cookbook subgraph retrofit implementation plan ([6e1be45](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/6e1be455f4c77bbc1d4c856c6c4906716f695ee6))
+* **play:** North Star companion note, doctor line, README, status ([4a1354f](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/4a1354f7636e3e39cf02da67c9937650743a9bc7))
+* **quality:** fix stale author.py references after the helper extraction ([54693fb](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/54693fb919472fdd1fd5619254eebe579d97a088))
+* record local-render blocker on host; play-server hardening ([a1ed4da](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/a1ed4da65dca986ee4580054d8eb97afcdf12401))
+* spec for live_load (load a graph into a live MM session) ([3b437e9](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/3b437e95740895f02e9dfd3914795c75fcc15029))
+* spec for the live web play surface (MM-for-dummies sub-project 2) ([eb33a28](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/eb33a28ae61fcaae2ea4c0837f543d4aa4107cda))
+* spec for vendoring the 9 load-bearing donor examples ([91cbbab](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/91cbbab3b5000d3f75bae1664067c1d921ca4f36))
+* **spec:** design the cookbook subgraph retrofit ([5fa2500](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/5fa2500f141321a665a72c30341d498d6570bb8c))
+* wrap up cookbook subgraph retrofit session ([8cf496a](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/8cf496abaf1cddbbeef4b197c35663c3191d83a4))
+* wrap up l05 height-weighting follow-up in baton + status ([108c6e0](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/108c6e011dec2be11686dee2e6a3235eceea0911))
+* wrap up leather + terrain bug-fix session ([bda24f8](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/bda24f8de06061b8373e7a8f30a791df4471e876))
+* wrap up plastics category + Donegal tweed session ([c3cc3f2](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/c3cc3f2610c53b996c71096ff8cbd172952d4416))
+* wrap up reference-photo authoring + glass cookbook session ([5239283](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/5239283554d78fd4bf66e22d7e0e1c248be069fc))
+* wrap up the live web play surface session in the baton ([2369eb9](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/2369eb9518d9b07d47183af178123a3c73a49f5a))
+* wrap up the live_load session in the baton ([8fdfdac](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/8fdfdac427c0ae115979b055b1954ee5e969ef2e))
+* wrap up the play-surface UI nits session in the baton ([e78457d](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/e78457d9fcdf5585a0be9a4fab4773c55088c53d))
+* wrap up the play.bat + play-surface-verified session in the baton ([de0711b](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/de0711b26ed8066f9c8cfbabf1754a4355493709))
+* wrap up v0.6.0 + author.py split + donor vendoring session ([692057b](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/692057bc28c2a81c3a64f7c7dc91b62ed26707a0))
+
 ## [0.6.0](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/compare/v0.5.0...v0.6.0) (2026-09-04)
 
 
