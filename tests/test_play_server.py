@@ -2,12 +2,13 @@ import json
 import threading
 import urllib.error
 import urllib.request
+from dataclasses import replace
 from http.server import HTTPServer
 
 import pytest
 from mm_mcp.config import load_config
 from mm_mcp.catalog_builder import build_catalog
-from mm_mcp.play import server
+from mm_mcp.play import api, server
 
 
 @pytest.fixture()
@@ -59,6 +60,42 @@ def test_export_returns_zip(running_server):
     with urllib.request.urlopen(url) as r:
         assert r.headers.get("Content-Type") == "application/zip"
         assert r.read()  # non-empty (contains at least the .ptex)
+
+
+def test_serve_fails_fast_on_missing_godot_binary(capsys):
+    # A misconfigured Godot path must fail at startup with the actionable
+    # message that names the path, not start and then throw a cryptic
+    # WinError 2 traceback on every render.
+    cfg = load_config()
+    bad = replace(cfg, godot_binary=r"C:\nope\godot.exe",
+                  console_binary=r"C:\nope\godot_console.exe")
+    result = server.serve(cfg=bad, open_browser=False)
+    assert result is None
+    out = capsys.readouterr().out
+    assert "Godot binary does not exist" in out
+
+
+def test_post_render_error_returns_json_not_traceback(running_server, monkeypatch):
+    # An unexpected error inside a request handler must come back as a JSON
+    # error the client can display, not bubble into a bare traceback that
+    # kills the response and leaves the browser stuck on "rendering...".
+    def boom(*a, **k):
+        raise RuntimeError("kaboom")
+
+    monkeypatch.setattr(api, "render_request", boom)
+    req = urllib.request.Request(
+        running_server + "/api/render", method="POST",
+        data=json.dumps({"material_id": "t01_sand_dunes", "values": {}, "size": 256}).encode(),
+        headers={"Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req) as r:
+            status, body = r.status, r.read()
+    except urllib.error.HTTPError as e:
+        status, body = e.code, e.read()
+    assert status == 500
+    data = json.loads(body)
+    assert data["ok"] is False
+    assert "kaboom" in data["error"]
 
 
 def test_export_unknown_material_404(running_server):

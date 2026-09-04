@@ -7,7 +7,7 @@ import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from mm_mcp.catalog_builder import build_catalog
-from mm_mcp.config import load_config
+from mm_mcp.config import load_config, require_valid
 from mm_mcp.play import api
 from mm_mcp.paths import reject_path_fragment, PathNotAllowed
 
@@ -49,7 +49,7 @@ def make_handler(cfg, catalog, outdir, static_dir):
             with open(path, "rb") as fh:
                 self._send_bytes(fh.read(), ctype)
 
-        def do_GET(self):
+        def _dispatch_get(self):
             path = self.path.split("?", 1)[0]
             if path == "/":
                 return self._serve_static("index.html")
@@ -90,7 +90,7 @@ def make_handler(cfg, catalog, outdir, static_dir):
                 return self._serve_static(path[len("/static/"):])
             return self._send_json({"ok": False, "error": "not found"}, 404)
 
-        def do_POST(self):
+        def _dispatch_post(self):
             path = self.path.split("?", 1)[0]
             length = int(self.headers.get("Content-Length") or 0)
             raw = self.rfile.read(length) if length else b"{}"
@@ -103,11 +103,38 @@ def make_handler(cfg, catalog, outdir, static_dir):
                 return self._send_json(out, 200 if out["ok"] else 400)
             return self._send_json({"ok": False, "error": "not found"}, 404)
 
+        # An unexpected error inside a handler must come back to the browser as a
+        # JSON error it can display, not bubble into ThreadingHTTPServer's default
+        # traceback that kills the response and leaves the client's fetch hanging
+        # (the "rendering... forever" symptom). A misconfigured Godot binary is
+        # caught at startup by require_valid in serve(); this is the net for
+        # anything that slips past.
+        def do_GET(self):
+            try:
+                self._dispatch_get()
+            except Exception as exc:  # noqa: BLE001 - deliberate catch-all boundary
+                self._send_json({"ok": False, "error": str(exc)}, 500)
+
+        def do_POST(self):
+            try:
+                self._dispatch_post()
+            except Exception as exc:  # noqa: BLE001 - deliberate catch-all boundary
+                self._send_json({"ok": False, "error": str(exc)}, 500)
+
     return Handler
 
 
 def serve(cfg=None, open_browser=False):
     cfg = cfg or load_config()
+    # Fail fast with an actionable message that names the exact bad path,
+    # instead of starting and then throwing a cryptic WinError 2 traceback on
+    # every render (which the browser only ever sees as "rendering..." forever).
+    # Same guard the MCP server runs at its own startup.
+    try:
+        require_valid(cfg)
+    except FileNotFoundError as exc:
+        print(f"Cannot start Material Maker Play: {exc}")
+        return None
     catalog = build_catalog(cfg.nodes_dir)
     outdir = os.path.join(cfg.output_dir, "play")
     os.makedirs(outdir, exist_ok=True)

@@ -52,6 +52,7 @@ function initThree() {
 }
 
 function applyMaps(maps) {
+  if (!sphere) return;  // 3D preview unavailable (e.g. no WebGL); nothing to shade
   // maps: array of basenames like play_albedo.png. Match by suffix.
   // Real render output has no separate roughness map (roughness is packed
   // into the ORM map), so the roughness lookup falls back to "orm".
@@ -121,10 +122,18 @@ function scheduleRender(size) {
 async function doRender(size) {
   if (!current) return;
   setStatus("rendering...");
-  const out = await j("/api/render", {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ material_id: current.name, values, size })
-  });
+  let out;
+  try {
+    out = await j("/api/render", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ material_id: current.name, values, size })
+    });
+  } catch (e) {
+    // The request itself failed (server crashed the connection, network error).
+    // Surface it instead of leaving the status stuck on "rendering..." forever.
+    setStatus("render request failed: " + (e && e.message ? e.message : e));
+    return;
+  }
   if (!out.ok) { setStatus("render failed: " + out.error); return; }
   applyMaps(out.maps);
   setStatus(out.path === "live" ? "live" : "ready");
@@ -137,5 +146,8 @@ document.getElementById("download").onclick = () => {
   if (current) window.location = "/api/export?material_id=" + encodeURIComponent(current.name);
 };
 
-initThree();
+// A 3D-preview init failure (e.g. no WebGL context) must not blank the whole
+// page: surface it and still load the gallery so the sliders remain usable.
+try { initThree(); }
+catch (e) { setStatus("3D preview unavailable: " + (e && e.message ? e.message : e)); }
 loadGallery();
