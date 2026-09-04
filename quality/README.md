@@ -43,6 +43,13 @@ validates + renders them to `quality/cookbook/<label>/` for eyeballing — no
 `test_set.json` entry, no scorecard, no gate. Recipes that pan out get written
 up in `docs/AUTHORING.md`; both output dirs are gitignored (regenerable).
 
+When a material is locked (rendered, 3D-previewed, written up), promote it:
+`python quality/promote_cookbook.py` copies each `v1.ptex` into the tracked
+`cookbook/<category>/<id>.ptex` tree the MCP server serves through
+`list_examples` / `load_example`. `promote_cookbook.py --check` diffs
+regenerated output against the tracked copies and exits 1 on any drift, which
+is the regression baseline for the informal (non-scorecard) materials.
+
 While iterating on ONE material, use `render_one.py <label> <case>` (renders a
 single case, one Godot at a time) instead of `render_cookbook.py` (which renders
 every case under the label). Run either as a script FILE, never `python -c` —
