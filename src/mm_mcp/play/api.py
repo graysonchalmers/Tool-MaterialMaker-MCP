@@ -56,7 +56,7 @@ def render_request(cfg, catalog, body, outdir, render_fn=renderer.render_materia
         return err
     applied = sliders.apply_values(graph, values)
     changes = _changes_for(graph, catalog, values)
-    result = render_fn(applied, changes, size, cfg, outdir)
+    result = render_fn(applied, changes, size, cfg, outdir, material_id=name)
     if not result.get("ok"):
         return {"ok": False, "error": result.get("error") or "render failed"}
     return {"ok": True, "path": result.get("path"),

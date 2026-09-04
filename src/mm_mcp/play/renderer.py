@@ -10,26 +10,46 @@ from mm_mcp import live, render
 
 _RENDER_LOCK = threading.Lock()
 
+_last_pushed_id = None  # id of the material this surface last pushed into a live session (guarded by _RENDER_LOCK)
+
 
 def render_material(applied_graph, changes, size, cfg, outdir, *,
-                    ping=live.ping, live_set_param=live.set_param,
-                    live_render=live.render, headless_render=render.render):
+                    material_id=None, ping=live.ping, live_set_param=live.set_param,
+                    live_render=live.render, live_load=live.load_graph,
+                    headless_render=render.render):
     """Render `applied_graph` (values already applied). `changes` drives the live
     path. Returns {ok, path, images, error}. One Godot at a time."""
     with _RENDER_LOCK:
         probe = ping(timeout=1.0)
         if probe.ok and probe.data.get("has_graph"):
-            live_result = _try_live(changes, cfg, live_set_param, live_render, outdir)
+            live_result = _try_live(applied_graph, changes, material_id, cfg,
+                                    live_load, live_set_param, live_render, outdir)
             if live_result is not None:
                 return live_result
-            # live was up but not usable (mismatch): fall through to headless.
+            # live was up but not usable (mismatch/load failure): fall through.
         r = headless_render(applied_graph, size=size, outdir=outdir,
                             basename="play", cfg=cfg)
         return {"ok": r.ok, "path": "headless",
                 "images": list(r.images), "error": r.error}
 
 
-def _try_live(changes, cfg, live_set_param, live_render, outdir):
+def _try_live(applied_graph, changes, material_id, cfg, live_load, live_set_param,
+              live_render, outdir):
+    global _last_pushed_id
+    # Push the picked material into the live session once per pick change, so the
+    # live path drives the material the person actually picked, not whatever was
+    # already open. Only on a change: repeated renders of the same pick reuse the
+    # loaded graph and just re-set params. The load is a Godot-touching op and
+    # runs here inside the caller's _RENDER_LOCK, so it cannot interleave with a
+    # render. If a person switches tabs in MM by hand our belief goes stale; the
+    # next set_param then fails on the missing nodes and we return None ->
+    # headless, which is the safe fallback (v1 accepts this rather than
+    # re-verifying every render).
+    if material_id is not None and material_id != _last_pushed_id:
+        load_res = live_load(graph=applied_graph, cfg=cfg)
+        if not load_res.ok:
+            return None
+        _last_pushed_id = material_id
     for ch in changes:
         res = live_set_param(ch["node"], {ch["widget"]: ch["value"]}, cfg=cfg)
         if not res.ok:
