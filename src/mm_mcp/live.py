@@ -167,7 +167,7 @@ def _validation_errors(ptex: dict, cfg: Config) -> list[dict]:
 
 
 # Mutation ops (add_node/connect_nodes/disconnect_nodes/reposition_node/
-# set_param) default to a longer socket timeout than the read-only one-shots
+# set_param/load_graph) default to a longer socket timeout than the read-only one-shots
 # (ping/get_graph/clear_graph, 5s): a mutation right after a fresh launch can
 # trigger shader warmup/compile of the affected node, which the 5s read-op
 # budget could spuriously time out before finishing. 30s is a ceiling (max
