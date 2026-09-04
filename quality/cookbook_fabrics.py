@@ -149,12 +149,73 @@ def build_f07_herringbone_tweed() -> str:
     return save_variant(g, _LABEL, "f07_herringbone_tweed", 1)
 
 
+def build_f08_donegal_tweed() -> str:
+    """Donegal-style flecked tweed: unlike f07 (which differentiates through
+    weave GEOMETRY), this differentiates through COLOR -- a plain weave2
+    base (stitch=1, no herringbone chevron) with the voronoi-port-2
+    per-cell-random fleck lever (already proven on granite/masonry) layered
+    on top as small, sparse, contrasting-color nubs, the classic Donegal
+    look. The fleck source is a SEPARATE voronoi node (`voronoi_fleck`),
+    not the base generator -- retyping voronoi_0 to weave2 for the base
+    loses its own rand3 output, and the flecks want a much finer, unrelated
+    cell frequency than the coarse weave grid anyway. The fleck mask is a
+    hard-threshold colorize of that voronoi's port 2 (rand3): only the top
+    ~10% of cell values pass, so flecks read as sparse scattered nubs, not
+    a wash. Composited with `blend` (`blend_type=0` explicit, base weave on
+    the majority port 1, flecks on the minority port 0, the sparse mask on
+    port 2 -- the blend shows port 1 where the mask is 0 and port 0 where
+    it's 1, so the majority layer belongs on port 1). Warm heather
+    gray-brown base, cream/tan flecks, very matte wool roughness. Relief
+    stays the weave's own (fleck nubs are color-only, no extra bump), a
+    deliberate simplification noted in the recipe card."""
+    g = load_example("crocodile_skin")
+    retype(g, "voronoi_0", "weave2",
+           {"columns": 10, "rows": 10, "width_x": 0.85, "width_y": 0.85, "stitch": 1})
+    set_gradient(g, "colorize_1", [    # heather gray-brown base weave
+        (0.0, 0.20, 0.18, 0.16),
+        (0.5, 0.38, 0.34, 0.29),
+        (1.0, 0.56, 0.51, 0.44),
+    ])
+    set_gradient(g, "colorize_3", [    # very matte wool
+        (0.0, 0.86, 0.86, 0.86),
+        (1.0, 0.96, 0.96, 0.96),
+    ])
+    set_gradient(g, "colorize_0", [(0.0, 0, 0, 0), (1.0, 1, 1, 1)])
+    node(g, "normal_map_0")["parameters"] = {
+        "param0": 11, "param1": 0.3, "param2": 0, "param4": 0}
+
+    add_node(g, "voronoi_fleck", "voronoi",
+             {"scale_x": 36, "scale_y": 36, "randomness": 1})
+    add_node(g, "colorize_fleck_mask", "colorize",
+             {"gradient": {"interpolation": 1, "type": "Gradient", "points": [
+                 {"a": 1, "r": 0, "g": 0, "b": 0, "pos": 0.0},
+                 {"a": 1, "r": 0, "g": 0, "b": 0, "pos": 0.78},
+                 {"a": 1, "r": 1, "g": 1, "b": 1, "pos": 0.84},
+                 {"a": 1, "r": 1, "g": 1, "b": 1, "pos": 1.0}]}})
+    add_node(g, "colorize_fleck_color", "colorize",     # cream/rust two-tone flecks
+             {"gradient": {"interpolation": 1, "type": "Gradient", "points": [
+                 {"a": 1, "r": 0.85, "g": 0.78, "b": 0.62, "pos": 0.78},
+                 {"a": 1, "r": 0.62, "g": 0.28, "b": 0.16, "pos": 0.90},
+                 {"a": 1, "r": 0.90, "g": 0.83, "b": 0.66, "pos": 1.0}]}})
+    add_node(g, "blend_fleck", "blend", {"blend_type": 0, "amount": 1})
+    g["connections"] += [
+        {"from": "voronoi_fleck", "from_port": 2, "to": "colorize_fleck_mask", "to_port": 0},
+        {"from": "voronoi_fleck", "from_port": 2, "to": "colorize_fleck_color", "to_port": 0},
+        {"from": "colorize_fleck_color", "from_port": 0, "to": "blend_fleck", "to_port": 0},
+        {"from": "colorize_1", "from_port": 0, "to": "blend_fleck", "to_port": 1},
+        {"from": "colorize_fleck_mask", "from_port": 0, "to": "blend_fleck", "to_port": 2},
+    ]
+    rewire(g, "Material", 0, "blend_fleck", 0)
+    return save_variant(g, _LABEL, "f08_donegal_tweed", 1)
+
+
 BUILDERS = {
     "f03_canvas_burlap": build_f03_canvas_burlap,
     "f04_wool_knit": build_f04_wool_knit,
     "f05_silk_satin": build_f05_silk_satin,
     "f06_velvet": build_f06_velvet,
     "f07_herringbone_tweed": build_f07_herringbone_tweed,
+    "f08_donegal_tweed": build_f08_donegal_tweed,
 }
 
 

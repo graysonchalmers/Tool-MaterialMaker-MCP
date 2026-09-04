@@ -1,0 +1,154 @@
+{
+ "connections": [
+  {
+   "from": "perlin_0",
+   "from_port": 0,
+   "to": "colorize_0",
+   "to_port": 0
+  },
+  {
+   "from": "perlin_0",
+   "from_port": 0,
+   "to": "normal_map_0",
+   "to_port": 0
+  },
+  {
+   "from": "colorize_0",
+   "from_port": 0,
+   "to": "Material",
+   "to_port": 0
+  },
+  {
+   "from": "normal_map_0",
+   "from_port": 0,
+   "to": "Material",
+   "to_port": 4
+  },
+  {
+   "from": "perlin_0",
+   "from_port": 0,
+   "to": "rough_const",
+   "to_port": 0
+  },
+  {
+   "from": "rough_const",
+   "from_port": 0,
+   "to": "Material",
+   "to_port": 2
+  }
+ ],
+ "nodes": [
+  {
+   "name": "perlin_0",
+   "type": "perlin",
+   "node_position": {
+    "x": 0,
+    "y": 0
+   },
+   "parameters": {
+    "scale_x": 6,
+    "scale_y": 6
+   }
+  },
+  {
+   "name": "colorize_0",
+   "type": "colorize",
+   "node_position": {
+    "x": 300,
+    "y": -60
+   },
+   "parameters": {
+    "gradient": {
+     "interpolation": 1,
+     "type": "Gradient",
+     "points": [
+      {
+       "a": 1,
+       "r": 0.55,
+       "g": 0.05,
+       "b": 0.05,
+       "pos": 0.0
+      },
+      {
+       "a": 1,
+       "r": 0.62,
+       "g": 0.08,
+       "b": 0.08,
+       "pos": 1.0
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "normal_map_0",
+   "type": "normal_map",
+   "node_position": {
+    "x": 300,
+    "y": 160
+   },
+   "parameters": {
+    "param0": 10,
+    "param1": 0.04,
+    "param2": 0,
+    "param4": 0
+   }
+  },
+  {
+   "name": "Material",
+   "type": "material",
+   "node_position": {
+    "x": 620,
+    "y": 40
+   },
+   "export_paths": {},
+   "parameters": {
+    "albedo_color": {
+     "a": 1,
+     "r": 1,
+     "g": 1,
+     "b": 1,
+     "type": "Color"
+    },
+    "ao": 1,
+    "depth_scale": 1,
+    "emission_energy": 1,
+    "metallic": 0.0,
+    "normal": 1,
+    "roughness": 0.18,
+    "size": 11,
+    "sss": 0
+   }
+  },
+  {
+   "name": "rough_const",
+   "type": "colorize",
+   "node_position": {
+    "x": 0,
+    "y": 0
+   },
+   "parameters": {
+    "gradient": {
+     "interpolation": 1,
+     "type": "Gradient",
+     "points": [
+      {
+       "a": 1,
+       "r": 0.18,
+       "g": 0.18,
+       "b": 0.18,
+       "pos": 0.0
+      },
+      {
+       "a": 1,
+       "r": 0.18,
+       "g": 0.18,
+       "b": 0.18,
+       "pos": 1.0
+      }
+     ]
+    }
+   }
+  }
+ ]
+}

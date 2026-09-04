@@ -61,8 +61,8 @@ graphs and flat swatches are in [`examples/`](examples/).
 
 ## Material cookbook
 
-Beyond the frozen gallery above, the cookbook is 44 more materials across
-nine categories, each one a real graph this server authored and then locked
+Beyond the frozen gallery above, the cookbook is 46 more materials across
+ten categories, each one a real graph this server authored and then locked
 after a 3D-preview pass. Every one ships as a tracked `.ptex` under
 [`cookbook/`](cookbook/): open `cookbook/<category>/<id>.ptex` in Material
 Maker to see the node network, or start from it over MCP with
@@ -73,13 +73,13 @@ its graph as `cookbook/<category>/<id>.md`. The builders that regenerate the
 graphs live in [`quality/`](quality/).
 
 <details>
-<summary><b>Show the cookbook contact sheet</b> (44 materials: fabrics, glass, leather, organics, painted metal, sci-fi, stone, terrain, wood)</summary>
+<summary><b>Show the cookbook contact sheet</b> (46 materials: fabrics, glass, leather, organics, painted metal, plastics, sci-fi, stone, terrain, wood)</summary>
 
 <p align="center">
-  <img src="docs/images/cookbook-contact-sheet.png" alt="Contact sheet of 43 cookbook materials across eight categories, not yet regenerated to include glass" width="100%">
+  <img src="docs/images/cookbook-contact-sheet.png" alt="Contact sheet of 43 cookbook materials across eight categories, not yet regenerated to include glass, plastics, or the new tweed" width="100%">
 </p>
 
-_Not yet regenerated to include `gl01_frosted_glass` (glass), still shows the prior 43-material/eight-category sheet; regeneration is a real cost (a multi-MB image per rebuild), left for a deliberate pass rather than done here._
+_Not yet regenerated to include `gl01_frosted_glass` (glass), `p01_glossy_plastic` (plastics), or `f08_donegal_tweed`, still shows the prior 43-material/eight-category sheet; regeneration is a real cost (a multi-MB image per rebuild), left for a deliberate pass rather than done here._
 
 </details>
 
