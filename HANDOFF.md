@@ -1,20 +1,26 @@
 # 🧭 Session Handoff: Tool-MaterialMaker-MCP
 
-_Last updated: 2026-09-04 (play-surface verified + one-click play.bat) CT (America/Chicago)_
+_Last updated: 2026-09-04 (play-surface UI nits fixed) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**The live web play surface is now VERIFIED, and there's a one-click
-`play.bat` launcher at the repo root (`main` at `27bf78f`, in sync).**
-Grayson ran `mm-play` hands-on via `play.bat` (double-click -> starts the
-server, auto-opens the browser at `http://127.0.0.1:8788/`), so the STATUS
-`mm-play` row moved from `wired` to `verified`. That closes the whole
-"Material Maker for dummies" idea end to end. Two non-blocking UI nits are
-recorded in STATUS: the slider panel docks at the bottom of the left sidebar
-(scroll past the gallery to reach it), and the WebGL canvas does not reliably
-re-fill the viewport on a mid-session browser resize (sizes correctly at load).
+**The two non-blocking play-surface UI nits are now FIXED and
+browser-verified (`main` at `c7e85ee`, in sync).** The slider panel docks
+always-visible at the bottom of the sidebar (gallery scrolls above it in its
+own region), and the WebGL sphere re-fills the viewport reliably on a
+mid-session browser resize. Static-only edits to `src/mm_mcp/play/static/
+style.css` + `app.js`; fast suite 579, no test-coverage change. The
+"Material Maker for dummies" play surface is now fully closed, verified, and
+polished.
+
+**Before this, the live web play surface was VERIFIED with a one-click
+`play.bat` launcher at the repo root.** Grayson ran `mm-play` hands-on via
+`play.bat` (double-click -> starts the server, auto-opens the browser at
+`http://127.0.0.1:8788/`), which moved the STATUS `mm-play` row from `wired`
+to `verified` and closed the "Material Maker for dummies" idea end to end.
+The two UI nits it recorded are the ones fixed above.
 
 The play surface itself: a `src/mm_mcp/play/` package (stdlib `http.server`
 + a vendored three.js frontend, launched by the `mm-play` console command,
@@ -162,26 +168,22 @@ Older write-ups/log beyond the cap live in
 
 ## 📌 Where we stopped
 
-`play.bat` + the STATUS verified-promotion committed (`27bf78f`) and pushed;
-`main` in sync with origin. Everything is closed out. Nothing is in flight and
-nothing is waiting on Grayson.
+Both play-surface UI nits fixed, committed (`c7e85ee`) and pushed; `main` in
+sync with origin. Everything is closed out. Nothing is in flight and nothing is
+waiting on Grayson.
 
 ## ▶️ Next concrete step
 
 Nothing is blocking. Pick a fresh thread:
-1. **A follow-up on the two play-surface UI nits** (small, optional): make the
-   slider panel easier to find (it's currently below the whole gallery in the
-   left sidebar) and fix the WebGL canvas not re-filling the viewport on a
-   mid-session browser resize. Both are cosmetic, neither blocks use.
-2. **Check Unreal UE5 export** now that `mcp__unreal-engine__*` tools show
+1. **Check Unreal UE5 export** now that `mcp__unreal-engine__*` tools show
    connected (blocked for several sessions on "needs a live bridge"). Bigger,
    needs a live Unreal Editor open.
-3. **A NEXT extension of the play surface, if wanted:** a "push the picked
+2. **A NEXT extension of the play surface, if wanted:** a "push the picked
    material into a live MM session first" flow (currently the live path only
    drives MM when the picked material already matches what is loaded there;
    otherwise it falls back to headless). That overlaps the deferred
    `live_load` backlog item and would need its own scoping.
-4. **More cookbook categories/materials** remain open-ended, no specific
+3. **More cookbook categories/materials** remain open-ended, no specific
    quick-win flagged. New materials land in `cookbook/` via
    `promote_cookbook.py`, get a card, and should call `group_into_subgraph`
    before `save_variant` returns (see `docs/AUTHORING.md`).
@@ -253,6 +255,31 @@ The older open backlog, unchanged unless noted:
   available; two parked-not-fixed overlay-builder findings from a much
   earlier session (staleness marker, `_append_autoload`'s first-occurrence
   match, both verified low-priority).
+
+## 🗂️ Changed this session (play-surface UI nits)
+
+- **`src/mm_mcp/play/static/style.css`**: the sidebar (`#left`) is now a flex
+  column. The title stays pinned, `#gallery` scrolls in its own `flex:1` region,
+  and `#controls` (the slider panel) docks in an always-visible region at the
+  bottom (`max-height:48%`, own scroll) instead of sitting below the whole
+  46-button gallery. `#viewport` gained `min-width:0` + `overflow:hidden` and the
+  canvas is now `position:absolute`, so the canvas's inline pixel size can no
+  longer pin the flex container open.
+- **`src/mm_mcp/play/static/app.js`**: replaced the `window.resize` handler with
+  a `ResizeObserver` on the viewport element (a `fit()` helper that reads
+  `clientWidth/Height`, guards against 0, and updates `renderer.setSize` +
+  `camera.aspect`). Fires on any container size change, not just window resize.
+- **Root cause (nit 2):** the classic flexbox min-width feedback trap.
+  `renderer.setSize` writes an inline pixel width onto the canvas; with
+  `#viewport` at the default `min-width:auto`, that wide canvas kept the flex
+  container from shrinking, so `clientWidth` never got smaller and the canvas
+  could not re-fill. The CSS containment above is what actually fixes it; the
+  ResizeObserver just makes the trigger reliable.
+- **Verified live** in the in-app Browser pane: gallery scrolls with the panel
+  docked at the bottom; shrank to a 500px window (sphere re-fit the narrow strip,
+  stayed round) and grew to 1100px (re-filled, sphere centered); a real
+  `l04_reptile_exotic` render came back "ready". Fast suite 579, static-only.
+- **Committed `c7e85ee`, pushed** on Grayson's "1" (commit + push + wrap).
 
 ## 🗂️ Changed this session (live web play surface)
 
@@ -345,80 +372,8 @@ The older open backlog, unchanged unless noted:
   l05's `blend_h_q` 35% height weighting as a separate follow-up rather than
   fold it in.
 
-## 🗂️ Changed this session (cookbook subgraph retrofit)
-
-- **`quality/author_helpers.py`**: new `group_into_subgraph(graph, member_names,
-  name, label, exposed, catalog)` primitive. Pure JSON graph surgery, no Godot
-  dependency: partitions a group's connections into internal/incoming/outgoing/
-  untouched, builds `ios`-type `gen_inputs`/`gen_outputs` nodes (port types looked
-  up from the catalog), a `remote`-type `gen_parameters` node whose `widgets`
-  expose a curated subset of internal parameters under friendly labels, and
-  collapses the named nodes into one `type: "graph"` node, the exact shape
-  Material Maker's own `Ctrl+G` grouping produces and the same shape its 50
-  bundled compound nodes (`normal_map`, `occlusion`) already use.
-- **`quality/render_compare.py`** (new): `grid_mean_abs_diff`/`renders_match`,
-  a 16x16-sample tolerance comparison (default 3.0) between two rendered PNGs,
-  using the existing pure-stdlib `pngread.py` (no Pillow). Needed since Godot's
-  render isn't perfectly deterministic run to run; the regression bar for this
-  retrofit was "renders the same," not byte-identical.
-- **All 46 existing cookbook materials retrofitted**, one dispatch per category
-  (glass pilot, then plastics, wood, organics, sci-fi, painted-metal, fabrics,
-  leather, stone, terrain): every `quality/cookbook_<category>.py` builder now
-  ends its `build_*` functions with `group_into_subgraph` calls before
-  `save_variant`. 524 -> 179 top-level nodes across the cookbook (66% fewer,
-  11.4 -> 3.9 average per material), zero materials failed to reduce. Every
-  category-level render check hit an exact `grid_mean_abs_diff == 0.0`.
-  Category-specific cautions all held: `sf03_circuit_board`'s blend/opacity
-  mask wiring (documented history of a real bleed-through bug), `stone`'s
-  `warp_0`-sensitive materials (kept ungrouped-from-consumer, never exposed),
-  `f08_donegal_tweed`'s fleck voronoi kept separate from the base weave,
-  `t06_cooled_lava`'s emission glow chain kept as one unit -- all independently
-  re-verified by task-level review, none regressed.
-- **`tests/test_cookbook_subgraph_gate.py`** (new): parametrized across all 46
-  cookbook entries via `mm_mcp.cookbook.list_cookbook`, asserts every material
-  has at least one top-level `type: "graph"` node -- a permanent floor against
-  future drift.
-- **`docs/AUTHORING.md`**: new "Grouping into subgraphs" section (added
-  alongside the glass pilot) documenting the lever for future materials.
-  **`quality/README.md`**: one-line pointer added at the end of the retrofit.
-- **Real bug found, disclosed, left unfixed (organizational-only task scope):**
-  the final whole-branch review built an independent flatten-diff harness
-  (resolves every subgraph's boundary threading back to a flat graph, diffs
-  against pre-branch `main`) across all 46 materials. 45/46 matched
-  byte-for-byte; `f04_wool_knit` didn't -- its tracked `.ptex` was a stale
-  promotion (predating this series, from the 2026-09-01 wool-knit exploration)
-  that disagreed with its own already-`weave`-based builder and card. The
-  retrofit's rebuild-from-builder step incidentally corrected it as a side
-  effect. Fixed via disclosure, not an artifact change: corrected
-  `f04_wool_knit.md`'s parity claim to state what the `0.0` comparison does and
-  does not prove (commit `73cf8d0`).
-- **Two other real, pre-existing, unrelated bugs surfaced and correctly left
-  unfixed** (each task's scope was organizational only): `l02_distressed_two_tone`
-  and `l05_quilted_leather`'s visible composite layers are reversed from what
-  their names describe (traced against `blend.mmg`'s shader model in each
-  card); `t01_sand_dunes`'s wood donor wires `blend_0` directly to the
-  Material's metallic port.
-- **Process:** `pickup` -> `brainstorming` (architectural: a new interaction
-  surface, no existing flow to extend). Investigating a dead-end lead ("generic
-  parameters," which turned out to be an unrelated variadic-port mechanism)
-  surfaced the real, already-native answer (subgraphs). Decomposed into two
-  sequenced sub-projects; Grayson chose the larger retrofit scope (all 46
-  existing materials, not just going forward), upgrading sub-project 1 from
-  bounded to architectural. Spec + 12-task plan (pilot-first, smallest category
-  before largest) -> `subagent-driven-development` on branch
-  `cookbook-subgraph-retrofit`. One task-level fix round (Task 7/painted-metal:
-  a commit message gave a factually-backwards explanation for a real thumbnail
-  file-size change; the reviewer independently found the true, benign cause --
-  old thumbnails were un-downscaled 2048x2048, new ones correctly 512x512 --
-  fixed via a new documentation commit, not an amend). Final whole-branch
-  review (opus) found 1 Important (the f04 disclosure gap above) + several
-  Minor (boundary-port duplication in the primitive, builder-signature
-  inconsistency across categories, exposed-parameter label drift); one fix
-  wave addressed the Important finding, scoped re-review clean. Merged
-  `--no-ff` to `main` (`034aeaf`), pushed, branch deleted, SDD workspace
-  removed. Fast suite 453 -> 505.
-
-> 📦 **27 older "Changed this session" write-ups archived**, newest first the
+> 📦 **28 older "Changed this session" write-ups archived**, newest first the
+> 2026-09-04 cookbook subgraph retrofit session, then the
 > 2026-09-03 plastics category + Donegal tweed session, then the
 > 2026-09-03 reference-photo authoring + glass cookbook session, then the
 > 2026-09-03 v0.6.0 release + author.py split + donor vendoring session, then the
@@ -640,10 +595,28 @@ The older open backlog, unchanged unless noted:
 > section past that cap, the oldest entry moves out verbatim (no
 > summarizing) into [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md)
 > instead of letting this doc grow unbounded -- flagged as a real pickup
-> cost by the 2026-08-29 teardown (Maintainer lens). **33 older entries are
-> now archived there**, from the 2026-09-04 v0.5.0 release + AUTHORING split
+> cost by the 2026-08-29 teardown (Maintainer lens). **34 older entries are
+> now archived there**, from the 2026-09-03 plastics category + Donegal tweed
+> session back through the 2026-09-04 v0.5.0 release + AUTHORING split
 > session back through the project's Phase 1-2 kickoff on 2026-08-25.
 
+
+### 2026-09-04 (play-surface UI nits): the two cosmetic loose ends, closed
+- `pickup` (`+ fix the two play-surface UI nits`) reconciled clean (`main` at
+  `de0711b`, tree clean, in sync). The two nits were named in the `mm-play`
+  STATUS row from the prior session.
+- Both are frontend-only. Nit 1 (slider panel buried below the 46-button
+  gallery): made the sidebar a flex column so the gallery scrolls in its own
+  region and the slider panel docks always-visible at the bottom. Nit 2 (canvas
+  not re-filling on resize): diagnosed the flexbox min-width feedback trap
+  (`renderer.setSize`'s inline canvas width pinned the flex viewport open),
+  fixed with `min-width:0` + `overflow:hidden` + an absolutely-positioned
+  canvas, and swapped `window.resize` for a `ResizeObserver` on the container.
+- Verified live in the in-app Browser pane: gallery scroll + docked panel;
+  shrank to 500px (sphere re-fit, round) and grew to 1100px (re-filled,
+  centered); real reptile render "ready". Fast suite 579, static-only.
+- Committed `c7e85ee`, pushed on Grayson's "1" (commit + push + wrap). Commons
+  log written. Then this wrap-up.
 
 ### 2026-09-04 (play.bat + play-surface verified): the last loose end closed
 - `pickup` reconciled clean (`main` at `2369eb9`, one wrap-up-doc commit past
@@ -756,27 +729,5 @@ The older open backlog, unchanged unless noted:
   handoff's Next-step section so they don't only live in a recipe card.
 - Merged `--no-ff` (`034aeaf`), pushed, branch deleted, SDD workspace
   removed. Fast suite 453 -> 505. Then this wrap-up.
-
-### 2026-09-03 (plastics category + Donegal tweed): a smooth surface and a fleck lever, both closing out the same backlog batch
-- `pickup` reconciled clean (`main` at `5239283`). Grayson picked "1 + 4"
-  from the briefing's numbered options: the plastics cookbook entry and
-  two-color tweed.
-- `brainstorming` (bounded path, no plan doc): two clarifying questions
-  settled the specifics (glossy vs. matte vs. textured plastic; flecked
-  Donegal-style vs. two-tone herringbone for the tweed), then a short
-  in-chat design, approved.
-- `p01_glossy_plastic`: built from scratch (no donor fits a "smooth,
-  patternless" surface), narrow near-single-color red albedo, low
-  roughness, near-zero relief. Hit and fixed the same scalar-roughness ORM
-  gap `gl01_frosted_glass` did. Preview sent, approved first try.
-- `f08_donegal_tweed`: plain-weave base plus a separate voronoi node for
-  sparse cream/rust flecks via the port-2 rand3 lever, composited with
-  `blend`. First preview read too sparse (~4 flecks per crop); revised the
-  mask threshold and added a second fleck tone, second preview approved.
-- Both promoted, carded, thumbnailed, README counts updated (44/nine to
-  46/ten). Reverted an unrelated `f04_wool_knit` thumbnail regeneration
-  (render non-determinism, not a real change) before committing. Fast
-  suite 447 -> 453. Committed (`68c51dc`) and pushed on explicit
-  instruction ("push it + wrap"). Then this wrap-up.
 
 _(Older entries continue in [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).)_

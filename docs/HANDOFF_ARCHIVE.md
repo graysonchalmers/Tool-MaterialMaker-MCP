@@ -19,6 +19,79 @@ doc's window.
 
 ## Archived "Changed this session" write-ups
 
+### 🗂️ Changed this session (cookbook subgraph retrofit)
+
+- **`quality/author_helpers.py`**: new `group_into_subgraph(graph, member_names,
+  name, label, exposed, catalog)` primitive. Pure JSON graph surgery, no Godot
+  dependency: partitions a group's connections into internal/incoming/outgoing/
+  untouched, builds `ios`-type `gen_inputs`/`gen_outputs` nodes (port types looked
+  up from the catalog), a `remote`-type `gen_parameters` node whose `widgets`
+  expose a curated subset of internal parameters under friendly labels, and
+  collapses the named nodes into one `type: "graph"` node, the exact shape
+  Material Maker's own `Ctrl+G` grouping produces and the same shape its 50
+  bundled compound nodes (`normal_map`, `occlusion`) already use.
+- **`quality/render_compare.py`** (new): `grid_mean_abs_diff`/`renders_match`,
+  a 16x16-sample tolerance comparison (default 3.0) between two rendered PNGs,
+  using the existing pure-stdlib `pngread.py` (no Pillow). Needed since Godot's
+  render isn't perfectly deterministic run to run; the regression bar for this
+  retrofit was "renders the same," not byte-identical.
+- **All 46 existing cookbook materials retrofitted**, one dispatch per category
+  (glass pilot, then plastics, wood, organics, sci-fi, painted-metal, fabrics,
+  leather, stone, terrain): every `quality/cookbook_<category>.py` builder now
+  ends its `build_*` functions with `group_into_subgraph` calls before
+  `save_variant`. 524 -> 179 top-level nodes across the cookbook (66% fewer,
+  11.4 -> 3.9 average per material), zero materials failed to reduce. Every
+  category-level render check hit an exact `grid_mean_abs_diff == 0.0`.
+  Category-specific cautions all held: `sf03_circuit_board`'s blend/opacity
+  mask wiring (documented history of a real bleed-through bug), `stone`'s
+  `warp_0`-sensitive materials (kept ungrouped-from-consumer, never exposed),
+  `f08_donegal_tweed`'s fleck voronoi kept separate from the base weave,
+  `t06_cooled_lava`'s emission glow chain kept as one unit -- all independently
+  re-verified by task-level review, none regressed.
+- **`tests/test_cookbook_subgraph_gate.py`** (new): parametrized across all 46
+  cookbook entries via `mm_mcp.cookbook.list_cookbook`, asserts every material
+  has at least one top-level `type: "graph"` node -- a permanent floor against
+  future drift.
+- **`docs/AUTHORING.md`**: new "Grouping into subgraphs" section (added
+  alongside the glass pilot) documenting the lever for future materials.
+  **`quality/README.md`**: one-line pointer added at the end of the retrofit.
+- **Real bug found, disclosed, left unfixed (organizational-only task scope):**
+  the final whole-branch review built an independent flatten-diff harness
+  (resolves every subgraph's boundary threading back to a flat graph, diffs
+  against pre-branch `main`) across all 46 materials. 45/46 matched
+  byte-for-byte; `f04_wool_knit` didn't -- its tracked `.ptex` was a stale
+  promotion (predating this series, from the 2026-09-01 wool-knit exploration)
+  that disagreed with its own already-`weave`-based builder and card. The
+  retrofit's rebuild-from-builder step incidentally corrected it as a side
+  effect. Fixed via disclosure, not an artifact change: corrected
+  `f04_wool_knit.md`'s parity claim to state what the `0.0` comparison does and
+  does not prove (commit `73cf8d0`).
+- **Two other real, pre-existing, unrelated bugs surfaced and correctly left
+  unfixed** (each task's scope was organizational only): `l02_distressed_two_tone`
+  and `l05_quilted_leather`'s visible composite layers are reversed from what
+  their names describe (traced against `blend.mmg`'s shader model in each
+  card); `t01_sand_dunes`'s wood donor wires `blend_0` directly to the
+  Material's metallic port.
+- **Process:** `pickup` -> `brainstorming` (architectural: a new interaction
+  surface, no existing flow to extend). Investigating a dead-end lead ("generic
+  parameters," which turned out to be an unrelated variadic-port mechanism)
+  surfaced the real, already-native answer (subgraphs). Decomposed into two
+  sequenced sub-projects; Grayson chose the larger retrofit scope (all 46
+  existing materials, not just going forward), upgrading sub-project 1 from
+  bounded to architectural. Spec + 12-task plan (pilot-first, smallest category
+  before largest) -> `subagent-driven-development` on branch
+  `cookbook-subgraph-retrofit`. One task-level fix round (Task 7/painted-metal:
+  a commit message gave a factually-backwards explanation for a real thumbnail
+  file-size change; the reviewer independently found the true, benign cause --
+  old thumbnails were un-downscaled 2048x2048, new ones correctly 512x512 --
+  fixed via a new documentation commit, not an amend). Final whole-branch
+  review (opus) found 1 Important (the f04 disclosure gap above) + several
+  Minor (boundary-port duplication in the primitive, builder-signature
+  inconsistency across categories, exposed-parameter label drift); one fix
+  wave addressed the Important finding, scoped re-review clean. Merged
+  `--no-ff` to `main` (`034aeaf`), pushed, branch deleted, SDD workspace
+  removed. Fast suite 453 -> 505.
+
 ### Changed this session (plastics category + Donegal tweed)
 
 - **`quality/cookbook_plastics.py`** (new file): `build_p01_glossy_plastic`,
@@ -922,6 +995,28 @@ doc's window.
 ---
 
 ## Archived session log
+
+### 2026-09-03 (plastics category + Donegal tweed): a smooth surface and a fleck lever, both closing out the same backlog batch
+- `pickup` reconciled clean (`main` at `5239283`). Grayson picked "1 + 4"
+  from the briefing's numbered options: the plastics cookbook entry and
+  two-color tweed.
+- `brainstorming` (bounded path, no plan doc): two clarifying questions
+  settled the specifics (glossy vs. matte vs. textured plastic; flecked
+  Donegal-style vs. two-tone herringbone for the tweed), then a short
+  in-chat design, approved.
+- `p01_glossy_plastic`: built from scratch (no donor fits a "smooth,
+  patternless" surface), narrow near-single-color red albedo, low
+  roughness, near-zero relief. Hit and fixed the same scalar-roughness ORM
+  gap `gl01_frosted_glass` did. Preview sent, approved first try.
+- `f08_donegal_tweed`: plain-weave base plus a separate voronoi node for
+  sparse cream/rust flecks via the port-2 rand3 lever, composited with
+  `blend`. First preview read too sparse (~4 flecks per crop); revised the
+  mask threshold and added a second fleck tone, second preview approved.
+- Both promoted, carded, thumbnailed, README counts updated (44/nine to
+  46/ten). Reverted an unrelated `f04_wool_knit` thumbnail regeneration
+  (render non-determinism, not a real change) before committing. Fast
+  suite 447 -> 453. Committed (`68c51dc`) and pushed on explicit
+  instruction ("push it + wrap"). Then this wrap-up.
 
 ### 2026-09-03 (reference-photo authoring workflow + glass cookbook): the assistant learns to read a photo, not just a sentence
 - `pickup` reconciled clean (`main` at `692057b`). Grayson picked backlog
