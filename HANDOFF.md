@@ -1,14 +1,45 @@
 # 🧭 Session Handoff: Tool-MaterialMaker-MCP
 
-_Last updated: 2026-09-03 (reference-photo authoring workflow + first glass cookbook material) CT (America/Chicago)_
+_Last updated: 2026-09-03 (plastics category + Donegal tweed cookbook additions) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**The "image-to-material decomposition" backlog idea is closed: a
+**Plastics (new category) and a second, differently-flecked tweed both
+landed in the cookbook: `p01_glossy_plastic` and `f08_donegal_tweed`.**
+`main` is at `68c51dc`, pushed and in sync. Cookbook is now 46 materials
+across ten categories (was 44/nine).
+- Picked up on the two smallest open backlog items from the prior session's
+  briefing (plastics, two-color tweed). Scoped via `brainstorming` (bounded
+  path): plastics differentiates through the ABSENCE of visible
+  micro-pattern (every other category so far uses one), so it's the first
+  cookbook material built from scratch via `_from_scratch_noise_material`
+  rather than cloned from a donor. Tweed differentiates through color
+  (flecks) rather than weave geometry (f07's chevron).
+- `p01_glossy_plastic`: narrow near-single-color saturated red albedo, low
+  roughness (glossy), non-metallic, normal relief kept just above zero
+  (`param1=0.04`, `param4=0`). Hit the same scalar-roughness ORM gap
+  `gl01_frosted_glass` did; fixed the same way, a flat `rough_const`
+  texture wired into `Material` port 2.
+- `f08_donegal_tweed`: plain `weave2` base (`stitch=1`) plus a SEPARATE
+  `voronoi` node purely for flecks (retyping the base loses its own
+  rand3 output), hard-thresholded to the top ~20% of cells for sparse
+  coverage, cream/rust two-tone color. First pass was too sparse (~4
+  flecks per crop, sent to Grayson, revised); second pass approved.
+  Composited via `blend` (`blend_type=0`, base on majority port 1, flecks
+  on minority port 0, mask on port 2).
+- Both promoted through `promote_cookbook.py`, carded, thumbnailed
+  (`_make_previews.py`). README counts updated (44/nine -> 46/ten).
+  **Real gotcha hit and worked around:** re-rendering a whole
+  `cookbook-<category>` label for one new entry re-renders and
+  re-thumbnails every case in it; `f04_wool_knit`'s thumbnail came out
+  byte-different (render non-determinism, not a content change) and had
+  to be reverted before committing. Fast suite 447 -> 453.
+
+**Before this, the "image-to-material decomposition" backlog idea closed: a
 reference-photo authoring workflow is documented and proven with a real
-cookbook material.** `main` is at `9a02a8d`, pushed and in sync.
+cookbook material.**
 - Scoped via `brainstorming`: the decomposition reasoning happens in
   Claude's own vision during a chat session, no new server code, no new MCP
   tool, no new dependency, which downgraded the task from architectural to
@@ -68,24 +99,20 @@ Older write-ups/log beyond the cap live in
 
 ## 📌 Where we stopped
 
-`main` at `9a02a8d`, pushed and in sync. Reference-photo authoring workflow
-documented and proven with the new glass cookbook entry. Natural stopping
-point, no open decision blocking the next session.
+`main` at `68c51dc`, pushed and in sync. Plastics category and Donegal tweed
+both promoted, carded, and green on the fast suite. Natural stopping point,
+no open decision blocking the next session.
 
 ## ▶️ Next concrete step
 
 Nothing is blocking on Grayson right now.
-1. **Plastics is now the one remaining gap in the glass/plastics cookbook
-   pair** (glass got its first entry this session). Two-color tweed is
-   still open too. New materials land in `cookbook/` via
-   `promote_cookbook.py`, then get a card at `cookbook/<category>/<id>.md`.
-2. **This session's tool list showed `mcp__unreal-engine__*` tools
-   connected** (see the drift note the pickup briefing surfaced). **A.
-   Unreal UE5 export verification** has been blocked for multiple sessions
-   on "needs a live Unreal Editor with the MCP bridge connected, Grayson
-   said it wasn't as of an older session" — worth a live check now that the
-   bridge appears to be up, before assuming it's still blocked.
-3. **"Material Maker for dummies" — a simplified interface, unscoped.**
+1. **This session's tool list showed `mcp__unreal-engine__*` tools
+   connected** (see the drift note an earlier pickup briefing surfaced).
+   **A. Unreal UE5 export verification** has been blocked for multiple
+   sessions on "needs a live Unreal Editor with the MCP bridge connected,
+   Grayson said it wasn't as of an older session" — worth a live check now
+   that the bridge appears to be up, before assuming it's still blocked.
+2. **"Material Maker for dummies" — a simplified interface, unscoped.**
    Grayson's backlog idea (captured in full in
    `_agent-commons/ideas/Tool-MaterialMaker-MCP.md`): the real node graph
    can be intimidating to a non-technical viewer; is there a simpler
@@ -94,6 +121,11 @@ Nothing is blocking on Grayson right now.
    framing first, since hiding the graph outright vs. exposing a simplified
    parameter panel on top of a graph mm-mcp already authored are very
    different scope bets.
+3. **More cookbook categories/materials** remain an open-ended, no
+   specific quick-win flagged right now (glass, plastics, and a second
+   tweed variant all landed across the last two sessions). New materials
+   land in `cookbook/` via `promote_cookbook.py`, then get a card at
+   `cookbook/<category>/<id>.md`.
 
 The older open backlog, unchanged unless noted:
 - **2 findings ruled out, not fixed** (deliberate): #8 (`_cmd_clear_graph`'s
@@ -104,9 +136,10 @@ The older open backlog, unchanged unless noted:
   full `catalog://nodes` resource, so it's the cheap discovery lever, not
   redundant with the resource + `describe_node`.
 - **B. More cookbook categories** — fabrics, organics, sci-fi, terrain, wood,
-  stone, leather, painted-metal, and now glass (1 entry) are all
-  represented; terrain includes the natural-surface set (ice/lava/forest
-  floor/pebbles). **Plastics is the remaining uncovered quick-win.**
+  stone, leather, painted-metal, glass, and now plastics are all
+  represented (ten categories, 46 materials); terrain includes the
+  natural-surface set (ice/lava/forest floor/pebbles). No specific
+  remaining gap flagged right now.
 - **C. True cobblestone — DONE.** `s07_cobblestone` closed this; the `s05`
   hex-grid partial is superseded.
 - **D. Wool loop-knit — CLOSED as unreachable.** No bundled generator makes
@@ -154,6 +187,47 @@ The older open backlog, unchanged unless noted:
   available; two parked-not-fixed overlay-builder findings from a much
   earlier session (staleness marker, `_append_autoload`'s first-occurrence
   match, both verified low-priority).
+
+## 🗂️ Changed this session (plastics category + Donegal tweed)
+
+- **`quality/cookbook_plastics.py`** (new file): `build_p01_glossy_plastic`,
+  the first cookbook material built from scratch via
+  `_from_scratch_noise_material` rather than cloned from a donor. Narrow
+  near-single-color red albedo, non-metallic, low roughness (`0.18`),
+  near-zero normal relief (`param1=0.04`, `param4=0` since the fix still
+  applies to a directly-fed perlin). Added a `rough_const` flat-roughness
+  texture into `Material` port 2 so ORM exports (same gap
+  `gl01_frosted_glass` hit).
+- **`quality/cookbook_fabrics.py`**: new `build_f08_donegal_tweed`. Plain
+  `weave2` base (`stitch=1`, distinct from f07's herringbone `stitch=3`)
+  recolored heather gray-brown. A separate `voronoi_fleck` node (not the
+  base generator, which loses its rand3 output once retyped) feeds a
+  hard-threshold mask (top ~20% of cells) and a cream/rust two-tone color
+  layer, composited via `blend` (`blend_type=0`, base weave on majority
+  port 1, flecks on minority port 0, mask on port 2). First pass was too
+  sparse (~4 flecks visible per 2048px crop, sent to Grayson); revised the
+  threshold and added the second fleck tone, approved on the second pass.
+- **`cookbook/plastics/p01_glossy_plastic.{ptex,md}`**,
+  **`cookbook/fabrics/f08_donegal_tweed.{ptex,md}`**: promoted via
+  `promote_cookbook.py`, recipe cards written, gallery thumbnails
+  generated (`_make_previews.py`). `README.md` counts bumped 44/nine to
+  46/ten, contact-sheet caption updated (not regenerated, same deliberate
+  deferral as glass).
+- **Gotcha hit and fixed:** `_make_previews.py cookbook-fabrics` (and
+  `render_cookbook.py` before it) regenerate every case in the label, not
+  just the new one. `f04_wool_knit`'s thumbnail came back byte-different
+  (render non-determinism, the graph itself is unchanged) and was reverted
+  before committing to keep the diff scoped to the real work.
+- **Process:** `pickup` chained straight into `brainstorming` (bounded
+  path, no plan doc) since the prior session's briefing already scoped both
+  items into concrete numbered options. Two clarifying questions (plastics
+  look, tweed's distinguishing lever vs. f07) then a short in-chat design,
+  approved. Each material: build, render, 3D-preview, send to Grayson,
+  wait for a look, promote. Fast suite 447 -> 453 (2 new gate tests per
+  material: recipe-card parity + thumbnail presence, already existed as a
+  parametrized test, just gained 2 more cases). Committed (`68c51dc`) and
+  pushed to `main` on Grayson's explicit go-ahead (design approval and push
+  approval given separately).
 
 ## 🗂️ Changed this session (reference-photo authoring workflow + glass cookbook)
 
@@ -260,46 +334,8 @@ The older open backlog, unchanged unless noted:
   `_agent-commons\log\2026-09-03-claude-code-mm-mcp-v060-release-donor-vendor-spec.md`
   and this session's own wrap-up report.
 
-## 🗂️ Changed this session (v0.5.0 release + AUTHORING split + hygiene)
-
-- **v0.5.0 released:** merged release-please PR #2 (`35484e3`), synced local
-  `main`. `bump-minor-pre-major` cut 0.5.0 not 1.0.0, as intended.
-- **AUTHORING split, feature branch `authoring-split` merged `--no-ff` as
-  `6c2edf0`, pushed; branch deleted.** 6 commits `ec72228..a2455b8`. Files:
-  `src/mm_mcp/server.py` (the `guide://authoring` resource: `_authoring_guide_path`
-  / `read_authoring_guide` pure helpers + the `@mcp.resource` wrapper),
-  `tests/test_guide_resource.py` (new), `docs/AUTHORING.md` (996 to 308 lines,
-  now the invariant guide with a new "Cross-material lessons" section),
-  `cookbook/**/*.md` (43 new recipe cards, one per graph),
-  `tests/test_cookbook_gate.py` (new `test_cookbook_graph_has_recipe_card`
-  parity gate), plus reference fixups in `README.md`, `quality/README.md`,
-  `cookbook/README.md`, `src/mm_mcp/cookbook.py`. Fast suite 424 (was 378).
-- **Hygiene pass (`cd900f0`):** `quality/README.md` (dropped "informal", swept
-  em dashes), `docs/superpowers/README.md` (new, labels the dir as execution
-  history), `docs/images/cookbook-contact-sheet.png` (5.45MB to 0.99MB, 256-color
-  palette), `src/mm_mcp/server.py` (one docstring em dash).
-- **Process:** `pickup` reconciled clean (0.5.0 PR correctly at 0.5.0 confirming
-  the earlier `bump-minor-pre-major` fix). `phased-rebuild` -> `writing-plans`
-  (spec-in-plan + 11 tasks, `docs/superpowers/plans/2026-09-04-authoring-split.md`)
-  -> `subagent-driven-development`. The 8 per-category card tasks were batched
-  into 3 dispatches by independence (disjoint dirs, add-only); every dispatch
-  reviewed as a unit; final whole-branch review clean on opus. All card and
-  guide prose written em-dash-free (the repo pre-commit hook checks added lines).
-- **Decisions (+ why):** cards live at `cookbook/<category>/<id>.md` because all
-  three cookbook tools glob `*.ptex` specifically (verified), so `.md` siblings
-  are invisible to `list_cookbook`, the gate, and `promote --check`. Residue
-  rule: a single-material recipe becomes a card, a cross-material lesson stays in
-  or moves up into the guide (topology-not-donor, masonry diagnostics, blend
-  port/opacity all lifted). Worked on a feature branch in the main checkout, not
-  a worktree, because the editable `.venv` resolves `mm_mcp` from the main
-  checkout's `src/`. Deferred `examples/` fold (load-bearing) and
-  `HANDOFF_ARCHIVE.md` deletion (Grayson's workflow call), both surfaced.
-- One parked minor from the final review: the voronoi port-0 polarity
-  cross-material note stayed in the cards (l04 full, l01/s04 reference it) rather
-  than being lifted to the guide. Not content loss; a one-line guide addition
-  could close it later.
-
-> 📦 **23 older "Changed this session" write-ups archived**, newest first the
+> 📦 **24 older "Changed this session" write-ups archived**, newest first the
+> 2026-09-04 v0.5.0 release + AUTHORING split + hygiene session, then the
 > 2026-09-03 teardown #2 + cookbook-as-data session, then through
 > 2026-09-01, incl. the wool-knit closure/f07/terrain session, the blend-opacity
 > debug swatches, the painted-metal cookbook, and the v0.4.0 release-unblock
@@ -314,6 +350,15 @@ The older open backlog, unchanged unless noted:
 
 ## ⚠️ Heads-up for the next agent
 
+- **`render_cookbook.py <label>` and `_make_previews.py <label>` operate on
+  the WHOLE label, not just the case you're adding.** Adding one material to
+  an existing category (e.g. `f08_donegal_tweed` to `cookbook-fabrics`) and
+  running these regenerates and re-thumbnails every other case in that
+  category too. Godot's own render is not perfectly deterministic run to
+  run, so an unrelated case's thumbnail can come back byte-different with
+  zero content change. Always `git status` after these before committing,
+  and revert anything that changed only because it got swept up in the same
+  label's regen.
 - **`ambientcg.com` redirected to a malicious scareware page during this
   session** (a fake "McAfee Security" page at `securesweep.pro`, hit via
   the in-app Browser pane's `navigate`). Closed the tab immediately without
@@ -468,10 +513,32 @@ The older open backlog, unchanged unless noted:
 > section past that cap, the oldest entry moves out verbatim (no
 > summarizing) into [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md)
 > instead of letting this doc grow unbounded -- flagged as a real pickup
-> cost by the 2026-08-29 teardown (Maintainer lens). **30 older entries are
-> now archived there**, from the 2026-09-01 blend-opacity-debug-swatches
-> session back through the project's Phase 1-2 kickoff on 2026-08-25.
+> cost by the 2026-08-29 teardown (Maintainer lens). **31 older entries are
+> now archived there**, from the 2026-09-01 noise-vocab-gallery session back
+> through the project's Phase 1-2 kickoff on 2026-08-25.
 
+
+### 2026-09-03 (plastics category + Donegal tweed): a smooth surface and a fleck lever, both closing out the same backlog batch
+- `pickup` reconciled clean (`main` at `5239283`). Grayson picked "1 + 4"
+  from the briefing's numbered options: the plastics cookbook entry and
+  two-color tweed.
+- `brainstorming` (bounded path, no plan doc): two clarifying questions
+  settled the specifics (glossy vs. matte vs. textured plastic; flecked
+  Donegal-style vs. two-tone herringbone for the tweed), then a short
+  in-chat design, approved.
+- `p01_glossy_plastic`: built from scratch (no donor fits a "smooth,
+  patternless" surface), narrow near-single-color red albedo, low
+  roughness, near-zero relief. Hit and fixed the same scalar-roughness ORM
+  gap `gl01_frosted_glass` did. Preview sent, approved first try.
+- `f08_donegal_tweed`: plain-weave base plus a separate voronoi node for
+  sparse cream/rust flecks via the port-2 rand3 lever, composited with
+  `blend`. First preview read too sparse (~4 flecks per crop); revised the
+  mask threshold and added a second fleck tone, second preview approved.
+- Both promoted, carded, thumbnailed, README counts updated (44/nine to
+  46/ten). Reverted an unrelated `f04_wool_knit` thumbnail regeneration
+  (render non-determinism, not a real change) before committing. Fast
+  suite 447 -> 453. Committed (`68c51dc`) and pushed on explicit
+  instruction ("push it + wrap"). Then this wrap-up.
 
 ### 2026-09-03 (reference-photo authoring workflow + glass cookbook): the assistant learns to read a photo, not just a sentence
 - `pickup` reconciled clean (`main` at `692057b`). Grayson picked backlog
@@ -575,26 +642,5 @@ The older open backlog, unchanged unless noted:
 - Merged `--no-ff` (`530ad0f`), pushed, branch deleted, SDD workspace removed.
   Wrap-up capped STATUS.md's header (old text archived verbatim), wrote memory
   and the commons log.
-
-### 2026-09-01 (noise-vocab gallery + 2 backlog + wool take-two) — closed #3/#4, quantified the sameness, wool still open
-- Picked up via `pickup` (clean `main` at `198e2ad`, in sync). Grayson batched
-  4 items: #2 wool, #3 list_node_types, #4 render_preview, plus "test different
-  noise, a lot of the stuff is looking kind of similar." Ran cheapest-first.
-- **#3 list_node_types: KEEP** (5KB names vs 260KB catalog). Advisor caught the
-  real doc bug: `category` is a name substring, not a taxonomy. Fixed docstring +
-  README. **#4 render_preview: documented** (AUTHORING.md workflow step 5).
-- **Noise vocabulary:** `advisor` steered it (histogram first, reference gallery
-  not a pixel-checked swatch, lead with the fbm sweep). Diagnosis: 38 builders,
-  69% clone 3 donors, only base noise added by hand is perlin/voronoi, zero of the
-  other 45 noise nodes. Built `quality/noise_gallery.py` (fbm 8-basis sweep +
-  cross-family row), 14 renders, 2 tracked contact sheets, AUTHORING.md section.
-  Fast suite 262. Committed + pushed `20e485d`.
-- **Wool take-two** (bounded `brainstorming` → pattern-Bounce approach, approved):
-  authored + rendered + 3D-previewed. Result reads tufted/quilted (square bump
-  lattice), not knit loops — the square grid is inherent to `pattern` multiplying
-  two axis-aligned waves. Reverted f04 to the committed weave partial; recipe +
-  next-steps (offset rows / truchet Circle / keep-as-quilted-slot) captured in the
-  Changed-this-session block. Then wrapped.
-- Wrote `_agent-commons\log\2026-09-01-claude-code-mm-mcp-noise-vocab-backlog-batch.md`.
 
 _(Older entries continue in [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).)_

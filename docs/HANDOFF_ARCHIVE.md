@@ -19,6 +19,45 @@ doc's window.
 
 ## Archived "Changed this session" write-ups
 
+## 🗂️ Changed this session (v0.5.0 release + AUTHORING split + hygiene)
+
+- **v0.5.0 released:** merged release-please PR #2 (`35484e3`), synced local
+  `main`. `bump-minor-pre-major` cut 0.5.0 not 1.0.0, as intended.
+- **AUTHORING split, feature branch `authoring-split` merged `--no-ff` as
+  `6c2edf0`, pushed; branch deleted.** 6 commits `ec72228..a2455b8`. Files:
+  `src/mm_mcp/server.py` (the `guide://authoring` resource: `_authoring_guide_path`
+  / `read_authoring_guide` pure helpers + the `@mcp.resource` wrapper),
+  `tests/test_guide_resource.py` (new), `docs/AUTHORING.md` (996 to 308 lines,
+  now the invariant guide with a new "Cross-material lessons" section),
+  `cookbook/**/*.md` (43 new recipe cards, one per graph),
+  `tests/test_cookbook_gate.py` (new `test_cookbook_graph_has_recipe_card`
+  parity gate), plus reference fixups in `README.md`, `quality/README.md`,
+  `cookbook/README.md`, `src/mm_mcp/cookbook.py`. Fast suite 424 (was 378).
+- **Hygiene pass (`cd900f0`):** `quality/README.md` (dropped "informal", swept
+  em dashes), `docs/superpowers/README.md` (new, labels the dir as execution
+  history), `docs/images/cookbook-contact-sheet.png` (5.45MB to 0.99MB, 256-color
+  palette), `src/mm_mcp/server.py` (one docstring em dash).
+- **Process:** `pickup` reconciled clean (0.5.0 PR correctly at 0.5.0 confirming
+  the earlier `bump-minor-pre-major` fix). `phased-rebuild` -> `writing-plans`
+  (spec-in-plan + 11 tasks, `docs/superpowers/plans/2026-09-04-authoring-split.md`)
+  -> `subagent-driven-development`. The 8 per-category card tasks were batched
+  into 3 dispatches by independence (disjoint dirs, add-only); every dispatch
+  reviewed as a unit; final whole-branch review clean on opus. All card and
+  guide prose written em-dash-free (the repo pre-commit hook checks added lines).
+- **Decisions (+ why):** cards live at `cookbook/<category>/<id>.md` because all
+  three cookbook tools glob `*.ptex` specifically (verified), so `.md` siblings
+  are invisible to `list_cookbook`, the gate, and `promote --check`. Residue
+  rule: a single-material recipe becomes a card, a cross-material lesson stays in
+  or moves up into the guide (topology-not-donor, masonry diagnostics, blend
+  port/opacity all lifted). Worked on a feature branch in the main checkout, not
+  a worktree, because the editable `.venv` resolves `mm_mcp` from the main
+  checkout's `src/`. Deferred `examples/` fold (load-bearing) and
+  `HANDOFF_ARCHIVE.md` deletion (Grayson's workflow call), both surfaced.
+- One parked minor from the final review: the voronoi port-0 polarity
+  cross-material note stayed in the cards (l04 full, l01/s04 reference it) rather
+  than being lifted to the guide. Not content loss; a one-line guide addition
+  could close it later.
+
 ## 🗂️ Changed this session (teardown #2 + cookbook-as-data)
 
 - Branch: feature branch `cookbook-as-data` (11 commits `6c3083c..f31d753`),
@@ -737,6 +776,27 @@ doc's window.
 ---
 
 ## Archived session log
+
+### 2026-09-01 (noise-vocab gallery + 2 backlog + wool take-two) — closed #3/#4, quantified the sameness, wool still open
+- Picked up via `pickup` (clean `main` at `198e2ad`, in sync). Grayson batched
+  4 items: #2 wool, #3 list_node_types, #4 render_preview, plus "test different
+  noise, a lot of the stuff is looking kind of similar." Ran cheapest-first.
+- **#3 list_node_types: KEEP** (5KB names vs 260KB catalog). Advisor caught the
+  real doc bug: `category` is a name substring, not a taxonomy. Fixed docstring +
+  README. **#4 render_preview: documented** (AUTHORING.md workflow step 5).
+- **Noise vocabulary:** `advisor` steered it (histogram first, reference gallery
+  not a pixel-checked swatch, lead with the fbm sweep). Diagnosis: 38 builders,
+  69% clone 3 donors, only base noise added by hand is perlin/voronoi, zero of the
+  other 45 noise nodes. Built `quality/noise_gallery.py` (fbm 8-basis sweep +
+  cross-family row), 14 renders, 2 tracked contact sheets, AUTHORING.md section.
+  Fast suite 262. Committed + pushed `20e485d`.
+- **Wool take-two** (bounded `brainstorming` → pattern-Bounce approach, approved):
+  authored + rendered + 3D-previewed. Result reads tufted/quilted (square bump
+  lattice), not knit loops — the square grid is inherent to `pattern` multiplying
+  two axis-aligned waves. Reverted f04 to the committed weave partial; recipe +
+  next-steps (offset rows / truchet Circle / keep-as-quilted-slot) captured in the
+  Changed-this-session block. Then wrapped.
+- Wrote `_agent-commons\log\2026-09-01-claude-code-mm-mcp-noise-vocab-backlog-batch.md`.
 
 ### 2026-09-01 (blend-opacity debug swatches) — +2 known-answer diagnostics, all pass
 - Picked up via `pickup`; Grayson pre-picked the move in the args (build the
