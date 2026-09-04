@@ -1,5 +1,47 @@
 # Changelog
 
+## [0.5.0](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/compare/v0.4.0...v0.5.0) (2026-09-04)
+
+
+### ⚠ BREAKING CHANGES
+
+* list_examples/load_example serve the tracked cookbook alongside bundled examples
+
+### Features
+
+* add mm_mcp.cookbook lookup for the tracked cookbook/ tree ([ee60045](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/ee60045784d9ce17caf720928797efaafe8c94f4))
+* **config:** add cookbook_dir (MM_COOKBOOK_DIR, defaults to the checkout's cookbook/) ([5a0b42b](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/5a0b42bb7cbb237aa9feb66076225010e0dfb249))
+* **cookbook:** +4 natural terrain materials (t05-t08) via topology-not-donor ([6ed5773](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/6ed57732ab46cb226ce4de0bce79eb2940265a6c))
+* **cookbook:** +5 masonry materials, fix render.py pipe-EOF hang ([4c14f8f](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/4c14f8f266d51f1cadf8d7222c8ed18c741d1363))
+* **cookbook:** +5 painted-metal materials (pm01-pm05) ([4d72c8b](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/4d72c8b3534169b66fea98d750c8037a6427e4c2))
+* **cookbook:** +f07 herringbone tweed; close wool-knit as unreachable ([8ca2c2b](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/8ca2c2b4d955031b52e2a9a3107ea88016562681))
+* **cookbook:** promote the 43 authored graphs into a tracked cookbook/ tree ([6c3083c](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/6c3083cb0dab10a9e8b0e1f8117e50aa1a613915))
+* **debug-swatches:** +2 blend port/opacity diagnostic swatches ([80256d0](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/80256d09a3a02c70acbf4250cc68e4f5aa407c31))
+* **doctor:** report the cookbook directory and material count ([56f1e23](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/56f1e23936669dcc8b7526c0e5d1399a170c6983))
+* list_examples/load_example serve the tracked cookbook alongside bundled examples ([68a7d67](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/68a7d6767ba5c3692236ed3a39fe6a1cd06139db))
+
+
+### Bug Fixes
+
+* **cookbook:** address final review findings on cookbook-as-data ([f31d753](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/f31d7538380a76b147f91b66746805e5a61225c0))
+* **cookbook:** resolve sf03 circuit-board trace-bleed-through ([6667b4b](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/6667b4b1eee797103760be8a6167cfe805f438ed))
+* **doctor:** guard the cookbook check so an unreadable dir is reported, never raised ([251fb4a](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/251fb4aae88e50b4d656bac89d9f453ebde6c539))
+* **gitignore:** restore the quality/cookbook/ ignore rule dropped in the promote commit ([55132eb](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/55132eb4074dca0af21755cdd57be1e8a85ed5ce))
+
+
+### Documentation
+
+* add cookbook-as-data design spec + phased plan ([a91f129](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/a91f1299a4f08eaed87c6e733ea79f9b497c5abf))
+* **cookbook:** README/AUTHORING describe the tracked cookbook; contact sheet at 43 ([9384266](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/9384266288cfd954ca66071f06093b4e9f6fd100))
+* **noise:** noise-vocabulary gallery + close list_node_types/render_preview backlog ([20e485d](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/20e485d1677e41f9f4be5d6ad50cbb19a6b1e7ba))
+* wrap up blend-opacity debug-swatch session (HANDOFF/STATUS baton) ([198e2ad](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/198e2ad17fced7f801c6284b6510cbc83e8f2a18))
+* wrap up masonry + sf03 session (HANDOFF/STATUS baton) ([a849784](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/a849784d8c65606154858a1c82aee716b3e2dd21))
+* wrap up noise-vocab + backlog batch session (HANDOFF/STATUS baton) ([e7bb420](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/e7bb4209806b60f3e8afb732b3ce79e88ec42a10))
+* wrap up painted-metal cookbook session (HANDOFF/STATUS baton) ([c0b96d7](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/c0b96d7369715332e7b573c40e4629bc5fec44fa))
+* wrap up teardown [#2](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/issues/2) + cookbook-as-data session (HANDOFF/STATUS baton, STATUS header capped) ([66661f5](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/66661f53c3c6a4c5101ed83bb87b07ead7e48a4f))
+* wrap up v0.4.0 release session (HANDOFF/STATUS + archive trim) ([d946942](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/d9469426fd8430ad744330bc0623aba6c577202c))
+* wrap up wool-knit-closed + herringbone + terrain session (HANDOFF/STATUS baton) ([4136c9e](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/4136c9edee25fc84c73480c6f4a4ac770947d197))
+
 ## [0.4.0](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/compare/v0.3.0...v0.4.0) (2026-08-30)
 
 
