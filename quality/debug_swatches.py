@@ -32,7 +32,7 @@ _LABEL = "debug-swatches"
 
 def _material(albedo=(0.8, 0.8, 0.8), metallic=0.0, roughness=0.6):
     """The Material node skeleton Godot's loader expects (verified against
-    author.py's _from_scratch_noise_material and the bundled examples). Input
+    author_helpers.py's _from_scratch_noise_material and the bundled examples). Input
     ports: albedo=0, metallic=1, roughness=2, normal=4. albedo_color is used
     only when the albedo input port is left unconnected."""
     r, g, b = albedo

@@ -1,7 +1,7 @@
 """Cookbook growth: leather-category authoring recipes beyond the frozen 15-case
 Phase 3 test set (`f02_brown_leather` is frozen there already -- see
 quality/test_set.json's freeze note; this is additive, not an edit to that
-case). Informal: 1 variant per material, no scorecard gate. Reuses author.py's
+case). Informal: 1 variant per material, no scorecard gate. Reuses author_helpers.py's
 graph-surgery helpers; outputs land under
 quality/authored/cookbook-leather/<case>/v1.ptex, same layout convention as the
 Phase 3 iterations.

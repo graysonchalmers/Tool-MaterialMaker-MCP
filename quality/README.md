@@ -37,7 +37,7 @@ Grayson-audited, recorded in `STATUS.md`.
 that way. To grow the recipe library into new material categories WITHOUT
 touching frozen infra, use the `cookbook_fabrics.py` pattern instead of
 `author.py`/`run_case.py`: a small `quality/cookbook_<category>.py` (same
-graph-surgery helpers, imported from `author.py`) writes variants to
+graph-surgery helpers, imported from `author_helpers.py`) writes variants to
 `quality/authored/cookbook-<category>/`, and `render_cookbook.py <label>`
 validates + renders them to `quality/cookbook/<label>/` for eyeballing, no
 `test_set.json` entry, no scorecard, no gate. Invariants that generalize

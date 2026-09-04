@@ -2,7 +2,7 @@
 Phase 3 test set (`w01_oak_planks`/`w02_weathered_barn_wood` are frozen there
 already -- see quality/test_set.json's freeze note; this is additive, not an
 edit to those cases). Informal: 1 variant per material, no scorecard gate.
-Reuses author.py's graph-surgery helpers; outputs land under
+Reuses author_helpers.py's graph-surgery helpers; outputs land under
 quality/authored/cookbook-wood/<case>/v1.ptex, same layout convention as the
 Phase 3 iterations.
 

@@ -1,7 +1,7 @@
 """Cookbook growth: fabric-category authoring recipes beyond the frozen 15-case
 Phase 3 test set (see quality/test_set.json's freeze note -- this is additive,
 not an edit to those cases). Informal: 1 variant per material, no scorecard
-gate. Reuses author.py's graph-surgery helpers; outputs land under
+gate. Reuses author_helpers.py's graph-surgery helpers; outputs land under
 quality/authored/cookbook-fabrics/<case>/v1.ptex, same layout convention as
 the Phase 3 iterations.
 

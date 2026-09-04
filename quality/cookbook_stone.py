@@ -2,7 +2,7 @@
 frozen 15-case Phase 3 test set (`s01_red_brick_wall`/`s02_gray_granite`/
 `s03_cracked_concrete` are already frozen there -- see quality/test_set.json's
 freeze note; this is additive, not an edit to those cases). Informal: 1
-variant per material, no scorecard gate. Reuses author.py's graph-surgery
+variant per material, no scorecard gate. Reuses author_helpers.py's graph-surgery
 helpers; outputs land under quality/authored/cookbook-stone/<case>/v1.ptex,
 same layout convention as the Phase 3 iterations.
 
