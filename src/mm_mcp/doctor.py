@@ -12,6 +12,7 @@ import os
 from dataclasses import dataclass
 
 from mm_mcp.catalog_builder import build_catalog
+from mm_mcp.cookbook import list_cookbook
 from mm_mcp.config import Config, load_config
 
 
@@ -46,6 +47,14 @@ def check_setup(cfg: Config) -> list[Check]:
         checks.append(Check("examples", True, cfg.examples_dir))
     else:
         checks.append(Check("examples", False, f"missing: '{cfg.examples_dir}'"))
+
+    if cfg.cookbook_dir and os.path.isdir(cfg.cookbook_dir):
+        n = len(list_cookbook(cfg.cookbook_dir))
+        checks.append(Check("cookbook", True, f"{n} materials in '{cfg.cookbook_dir}'"))
+    else:
+        checks.append(Check("cookbook", True,
+                            "not found (optional: cookbook/ ships with the git checkout; "
+                            "set MM_COOKBOOK_DIR to point at one)"))
 
     appid_path = os.path.join(pp, "steam_appid.txt") if pp else "steam_appid.txt"
     appid_hint = ("Without it (containing 4110830) Material Maker self-relaunches "

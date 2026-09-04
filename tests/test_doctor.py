@@ -128,3 +128,16 @@ def test_doctor_reports_allowed_roots_set():
     c = {c.name: c for c in _check_setup(cfg)}["MM_ALLOWED_ROOTS"]
     assert c.ok is True
     assert r"C:\a" in c.detail
+
+
+def test_check_setup_reports_cookbook_count():
+    cookbook = next(c for c in check_setup(load_config()) if c.name == "cookbook")
+    assert cookbook.ok
+    assert "43" in cookbook.detail or "materials" in cookbook.detail
+
+
+def test_check_setup_cookbook_missing_is_informational_not_failing(tmp_path):
+    cfg = load_config(overrides={"MM_COOKBOOK_DIR": str(tmp_path / "nope")})
+    cookbook = next(c for c in check_setup(cfg) if c.name == "cookbook")
+    assert cookbook.ok
+    assert "not found" in cookbook.detail
