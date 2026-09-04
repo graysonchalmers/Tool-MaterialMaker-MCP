@@ -11,6 +11,7 @@ from mm_mcp.config import Config, load_config
 from mm_mcp.overlay import ensure_overlay
 from mm_mcp.render import RenderResult, _collect_fresh_images, _kill_tree, _snapshot_pngs
 from mm_mcp.validator import validate_graph
+from mm_mcp import paths
 
 # Must match addons/mm_live/live_server.gd's LIVE_PORT -- no shared-constant
 # mechanism exists across GDScript and Python, so keep both literals in sync
@@ -307,6 +308,38 @@ def set_param(name: str, parameters: dict, cfg: Config | None = None, host: str 
         return LiveResult(ok=False, error="validation failed", data={"problems": blocking})
     return _send_command({"cmd": "set_param", "name": name, "parameters": parameters},
                           host, port, timeout)
+
+
+def load_graph(graph: dict | None = None, path: str | None = None, *,
+               cfg: Config | None = None, host: str = LIVE_HOST, port: int = LIVE_PORT,
+               timeout: float = 30.0) -> LiveResult:
+    """Replace the graph shown on Material Maker's active tab, in place, with
+    `graph` (a {nodes, connections, ...} dict) or the graph read from `path`
+    (a .ptex file). Exactly one of graph/path is required. The graph is
+    validated against the catalog before the socket is touched; validation and
+    read/parse failures are returned as data, never raised. Uses the 30s
+    mutation-op timeout: a load compiles shaders like the other mutating ops.
+    Does not save: this changes what is shown, never a file on disk."""
+    cfg = cfg or load_config()
+    if (graph is None) == (path is None):
+        return LiveResult(ok=False,
+                          error="load_graph requires exactly one of graph= or path=")
+    if path is not None:
+        try:
+            resolved = paths.ensure_within_roots(path, cfg.allowed_roots)
+        except paths.PathNotAllowed as exc:
+            return LiveResult(ok=False, error=str(exc))
+        try:
+            with open(resolved, encoding="utf-8") as fh:
+                graph = json.load(fh)
+        except (OSError, ValueError) as exc:
+            return LiveResult(ok=False, error=f"could not read graph file '{path}': {exc}")
+    if not isinstance(graph, dict):
+        return LiveResult(ok=False, error="graph must be a JSON object (dict)")
+    errors = _validation_errors(graph, cfg)
+    if errors:
+        return LiveResult(ok=False, error="validation failed", data={"problems": errors})
+    return _send_command({"cmd": "load_graph", "data": json.dumps(graph)}, host, port, timeout)
 
 
 def render(basename: str = "material", profile: str = "Godot/Godot 4 Standard",
