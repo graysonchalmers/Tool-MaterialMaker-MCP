@@ -143,6 +143,11 @@ When unset (the default), paths are unrestricted. Either way, node/example
 `name` and `basename` arguments are always rejected if they contain a path
 separator or `..`.
 
+`MM_COOKBOOK_DIR` is also optional. It points the server at a cookbook of
+authored graphs (see [cookbook/README.md](cookbook/README.md)) and defaults
+to the checkout's own `cookbook/` folder, so a git clone needs nothing set.
+Set it only if you want the server to serve a cookbook from somewhere else.
+
 Either way you get an `mm-mcp` command on your PATH. (A `pip install mm-mcp`
 from PyPI is packaged and ready but not yet published; the clone above is the
 current route.)

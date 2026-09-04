@@ -250,8 +250,11 @@ def load_example(name: str, source: str = "auto") -> dict:
     if path is None:
         return {"ok": False, "error": f"no example named '{name}' (source={source}); "
                                       "call list_examples to see what exists"}
-    with open(path, encoding="utf-8") as fh:
-        return json.load(fh)
+    try:
+        with open(path, encoding="utf-8") as fh:
+            return json.load(fh)
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        return {"ok": False, "error": f"cannot load '{path}': {exc}"}
 
 
 _live_session: live.LiveSession | None = None

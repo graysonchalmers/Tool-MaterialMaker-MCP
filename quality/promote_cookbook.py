@@ -15,7 +15,7 @@ Usage (from the repo root):
 Any tracked file that is missing or differs from its authored v1.ptex is
 reported and the exit code is 1. Run without --check to accept the new output.
 """
-import filecmp
+import json
 import shutil
 import sys
 from pathlib import Path
@@ -30,10 +30,17 @@ def promote(authored_root: Path, cookbook_root: Path, check: bool = False,
             labels: list[str] | None = None) -> list[str]:
     """Copy (or, with check=True, compare) every cookbook-*/<id>/v1.ptex.
     Returns a list of problem strings; empty means clean."""
+    if not authored_root.is_dir():
+        return [f"{authored_root}: not a directory (nothing to promote or check)"]
     problems: list[str] = []
-    label_dirs = sorted(d for d in authored_root.glob(PREFIX + "*") if d.is_dir())
+    all_label_dirs = sorted(d for d in authored_root.glob(PREFIX + "*") if d.is_dir())
+    label_dirs = all_label_dirs
     if labels:
-        label_dirs = [d for d in label_dirs if d.name in labels]
+        matched = {d.name for d in all_label_dirs}
+        for label in labels:
+            if label not in matched:
+                problems.append(f"{label}: no such directory under {authored_root}")
+        label_dirs = [d for d in all_label_dirs if d.name in labels]
     for label_dir in label_dirs:
         category = label_dir.name[len(PREFIX):]
         for case_dir in sorted(p for p in label_dir.iterdir() if p.is_dir()):
@@ -45,8 +52,11 @@ def promote(authored_root: Path, cookbook_root: Path, check: bool = False,
             if check:
                 if not dst.is_file():
                     problems.append(f"{dst}: missing (run promote_cookbook.py to add it)")
-                elif not filecmp.cmp(src, dst, shallow=False):
-                    problems.append(f"{dst}: differs from {src}")
+                else:
+                    src_json = json.loads(src.read_text(encoding="utf-8"))
+                    dst_json = json.loads(dst.read_text(encoding="utf-8"))
+                    if src_json != dst_json:
+                        problems.append(f"{dst}: differs from {src}")
             else:
                 dst.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(src, dst)

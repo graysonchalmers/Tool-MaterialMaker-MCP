@@ -73,5 +73,5 @@ of 43 builders sit on three upstream donor files (`crocodile_skin`, `rock`,
 | Phase | Deliverable | Gate |
 |---|---|---|
 | A | `promote_cookbook.py`, tracked `cookbook/` tree, `cookbook.py`, gate test | `pytest tests/test_cookbook_gate.py` green (43 graphs validate, ids unique, thumbnails present); `promote_cookbook.py --check` exit 0 |
-| B | `cookbook_dir` config, dual-source `list_examples`/`load_example`, doctor line | fast suite green; a real render of `load_example("f07_herringbone_tweed")` through `render_graph` produces 4 PNGs |
+| B | `cookbook_dir` config, dual-source `list_examples`/`load_example`, doctor line | fast suite green; a real render of `load_example("f07_herringbone_tweed")` through `render_graph` reproduces the material's locked render (f07 wires no height input, so it exports 3 maps) |
 | C | README, cookbook/README, quality/README, AUTHORING, contact sheet | counts in README match `cookbook/` on disk; CI green on push |

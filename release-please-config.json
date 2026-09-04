@@ -4,7 +4,9 @@
     ".": {
       "release-type": "python",
       "package-name": "mm-mcp",
-      "include-component-in-tag": false
+      "include-component-in-tag": false,
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": false
     }
   }
 }

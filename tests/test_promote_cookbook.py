@@ -56,3 +56,30 @@ def test_labels_filter_limits_scope(tmp_path):
     promote(tmp_path / "authored", tmp_path / "cookbook", labels=["cookbook-wood"])
     assert (tmp_path / "cookbook" / "wood" / "w05_dark_walnut.ptex").exists()
     assert not (tmp_path / "cookbook" / "scifi").exists()
+
+
+def test_missing_authored_root_is_a_problem(tmp_path):
+    problems = promote(tmp_path / "nope", tmp_path / "cookbook", check=True)
+    assert len(problems) == 1
+    assert "not a directory" in problems[0]
+
+
+def test_unknown_label_is_a_problem(tmp_path):
+    _authored(tmp_path, "cookbook-wood", "w05_dark_walnut", {"type": "graph"})
+    problems = promote(tmp_path / "authored", tmp_path / "cookbook",
+                        labels=["cookbook-typo"])
+    assert len(problems) == 1
+    assert "cookbook-typo" in problems[0]
+    assert not (tmp_path / "cookbook").exists()
+
+
+def test_check_ignores_line_ending_differences(tmp_path):
+    payload = json.dumps({"type": "graph"}, indent=1)
+    src_dir = tmp_path / "authored" / "cookbook-fabrics" / "f07_herringbone_tweed"
+    src_dir.mkdir(parents=True)
+    (src_dir / "v1.ptex").write_bytes(payload.replace("\n", "\r\n").encode("utf-8"))
+    dst_dir = tmp_path / "cookbook" / "fabrics"
+    dst_dir.mkdir(parents=True)
+    (dst_dir / "f07_herringbone_tweed.ptex").write_bytes(payload.encode("utf-8"))
+    problems = promote(tmp_path / "authored", tmp_path / "cookbook", check=True)
+    assert problems == []

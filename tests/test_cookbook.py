@@ -1,4 +1,3 @@
-import os
 from mm_mcp.cookbook import CookbookEntry, list_cookbook, find_cookbook
 
 
@@ -37,3 +36,11 @@ def test_find_cookbook_returns_entry_or_none(tmp_path):
     found = find_cookbook(str(tmp_path), "t05_cracked_ice")
     assert found is not None and found.path == p and found.category == "terrain"
     assert find_cookbook(str(tmp_path), "no_such_thing") is None
+
+
+def test_list_cookbook_handles_bracket_characters_in_dir_path(tmp_path):
+    weird_dir = tmp_path / "[weird]"
+    weird_dir.mkdir()
+    p = _make(weird_dir, "stone", "s11_marble")
+    entries = list_cookbook(str(weird_dir))
+    assert entries == [CookbookEntry(name="s11_marble", category="stone", path=p)]

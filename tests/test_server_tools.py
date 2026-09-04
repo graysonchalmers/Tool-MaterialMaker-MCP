@@ -98,6 +98,21 @@ def test_list_examples_without_cookbook_dir_serves_only_bundled(monkeypatch):
         assert all(e["source"] == "material_maker" for e in res["examples"])
     finally:
         monkeypatch.delenv("MM_COOKBOOK_DIR", raising=False)
+
+
+def test_load_example_malformed_cookbook_file_is_data_not_exception(tmp_path, monkeypatch):
+    stone_dir = tmp_path / "stone"
+    stone_dir.mkdir()
+    (stone_dir / "bad.ptex").write_text("{not json", encoding="utf-8")
+    monkeypatch.setenv("MM_COOKBOOK_DIR", str(tmp_path))
+    server._reset()
+    try:
+        res = server.load_example("bad")
+        assert isinstance(res, dict)
+        assert res.get("ok") is False
+        assert "cannot load" in res["error"]
+    finally:
+        monkeypatch.delenv("MM_COOKBOOK_DIR", raising=False)
         server._reset()
 
 

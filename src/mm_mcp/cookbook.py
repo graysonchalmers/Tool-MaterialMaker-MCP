@@ -24,7 +24,7 @@ def list_cookbook(cookbook_dir: str) -> list[CookbookEntry]:
     if not cookbook_dir or not os.path.isdir(cookbook_dir):
         return []
     entries = []
-    for path in glob.glob(os.path.join(cookbook_dir, "*", "*.ptex")):
+    for path in glob.glob(os.path.join(glob.escape(cookbook_dir), "*", "*.ptex")):
         entries.append(CookbookEntry(
             name=os.path.splitext(os.path.basename(path))[0],
             category=os.path.basename(os.path.dirname(path)),
