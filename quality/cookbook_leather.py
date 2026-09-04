@@ -24,9 +24,51 @@ import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
 from author_helpers import (load_example, node, set_gradient, set_param, retype,
-                    rewire, add_node, save_variant, _grad)
+                    rewire, add_node, save_variant, _grad, group_into_subgraph)
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+from mm_mcp.catalog_builder import build_catalog
+from mm_mcp.config import load_config
 
 _LABEL = "cookbook-leather"
+
+
+def _group_leather_grain(g, catalog, *, color_label, sheen_label, relief_label,
+                          pattern_size_param=None, pattern_size_label=None):
+    """Shared grouping for the leathers that clone `crocodile_skin` and keep
+    its identical voronoi_0 -> {colorize_0, colorize_1, colorize_3} fan-out
+    unmodified structurally (l01/l04 keep voronoi_0 as a voronoi, l03 retypes
+    it to perlin -- the node NAME and wiring are the same either way). Same
+    donor shape already grouped this way for o04_snake_scales/o05_coral in
+    cookbook_organics.py's `_group_crocodile_skin_pattern` and for
+    f03-f07 in cookbook_fabrics.py's `_group_weave_family`; reused here with
+    an optional pattern-size exposure since not every leather in this set
+    tunes voronoi_0's own parameters (l01 only recolors, so its grain-pattern
+    group's sole exposed param is the color).
+
+    voronoi_0 is folded into the pattern group with colorize_1 (matching that
+    precedent, since it feeds three consumers and cannot sit in more than one
+    group). `uniform_0` (Material's untouched metallic scalar) is left
+    top-level -- a single donor-default node feeding one port directly, not a
+    generative/compositing chain worth collapsing. l02 reuses this same
+    helper for its base-grain half (see build_l02) since its donor structure
+    is identical here; only the two blend-composited wear-layer groups on top
+    are bespoke to that material."""
+    pattern_exposed = []
+    if pattern_size_param:
+        pattern_exposed.append(
+            ("voronoi_0", pattern_size_param, "param0", pattern_size_label))
+    pattern_exposed.append(
+        ("colorize_1", "gradient", f"param{len(pattern_exposed)}", color_label))
+    group_into_subgraph(g, ["voronoi_0", "colorize_1"], "grain_pattern",
+                         "Grain Pattern", pattern_exposed, catalog)
+    group_into_subgraph(
+        g, ["colorize_0", "colorize_3", "normal_map_0"], "surface_finish",
+        "Surface Finish",
+        [("colorize_3", "gradient", "param0", sheen_label),
+         ("normal_map_0", "param1", "param1", relief_label)],
+        catalog,
+    )
 
 
 def _dome_the_cells(g) -> None:
@@ -45,7 +87,7 @@ def _dome_the_cells(g) -> None:
     ])
 
 
-def build_l01_black_oiled_leather() -> str:
+def build_l01_black_oiled_leather(catalog: dict) -> str:
     """Glossy black oiled/waxed leather: near-black warm base with a faint brown
     sheen in the raised grain, LOW roughness (a polished, conditioned finish --
     the opposite of f02's matte tan). Pure recolor of the crocodile grain plus a
@@ -63,10 +105,18 @@ def build_l01_black_oiled_leather() -> str:
     _dome_the_cells(g)                         # scales raised, seams recessed
     set_param(g, "normal_map_0", "param4", 0)  # raw grain -> real relief
     set_param(g, "normal_map_0", "param1", 0.45)
+
+    # voronoi_0 is left at its donor default scale here (no set_param call
+    # touches it), so the Grain Pattern group's sole exposed param is the
+    # color -- no bare untouched default is exposed.
+    _group_leather_grain(
+        g, catalog, color_label="Oiled leather color",
+        sheen_label="Polish level", relief_label="Grain relief",
+    )
     return save_variant(g, _LABEL, "l01_black_oiled_leather", 1)
 
 
-def build_l02_distressed_two_tone() -> str:
+def build_l02_distressed_two_tone(catalog: dict) -> str:
     """Distressed two-tone leather, worn lighter where it's rubbed: a dark
     saddle base with a lighter tan showing through on irregular high patches.
     Same masked-composite lever as combo01_rusted_painted_steel /
@@ -117,10 +167,42 @@ def build_l02_distressed_two_tone() -> str:
     _dome_the_cells(g)                         # grain bodies raised, seams recessed
     set_param(g, "normal_map_0", "param4", 0)  # continuous grain relief under both
     set_param(g, "normal_map_0", "param1", 0.40)
+
+    # Port-source trace for blend_alb/blend_rgh, read directly from the
+    # `connections` list assembled above (ground truth: blend.mmg's shader
+    # model is s1=port0/foreground, s2=port1/background, a=port2/mask, output
+    # = mask*port0 + (1-mask)*port1):
+    #   blend_alb: port0 (shown where mask=1) <- colorize_1 (base grain)
+    #              port1 (shown where mask=0) <- worn_alb
+    #              port2 (mask)               <- colorize_wm
+    #   blend_rgh: port0 (shown where mask=1) <- colorize_3 (base roughness)
+    #              port1 (shown where mask=0) <- worn_rgh
+    #              port2 (mask)               <- colorize_wm (same mask)
+    # Grouping below keeps both blends together in one composite group with
+    # no change to any of these connections; group_into_subgraph rehomes each
+    # incoming connection's own to_port independently, so it cannot swap
+    # which source lands on port0 vs port1 vs port2 (same guarantee already
+    # relied on for f08_donegal_tweed's fleck composite).
+    _group_leather_grain(
+        g, catalog, color_label="Base leather color",
+        sheen_label="Base roughness", relief_label="Relief strength",
+    )
+    group_into_subgraph(
+        g, ["perlin_wm", "colorize_wm", "worn_alb", "worn_rgh"],
+        "wear_pattern", "Wear Pattern",
+        [("perlin_wm", "scale_x", "param0", "Wear pattern scale"),
+         ("worn_alb", "gradient", "param1", "Worn color")],
+        catalog,
+    )
+    group_into_subgraph(
+        g, ["blend_alb", "blend_rgh"], "wear_composite", "Wear Composite",
+        [("blend_alb", "amount", "param0", "Wear blend strength")],
+        catalog,
+    )
     return save_variant(g, _LABEL, "l02_distressed_two_tone", 1)
 
 
-def build_l03_suede() -> str:
+def build_l03_suede(catalog: dict) -> str:
     """Suede/nubuck: soft napped leather with NO cellular grain -- a fine fibrous
     surface, matte, with the faint tonal drift of brushed nap. Same donor-swap
     lever as f06_velvet: retype the voronoi generator to `perlin` (continuous,
@@ -142,10 +224,19 @@ def build_l03_suede() -> str:
     set_gradient(g, "colorize_0", [(0.0, 0, 0, 0), (1.0, 1, 1, 1)])  # linear height
     node(g, "normal_map_0")["parameters"] = {
         "param0": 11, "param1": 0.10, "param2": 0, "param4": 0}  # soft nap, raw
+
+    # voronoi_0 was retyped to perlin above with explicit iterations=8 (the
+    # fiber-grain octave count), matching f06_velvet's convention of exposing
+    # `iterations` as the fiber-grain density knob for a perlin-donor fabric.
+    _group_leather_grain(
+        g, catalog, color_label="Suede color",
+        sheen_label="Nap roughness", relief_label="Nap relief",
+        pattern_size_param="iterations", pattern_size_label="Fiber grain",
+    )
     return save_variant(g, _LABEL, "l03_suede", 1)
 
 
-def build_l04_reptile_exotic() -> str:
+def build_l04_reptile_exotic(catalog: dict) -> str:
     """Bold exotic reptile leather (snake/lizard): the crocodile donor's own
     cellular scales, enlarged to a few big bold scales and recolored to an exotic
     bronze-green with strong scale relief. Same recolor+param lever as f02, but
@@ -175,10 +266,23 @@ def build_l04_reptile_exotic() -> str:
     _dome_the_cells(g)                         # scales domed up, seams recessed
     set_param(g, "normal_map_0", "param4", 0)  # strong scale-edge relief
     set_param(g, "normal_map_0", "param1", 0.7)
+
+    # Per the task's blend caution, this builder was checked for a `blend`
+    # node regardless of the o04_snake_scales/o05_coral naming-family
+    # precedent it echoes: it has none. It clones crocodile_skin unmodified
+    # structurally (recolor + retuned voronoi_0 scale + the param4=0 fix),
+    # the exact same shape as l01/l03, so it reuses `_group_leather_grain`.
+    # voronoi_0's scale_x IS explicitly tuned here (unlike l01), so it is
+    # exposed as the pattern-size knob.
+    _group_leather_grain(
+        g, catalog, color_label="Scale color",
+        sheen_label="Finish", relief_label="Scale relief",
+        pattern_size_param="scale_x", pattern_size_label="Scale size",
+    )
     return save_variant(g, _LABEL, "l04_reptile_exotic", 1)
 
 
-def build_l05_quilted_leather() -> str:
+def build_l05_quilted_leather(catalog: dict) -> str:
     """Quilted / tufted leather (car-seat / chesterfield): a saddle-tan grain
     base raised into a regular grid of puffy pads separated by recessed
     stitch-channel seams -- the classic stitched-upholstery look.
@@ -237,10 +341,54 @@ def build_l05_quilted_leather() -> str:
     rewire(g, "normal_map_0", 0, "blend_h_q", 0)   # height <- pads + grain
     set_param(g, "normal_map_0", "param4", 0)
     set_param(g, "normal_map_0", "param1", 0.9)    # pronounced puffy padding
+
+    # Port-source trace for blend_h_q/blend_alb_q, from the `connections`
+    # list assembled above (ground truth, per blend.mmg's shader model:
+    # s1=port0/foreground, s2=port1/background, a=port2/mask, output =
+    # mask*port0 + (1-mask)*port1; blend_h_q's port2 is left unconnected, so
+    # its mask uses the node's own default of 1.0, i.e. a flat, unmasked
+    # 0.35/0.65 mix rather than a spatial composite):
+    #   blend_h_q:   port0 <- pattern_q (quilt pads), port1 <- colorize_0
+    #                (grain height); no port2 connection (default mask 1.0,
+    #                amount=0.35 -> flat 0.35*pads + 0.65*grain)
+    #   blend_alb_q: port0 (shown where mask=1) <- colorize_1 (base grain)
+    #                port1 (shown where mask=0) <- seam_shade
+    #                port2 (mask)               <- seam_mask
+    # colorize_0 no longer feeds normal_map_0 directly here (it was rewired
+    # to blend_h_q instead), so it moves into the grain-generator group below
+    # rather than a separate finish group -- normal_map_0 moves into the
+    # composite group instead, since its only input is now blend_h_q's
+    # output, not a raw donor colorize. This is a deliberate structural
+    # difference from l01/l03/l04's `_group_leather_grain` shape, not reused
+    # here for that reason.
+    group_into_subgraph(
+        g, ["voronoi_0", "colorize_1", "colorize_3", "colorize_0"],
+        "leather_grain", "Leather Grain",
+        [("colorize_1", "gradient", "param0", "Leather color"),
+         ("colorize_3", "gradient", "param1", "Roughness")],
+        catalog,
+    )
+    group_into_subgraph(
+        g, ["pattern_q"], "quilt_pattern", "Quilt Pattern",
+        [("pattern_q", "x_scale", "param0", "Quilt pad size")],
+        catalog,
+    )
+    group_into_subgraph(
+        g, ["seam_mask", "seam_shade"], "seam_shading", "Seam Shading",
+        [("seam_shade", "gradient", "param0", "Seam color")],
+        catalog,
+    )
+    group_into_subgraph(
+        g, ["blend_h_q", "blend_alb_q", "normal_map_0"],
+        "quilt_composite", "Quilt Composite",
+        [("blend_h_q", "amount", "param0", "Quilt puffiness"),
+         ("normal_map_0", "param1", "param1", "Relief strength")],
+        catalog,
+    )
     return save_variant(g, _LABEL, "l05_quilted_leather", 1)
 
 
-def build_l06_topstitched_leather() -> str:
+def build_l06_topstitched_leather(catalog: dict) -> str:
     """Topstitched leather panel: saddle-tan grain with a regular grid of RAISED
     cream stitch dashes -- the real per-stitch marks l05's quilt lacked.
 
@@ -295,6 +443,48 @@ def build_l06_topstitched_leather() -> str:
     rewire(g, "normal_map_0", 0, "blend_h_st", 0)   # height <- grain + raised stitches
     set_param(g, "normal_map_0", "param4", 0)
     set_param(g, "normal_map_0", "param1", 0.6)
+
+    # Port-source trace for blend_alb_st/blend_h_st, from the `connections`
+    # list assembled above (ground truth, per blend.mmg's shader model:
+    # s1=port0/foreground, s2=port1/background, a=port2/mask, output =
+    # mask*port0 + (1-mask)*port1):
+    #   blend_alb_st: port0 (mask=1) <- colorize_1 (base grain)
+    #                 port1 (mask=0) <- thread_alb (cream thread)
+    #                 port2 (mask)   <- stitch_mask
+    #   blend_h_st:   port0 (mask=1) <- colorize_0 (grain height)
+    #                 port1 (mask=0) <- stitch_mask (reused directly as the
+    #                                   background value, not a separate
+    #                                   height layer -- same mask feeds both
+    #                                   its own port1 and port2 here)
+    #                 port2 (mask)   <- stitch_mask
+    # Same structural note as l05: colorize_0 no longer feeds normal_map_0
+    # directly (rewired to blend_h_st instead), so it joins the
+    # grain-generator group and normal_map_0 joins the composite group.
+    # thread_alb is folded into the stitch-pattern group alongside dash_grid/
+    # stitch_mask (its only input), the same shape f08_donegal_tweed used to
+    # fold colorize_fleck_color in with its mask/generator rather than giving
+    # it a separate group.
+    group_into_subgraph(
+        g, ["voronoi_0", "colorize_1", "colorize_3", "colorize_0"],
+        "leather_grain", "Leather Grain",
+        [("colorize_1", "gradient", "param0", "Leather color"),
+         ("colorize_3", "gradient", "param1", "Roughness")],
+        catalog,
+    )
+    group_into_subgraph(
+        g, ["dash_grid", "stitch_mask", "thread_alb"],
+        "stitch_pattern", "Stitch Pattern",
+        [("dash_grid", "x_scale", "param0", "Stitch pitch"),
+         ("thread_alb", "gradient", "param1", "Thread color")],
+        catalog,
+    )
+    group_into_subgraph(
+        g, ["blend_alb_st", "blend_h_st", "normal_map_0"],
+        "stitch_composite", "Stitch Composite",
+        [("blend_h_st", "amount", "param0", "Stitch raise"),
+         ("normal_map_0", "param1", "param1", "Relief strength")],
+        catalog,
+    )
     return save_variant(g, _LABEL, "l06_topstitched_leather", 1)
 
 
@@ -310,8 +500,12 @@ BUILDERS = {
 
 def main() -> int:
     targets = sys.argv[1:] or list(BUILDERS.keys())
+    # Loaded once per script run (not once per builder), same convention as
+    # cookbook_fabrics.py/cookbook_organics.py -- all 6 materials need it for
+    # group_into_subgraph.
+    catalog = build_catalog(load_config().nodes_dir)
     for case in targets:
-        path = BUILDERS[case]()
+        path = BUILDERS[case](catalog)
         print(f"{case}: {path}")
     return 0
 

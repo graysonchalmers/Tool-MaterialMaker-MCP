@@ -10,6 +10,35 @@ Clones `crocodile_skin`, the proven leather donor whose cellular voronoi grain d
 
 Pitfall: the first render was too dark even in 3D. Lifting the highlight stop (grain around 0.22, 0.16, 0.11) made the grain actually read. Always confirm a dark leather like this under `render_preview` lighting before judging it flat.
 
+## Subgraph structure
+
+Grouped per the "Grouping into subgraphs" lever in `docs/AUTHORING.md`, via a
+shared `_group_leather_grain` helper reused across `l01`/`l03`/`l04` (the
+three leathers in this set that keep `crocodile_skin`'s structure
+unmodified). This donor carries no `blend` node (confirmed by reading
+`quality/donors/crocodile_skin.ptex`'s own `connections` list), so there is
+no port-source tracing to do here. Opening the graph shows 2 top-level
+groups (plus `Material` and the untouched metallic `uniform_0`) instead of
+the raw 7-node graph:
+
+- **Grain Pattern** — `voronoi_0` (left at its donor default scale — this
+  builder only recolors, it never tunes `voronoi_0`'s own parameters) and
+  `colorize_1` (the recolored grain albedo). `voronoi_0` also feeds
+  **Surface Finish**'s height and roughness colorizes directly (a single
+  upstream node feeding three downstream consumers, folded into the group
+  paired with the albedo it drives most directly). Exposed: `Oiled leather
+  color`. Since `voronoi_0` itself is never touched, this group's only
+  exposed parameter is the color — no bare untouched `.mmg` default is
+  exposed.
+- **Surface Finish** — `colorize_0` (height, domed by `_dome_the_cells`),
+  `colorize_3` (roughness, tuned low for the polished finish),
+  `normal_map_0` (`param4=0`, `param1=0.45`). Exposed: `Polish level`,
+  `Grain relief`.
+
+Verified after building: `renders_match` against this material's own
+pre-retrofit baseline came back at an exact `grid_mean_abs_diff` of `0.0` on
+all three exported maps (albedo, normal, orm).
+
 ## See also
 
 The invariant guide (`guide://authoring` resource, or `docs/AUTHORING.md`) for
