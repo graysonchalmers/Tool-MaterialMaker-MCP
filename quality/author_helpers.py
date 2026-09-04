@@ -136,3 +136,86 @@ def add_node(graph: dict, name: str, ntype: str, params: dict) -> None:
     graph["nodes"].append({"name": name, "type": ntype,
                            "node_position": {"x": 0, "y": 0},
                            "parameters": dict(params)})
+
+
+def _boundary_port_type(catalog: dict, node_type: str, port: int, *, is_input: bool) -> str:
+    entry = catalog.get(node_type, {})
+    ports = entry.get("inputs" if is_input else "outputs", [])
+    if port < len(ports):
+        return ports[port].get("type") or "f"
+    return "f"
+
+
+def group_into_subgraph(graph: dict, member_names: list, name: str, label: str,
+                         exposed: list, catalog: dict) -> None:
+    """Collapse `member_names` (and the connections between them) into one
+    node of type "graph", replacing them in `graph` in place. `exposed` is a
+    list of (internal_node_name, internal_param_name, slot_id, friendly_label)
+    tuples; each becomes one widget on the collapsed node's Parameters remote."""
+    member_set = set(member_names)
+    all_conns = graph["connections"]
+    internal = [c for c in all_conns
+                if c["from"] in member_set and c["to"] in member_set]
+    incoming = [c for c in all_conns
+                if c["to"] in member_set and c["from"] not in member_set]
+    outgoing = [c for c in all_conns
+                if c["from"] in member_set and c["to"] not in member_set]
+    untouched = [c for c in all_conns
+                 if c["from"] not in member_set and c["to"] not in member_set]
+    member_nodes = [n for n in graph["nodes"] if n["name"] in member_set]
+
+    inner_conns = list(internal)
+    gen_inputs_ports, outer_incoming = [], []
+    for i, c in enumerate(incoming):
+        target = node(graph, c["to"])
+        port_type = _boundary_port_type(catalog, target["type"], c["to_port"], is_input=True)
+        gen_inputs_ports.append({"name": f"in{i}", "type": port_type, "group_size": 0})
+        inner_conns.append({"from": "gen_inputs", "from_port": i,
+                             "to": c["to"], "to_port": c["to_port"]})
+        outer_incoming.append({"from": c["from"], "from_port": c["from_port"],
+                                "to": name, "to_port": i})
+
+    gen_outputs_ports, outer_outgoing = [], []
+    for o, c in enumerate(outgoing):
+        source = node(graph, c["from"])
+        port_type = _boundary_port_type(catalog, source["type"], c["from_port"], is_input=False)
+        gen_outputs_ports.append({"name": f"out{o}", "type": port_type, "group_size": 0})
+        inner_conns.append({"from": c["from"], "from_port": c["from_port"],
+                             "to": "gen_outputs", "to_port": o})
+        outer_outgoing.append({"from": name, "from_port": o,
+                                "to": c["to"], "to_port": c["to_port"]})
+
+    widgets, params = [], {}
+    for internal_node_name, internal_param_name, slot_id, friendly_label in exposed:
+        inode = node(graph, internal_node_name)
+        params[slot_id] = inode.get("parameters", {}).get(internal_param_name)
+        widgets.append({
+            "name": slot_id, "shortdesc": friendly_label, "label": "",
+            "type": "linked_control",
+            "linked_widgets": [{"node": internal_node_name, "widget": internal_param_name}],
+        })
+
+    xs = [n["node_position"]["x"] for n in member_nodes] or [0]
+    ys = [n["node_position"]["y"] for n in member_nodes] or [0]
+    centroid = {"x": sum(xs) / len(xs), "y": sum(ys) / len(ys)}
+
+    collapsed = {
+        "name": name, "label": label, "type": "graph",
+        "node_position": centroid, "parameters": dict(params), "seed_int": 0,
+        "nodes": [
+            {"name": "gen_inputs", "type": "ios",
+             "node_position": {"x": centroid["x"] - 400, "y": centroid["y"]},
+             "parameters": {}, "ports": gen_inputs_ports, "seed": 0, "seed_locked": True},
+            {"name": "gen_outputs", "type": "ios",
+             "node_position": {"x": centroid["x"] + 400, "y": centroid["y"]},
+             "parameters": {}, "ports": gen_outputs_ports, "seed": 0},
+            {"name": "gen_parameters", "type": "remote",
+             "node_position": {"x": centroid["x"] - 400, "y": centroid["y"] + 200},
+             "parameters": dict(params), "seed": 0, "widgets": widgets},
+            *member_nodes,
+        ],
+        "connections": inner_conns,
+    }
+
+    graph["nodes"] = [n for n in graph["nodes"] if n["name"] not in member_set] + [collapsed]
+    graph["connections"] = untouched + outer_incoming + outer_outgoing
