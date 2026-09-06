@@ -1,5 +1,7 @@
 # Material Maker MCP
 
+> Part of [gProdDevKit](https://kit.graysonchalmers.com), Grayson Chalmers' game production / dev kit.
+
 <p align="center">
   <img src="docs/images/hero.png" alt="Cobblestone, moss, and ceramic-tile materials authored by the server and rendered in 3D" width="100%">
 </p>
