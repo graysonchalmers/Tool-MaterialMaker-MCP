@@ -6,8 +6,8 @@ green and recorded in [STATUS.md](../STATUS.md). Full rationale in the
 
 ## Phase 0 — Harness
 Scaffold (done) plus a headless smoke test.
-- Smoke renders a known bundled `.ptex` via Godot `--export` and asserts a
-  non-empty PNG appears.
+- Smoke renders a known bundled `.ptex` via Material Maker's `--export-material`
+  flag (not Godot's own `--export`) and asserts a non-empty PNG appears.
 - **Gate:** `smoke/smoke.ps1` exits 0 and a PNG is produced.
 
 ## Phase 1 — Node catalog
@@ -19,8 +19,10 @@ Build `catalog.json` from `<MM_PROJECT>/addons/material_maker/nodes/*.mmg`.
 
 ## Phase 2 — Render MCP
 Wire catalog + validator + render runner behind the MCP server.
-- Tools: `list_node_types`, `describe_node`, `validate`, `render_graph`,
-  `save_graph`, `list_examples`, `load_example`.
+- Tools at the gate: `list_node_types`, `describe_node`, `validate`,
+  `render_graph`, `save_graph`, `list_examples`, `load_example`. The current
+  batch tool table (grown since) lives in README.md and is count-enforced by
+  `tests/test_readme_counts.py`.
 - **Gate:** an MCP `render_graph` call on a loaded example returns image paths.
 
 ## Phase 3 — Authoring quality

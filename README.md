@@ -28,8 +28,9 @@ Why this project exists and what it's actually optimizing for is in
 > - **Expect breakage.** Rough edges, sharp corners, things that only work on the
 >   one machine they were built on. It has been verified on exactly one setup
 >   (Windows, a specific Godot build, a specific Material Maker checkout).
-> - **No stability promises.** Anything can change or break between versions. There
->   is no test coverage beyond a small smoke and unit set.
+> - **No stability promises.** Anything can change or break between versions. The
+>   unit suite and CI only prove the code behaves on the setup above; nothing
+>   here has been exercised by a second person or a second machine.
 > - **Not production-ready.** Please do not rely on this for anything that matters.
 >   Back up your work. Assume it will misbehave.
 > - **The material "quality" bar is deliberately low.** The goal is "gets you 80%

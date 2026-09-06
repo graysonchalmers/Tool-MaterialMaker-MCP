@@ -1,6 +1,6 @@
 # 🧭 Session Handoff: Tool-MaterialMaker-MCP
 
-_Last updated: 2026-09-06 (teardown #3 executed: examples/ folded into the cookbook, play port diagnostic, baton diet) CT (America/Chicago)_
+_Last updated: 2026-09-05 (teardown #4 picks 2 + 3: hygiene sweep, builders packaged, Phase-3 harness archived) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up. **Shape rule (2026-09-05,
 teardown #3):** "Current state" describes the latest session only; anything
@@ -89,7 +89,8 @@ No forced order. Candidates:
 ## ❓ Open questions
 
 - PyPI vs GitHub-clone-only (leaning GitHub-only); macOS/Linux never run, no
-  machine. **v0.7.0 released 2026-09-06** (Grayson had PR #4 merged; it
+  machine. **v0.7.0 released 2026-09-05 CT** (CHANGELOG dates it 09-06 in
+  UTC; Grayson had PR #4 merged; it
   carries the play surface, `live_load`, and the examples fold). Release
   cadence is still undecided; release-please opens the next PR automatically.
 - NORTH_STAR treats UE4's export path as a lesser tier; Grayson never
@@ -150,7 +151,7 @@ No forced order. Candidates:
 Newest first. Keep at most 8 entries; older ones are in `git log` (search the
 commit subjects, every session ends with a `docs:` wrap-up commit).
 
-### 2026-09-05/06 (teardown #3 executed): examples/ folded, port diagnostic, baton diet
+### 2026-09-05 (teardown #3 executed): examples/ folded, port diagnostic, baton diet
 - `pickup` clean, then `teardown` #3: no Rebuild verdicts; findings were the
   ungrouped front-door `examples/`, the baton-as-archive, and 1.3 GB of
   regenerable output in the nightly backup. Grayson picked "3, then 1 + 4, then 2".
