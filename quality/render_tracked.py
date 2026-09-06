@@ -7,7 +7,10 @@ rename pass, a regroup) moved no pixels.
   python -m quality.render_tracked --out output/naming-baseline
   python -m quality.render_tracked --out output/naming-after --category wood --compare output/naming-baseline
 
-Layout: <out>/<category>/<id>_albedo.png, _normal.png, _orm.png.
+Layout: <out>/<category>/<id>_albedo.png, _normal.png, _orm.png, plus
+whatever other <id>_*.png maps a given material's graph happens to emit
+(e.g. _heightmap.png). compare_dirs compares every <id>_*.png the baseline
+holds, not a fixed triple, since coverage varies per material.
 Run as a script file, never from `python -c` (the Godot launcher then never exits).
 Paths are resolved to absolute before Godot sees them; Godot's cwd is the
 Material Maker checkout, so a relative outdir is never found and the render
@@ -52,14 +55,23 @@ def render_entries(entries, out: Path, size: int) -> list[str]:
 def compare_dirs(baseline: Path, current: Path, entries) -> list[str]:
     problems = []
     for e in entries:
-        for m in MAPS:
-            a = baseline / e.category / f"{e.name}_{m}.png"
-            b = current / e.category / f"{e.name}_{m}.png"
-            if not a.is_file() or not b.is_file():
-                problems.append(f"{e.category}/{e.name}_{m}.png: missing in {'baseline' if not a.is_file() else 'current'}")
+        base_files = sorted((baseline / e.category).glob(f"{e.name}_*.png"))
+        if not base_files:
+            problems.append(f"{e.category}/{e.name}: no baseline renders")
+            continue
+        seen_names = set()
+        for a in base_files:
+            seen_names.add(a.name)
+            b = current / e.category / a.name
+            if not b.is_file():
+                problems.append(f"{e.category}/{a.name}: missing in current")
                 continue
             if not renders_match(str(a), str(b)):
-                problems.append(f"{e.category}/{e.name}_{m}.png: differs, mean abs diff {grid_mean_abs_diff(str(a), str(b)):.2f}")
+                problems.append(f"{e.category}/{a.name}: differs, mean abs diff {grid_mean_abs_diff(str(a), str(b)):.2f}")
+        cur_files = sorted((current / e.category).glob(f"{e.name}_*.png"))
+        for b in cur_files:
+            if b.name not in seen_names:
+                problems.append(f"{e.category}/{b.name}: present in current only")
     return problems
 
 

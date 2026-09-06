@@ -42,6 +42,37 @@ def test_compare_dirs_flags_missing_files(tmp_path):
     assert all("missing" in p for p in problems)
 
 
+def test_compare_dirs_ignores_a_map_absent_from_both_dirs(tmp_path):
+    base, cur = tmp_path / "base", tmp_path / "cur"
+    e = _entry("metal", "m01_weathered_copper")
+    for m in ("albedo", "orm"):            # no normal on either side
+        _png(base / "metal" / f"m01_weathered_copper_{m}.png", 90)
+        _png(cur / "metal" / f"m01_weathered_copper_{m}.png", 90)
+    assert compare_dirs(base, cur, [e]) == []
+
+
+def test_compare_dirs_covers_extra_baseline_maps_and_flags_current_only_files(tmp_path):
+    base, cur = tmp_path / "base", tmp_path / "cur"
+    e = _entry("stone", "s11_marble")
+    for m in MAPS + ("heightmap",):
+        _png(base / "stone" / f"s11_marble_{m}.png", 60)
+        _png(cur / "stone" / f"s11_marble_{m}.png", 60)
+    _png(cur / "stone" / "s11_marble_heightmap.png", 200)     # heightmap moved
+    _png(cur / "stone" / "s11_marble_emission.png", 10)       # new map, no baseline
+    problems = compare_dirs(base, cur, [e])
+    assert len(problems) == 2
+    assert any("s11_marble_heightmap.png" in p and "differs" in p for p in problems)
+    assert any("s11_marble_emission.png" in p and "present in current only" in p for p in problems)
+
+
+def test_compare_dirs_reports_an_entry_with_no_baseline(tmp_path):
+    base, cur = tmp_path / "base", tmp_path / "cur"
+    e = _entry("wood", "w05_dark_walnut")
+    _png(cur / "wood" / "w05_dark_walnut_albedo.png", 50)
+    problems = compare_dirs(base, cur, [e])
+    assert problems == ["wood/w05_dark_walnut: no baseline renders"]
+
+
 def test_main_resolves_out_and_compare_to_absolute_paths(tmp_path, monkeypatch):
     import quality.render_tracked as rt
     seen = {}
