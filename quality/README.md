@@ -26,6 +26,15 @@ invariants the builders follow.
   validate + render authored variants to `quality/cookbook/<label>/`
   (gitignored) for eyeballing. One Godot at a time. Run as a module, never
   from `python -c`.
+- `naming.py`: the role-name rules for cookbook nodes and a checker
+  (`python -m quality.naming --cookbook [category]`, exit 1 on any
+  auto-name, bare type name, or sibling collision). `tests/test_naming.py`
+  covers the rules; the rename pass (2026-09-06) is what gets the real
+  `cookbook/` tree to pass this check category by category.
+- `render_tracked.py`: renders the tracked `cookbook/` graphs one Godot at a
+  time into a directory and, with `--compare BASELINE`, proves a builder
+  change moved no pixels (`render_compare.renders_match`). Used by the
+  2026-09-06 rename pass with `output/naming-baseline` as the baseline.
 - `_make_previews.py <label>` and `contact_sheet.py [labels]`: thumbnails
   under `docs/images/cookbook-<category>/` and the README contact sheet
   (save as an 8-bit palette).
