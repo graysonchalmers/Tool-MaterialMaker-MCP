@@ -16,8 +16,8 @@ what you see IS that node's raw output.
 ## Run
 
 ```
-python quality/debug_swatches.py                 # write all swatch .ptex files
-python quality/render_cookbook.py debug-swatches # validate + render them
+python -m quality.debug_swatches                 # write all swatch .ptex files
+python -m quality.render_cookbook debug-swatches # validate + render them
 ```
 
 Outputs land in `quality/cookbook/debug-swatches/<swatch>/` (gitignored,

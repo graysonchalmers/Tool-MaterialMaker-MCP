@@ -6,14 +6,11 @@ quality/authored/cookbook-plastics/<case>/v1.ptex.
 Run: python quality/cookbook_plastics.py
 Then: python quality/render_cookbook.py cookbook-plastics
 """
-import os
 import sys
 
-sys.path.insert(0, os.path.dirname(__file__))
-from author_helpers import (_from_scratch_noise_material, set_param, save_variant,
+from quality.author_helpers import (_from_scratch_noise_material, set_param, save_variant,
                      add_node, _grad, group_into_subgraph)
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.config import load_config
 

@@ -3,11 +3,7 @@ gate. Godot's headless render is not perfectly deterministic run to run (see
 the render-orphan-contention history in this project's memory/HANDOFF), so
 the gate is a small mean-absolute-difference tolerance, not byte-identity.
 """
-import os
-import sys
-
-sys.path.insert(0, os.path.dirname(__file__))
-from pngread import Sampler
+from quality.pngread import Sampler
 
 # Empirically, unrelated re-renders of an unchanged graph differ by a mean
 # per-channel delta well under 1.0 (out of 255). A real content change

@@ -23,9 +23,9 @@ it is, the levers that made it work, and where to look in the graph.
 
 The builders are the source; this folder is their locked output.
 
-1. Rebuild a category: `.venv\Scripts\python.exe quality\cookbook_<category>.py`
-2. Verify nothing drifted: `.venv\Scripts\python.exe quality\promote_cookbook.py --check`
-3. Accept new output: `.venv\Scripts\python.exe quality\promote_cookbook.py`
+1. Rebuild a category: `.venv\Scripts\python.exe -m quality.cookbook_<category>`
+2. Verify nothing drifted: `.venv\Scripts\python.exe -m quality.promote_cookbook --check`
+3. Accept new output: `.venv\Scripts\python.exe -m quality.promote_cookbook`
 
 `tests/test_cookbook_gate.py` validates every graph here against the node
 catalog and checks that each has a thumbnail under `docs/images/cookbook-<category>/`

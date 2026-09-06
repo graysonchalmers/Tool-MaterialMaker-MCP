@@ -23,12 +23,10 @@ import sys
 from pathlib import Path
 
 _ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(_ROOT / "src"))
-sys.path.insert(0, str(_ROOT / "quality"))
 
 from mm_mcp.config import load_config
 from mm_mcp.render import render
-from render_compare import grid_mean_abs_diff, renders_match
+from quality.render_compare import grid_mean_abs_diff, renders_match
 
 
 def _render_to(ptex_path: Path, outdir: Path, basename: str, cfg) -> Path:

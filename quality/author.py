@@ -12,8 +12,7 @@ import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, os.path.dirname(__file__))
-from author_helpers import (
+from quality.author_helpers import (
     load_example, node, set_gradient, set_param, save_variant,
     rewire, drop_conn, add_node, retype, _grad,
 )

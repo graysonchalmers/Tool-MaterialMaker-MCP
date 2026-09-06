@@ -25,11 +25,7 @@ honest finding to report, not a failure.
 Run:   python quality/noise_gallery.py
 Then:  python quality/render_cookbook.py noise-gallery
 """
-import os
-import sys
-
-sys.path.insert(0, os.path.dirname(__file__))
-from author_helpers import _grad, save_variant
+from quality.author_helpers import _grad, save_variant
 
 _LABEL = "noise-gallery"
 

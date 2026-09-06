@@ -29,16 +29,13 @@ real relief; the default 1 (buffered) renders flat. See f01/s02 in author.py.
 Run: python quality/cookbook_painted_metal.py
 Then quality/render_one.py cookbook-painted-metal <case> renders one for review.
 """
-import os
 import sys
 
-sys.path.insert(0, os.path.dirname(__file__))
-from author_helpers import (load_example, set_gradient, set_param, save_variant,
+from quality.author_helpers import (load_example, set_gradient, set_param, save_variant,
                     add_node, rewire, drop_conn, node, _grad, group_into_subgraph,
                     take_variant)
-import author  # frozen Phase-3 builders; called, never edited
+from quality import author  # frozen Phase-3 builders; called, never edited
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.config import load_config
 

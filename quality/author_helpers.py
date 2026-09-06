@@ -1,20 +1,16 @@
-"""Pure graph-surgery helpers for Phase 3 authoring and cookbook growth.
+"""Pure graph-surgery helpers for cookbook authoring.
 
 Everything here is pure graph-JSON surgery against the catalog vocabulary; no
-Godot. Split out of quality/author.py (2026-09-03) so the ~10 helpers below
-have one home shared by author.py's own Phase 3 builders and every
+Godot. One home for the ~10 helpers shared by author.py's builders and every
 quality/cookbook_<category>.py / debug_swatches.py / noise_gallery.py
-consumer, instead of living inside author.py alongside Phase-3-specific
-material builders that only author.py itself uses.
+consumer. Import as `from quality.author_helpers import ...`.
 """
 import copy
 import json
 import os
-import sys
 from pathlib import Path
 
 _ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(_ROOT / "src"))
 from mm_mcp.config import load_config
 
 _CFG = load_config()

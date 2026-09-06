@@ -9,14 +9,11 @@ Phase 3 iterations.
 Run: python quality/cookbook_wood.py
 Then quality/render_cookbook.py renders each variant for inspection.
 """
-import os
 import sys
 
-sys.path.insert(0, os.path.dirname(__file__))
-from author_helpers import (load_example, set_gradient, set_param, add_node, rewire,
+from quality.author_helpers import (load_example, set_gradient, set_param, add_node, rewire,
                              save_variant, _grad, group_into_subgraph)
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.config import load_config
 

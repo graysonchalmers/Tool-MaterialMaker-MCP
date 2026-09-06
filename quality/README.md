@@ -4,6 +4,10 @@ Measures whether prompt-to-graph authoring produces usable materials.
 
 ## Layout
 
+`quality/` is a package: import with `from quality.<module> import ...` and
+run scripts as `python -m quality.<module>` from the repo root (a file-path
+launch no longer resolves the imports).
+
 - `test_set.json`: the 15 frozen cases + the scoring rubric (`_rubric`).
 - `run_case.py`: renders authored variants for a case and (re)builds the
   scorecard. Reuses `mm_mcp` render + validate; adds no render logic.
@@ -38,7 +42,7 @@ that way. To grow the recipe library into new material categories WITHOUT
 touching frozen infra, use the `cookbook_fabrics.py` pattern instead of
 `author.py`/`run_case.py`: a small `quality/cookbook_<category>.py` (same
 graph-surgery helpers, imported from `author_helpers.py`) writes variants to
-`quality/authored/cookbook-<category>/`, and `render_cookbook.py <label>`
+`quality/authored/cookbook-<category>/`, and `python -m quality.render_cookbook <label>`
 validates + renders them to `quality/cookbook/<label>/` for eyeballing, no
 `test_set.json` entry, no scorecard, no gate. Invariants that generalize
 across materials belong in `docs/AUTHORING.md` (the lean guide, also served
@@ -50,13 +54,13 @@ should call `group_into_subgraph` (from `quality/author_helpers.py`) before
 `docs/AUTHORING.md` — so future categories don't need a second retrofit pass.
 
 When a material is locked (rendered, 3D-previewed, written up), promote it:
-`python quality/promote_cookbook.py` copies each `v1.ptex` into the tracked
+`python -m quality.promote_cookbook` copies each `v1.ptex` into the tracked
 `cookbook/<category>/<id>.ptex` tree the MCP server serves through
 `list_examples` / `load_example`. `promote_cookbook.py --check` diffs
 regenerated output against the tracked copies and exits 1 on any drift, which
 is the regression baseline for the cookbook (non-scorecard) materials.
 
-While iterating on ONE material, use `render_one.py <label> <case>` (renders a
+While iterating on ONE material, use `python -m quality.render_one <label> <case>` (renders a
 single case, one Godot at a time) instead of `render_cookbook.py` (which renders
 every case under the label). Run either as a script FILE, never `python -c`.
 Driving a Godot render from `python -c` leaves the launcher process not exiting

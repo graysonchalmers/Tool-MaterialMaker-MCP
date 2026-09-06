@@ -26,7 +26,6 @@ import sys
 from pathlib import Path
 
 _ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(_ROOT / "src"))
 
 from mm_mcp.config import load_config
 from mm_mcp.catalog_builder import build_catalog

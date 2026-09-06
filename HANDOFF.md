@@ -105,9 +105,11 @@ No forced order. Candidates:
 
 ## ⚠️ Heads-up for the next agent
 
-- **Run `quality/*.py` from the repo root**, never from inside `quality/`
-  (breaks `.env` lookup). Never launch a Godot render from `python -c` (the
-  launcher does not exit; use `quality/render_one.py` or a script file).
+- **Run quality scripts as `python -m quality.<module>` from the repo root**
+  (a file-path launch no longer resolves the package imports; running from
+  inside `quality/` also breaks `.env` lookup). Never launch a Godot render
+  from `python -c` (the launcher does not exit; use `quality/render_one.py`
+  or a script file).
   Renders are one Godot at a time.
 - **Edit cookbook materials by changing the builder and re-promoting**, never
   the tracked `.ptex` by hand; `promote_cookbook.py --check` flags drift.

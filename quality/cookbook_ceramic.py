@@ -6,14 +6,11 @@ it. Outputs land under quality/authored/cookbook-ceramic/<case>/v1.ptex.
 Run: python quality/cookbook_ceramic.py
 Then: python quality/promote_cookbook.py cookbook-ceramic
 """
-import os
 import sys
 
-sys.path.insert(0, os.path.dirname(__file__))
-import author  # frozen Phase-3 builders; called, never edited
-from author_helpers import save_variant, take_variant, group_into_subgraph
+from quality import author  # frozen Phase-3 builders; called, never edited
+from quality.author_helpers import save_variant, take_variant, group_into_subgraph
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.config import load_config
 

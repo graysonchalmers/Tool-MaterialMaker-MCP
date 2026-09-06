@@ -161,7 +161,7 @@ the cookbook effectively used two. Same structural DNA recolored = materials
 that read alike. The fix is a wider base-noise vocabulary, not more recolors.
 
 Gallery source: `quality/noise_gallery.py` (single node -> grey ramp -> albedo,
-so you see the raw field). Render with `python quality/render_cookbook.py
+so you see the raw field). Render with `python -m quality.render_cookbook
 noise-gallery`. Tracked contact sheets:
 
 ![fbm bases](images/noise-gallery/fbm-bases.png)

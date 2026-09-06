@@ -7,15 +7,12 @@ quality/authored/cookbook-terrain/<case>/v1.ptex.
 Run: python quality/cookbook_terrain.py
 Then: python quality/render_cookbook.py cookbook-terrain
 """
-import os
 import sys
 
-sys.path.insert(0, os.path.dirname(__file__))
-from author_helpers import (load_example, node, set_gradient, set_param, retype,
+from quality.author_helpers import (load_example, node, set_gradient, set_param, retype,
                      rewire, drop_conn, add_node, save_variant, _grad,
                      group_into_subgraph)
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.config import load_config
 
