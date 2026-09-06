@@ -227,11 +227,11 @@ def _fake_builder(tmp_path):
     return builder
 
 
-def test_take_variant_returns_requested_variant_and_removes_the_rest(tmp_path):
+def test_take_variant_returns_requested_variant_and_removes_all_files(tmp_path):
     g = take_variant(_fake_builder(tmp_path), "lbl", 2)
     assert g["marker"] == "two"
     assert not os.path.exists(tmp_path / "lbl" / "v1.ptex")
-    assert os.path.exists(tmp_path / "lbl" / "v2.ptex")
+    assert not os.path.exists(tmp_path / "lbl" / "v2.ptex")
 
 
 def test_take_variant_raises_when_variant_missing(tmp_path):

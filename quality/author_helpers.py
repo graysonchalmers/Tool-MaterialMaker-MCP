@@ -62,9 +62,10 @@ def take_variant(builder, label: str, keep_n: int) -> dict:
     """Run a Phase-3 `author.py` builder under a cookbook label and keep ONE of
     its variants. `builder(label)` writes v1.ptex, v2.ptex, ... under
     quality/authored/<label>/<case>/ and returns their paths; this loads the
-    `v{keep_n}.ptex` one, deletes the others (promote_cookbook.py only ever
-    promotes v1.ptex, so leftovers would be misleading), and returns the graph
-    so the caller can group_into_subgraph it and re-save it as v1."""
+    `v{keep_n}.ptex` one, deletes every variant file the builder wrote (the
+    caller re-saves the grouped graph as v1, and promote_cookbook.py only
+    ever reads v1), and returns the graph so the caller can
+    group_into_subgraph it and re-save it as v1."""
     paths = builder(label)
     wanted = f"v{keep_n}.ptex"
     keep = next((p for p in paths if os.path.basename(p) == wanted), None)
@@ -73,7 +74,7 @@ def take_variant(builder, label: str, keep_n: int) -> dict:
     with open(keep, encoding="utf-8") as fh:
         graph = json.load(fh)
     for p in paths:
-        if p != keep and os.path.exists(p):
+        if os.path.exists(p):
             os.remove(p)
     return graph
 
