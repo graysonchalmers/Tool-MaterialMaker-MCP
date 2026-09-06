@@ -22,11 +22,12 @@ jobs:
       # Bump MM_PIN deliberately, then re-run promote_cookbook.py --check.
       - name: Clone Material Maker at the pinned revision (node defs + examples the suite reads)
         env:
-          MM_PIN: ad19fcf
+          # Full 40-char sha on purpose: GitHub refuses fetch-by-sha for short ids.
+          MM_PIN: ad19fcf0ee34a7caf74df709dc4de7112f0d467d
         run: |
           git init mm-checkout
           git -C mm-checkout fetch --depth 1 https://github.com/RodZill4/material-maker $env:MM_PIN
-          git -C mm-checkout checkout --detach FETCH_HEAD
+          git -C mm-checkout checkout -q FETCH_HEAD
         shell: pwsh
 
       - name: Write steam_appid.txt

@@ -24,4 +24,4 @@ except PackageNotFoundError:  # not pip-installed (tests import via pythonpath=s
 # CI clones exactly this sha (.github/workflows/test.yml, MM_PIN; a test keeps
 # the two in sync) and `mm-mcp --check` prints the local checkout's sha beside
 # it. Bump deliberately, then re-run quality/promote_cookbook.py --check.
-MM_UPSTREAM_PIN = "ad19fcf"
+MM_UPSTREAM_PIN = "ad19fcf0ee34a7caf74df709dc4de7112f0d467d"  # full sha: GitHub only serves fetch-by-sha for full ids

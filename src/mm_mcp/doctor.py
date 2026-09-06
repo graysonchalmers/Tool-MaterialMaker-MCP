@@ -149,8 +149,8 @@ def _checkout_revision(project_path: str) -> str:
     except (OSError, subprocess.TimeoutExpired) as exc:
         return f"unknown (git not runnable: {exc})"
     if out.returncode != 0:
-        return f"unknown (not a git checkout; CI pins upstream {MM_UPSTREAM_PIN})"
-    return f"{out.stdout.strip()} (CI pins upstream {MM_UPSTREAM_PIN})"
+        return f"unknown (not a git checkout; CI pins upstream {MM_UPSTREAM_PIN[:7]})"
+    return f"{out.stdout.strip()} (CI pins upstream {MM_UPSTREAM_PIN[:7]})"
 
 
 def all_ok(checks: list[Check]) -> bool:
