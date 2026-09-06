@@ -155,6 +155,60 @@ def add_node(graph: dict, name: str, ntype: str, params: dict) -> None:
                            "parameters": dict(params)})
 
 
+RESERVED_NODE_NAMES = frozenset({"Material", "gen_inputs", "gen_outputs", "gen_parameters"})
+
+
+def _levels(graph: dict):
+    """Yield (level_label, node_list, connection_list) for the top level and
+    every nested `graph` node, depth first."""
+    yield "", graph["nodes"], graph["connections"]
+    for n in graph["nodes"]:
+        if n.get("type") == "graph":
+            yield from ((n["name"] if not lbl else f"{n['name']}/{lbl}", nodes, conns)
+                        for lbl, nodes, conns in _levels(n))
+
+
+def rename_nodes(graph: dict, mapping: dict) -> None:
+    """Rename nodes in place at every level of `graph` (top level and inside
+    every `graph`-type subgraph): the node's `name`, both ends of every
+    connection at that level, and every `linked_widgets[].node` reference on
+    any node at that level. `node_position` is never touched, so Material
+    Maker's position-derived seeds (and therefore the renders) are unchanged.
+
+    Validates the whole mapping before changing anything:
+      KeyError   - a source name exists at no level
+      ValueError - a source or target is reserved, or a target already names a
+                   sibling at the level where the source lives
+    """
+    bad_reserved = [k for k in mapping if k in RESERVED_NODE_NAMES] + \
+                   [v for v in mapping.values() if v in RESERVED_NODE_NAMES]
+    if bad_reserved:
+        raise ValueError(f"reserved node names cannot be renamed or used: {sorted(set(bad_reserved))}")
+    found = {}
+    for label, nodes, _ in _levels(graph):
+        names = {n["name"] for n in nodes}
+        for old, new in mapping.items():
+            if old in names:
+                found.setdefault(old, []).append((label, names))
+    missing = [k for k in mapping if k not in found]
+    if missing:
+        raise KeyError(f"nodes not found at any level: {sorted(missing)}")
+    for old, new in mapping.items():
+        for label, names in found[old]:
+            if new in names and new != old:
+                where = label or "top level"
+                raise ValueError(f"{where}: cannot rename {old!r} to {new!r}, a sibling already has that name")
+    for _, nodes, conns in _levels(graph):
+        for n in nodes:
+            n["name"] = mapping.get(n["name"], n["name"])
+            for w in n.get("widgets", []) or []:
+                for lw in w.get("linked_widgets", []) or []:
+                    lw["node"] = mapping.get(lw["node"], lw["node"])
+        for c in conns:
+            c["from"] = mapping.get(c["from"], c["from"])
+            c["to"] = mapping.get(c["to"], c["to"])
+
+
 def _boundary_port_type(catalog: dict, node_type: str, port: int, *, is_input: bool) -> str:
     entry = catalog.get(node_type, {})
     ports = entry.get("inputs" if is_input else "outputs", [])
