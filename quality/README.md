@@ -13,7 +13,9 @@ invariants the builders follow.
 - `cookbook_<category>.py` (twelve): builders, one `build_<id>(catalog)` per
   material, `BUILDERS` dict, `main()` builds the catalog once and threads it
   through. Output: `quality/authored/cookbook-<category>/<id>/v1.ptex`
-  (gitignored).
+  (gitignored). Every builder ends with `rename_nodes(g, {...})` so the
+  shipped graph carries role names (see `docs/AUTHORING.md`, Name every node
+  by role).
 - `author_helpers.py`: pure graph-surgery helpers (`load_example`, `node`,
   `set_param`, `set_gradient`, `rewire`, `drop_conn`, `add_node`, `retype`,
   `save_variant`, `take_variant`, `group_into_subgraph`). No Godot.
@@ -30,7 +32,9 @@ invariants the builders follow.
   (`python -m quality.naming --cookbook [category]`, exit 1 on any
   auto-name, bare type name, or sibling collision). `tests/test_naming.py`
   covers the rules; the rename pass (2026-09-06) is what gets the real
-  `cookbook/` tree to pass this check category by category.
+  `cookbook/` tree to pass this check category by category. The gate test
+  `tests/test_cookbook_naming_gate.py` runs the same check over every
+  tracked graph.
 - `render_tracked.py`: renders the tracked `cookbook/` graphs one Godot at a
   time into a directory and, with `--compare BASELINE`, proves a builder
   change moved no pixels (`render_compare.renders_match`). Used by the
