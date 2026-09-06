@@ -211,7 +211,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "colorize_2",
+         "node": "BarkColor",
          "widget": "gradient"
         }
        ]
@@ -219,7 +219,7 @@
      ]
     },
     {
-     "name": "perlin_2",
+     "name": "GrainWobble",
      "node_position": {
       "x": -312,
       "y": 2.5
@@ -233,7 +233,7 @@
      "type": "perlin"
     },
     {
-     "name": "perlin_1",
+     "name": "GrainNoiseCoarse",
      "node_position": {
       "x": -635,
       "y": 341.5
@@ -247,7 +247,7 @@
      "type": "perlin"
     },
     {
-     "name": "perlin_0",
+     "name": "GrainNoiseFine",
      "node_position": {
       "x": -635,
       "y": 210.5
@@ -261,7 +261,7 @@
      "type": "perlin"
     },
     {
-     "name": "warp_0",
+     "name": "GrainWarp",
      "node_position": {
       "x": -311,
       "y": 280.5
@@ -273,7 +273,7 @@
      "type": "warp"
     },
     {
-     "name": "colorize_1",
+     "name": "RidgeContrast",
      "node_position": {
       "x": -340,
       "y": 402.5
@@ -303,7 +303,7 @@
      "type": "colorize"
     },
     {
-     "name": "warp_1",
+     "name": "RidgeWarp",
      "node_position": {
       "x": -89,
       "y": 325.5
@@ -315,7 +315,7 @@
      "type": "warp"
     },
     {
-     "name": "voronoi_0",
+     "name": "BarkRidges",
      "node_position": {
       "x": -648,
       "y": 482.5
@@ -331,7 +331,7 @@
      "type": "voronoi"
     },
     {
-     "name": "blend_0",
+     "name": "GrainMask",
      "node_position": {
       "x": 101,
       "y": 250.5
@@ -343,7 +343,7 @@
      "type": "blend"
     },
     {
-     "name": "colorize_2",
+     "name": "BarkColor",
      "node_position": {
       "x": 407.35144,
       "y": 127.181824
@@ -389,73 +389,73 @@
    ],
    "connections": [
     {
-     "from": "perlin_0",
+     "from": "GrainNoiseFine",
      "from_port": 0,
-     "to": "warp_0",
+     "to": "GrainWarp",
      "to_port": 0
     },
     {
-     "from": "perlin_1",
+     "from": "GrainNoiseCoarse",
      "from_port": 0,
-     "to": "warp_0",
+     "to": "GrainWarp",
      "to_port": 1
     },
     {
-     "from": "perlin_2",
+     "from": "GrainWobble",
      "from_port": 0,
-     "to": "blend_0",
+     "to": "GrainMask",
      "to_port": 0
     },
     {
-     "from": "voronoi_0",
+     "from": "BarkRidges",
      "from_port": 0,
-     "to": "colorize_1",
+     "to": "RidgeContrast",
      "to_port": 0
     },
     {
-     "from": "warp_0",
+     "from": "GrainWarp",
      "from_port": 0,
-     "to": "warp_1",
+     "to": "RidgeWarp",
      "to_port": 0
     },
     {
-     "from": "colorize_1",
+     "from": "RidgeContrast",
      "from_port": 0,
-     "to": "warp_1",
+     "to": "RidgeWarp",
      "to_port": 1
     },
     {
-     "from": "warp_1",
+     "from": "RidgeWarp",
      "from_port": 0,
-     "to": "blend_0",
+     "to": "GrainMask",
      "to_port": 1
     },
     {
-     "from": "blend_0",
+     "from": "GrainMask",
      "from_port": 0,
-     "to": "colorize_2",
+     "to": "BarkColor",
      "to_port": 0
     },
     {
-     "from": "blend_0",
+     "from": "GrainMask",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
-     "from": "blend_0",
+     "from": "GrainMask",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1
     },
     {
-     "from": "blend_0",
+     "from": "GrainMask",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 2
     },
     {
-     "from": "colorize_2",
+     "from": "BarkColor",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 3
@@ -577,7 +577,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "colorize_0",
+         "node": "BarkRoughness",
          "widget": "gradient"
         }
        ]
@@ -585,7 +585,7 @@
      ]
     },
     {
-     "name": "normal_map_0",
+     "name": "BarkNormal",
      "node_position": {
       "x": 431,
       "y": 423.5
@@ -599,7 +599,7 @@
      "type": "normal_map"
     },
     {
-     "name": "colorize_0",
+     "name": "BarkRoughness",
      "node_position": {
       "x": 423,
       "y": 306.5
@@ -633,23 +633,23 @@
     {
      "from": "gen_inputs",
      "from_port": 0,
-     "to": "normal_map_0",
+     "to": "BarkNormal",
      "to_port": 0
     },
     {
      "from": "gen_inputs",
      "from_port": 1,
-     "to": "colorize_0",
+     "to": "BarkRoughness",
      "to_port": 0
     },
     {
-     "from": "normal_map_0",
+     "from": "BarkNormal",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
-     "from": "colorize_0",
+     "from": "BarkRoughness",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1
