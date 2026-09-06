@@ -66,3 +66,13 @@ def test_cli_exit_code_and_output(tmp_path, capsys):
     assert main([str(good)]) == 0
     assert main([str(bad)]) == 1
     assert "perlin_0" in capsys.readouterr().out
+
+
+def test_cli_cookbook_flag_followed_by_a_file_checks_that_file(tmp_path, capsys, monkeypatch):
+    import quality.naming as naming
+    monkeypatch.setattr(naming, "COOKBOOK", tmp_path / "no-such-cookbook")
+    bad = tmp_path / "bad.ptex"
+    bad.write_text(json.dumps(_graph([("perlin_0", "perlin")])), encoding="utf-8")
+    assert main(["--cookbook", str(bad)]) == 1
+    out = capsys.readouterr().out
+    assert "perlin_0" in out and "1 graph(s) checked" in out

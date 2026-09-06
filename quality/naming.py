@@ -66,14 +66,21 @@ def find_bad_names(graph: dict) -> list[str]:
 
 def main(argv: list[str]) -> int:
     paths: list[Path] = []
-    if "--cookbook" in argv:
-        i = argv.index("--cookbook")
-        category = argv[i + 1] if i + 1 < len(argv) and not argv[i + 1].startswith("-") else None
+    files = list(argv)
+    if "--cookbook" in files:
+        i = files.index("--cookbook")
+        next_arg = files[i + 1] if i + 1 < len(files) else None
+        is_category = (
+            next_arg is not None
+            and not next_arg.startswith("-")
+            and not next_arg.endswith(".ptex")
+        )
+        category = next_arg if is_category else None
         for e in list_cookbook(str(COOKBOOK)):
             if category is None or e.category == category:
                 paths.append(Path(e.path))
-        argv = [a for a in argv if a not in ("--cookbook", category)]
-    paths += [Path(a) for a in argv if a.endswith(".ptex")]
+        del files[i : i + (2 if is_category else 1)]
+    paths += [Path(a) for a in files if a.endswith(".ptex")]
     total = 0
     for p in paths:
         graph = json.loads(p.read_text(encoding="utf-8"))
