@@ -4,8 +4,8 @@ individual file-by-file review. Reuses the already-downscaled previews from
 _make_previews.py -- run that first for any label you want included.
 
 Usage:
-  .venv\\Scripts\\python.exe quality\\contact_sheet.py cookbook-wood cookbook-stone
-  .venv\\Scripts\\python.exe quality\\contact_sheet.py          (all cookbook-* dirs)
+  .venv\\Scripts\\python.exe -m quality.contact_sheet cookbook-wood cookbook-stone
+  .venv\\Scripts\\python.exe -m quality.contact_sheet          (all cookbook-* dirs)
 
 Writes docs/images/contact-sheet-<labels>.png. Not tracked in git by default
 (regenerate on demand); the per-category preview PNGs it draws from stay the

@@ -7,9 +7,9 @@ cookbook/ is the tracked, shipped copy the MCP server serves through
 list_examples / load_example and that a person can open in Material Maker.
 
 Usage (from the repo root):
-  .venv\\Scripts\\python.exe quality\\promote_cookbook.py                 # copy every category
-  .venv\\Scripts\\python.exe quality\\promote_cookbook.py cookbook-stone  # one label
-  .venv\\Scripts\\python.exe quality\\promote_cookbook.py --check         # diff, do not write
+  .venv\\Scripts\\python.exe -m quality.promote_cookbook                 # copy every category
+  .venv\\Scripts\\python.exe -m quality.promote_cookbook cookbook-stone  # one label
+  .venv\\Scripts\\python.exe -m quality.promote_cookbook --check         # diff, do not write
 
 --check is the regression baseline: rebuild with the builders, then --check.
 Any tracked file that is missing or differs from its authored v1.ptex is

@@ -27,14 +27,14 @@ analytic generator, so `normal_map_0.param4` must be 0 (raw edge_detect) for
 real relief; the default 1 (buffered) renders flat. See f01/s02 in author.py.
 
 Run: python -m quality.cookbook_painted_metal
-Then quality/render_one.py cookbook-painted-metal <case> renders one for review.
+Then `python -m quality.render_one` cookbook-painted-metal <case> renders one for review.
 """
 import sys
 
 from quality.author_helpers import (load_example, set_gradient, set_param, save_variant,
                     add_node, rewire, drop_conn, node, _grad, group_into_subgraph,
                     take_variant)
-from quality import author  # frozen Phase-3 builders; called, never edited
+from quality import author  # shared builder base; regression guard is promote_cookbook --check
 
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.config import load_config

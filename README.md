@@ -35,7 +35,7 @@ Why this project exists and what it's actually optimizing for is in
 >   Back up your work. Assume it will misbehave.
 > - **The material "quality" bar is deliberately low.** The goal is "gets you 80%
 >   of the way there so you finish in the app," not "photoreal." See the
->   `quality/` scorecard for exactly how well (and badly) it does on 15 prompts:
+>   [Phase-3 scorecard](docs/evidence/phase3/2026-08-26-iter1.md) for exactly how well (and badly) it does on 15 prompts:
 >   it currently passes all 15 of them by a generous, artist's eyeball
 >   standard (the ship gate was 11 of 15).
 >

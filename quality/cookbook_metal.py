@@ -1,6 +1,6 @@
 """Cookbook: bare-metal category. Both materials are Phase-3 heroes folded in
 from the retired examples/ folder (2026-09-05): the graphs come unchanged
-from quality/author.py's frozen builders via take_variant; these builders
+from quality/author.py's shared builders via take_variant; these builders
 only group them into named subgraphs. Outputs land under
 quality/authored/cookbook-metal/<case>/v1.ptex.
 
@@ -9,7 +9,7 @@ Then: python -m quality.promote_cookbook cookbook-metal
 """
 import sys
 
-from quality import author  # frozen Phase-3 builders; called, never edited
+from quality import author  # shared builder base; regression guard is promote_cookbook --check
 from quality.author_helpers import save_variant, take_variant, group_into_subgraph
 
 from mm_mcp.catalog_builder import build_catalog

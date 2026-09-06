@@ -34,7 +34,7 @@ def test_quality_is_a_package():
 @pytest.mark.parametrize("path", _py_files(_QUALITY) + _py_files(_TESTS))
 def test_no_sys_path_hacks(path):
     src = open(path, encoding="utf-8").read()
-    assert "sys.path.insert" not in src, f"{os.path.relpath(path, _ROOT)} still edits sys.path"
+    assert "sys.path" not in src, f"{os.path.relpath(path, _ROOT)} still edits sys.path"
 
 
 @pytest.mark.parametrize("path", _py_files(_QUALITY) + _py_files(_TESTS))

@@ -6,14 +6,14 @@ quality/authored/cookbook-fabrics/<case>/v1.ptex, same layout convention as
 the Phase 3 iterations.
 
 Run: python -m quality.cookbook_fabrics
-Then quality/render_cookbook.py renders each variant for inspection.
+Then `python -m quality.render_cookbook` renders each variant for inspection.
 """
 import sys
 
 from quality.author_helpers import (load_example, node, set_gradient, set_param, retype,
                     rewire, add_node, save_variant, group_into_subgraph,
                     take_variant)
-from quality import author  # frozen Phase-3 builders; called, never edited
+from quality import author  # shared builder base; regression guard is promote_cookbook --check
 
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.config import load_config

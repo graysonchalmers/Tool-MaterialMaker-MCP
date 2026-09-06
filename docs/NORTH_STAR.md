@@ -79,8 +79,8 @@ underlying tool.
 ## Non-goals
 
 - **Not chasing photoreal quality.** The bar is "gets you most of the way
-  there, you finish it in the app," not production-grade. See the `quality/`
-  scorecard for the honest current hit rate.
+  there, you finish it in the app," not production-grade. See
+  `docs/evidence/phase3/` for the honest hit rate on the frozen 15-case set.
 - **Not replacing Material Maker's own UI.** This automates the parts that
   are tedious to start from scratch (blank-canvas node selection), not the
   parts where hands-on tweaking is the point.

@@ -1,8 +1,10 @@
 # quality/: the cookbook factory
 
 A Python package (`from quality.<module> import ...`; run scripts as
-`python -m quality.<module>` from the repo root). Not shipped in the wheel:
-everything here needs Godot and a Material Maker checkout. The tracked
+`python -m quality.<module>` from the repo root). The scripts import
+`mm_mcp`, so the editable install (`pip install -e .`, see the root README)
+is a prerequisite. Not shipped in the wheel: everything here needs Godot and
+a Material Maker checkout. The tracked
 `cookbook/` tree is its locked output; `docs/AUTHORING.md` holds the
 invariants the builders follow.
 

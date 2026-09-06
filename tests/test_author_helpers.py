@@ -5,7 +5,8 @@ back every Phase 3 authoring recipe (denim's weave graft, granite's port-2
 rewire, aluminum's grain-straightening, combo01's blend splice), so a bug here
 would silently corrupt authored materials. quality/ is a package (see
 quality/__init__.py); pytest's configured pythonpath puts the repo root on
-sys.path, so `from quality.author_helpers import ...` resolves normally.
+the module search path, so `from quality.author_helpers import ...` resolves
+normally.
 """
 from quality.author_helpers import rewire, drop_conn, node, add_node, group_into_subgraph
 

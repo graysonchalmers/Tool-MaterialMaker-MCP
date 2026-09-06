@@ -17,7 +17,7 @@ reptile scale. Where a variant wants real grain relief, it applies the
 renders a flat normal.
 
 Run: python -m quality.cookbook_leather
-Then quality/render_cookbook.py cookbook-leather renders each for inspection.
+Then `python -m quality.render_cookbook` cookbook-leather renders each for inspection.
 """
 import sys
 

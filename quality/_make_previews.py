@@ -2,7 +2,7 @@
 preview thumbnails, same technique used for examples/images/ (see
 HANDOFF.md -- Pillow is a dev-only tool for this, not a project dependency).
 
-Usage: .venv\\Scripts\\python.exe quality\\_make_previews.py [label]
+Usage: .venv\\Scripts\\python.exe -m quality._make_previews [label]
        (label defaults to cookbook-fabrics; pass e.g. cookbook-organics)
 """
 import sys

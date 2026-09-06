@@ -7,7 +7,7 @@ quality/authored/cookbook-wood/<case>/v1.ptex, same layout convention as the
 Phase 3 iterations.
 
 Run: python -m quality.cookbook_wood
-Then quality/render_cookbook.py renders each variant for inspection.
+Then `python -m quality.render_cookbook` renders each variant for inspection.
 """
 import sys
 
