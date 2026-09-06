@@ -253,9 +253,12 @@ commit.
 2. **Commit the docs promotion + prior correction.** STATUS.md + HANDOFF.md carry
    the mm-play ✅ promotion (and the earlier blocker correction). A `docs:` commit
    lands both.
-3. **Check Unreal UE5 export** now that `mcp__unreal-engine__*` tools show
-   connected (blocked for several sessions on "needs a live bridge"). Bigger,
-   needs a live Unreal Editor open.
+3. **Check Unreal UE5 export — BACKLOGGED 2026-09-05 (memory issues).** The
+   `mcp__unreal-engine__*` tools show connected, but Grayson hit memory issues
+   running the Unreal pipeline, so this is parked for now rather than a live
+   next step. Revisit when the machine has headroom (a live Unreal Editor plus
+   the bridge is heavy); a `stop-node-hogs`-style orphaned-process sweep is
+   worth ruling out first if the memory pressure persists.
 4. **Hands-on verify `live_load` / the new live play path.** The addon
    round-trip is proven by an integration test, but a hands-on run (drive the
    play surface against a live MM session, pick a material that differs from
