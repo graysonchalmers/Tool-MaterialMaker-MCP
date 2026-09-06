@@ -89,9 +89,9 @@ No forced order. Candidates:
 ## ❓ Open questions
 
 - PyPI vs GitHub-clone-only (leaning GitHub-only); macOS/Linux never run, no
-  machine. Release PR `chore(main): release 0.7.0` (#4) has been open since
-  2026-09-04 and now also carries the play surface, `live_load`, and this
-  fold; release cadence is still undecided.
+  machine. **v0.7.0 released 2026-09-06** (Grayson had PR #4 merged; it
+  carries the play surface, `live_load`, and the examples fold). Release
+  cadence is still undecided; release-please opens the next PR automatically.
 - NORTH_STAR treats UE4's export path as a lesser tier; Grayson never
   explicitly confirmed that specific framing.
 - Is `.mcp.json` the right long-term wiring, or should it fold into
