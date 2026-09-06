@@ -56,7 +56,9 @@ def main() -> int:
 
     out_name = "contact-sheet-" + "-".join(l.replace("cookbook-", "") for l in labels) + ".png"
     out_path = _IMAGES / out_name
-    sheet.save(out_path, optimize=True)
+    # 8-bit palette: the sheet is a review aid behind a <details> fold, and an
+    # RGB save was 7 MB per regeneration (2026-09-05).
+    sheet.convert("P", palette=Image.ADAPTIVE, colors=256).save(out_path, optimize=True)
     print(f"wrote {out_path} ({len(tiles)} tiles, {cols}x{rows})")
     return 0
 

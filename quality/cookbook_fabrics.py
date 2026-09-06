@@ -13,7 +13,9 @@ import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
 from author_helpers import (load_example, node, set_gradient, set_param, retype,
-                    rewire, add_node, save_variant, group_into_subgraph)
+                    rewire, add_node, save_variant, group_into_subgraph,
+                    take_variant)
+import author  # frozen Phase-3 builders; called, never edited
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 from mm_mcp.catalog_builder import build_catalog
@@ -324,7 +326,36 @@ def build_f08_donegal_tweed(catalog: dict) -> str:
     return save_variant(g, _LABEL, "f08_donegal_tweed", 1)
 
 
+def build_f01_woven_denim(catalog: dict) -> str:
+    """Blue denim, folded in from the Phase-3 hero set (was
+    examples/f01_woven_denim, iter1 variant 1). Graph unchanged from
+    author.build_f01_woven_denim v1: `crocodile_skin` with its voronoi
+    generator retyped to `diagonal_weave` so the twill drives albedo,
+    roughness, and the normal, recolored indigo and matte, with the
+    normal_map param4=0 fix that first unblocked flat normals project-wide.
+    This builder only GROUPS it. `uniform_0` (the black metallic constant)
+    stays top-level, the same convention the other crocodile_skin-derived
+    materials use."""
+    g = take_variant(author.build_f01_woven_denim, _LABEL, 1)
+    group_into_subgraph(
+        g, ["voronoi_0", "colorize_1", "colorize_3"],
+        "twill_weave", "Twill Weave",
+        [("voronoi_0", "size", "param0", "Weave size"),
+         ("colorize_1", "gradient", "param1", "Thread color"),
+         ("colorize_3", "gradient", "param2", "Cloth roughness")],
+        catalog,
+    )
+    group_into_subgraph(
+        g, ["colorize_0", "normal_map_0"],
+        "weave_relief", "Weave Relief",
+        [("normal_map_0", "param1", "param0", "Relief strength")],
+        catalog,
+    )
+    return save_variant(g, _LABEL, "f01_woven_denim", 1)
+
+
 BUILDERS = {
+    "f01_woven_denim": build_f01_woven_denim,
     "f03_canvas_burlap": build_f03_canvas_burlap,
     "f04_wool_knit": build_f04_wool_knit,
     "f05_silk_satin": build_f05_silk_satin,

@@ -34,7 +34,9 @@ import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
 from author_helpers import (load_example, set_gradient, set_param, save_variant,
-                    add_node, rewire, drop_conn, node, _grad, group_into_subgraph)
+                    add_node, rewire, drop_conn, node, _grad, group_into_subgraph,
+                    take_variant)
+import author  # frozen Phase-3 builders; called, never edited
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 from mm_mcp.catalog_builder import build_catalog
@@ -372,7 +374,38 @@ def build_pm05_scuffed_panel(catalog: dict) -> str:
     return save_variant(g, _LABEL, "pm05_scuffed_panel", 1)
 
 
+def build_combo01_rusted_painted_steel(catalog: dict) -> str:
+    """Rusted painted steel, paint peeling to bare metal, folded in from the
+    Phase-3 hero set (was examples/combo01_rusted_painted_steel, iter1
+    variant 1). Graph unchanged from author.build_combo01_rusted_painted_steel
+    v1: `rusted_metal` (rust albedo = blend_0, rust roughness = blend_1) with
+    a flat paint coat composited OVER it through an irregular perlin-threshold
+    peel mask, for both albedo and roughness. This builder only GROUPS it into
+    the two layers the composite is made of, so the paint-over-rust idea is
+    visible as two nodes feeding Material."""
+    g = take_variant(author.build_combo01_rusted_painted_steel, _LABEL, 1)
+    group_into_subgraph(
+        g, ["perlin_0", "perlin_1", "perlin_2", "colorize_0", "colorize_1",
+            "colorize_2", "colorize_3", "colorize_4", "blend_0", "blend_1"],
+        "rust_layer", "Rust Layer",
+        [("colorize_2", "gradient", "param0", "Bare metal color"),
+         ("colorize_1", "gradient", "param1", "Rust color"),
+         ("perlin_2", "scale_x", "param2", "Rust patch size")],
+        catalog,
+    )
+    group_into_subgraph(
+        g, ["perlin_pm", "colorize_pm", "paint_alb", "paint_rgh", "blend_alb", "blend_rgh"],
+        "paint_coat", "Paint Coat",
+        [("paint_alb", "gradient", "param0", "Paint color"),
+         ("colorize_pm", "gradient", "param1", "Peel amount"),
+         ("perlin_pm", "scale_x", "param2", "Peel patch size")],
+        catalog,
+    )
+    return save_variant(g, _LABEL, "combo01_rusted_painted_steel", 1)
+
+
 BUILDERS = {
+    "combo01_rusted_painted_steel": build_combo01_rusted_painted_steel,
     "pm01_powder_coat": build_pm01_powder_coat,
     "pm02_automotive_enamel": build_pm02_automotive_enamel,
     "pm03_chipped_paint": build_pm03_chipped_paint,

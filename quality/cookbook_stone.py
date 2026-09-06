@@ -14,7 +14,9 @@ import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
 from author_helpers import (load_example, set_gradient, set_param, save_variant,
-                             add_node, rewire, _grad, group_into_subgraph)
+                             add_node, rewire, _grad, group_into_subgraph,
+                             take_variant)
+import author  # frozen Phase-3 builders; called, never edited
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 from mm_mcp.catalog_builder import build_catalog
@@ -661,7 +663,43 @@ def build_s11_marble(catalog: dict) -> str:
     return save_variant(g, _LABEL, "s11_marble", 1)
 
 
+def build_s02_gray_granite(catalog: dict) -> str:
+    """Polished gray granite, folded in from the Phase-3 hero set (was
+    examples/s02_gray_granite, iter1 variant 2). The graph itself is
+    author.build_s02_gray_granite's v2 unchanged: a `rock` clone whose albedo
+    colorize is fed straight from voronoi_0's per-cell random output (port 2)
+    at a fine cell scale, so each cell is a flat random gray fleck, with the
+    normal_map param4=0 fix for real polished-stone micro-relief. This
+    builder only GROUPS it: three named subgraphs so a person opening it sees
+    fleck color, surface finish, and relief instead of 11 raw nodes.
+    perlin_0 stays top-level because it feeds both the color group (blend_0)
+    and the finish group (colorize_1, colorize_2)."""
+    g = take_variant(author.build_s02_gray_granite, _LABEL, 2)
+    group_into_subgraph(
+        g, ["voronoi_0", "blend_0", "colorize_0"],
+        "fleck_color", "Fleck Color",
+        [("voronoi_0", "scale_x", "param0", "Fleck density"),
+         ("colorize_0", "gradient", "param1", "Fleck colors")],
+        catalog,
+    )
+    group_into_subgraph(
+        g, ["colorize_1", "colorize_2"],
+        "surface_finish", "Surface Finish",
+        [("colorize_2", "gradient", "param0", "Polish (roughness)")],
+        catalog,
+    )
+    group_into_subgraph(
+        g, ["voronoi_1", "perlin_1", "warp_0", "normal_map_0"],
+        "stone_relief", "Stone Relief",
+        [("voronoi_1", "scale_x", "param0", "Relief cell size"),
+         ("normal_map_0", "param1", "param1", "Relief strength")],
+        catalog,
+    )
+    return save_variant(g, _LABEL, "s02_gray_granite", 1)
+
+
 BUILDERS = {
+    "s02_gray_granite": build_s02_gray_granite,
     "s04_scattered_river_stones": build_s04_scattered_river_stones,
     "s05_hex_stone_tile": build_s05_hex_stone_tile,
     "s06_river_pebbles": build_s06_river_pebbles,

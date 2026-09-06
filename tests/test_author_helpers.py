@@ -205,3 +205,35 @@ def test_group_into_subgraph_handles_incoming_and_outgoing_boundary():
             "to": "colorize_0", "to_port": 0} in inner
     assert {"from": "colorize_0", "from_port": 0,
             "to": "gen_outputs", "to_port": 0} in inner
+
+
+import json
+import os
+import pytest
+
+from author_helpers import take_variant
+
+
+def _fake_builder(tmp_path):
+    def builder(label):
+        paths = []
+        for n, marker in ((1, "one"), (2, "two")):
+            p = tmp_path / label / f"v{n}.ptex"
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text(json.dumps({"nodes": [], "connections": [], "marker": marker}),
+                         encoding="utf-8")
+            paths.append(str(p))
+        return paths
+    return builder
+
+
+def test_take_variant_returns_requested_variant_and_removes_all_files(tmp_path):
+    g = take_variant(_fake_builder(tmp_path), "lbl", 2)
+    assert g["marker"] == "two"
+    assert not os.path.exists(tmp_path / "lbl" / "v1.ptex")
+    assert not os.path.exists(tmp_path / "lbl" / "v2.ptex")
+
+
+def test_take_variant_raises_when_variant_missing(tmp_path):
+    with pytest.raises(FileNotFoundError):
+        take_variant(_fake_builder(tmp_path), "lbl", 3)

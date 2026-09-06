@@ -25,7 +25,7 @@ def _all_graphs(node):
 
 
 def test_cookbook_is_populated():
-    assert len(ENTRIES) >= 43, f"expected the 43 promoted graphs, found {len(ENTRIES)}"
+    assert len(ENTRIES) >= 53, f"expected at least the 53 promoted graphs, found {len(ENTRIES)}"
 
 
 def test_cookbook_ids_are_unique_across_categories():
