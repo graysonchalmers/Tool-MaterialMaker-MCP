@@ -34,4 +34,4 @@ either in would only relabel the sharing as an extra boundary port.
 ## See also
 
 `guide://authoring` (or `docs/AUTHORING.md`), "Cross-material lessons" for
-the topology-not-donor rule; `quality/scorecards/2026-08-26-iter1.md`.
+the topology-not-donor rule; `docs/evidence/phase3/2026-08-26-iter1.md`.

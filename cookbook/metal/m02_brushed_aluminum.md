@@ -40,4 +40,4 @@ Opening the graph shows 3 top-level nodes instead of 12:
 ## See also
 
 `guide://authoring` (or `docs/AUTHORING.md`) for the `param4=0` fix and the
-"pick the base by topology" lesson; `quality/scorecards/2026-08-26-iter1.md`.
+"pick the base by topology" lesson; `docs/evidence/phase3/2026-08-26-iter1.md`.

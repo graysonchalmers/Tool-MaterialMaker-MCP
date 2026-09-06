@@ -37,5 +37,5 @@ constant feeding one port.
 ## See also
 
 `guide://authoring` (or `docs/AUTHORING.md`) for the `param4=0` fix and the
-weave family notes; `quality/scorecards/2026-08-26-iter1.md` for the frozen
+weave family notes; `docs/evidence/phase3/2026-08-26-iter1.md` for the frozen
 verdict.

@@ -36,4 +36,4 @@ constant feeding one port.
 ## See also
 
 `guide://authoring` (or `docs/AUTHORING.md`), the `pattern`/`beehive` notes;
-`quality/scorecards/2026-08-26-iter1.md`.
+`docs/evidence/phase3/2026-08-26-iter1.md`.
