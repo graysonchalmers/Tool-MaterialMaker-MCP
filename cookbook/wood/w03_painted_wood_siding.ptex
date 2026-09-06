@@ -198,7 +198,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "colorize_0",
+         "node": "WoodColor",
          "widget": "gradient"
         }
        ]
@@ -206,7 +206,7 @@
      ]
     },
     {
-     "name": "colorize_0",
+     "name": "WoodColor",
      "node_position": {
       "x": 524,
       "y": -100.75
@@ -243,7 +243,7 @@
      "type": "colorize"
     },
     {
-     "name": "normal_map_0",
+     "name": "PlankNormal",
      "node_position": {
       "x": 740,
       "y": 135.25
@@ -260,7 +260,7 @@
      "type": "normal_map"
     },
     {
-     "name": "uniform_0",
+     "name": "NonMetallic",
      "node_position": {
       "x": 781,
       "y": 58
@@ -277,7 +277,7 @@
      "type": "uniform"
     },
     {
-     "name": "combine_0",
+     "name": "CombineUnused",
      "node_position": {
       "x": 866,
       "y": -78
@@ -295,7 +295,7 @@
      "type": "combine"
     },
     {
-     "name": "perlin_0",
+     "name": "GrainNoise",
      "node_position": {
       "x": 69,
       "y": 81.25
@@ -309,7 +309,7 @@
      "type": "perlin"
     },
     {
-     "name": "decompose_0",
+     "name": "PlankUVSplit",
      "node_position": {
       "x": 97,
       "y": 236
@@ -318,7 +318,7 @@
      "type": "decompose"
     },
     {
-     "name": "bricks_0",
+     "name": "PlankLayout",
      "node_position": {
       "x": 79,
       "y": -124.75
@@ -337,7 +337,7 @@
      "type": "bricks"
     },
     {
-     "name": "transform_1",
+     "name": "PerPlankGrainOffset",
      "node_position": {
       "x": 290,
       "y": 120
@@ -353,7 +353,7 @@
      "type": "transform"
     },
     {
-     "name": "blend_0",
+     "name": "GrainOverPlanks",
      "node_position": {
       "x": 492,
       "y": -13.75
@@ -367,85 +367,85 @@
    ],
    "connections": [
     {
-     "from": "bricks_0",
+     "from": "PlankLayout",
      "from_port": 0,
-     "to": "colorize_0",
+     "to": "WoodColor",
      "to_port": 0
     },
     {
-     "from": "colorize_0",
+     "from": "WoodColor",
      "from_port": 0,
-     "to": "blend_0",
+     "to": "GrainOverPlanks",
      "to_port": 0
     },
     {
-     "from": "uniform_0",
+     "from": "NonMetallic",
      "from_port": 0,
-     "to": "combine_0",
+     "to": "CombineUnused",
      "to_port": 0
     },
     {
-     "from": "blend_0",
+     "from": "GrainOverPlanks",
      "from_port": 0,
-     "to": "combine_0",
+     "to": "CombineUnused",
      "to_port": 1
     },
     {
-     "from": "transform_1",
+     "from": "PerPlankGrainOffset",
      "from_port": 0,
-     "to": "blend_0",
+     "to": "GrainOverPlanks",
      "to_port": 1
     },
     {
-     "from": "perlin_0",
+     "from": "GrainNoise",
      "from_port": 0,
-     "to": "transform_1",
+     "to": "PerPlankGrainOffset",
      "to_port": 0
     },
     {
-     "from": "bricks_0",
+     "from": "PlankLayout",
      "from_port": 1,
-     "to": "decompose_0",
+     "to": "PlankUVSplit",
      "to_port": 0
     },
     {
-     "from": "decompose_0",
+     "from": "PlankUVSplit",
      "from_port": 0,
-     "to": "transform_1",
+     "to": "PerPlankGrainOffset",
      "to_port": 1
     },
     {
-     "from": "decompose_0",
+     "from": "PlankUVSplit",
      "from_port": 1,
-     "to": "transform_1",
+     "to": "PerPlankGrainOffset",
      "to_port": 2
     },
     {
-     "from": "blend_0",
+     "from": "GrainOverPlanks",
      "from_port": 0,
-     "to": "normal_map_0",
+     "to": "PlankNormal",
      "to_port": 0
     },
     {
-     "from": "normal_map_0",
+     "from": "PlankNormal",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
-     "from": "uniform_0",
+     "from": "NonMetallic",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1
     },
     {
-     "from": "blend_0",
+     "from": "GrainOverPlanks",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 2
     },
     {
-     "from": "blend_0",
+     "from": "GrainOverPlanks",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 3
@@ -609,7 +609,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "paint_alb",
+         "node": "PaintColor",
          "widget": "gradient"
         }
        ]
@@ -621,7 +621,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "perlin_pm",
+         "node": "WearNoise",
          "widget": "scale_x"
         }
        ]
@@ -633,7 +633,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "colorize_pm",
+         "node": "PaintMask",
          "widget": "gradient"
         }
        ]
@@ -641,7 +641,7 @@
      ]
     },
     {
-     "name": "perlin_pm",
+     "name": "WearNoise",
      "type": "perlin",
      "node_position": {
       "x": 0,
@@ -654,7 +654,7 @@
      }
     },
     {
-     "name": "colorize_pm",
+     "name": "PaintMask",
      "type": "colorize",
      "node_position": {
       "x": 0,
@@ -684,7 +684,7 @@
      }
     },
     {
-     "name": "paint_alb",
+     "name": "PaintColor",
      "type": "colorize",
      "node_position": {
       "x": 0,
@@ -714,7 +714,7 @@
      }
     },
     {
-     "name": "paint_rgh",
+     "name": "PaintRoughness",
      "type": "colorize",
      "node_position": {
       "x": 0,
@@ -744,7 +744,7 @@
      }
     },
     {
-     "name": "blend_alb",
+     "name": "AlbedoComposite",
      "type": "blend",
      "node_position": {
       "x": 0,
@@ -756,7 +756,7 @@
      }
     },
     {
-     "name": "blend_rgh",
+     "name": "RoughnessComposite",
      "type": "blend",
      "node_position": {
       "x": 0,
@@ -770,67 +770,67 @@
    ],
    "connections": [
     {
-     "from": "perlin_pm",
+     "from": "WearNoise",
      "from_port": 0,
-     "to": "colorize_pm",
+     "to": "PaintMask",
      "to_port": 0
     },
     {
-     "from": "perlin_pm",
+     "from": "WearNoise",
      "from_port": 0,
-     "to": "paint_alb",
+     "to": "PaintColor",
      "to_port": 0
     },
     {
-     "from": "perlin_pm",
+     "from": "WearNoise",
      "from_port": 0,
-     "to": "paint_rgh",
+     "to": "PaintRoughness",
      "to_port": 0
     },
     {
-     "from": "paint_alb",
+     "from": "PaintColor",
      "from_port": 0,
-     "to": "blend_alb",
+     "to": "AlbedoComposite",
      "to_port": 1
     },
     {
-     "from": "colorize_pm",
+     "from": "PaintMask",
      "from_port": 0,
-     "to": "blend_alb",
+     "to": "AlbedoComposite",
      "to_port": 2
     },
     {
-     "from": "paint_rgh",
+     "from": "PaintRoughness",
      "from_port": 0,
-     "to": "blend_rgh",
+     "to": "RoughnessComposite",
      "to_port": 1
     },
     {
-     "from": "colorize_pm",
+     "from": "PaintMask",
      "from_port": 0,
-     "to": "blend_rgh",
+     "to": "RoughnessComposite",
      "to_port": 2
     },
     {
      "from": "gen_inputs",
      "from_port": 0,
-     "to": "blend_alb",
+     "to": "AlbedoComposite",
      "to_port": 0
     },
     {
      "from": "gen_inputs",
      "from_port": 1,
-     "to": "blend_rgh",
+     "to": "RoughnessComposite",
      "to_port": 0
     },
     {
-     "from": "blend_alb",
+     "from": "AlbedoComposite",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
-     "from": "blend_rgh",
+     "from": "RoughnessComposite",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1

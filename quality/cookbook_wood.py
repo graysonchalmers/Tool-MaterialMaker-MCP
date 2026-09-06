@@ -12,12 +12,54 @@ Then `python -m quality.render_cookbook` renders each variant for inspection.
 import sys
 
 from quality.author_helpers import (load_example, set_gradient, set_param, add_node, rewire,
-                             save_variant, _grad, group_into_subgraph)
+                             save_variant, _grad, group_into_subgraph, rename_nodes)
 
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.config import load_config
 
 _LABEL = "cookbook-wood"
+
+# Worked mapping for the `wooden_floor` donor (used by w03) and the paint
+# overlay w03 adds. See docs/AUTHORING.md and the 2026-09-06 role-naming
+# convention.
+_WOODEN_FLOOR_NAMES = {
+    "bricks_0": "PlankLayout",          # rows x columns of planks with mortar gaps
+    "perlin_0": "GrainNoise",           # the grain field
+    "decompose_0": "PlankUVSplit",      # per-plank random -> x/y offsets
+    "transform_1": "PerPlankGrainOffset",
+    "colorize_0": "WoodColor",          # albedo ramp painted over the plank mask
+    "blend_0": "GrainOverPlanks",       # grain multiplied over the coloured planks
+    "uniform_0": "NonMetallic",         # flat black into the metallic port
+    "combine_0": "CombineUnused",       # dead in the donor (no consumer)
+    "normal_map_0": "PlankNormal",
+}
+_PAINT_OVERLAY_NAMES = {
+    "perlin_pm": "WearNoise",
+    "colorize_pm": "PaintMask",         # hard 0/1 mask, blend port 2
+    "paint_alb": "PaintColor",
+    "paint_rgh": "PaintRoughness",
+    "blend_alb": "AlbedoComposite",
+    "blend_rgh": "RoughnessComposite",
+}
+
+# Worked mapping for the `wood` donor (w04, w05; also the base of the
+# Phase-3 barn wood). colorize_2 is albedo, colorize_0 is roughness,
+# blend_0 is the grain mask feeding four consumers, the three perlins and
+# the voronoi ring pattern plus its colorize and the two warps build the
+# grain (docs/AUTHORING.md's wood lever).
+_WOOD_NAMES = {
+    "perlin_0": "GrainNoiseFine",
+    "perlin_1": "GrainNoiseCoarse",
+    "perlin_2": "GrainWobble",
+    "voronoi_0": "RingPattern",
+    "colorize_1": "RingContrast",
+    "warp_0": "GrainWarp",
+    "warp_1": "RingWarp",
+    "blend_0": "GrainMask",
+    "colorize_2": "WoodColor",
+    "colorize_0": "GrainRoughness",
+    "normal_map_0": "GrainNormal",
+}
 
 
 def build_w03_painted_wood_siding(catalog: dict) -> str:
@@ -107,6 +149,7 @@ def build_w03_painted_wood_siding(catalog: dict) -> str:
          ("colorize_pm", "gradient", "param2", "Wear coverage")],
         catalog,
     )
+    rename_nodes(g, {**_WOODEN_FLOOR_NAMES, **_PAINT_OVERLAY_NAMES})
     return save_variant(g, _LABEL, "w03_painted_wood_siding", 1)
 
 
@@ -150,6 +193,7 @@ def build_w04_driftwood_gray(catalog: dict) -> str:
         [("colorize_0", "gradient", "param0", "Finish sheen")],
         catalog,
     )
+    rename_nodes(g, _WOOD_NAMES)
     return save_variant(g, _LABEL, "w04_driftwood_gray", 1)
 
 
@@ -186,6 +230,7 @@ def build_w05_dark_walnut(catalog: dict) -> str:
         [("colorize_0", "gradient", "param0", "Finish sheen")],
         catalog,
     )
+    rename_nodes(g, _WOOD_NAMES)
     return save_variant(g, _LABEL, "w05_dark_walnut", 1)
 
 
