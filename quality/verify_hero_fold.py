@@ -12,6 +12,11 @@ Exit 0 on match, 1 on mismatch or render failure.
 
 Run from the repo root as a script FILE, never via `python -c` (Godot's
 console launcher does not exit cleanly from -c; see quality/render_one.py).
+
+examples/ was retired 2026-09-05 (the 7 heroes now live in cookbook/); to
+re-run this check, restore a copy from
+C:\Projects-local\_to_delete\Tool-MaterialMaker-MCP-examples-2026-09-05 into
+examples/ first.
 """
 import json
 import sys

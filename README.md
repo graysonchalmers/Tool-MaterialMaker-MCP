@@ -64,7 +64,8 @@ graphs live in the cookbook below (`s02_gray_granite`, `f01_woven_denim`,
 
 ## Material cookbook
 
-The cookbook is 53 materials across 12 categories (the gallery above is drawn from it), each one a real graph this server authored and then locked
+The cookbook is 53 materials across 12 categories (the gallery above is
+drawn from it), each one a real graph this server authored and then locked
 after a 3D-preview pass. Every one ships as a tracked `.ptex` under
 [`cookbook/`](cookbook/): open `cookbook/<category>/<id>.ptex` in Material
 Maker to see the node network, or start from it over MCP with

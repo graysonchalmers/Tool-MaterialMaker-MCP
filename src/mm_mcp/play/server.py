@@ -173,7 +173,11 @@ def describe_port_owner(port: int) -> str | None:
 
 class _StrictThreadingHTTPServer(ThreadingHTTPServer):
     # Backstop for the probe above: never bind beside an existing listener.
-    allow_reuse_address = False
+    # SO_REUSEADDR means different things on the two platforms. On Windows it
+    # lets a second bind succeed beside a live listener, so it must stay off.
+    # On POSIX it only bypasses TIME_WAIT, so clearing it there just makes a
+    # quick restart fail; keep it on for anything that isn't Windows.
+    allow_reuse_address = os.name != "nt"
 
 
 def serve(cfg=None, open_browser=False):

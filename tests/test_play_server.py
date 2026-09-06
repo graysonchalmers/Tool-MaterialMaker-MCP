@@ -130,9 +130,10 @@ def test_serve_reports_port_in_use_with_owner(capsys):
     # quirk) or a bare OSError traceback.
     squatter = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     squatter.bind(("127.0.0.1", 0))
-    squatter.listen(1)
+    squatter.listen(5)
     port = squatter.getsockname()[1]
     try:
+        assert server.port_in_use(port)
         cfg = replace(load_config(), play_port=port)
         result = server.serve(cfg=cfg, open_browser=False)
     finally:

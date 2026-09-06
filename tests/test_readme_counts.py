@@ -10,42 +10,42 @@ from mm_mcp import server
 from mm_mcp.cookbook import list_cookbook
 
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-README = open(os.path.join(_ROOT, "README.md"), encoding="utf-8").read()
+with open(os.path.join(_ROOT, "README.md"), encoding="utf-8") as fh:
+    README = fh.read()
 ENTRIES = list_cookbook(os.path.join(_ROOT, "cookbook"))
 
 
-def _live_tool_count() -> int:
-    return len([name for name, obj in vars(server).items()
-                if name.startswith("live_") and inspect.isfunction(obj)])
+def _live_tool_names() -> set:
+    return {name for name, obj in vars(server).items()
+            if name.startswith("live_") and inspect.isfunction(obj)}
 
 
 def test_readme_cookbook_material_count_matches_tree():
-    m = re.search(r"cookbook is (\d+) materials across (\d+) categories", README)
+    m = re.search(r"cookbook is (\d+)\s+materials\s+across\s+(\d+)\s+categories", README)
     assert m, "README 'Material cookbook' sentence must read '<N> materials across <M> categories'"
     assert int(m.group(1)) == len(ENTRIES)
     assert int(m.group(2)) == len({e.category for e in ENTRIES})
 
 
 def test_readme_contact_sheet_summary_count_matches_tree():
-    m = re.search(r"Show the cookbook contact sheet</b> \((\d+) materials:", README)
+    m = re.search(r"Show the cookbook contact sheet</b>\s+\((\d+)\s+materials:", README)
     assert m, "contact-sheet <summary> must state '(<N> materials:'"
     assert int(m.group(1)) == len(ENTRIES)
 
 
 def test_readme_play_surface_count_matches_tree():
-    m = re.search(r"gallery of the (\d+)\s+cookbook materials", README)
+    m = re.search(r"gallery of the (\d+)\s+cookbook\s+materials", README)
     assert m, "Play surface paragraph must read 'gallery of the <N> cookbook materials'"
     assert int(m.group(1)) == len(ENTRIES)
 
 
 def test_readme_live_tool_count_matches_server():
-    m = re.search(r"plus (\d+) more in Live mode", README)
+    m = re.search(r"plus (\d+)\s+more\s+in\s+Live\s+mode", README)
     assert m, "Tools sentence must read 'plus <N> more in Live mode'"
-    assert int(m.group(1)) == _live_tool_count()
+    assert int(m.group(1)) == len(_live_tool_names())
 
 
 def test_readme_live_tool_table_lists_every_live_tool():
     rows = set(re.findall(r"^\| `(live_\w+)` \|", README, flags=re.M))
-    expected = {name for name, obj in vars(server).items()
-                if name.startswith("live_") and inspect.isfunction(obj)}
+    expected = _live_tool_names()
     assert rows == expected
