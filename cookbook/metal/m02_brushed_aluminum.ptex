@@ -220,7 +220,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "perlin_2",
+         "node": "StreakNoise",
          "widget": "scale_x"
         }
        ]
@@ -232,7 +232,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "perlin_2",
+         "node": "StreakNoise",
          "widget": "scale_y"
         }
        ]
@@ -244,7 +244,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "colorize_2",
+         "node": "AluminumColor",
          "widget": "gradient"
         }
        ]
@@ -256,7 +256,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "colorize_0",
+         "node": "RoughnessRamp",
          "widget": "gradient"
         }
        ]
@@ -268,7 +268,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "normal_map_0",
+         "node": "BrushNormal",
          "widget": "param1"
         }
        ]
@@ -276,7 +276,7 @@
      ]
     },
     {
-     "name": "perlin_2",
+     "name": "StreakNoise",
      "node_position": {
       "x": -312,
       "y": 2.5
@@ -290,7 +290,7 @@
      "type": "perlin"
     },
     {
-     "name": "blend_0",
+     "name": "StreakComposite",
      "node_position": {
       "x": 101,
       "y": 250.5
@@ -302,7 +302,7 @@
      "type": "blend"
     },
     {
-     "name": "colorize_2",
+     "name": "AluminumColor",
      "node_position": {
       "x": 407.35144,
       "y": 127.181824
@@ -339,7 +339,7 @@
      "type": "colorize"
     },
     {
-     "name": "normal_map_0",
+     "name": "BrushNormal",
      "node_position": {
       "x": 431,
       "y": 423.5
@@ -353,7 +353,7 @@
      "type": "normal_map"
     },
     {
-     "name": "colorize_0",
+     "name": "RoughnessRamp",
      "node_position": {
       "x": 423,
       "y": 306.5
@@ -385,49 +385,49 @@
    ],
    "connections": [
     {
-     "from": "perlin_2",
+     "from": "StreakNoise",
      "from_port": 0,
-     "to": "blend_0",
+     "to": "StreakComposite",
      "to_port": 0
     },
     {
-     "from": "blend_0",
+     "from": "StreakComposite",
      "from_port": 0,
-     "to": "normal_map_0",
+     "to": "BrushNormal",
      "to_port": 0
     },
     {
-     "from": "blend_0",
+     "from": "StreakComposite",
      "from_port": 0,
-     "to": "colorize_0",
+     "to": "RoughnessRamp",
      "to_port": 0
     },
     {
-     "from": "perlin_2",
+     "from": "StreakNoise",
      "from_port": 0,
-     "to": "blend_0",
+     "to": "StreakComposite",
      "to_port": 1
     },
     {
-     "from": "blend_0",
+     "from": "StreakComposite",
      "from_port": 0,
-     "to": "colorize_2",
+     "to": "AluminumColor",
      "to_port": 0
     },
     {
-     "from": "normal_map_0",
+     "from": "BrushNormal",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
-     "from": "colorize_0",
+     "from": "RoughnessRamp",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1
     },
     {
-     "from": "colorize_2",
+     "from": "AluminumColor",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 2
@@ -480,7 +480,7 @@
      "widgets": []
     },
     {
-     "name": "perlin_1",
+     "name": "KnotWarpNoiseUnused",
      "node_position": {
       "x": -635,
       "y": 341.5
@@ -494,7 +494,7 @@
      "type": "perlin"
     },
     {
-     "name": "perlin_0",
+     "name": "KnotNoiseUnused",
      "node_position": {
       "x": -635,
       "y": 210.5
@@ -508,7 +508,7 @@
      "type": "perlin"
     },
     {
-     "name": "warp_0",
+     "name": "KnotWarpUnused",
      "node_position": {
       "x": -311,
       "y": 280.5
@@ -520,7 +520,7 @@
      "type": "warp"
     },
     {
-     "name": "colorize_1",
+     "name": "KnotColorUnused",
      "node_position": {
       "x": -340,
       "y": 402.5
@@ -550,7 +550,7 @@
      "type": "colorize"
     },
     {
-     "name": "warp_1",
+     "name": "KnotWarpFinalUnused",
      "node_position": {
       "x": -89,
       "y": 325.5
@@ -562,7 +562,7 @@
      "type": "warp"
     },
     {
-     "name": "voronoi_0",
+     "name": "KnotCellsUnused",
      "node_position": {
       "x": -648,
       "y": 482.5
@@ -580,33 +580,33 @@
    ],
    "connections": [
     {
-     "from": "perlin_0",
+     "from": "KnotNoiseUnused",
      "from_port": 0,
-     "to": "warp_0",
+     "to": "KnotWarpUnused",
      "to_port": 0
     },
     {
-     "from": "perlin_1",
+     "from": "KnotWarpNoiseUnused",
      "from_port": 0,
-     "to": "warp_0",
+     "to": "KnotWarpUnused",
      "to_port": 1
     },
     {
-     "from": "voronoi_0",
+     "from": "KnotCellsUnused",
      "from_port": 0,
-     "to": "colorize_1",
+     "to": "KnotColorUnused",
      "to_port": 0
     },
     {
-     "from": "warp_0",
+     "from": "KnotWarpUnused",
      "from_port": 0,
-     "to": "warp_1",
+     "to": "KnotWarpFinalUnused",
      "to_port": 0
     },
     {
-     "from": "colorize_1",
+     "from": "KnotColorUnused",
      "from_port": 0,
-     "to": "warp_1",
+     "to": "KnotWarpFinalUnused",
      "to_port": 1
     }
    ]
