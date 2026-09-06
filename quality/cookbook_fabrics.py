@@ -12,13 +12,102 @@ import sys
 
 from quality.author_helpers import (load_example, node, set_gradient, set_param, retype,
                     rewire, add_node, save_variant, group_into_subgraph,
-                    take_variant)
+                    take_variant, rename_nodes)
 from quality import author  # shared builder base; regression guard is promote_cookbook --check
 
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.config import load_config
 
 _LABEL = "cookbook-fabrics"
+
+# Every crocodile_skin-derived material shares the same donor shape:
+# voronoi_0 (generator, retyped per material) -> colorize_1 (albedo),
+# colorize_3 (roughness), colorize_0 (0/1 ramp feeding normal_map_0), plus
+# uniform_0 (flat black constant into Material's metallic port). Per-material
+# dicts below give each donor clone its own role names since the generator's
+# type and the material's identity differ (weave vs diagonal_weave vs perlin,
+# denim vs burlap vs velvet), matching cookbook_scifi.py's per-material
+# _SFxx_NAMES precedent rather than one shared dict. `uniform_0` gets the
+# same "NonMetallic" name every category in this retrofit uses for a flat
+# black constant into the metallic port.
+_F01_WOVEN_DENIM_NAMES = {
+    "voronoi_0": "TwillLayout",       # diagonal_weave twill generator
+    "colorize_1": "DenimColor",
+    "colorize_3": "DenimRoughness",
+    "colorize_0": "TwillHeight",      # 0/1 ramp feeding the normal map
+    "normal_map_0": "TwillNormal",
+    "uniform_0": "NonMetallic",
+}
+
+# The weave/weave2 family convention (see the task brief): the pattern node
+# is WeaveLayout, its stitch colorize ThreadColor.
+_F03_CANVAS_BURLAP_NAMES = {
+    "voronoi_0": "WeaveLayout",       # weave (over/under plain weave)
+    "colorize_1": "ThreadColor",
+    "colorize_3": "BurlapRoughness",
+    "colorize_0": "WeaveHeight",
+    "normal_map_0": "WeaveNormal",
+    "uniform_0": "NonMetallic",
+}
+
+_F04_WOOL_KNIT_NAMES = {
+    "voronoi_0": "WeaveLayout",       # weave, coarse+wide-width stand-in for knit
+    "colorize_1": "ThreadColor",
+    "colorize_3": "KnitRoughness",
+    "colorize_0": "WeaveHeight",
+    "normal_map_0": "WeaveNormal",
+    "uniform_0": "NonMetallic",
+}
+
+# diagonal_weave, not the weave/weave2 family, so its own layout name;
+# satin uses *Sheen* for the anisotropic roughness chain per the brief.
+_F05_SILK_SATIN_NAMES = {
+    "voronoi_0": "SatinWeaveLayout",  # diagonal_weave at a near-invisible scale
+    "colorize_1": "SatinColor",
+    "colorize_3": "SatinSheen",
+    "colorize_0": "SatinHeight",
+    "normal_map_0": "SatinNormal",
+    "uniform_0": "NonMetallic",
+}
+
+# perlin retype: "the fibre perlin FiberNoise" per the brief. Velvet also
+# uses *Sheen* for its roughness chain.
+_F06_VELVET_NAMES = {
+    "voronoi_0": "FiberNoise",        # perlin, continuous fiber-like grain
+    "colorize_1": "VelvetColor",
+    "colorize_3": "VelvetSheen",
+    "colorize_0": "FiberHeight",
+    "normal_map_0": "FiberNormal",
+    "uniform_0": "NonMetallic",
+}
+
+# weave2 stitch=3: the chevron reads as herringbone, so the pattern node
+# gets its own name per the brief rather than the generic WeaveLayout.
+_F07_HERRINGBONE_TWEED_NAMES = {
+    "voronoi_0": "HerringboneLayout",
+    "colorize_1": "TweedColor",
+    "colorize_3": "TweedRoughness",
+    "colorize_0": "HerringboneHeight",
+    "normal_map_0": "HerringboneNormal",
+    "uniform_0": "NonMetallic",
+}
+
+# weave2 stitch=1 (plain weave, no herringbone chevron), so the base weave
+# uses the generic WeaveLayout/ThreadColor names; the independent fleck
+# voronoi is FleckSource and its hard threshold FleckMask per the brief
+# (see the memory note on f08's blend/opacity-mask caution).
+_F08_DONEGAL_TWEED_NAMES = {
+    "voronoi_0": "WeaveLayout",
+    "colorize_1": "ThreadColor",
+    "colorize_3": "TweedRoughness",
+    "colorize_0": "WeaveHeight",
+    "normal_map_0": "WeaveNormal",
+    "uniform_0": "NonMetallic",
+    "voronoi_fleck": "FleckSource",
+    "colorize_fleck_mask": "FleckMask",
+    "colorize_fleck_color": "FleckColor",
+    "blend_fleck": "FleckComposite",
+}
 
 
 def _group_weave_family(g, catalog, *, pattern_name, pattern_label, color_label,
@@ -87,6 +176,7 @@ def build_f03_canvas_burlap(catalog: dict) -> str:
         color_label="Burlap color", density_param="width",
         density_label="Thread gap", finish_label="Roughness",
     )
+    rename_nodes(g, _F03_CANVAS_BURLAP_NAMES)
     return save_variant(g, _LABEL, "f03_canvas_burlap", 1)
 
 
@@ -120,6 +210,7 @@ def build_f04_wool_knit(catalog: dict) -> str:
         color_label="Wool color", density_param="columns",
         density_label="Rib count", finish_label="Roughness",
     )
+    rename_nodes(g, _F04_WOOL_KNIT_NAMES)
     return save_variant(g, _LABEL, "f04_wool_knit", 1)
 
 
@@ -148,6 +239,7 @@ def build_f05_silk_satin(catalog: dict) -> str:
         color_label="Satin color", density_param="size",
         density_label="Weave scale", finish_label="Sheen",
     )
+    rename_nodes(g, _F05_SILK_SATIN_NAMES)
     return save_variant(g, _LABEL, "f05_silk_satin", 1)
 
 
@@ -183,6 +275,7 @@ def build_f06_velvet(catalog: dict) -> str:
         color_label="Velvet color", density_param="iterations",
         density_label="Fiber grain", finish_label="Roughness",
     )
+    rename_nodes(g, _F06_VELVET_NAMES)
     return save_variant(g, _LABEL, "f06_velvet", 1)
 
 
@@ -222,6 +315,7 @@ def build_f07_herringbone_tweed(catalog: dict) -> str:
         density_param="columns", density_label="Weave scale",
         finish_label="Roughness",
     )
+    rename_nodes(g, _F07_HERRINGBONE_TWEED_NAMES)
     return save_variant(g, _LABEL, "f07_herringbone_tweed", 1)
 
 
@@ -320,6 +414,7 @@ def build_f08_donegal_tweed(catalog: dict) -> str:
         [("blend_fleck", "amount", "param0", "Fleck strength")],
         catalog,
     )
+    rename_nodes(g, _F08_DONEGAL_TWEED_NAMES)
     return save_variant(g, _LABEL, "f08_donegal_tweed", 1)
 
 
@@ -348,6 +443,7 @@ def build_f01_woven_denim(catalog: dict) -> str:
         [("normal_map_0", "param1", "param0", "Relief strength")],
         catalog,
     )
+    rename_nodes(g, _F01_WOVEN_DENIM_NAMES)
     return save_variant(g, _LABEL, "f01_woven_denim", 1)
 
 

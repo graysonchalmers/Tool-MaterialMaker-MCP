@@ -1,7 +1,7 @@
 {
  "connections": [
   {
-   "from": "uniform_0",
+   "from": "NonMetallic",
    "from_port": 0,
    "to": "Material",
    "to_port": 1
@@ -71,7 +71,7 @@
    "type": "material"
   },
   {
-   "name": "uniform_0",
+   "name": "NonMetallic",
    "node_position": {
     "x": 413,
     "y": 208
@@ -212,7 +212,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "voronoi_0",
+         "node": "HerringboneLayout",
          "widget": "columns"
         }
        ]
@@ -224,7 +224,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "colorize_1",
+         "node": "TweedColor",
          "widget": "gradient"
         }
        ]
@@ -232,7 +232,7 @@
      ]
     },
     {
-     "name": "colorize_1",
+     "name": "TweedColor",
      "node_position": {
       "x": 384,
       "y": 137
@@ -269,7 +269,7 @@
      "type": "colorize"
     },
     {
-     "name": "voronoi_0",
+     "name": "HerringboneLayout",
      "node_position": {
       "x": 71,
       "y": 216
@@ -286,25 +286,25 @@
    ],
    "connections": [
     {
-     "from": "voronoi_0",
+     "from": "HerringboneLayout",
      "from_port": 0,
-     "to": "colorize_1",
+     "to": "TweedColor",
      "to_port": 0
     },
     {
-     "from": "voronoi_0",
+     "from": "HerringboneLayout",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
-     "from": "colorize_1",
+     "from": "TweedColor",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1
     },
     {
-     "from": "voronoi_0",
+     "from": "HerringboneLayout",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 2
@@ -428,7 +428,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "colorize_3",
+         "node": "TweedRoughness",
          "widget": "gradient"
         }
        ]
@@ -440,7 +440,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "normal_map_0",
+         "node": "HerringboneNormal",
          "widget": "param1"
         }
        ]
@@ -448,7 +448,7 @@
      ]
     },
     {
-     "name": "colorize_3",
+     "name": "TweedRoughness",
      "node_position": {
       "x": 384,
       "y": 258
@@ -478,7 +478,7 @@
      "type": "colorize"
     },
     {
-     "name": "colorize_0",
+     "name": "HerringboneHeight",
      "node_position": {
       "x": 264,
       "y": 331
@@ -508,7 +508,7 @@
      "type": "colorize"
     },
     {
-     "name": "normal_map_0",
+     "name": "HerringboneNormal",
      "node_position": {
       "x": 479,
       "y": 334
@@ -524,31 +524,31 @@
    ],
    "connections": [
     {
-     "from": "colorize_0",
+     "from": "HerringboneHeight",
      "from_port": 0,
-     "to": "normal_map_0",
+     "to": "HerringboneNormal",
      "to_port": 0
     },
     {
      "from": "gen_inputs",
      "from_port": 0,
-     "to": "colorize_0",
+     "to": "HerringboneHeight",
      "to_port": 0
     },
     {
      "from": "gen_inputs",
      "from_port": 1,
-     "to": "colorize_3",
+     "to": "TweedRoughness",
      "to_port": 0
     },
     {
-     "from": "normal_map_0",
+     "from": "HerringboneNormal",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
-     "from": "colorize_3",
+     "from": "TweedRoughness",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1
