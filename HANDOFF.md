@@ -231,19 +231,19 @@ Older write-ups/log beyond the cap live in
 
 ## 📌 Where we stopped
 
-The host-render blocker was investigated and does NOT reproduce (see Current
-state). STATUS + HANDOFF corrected. `mm-play` stays 🔌 pending Grayson's own
-`play.bat` run. Port 8788 was left free and all test servers stopped. No code
-changed this session; the correction is docs-only and not yet committed.
+**mm-play is now ✅ verified (2026-09-05).** Grayson ran `play.bat` himself with
+port 8788 free and it rendered correctly on his real machine, which is the exact
+hands-on criterion the row was waiting on. The play-surface blocker is closed for
+good. STATUS row + last-updated line promoted 🔌 -> ✅; docs-only change, ready to
+commit.
 
 ## ▶️ Next concrete step
 
-1. **Grayson runs `play.bat` himself (port 8788 is free).** Pick a material,
-   drag a slider, confirm the sphere renders. This is the one thing that
-   promotes `mm-play` from 🔌 to ✅ and closes the blocker for good. If it fails,
-   FIRST check for a stale server on 8788 (see the heads-up), not the GPU.
-2. **Commit the docs correction.** STATUS.md + HANDOFF.md were edited to correct
-   the blocker record but are not committed. A `docs:` commit lands it.
+1. **DONE 2026-09-05: Grayson ran `play.bat` hands-on and it rendered.**
+   `mm-play` promoted 🔌 -> ✅; play-surface blocker closed for good.
+2. **Commit the docs promotion + prior correction.** STATUS.md + HANDOFF.md carry
+   the mm-play ✅ promotion (and the earlier blocker correction). A `docs:` commit
+   lands both.
 3. **Check Unreal UE5 export** now that `mcp__unreal-engine__*` tools show
    connected (blocked for several sessions on "needs a live bridge"). Bigger,
    needs a live Unreal Editor open.
