@@ -12,7 +12,9 @@ import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
 from author_helpers import (load_example, node, set_gradient, set_param, retype,
-                     rewire, drop_conn, add_node, save_variant, group_into_subgraph)
+                     rewire, drop_conn, add_node, save_variant, group_into_subgraph,
+                     take_variant)
+import author  # frozen Phase-3 builders; called, never edited
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 from mm_mcp.catalog_builder import build_catalog
@@ -228,7 +230,37 @@ def build_o06_lichen_crusted_rock(catalog: dict) -> str:
     return save_variant(g, _LABEL, "o06_lichen_crusted_rock", 1)
 
 
+def build_o01_mossy_forest_floor(catalog: dict) -> str:
+    """Mossy forest floor, folded in from the Phase-3 hero set (was
+    examples/o01_mossy_forest_floor, iter1 variant 1). Graph unchanged from
+    author.build_o01_mossy_forest_floor v1: `dry_earth`'s cracked-plate
+    ground with its earth ramp recolored dark soil -> green moss so plate
+    tops read as moss and crack floors as soil. This builder only GROUPS it,
+    the same two-group split as the other dry_earth-derived materials
+    (gl01_frosted_glass, the terrain plates): a Ground Color group and a
+    Ground Relief group, with the two shared perlin sources left top-level
+    because each feeds both groups."""
+    g = take_variant(author.build_o01_mossy_forest_floor, _LABEL, 1)
+    group_into_subgraph(
+        g, ["voronoi_0", "colorize_1", "warp_0", "colorize_0", "blend_0", "colorize_3"],
+        "ground_color", "Ground Color",
+        [("voronoi_0", "scale_x", "param0", "Plate size"),
+         ("colorize_0", "gradient", "param1", "Moss and soil colors"),
+         ("blend_0", "amount", "param2", "Crack contrast"),
+         ("warp_0", "amount", "param3", "Plate warp")],
+        catalog,
+    )
+    group_into_subgraph(
+        g, ["colorize_4", "blend_1", "colorize", "normal_map_0"],
+        "ground_relief", "Ground Relief",
+        [("normal_map_0", "param1", "param0", "Relief strength")],
+        catalog,
+    )
+    return save_variant(g, _LABEL, "o01_mossy_forest_floor", 1)
+
+
 BUILDERS = {
+    "o01_mossy_forest_floor": build_o01_mossy_forest_floor,
     "o03_tree_bark": build_o03_tree_bark,
     "o04_snake_scales": build_o04_snake_scales,
     "o05_coral": build_o05_coral,
