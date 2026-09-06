@@ -50,7 +50,10 @@ it, then its rendered maps were composited onto a sphere, a cube, and a cutaway
 ball on a lit ground plane, so the normal-map relief reads under real lighting
 instead of as a flat swatch. The bottom-right one is a round-trip example: the
 server drafted the graph, then I finished it by hand in Material Maker. Full
-graphs and flat swatches are in [`examples/`](examples/).
+graphs live in the cookbook below (`s02_gray_granite`, `f01_woven_denim`,
+`man02_ceramic_hex_tiles`, `m02_brushed_aluminum`, `o01_mossy_forest_floor`,
+`o03_tree_bark`, `w05_dark_walnut`); the hand-finished one is
+[`saved_graphs/bricks_grayson_edit.ptex`](saved_graphs/bricks_grayson_edit.ptex).
 
 | | |
 |:--:|:--:|
@@ -61,8 +64,7 @@ graphs and flat swatches are in [`examples/`](examples/).
 
 ## Material cookbook
 
-Beyond the frozen gallery above, the cookbook is 46 more materials across
-ten categories, each one a real graph this server authored and then locked
+The cookbook is 53 materials across 12 categories (the gallery above is drawn from it), each one a real graph this server authored and then locked
 after a 3D-preview pass. Every one ships as a tracked `.ptex` under
 [`cookbook/`](cookbook/): open `cookbook/<category>/<id>.ptex` in Material
 Maker to see the node network, or start from it over MCP with
@@ -73,13 +75,11 @@ its graph as `cookbook/<category>/<id>.md`. The builders that regenerate the
 graphs live in [`quality/`](quality/).
 
 <details>
-<summary><b>Show the cookbook contact sheet</b> (46 materials: fabrics, glass, leather, organics, painted metal, plastics, sci-fi, stone, terrain, wood)</summary>
+<summary><b>Show the cookbook contact sheet</b> (53 materials: ceramic, fabrics, glass, leather, metal, organics, painted metal, plastics, sci-fi, stone, terrain, wood)</summary>
 
 <p align="center">
-  <img src="docs/images/cookbook-contact-sheet.png" alt="Contact sheet of 43 cookbook materials across eight categories, not yet regenerated to include glass, plastics, or the new tweed" width="100%">
+  <img src="docs/images/cookbook-contact-sheet.png" alt="Contact sheet of all 53 cookbook materials across 12 categories" width="100%">
 </p>
-
-_Not yet regenerated to include `gl01_frosted_glass` (glass), `p01_glossy_plastic` (plastics), or `f08_donegal_tweed`, still shows the prior 43-material/eight-category sheet; regeneration is a real cost (a multi-MB image per rebuild), left for a deliberate pass rather than done here._
 
 </details>
 
@@ -223,7 +223,7 @@ through a render.
 
 ## Tools
 
-The server exposes ten batch-mode tools and two resources (plus six more in Live mode, below):
+The server exposes 10 batch-mode tools and two resources (plus 7 more in Live mode, below):
 
 | Tool | What it does |
 |---|---|
@@ -270,7 +270,7 @@ for the full design.
 ## Play surface (optional)
 
 `mm-play` is a small local web page for a non-technical person who wants to
-tweak a cookbook material without touching a node graph: a gallery of the 46
+tweak a cookbook material without touching a node graph: a gallery of the 53
 cookbook materials, each opening to friendly sliders (derived from the
 material's author-chosen subgraph parameters) with a WebGL sphere preview
 that re-renders as you drag. It deliberately hides the node graph; it is a
