@@ -16,16 +16,16 @@ Grouped per the "Grouping into subgraphs" lever in `docs/AUTHORING.md`.
 This is the only material in the category built on `stone_wall`'s `Bricks`
 donor rather than a `voronoi`/`dry_earth` clone, and the only one where a
 `blend` node's port sources needed tracing (this builder itself never
-touches any `blend` node -- it only retunes `Bricks` and recolors
+touches any `blend` node -- it only retunes `BlockLayout` and recolors
 `BlockColor` -- but the donor's own wiring still needed reading before
 deciding how to group it). Read `AlbedoComposite`'s raw connections directly:
-port0(s1)=`BlockColor` (block tone, fed by `PerBlockRandom`'s Perlin + Bricks
+port0(s1)=`BlockColor` (block tone, fed by `PerBlockRandom`'s Perlin + BlockLayout
 per-brick-random mix), port1(s2)=`MortarColor` (mortar tone, fed by
-`SurfaceNoise`), port2(mask)=`JointMask` (the Warp'd `Bricks` shape, high inside
+`SurfaceNoise`), port2(mask)=`JointMask` (the Warp'd `BlockLayout` shape, high inside
 each brick face and low at the joints). That means mask-high shows the
 block tone and mask-low shows the mortar tone -- the expected read for cut
 stone with dark joints, not the port-reversal this retrofit's leather task
-found elsewhere. `PerBlockRandom` (Perlin + Bricks port1 random -> `BlockColor`)
+found elsewhere. `PerBlockRandom` (Perlin + BlockLayout port1 random -> `BlockColor`)
 and `ReliefComposite` (Warp + Perlin -> the height/AO/depth fan-out) both carry no
 port2 mask (unconnected -> uniform 1.0), plain amount mixes. None of these
 three blends' wiring is modified by this retrofit, only regrouped --
