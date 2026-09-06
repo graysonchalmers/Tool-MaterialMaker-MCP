@@ -22,12 +22,27 @@ Then `python -m quality.render_cookbook` cookbook-leather renders each for inspe
 import sys
 
 from quality.author_helpers import (load_example, node, set_gradient, set_param, retype,
-                    rewire, add_node, save_variant, _grad, group_into_subgraph)
+                    rewire, add_node, save_variant, _grad, group_into_subgraph, rename_nodes)
 
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.config import load_config
 
 _LABEL = "cookbook-leather"
+
+# Shared donor mapping for the crocodile_skin clones (l01, l02, l04, l05, l06
+# all keep voronoi_0 as a voronoi; l03 retypes it to perlin and overrides the
+# key below). voronoi_0 is the cellular grain generator whose port-0 fan-out
+# drives albedo (colorize_1), roughness (colorize_3), and the height chain
+# (colorize_0 -> normal_map_0); uniform_0 is Material's untouched metallic
+# scalar.
+_CROCODILE_NAMES = {
+    "voronoi_0": "PoreCells",
+    "colorize_1": "LeatherColor",
+    "colorize_3": "LeatherRoughness",
+    "colorize_0": "GrainHeight",
+    "normal_map_0": "LeatherNormal",
+    "uniform_0": "NonMetallic",
+}
 
 
 def _group_leather_grain(g, catalog, *, color_label, sheen_label, relief_label,
@@ -110,6 +125,7 @@ def build_l01_black_oiled_leather(catalog: dict) -> str:
         g, catalog, color_label="Oiled leather color",
         sheen_label="Polish level", relief_label="Grain relief",
     )
+    rename_nodes(g, dict(_CROCODILE_NAMES))
     return save_variant(g, _LABEL, "l01_black_oiled_leather", 1)
 
 
@@ -205,6 +221,15 @@ def build_l02_distressed_two_tone(catalog: dict) -> str:
         [("blend_alb", "amount", "param0", "Wear blend strength")],
         catalog,
     )
+    rename_nodes(g, {
+        **_CROCODILE_NAMES,
+        "perlin_wm": "RubNoise",
+        "colorize_wm": "RubMask",
+        "worn_alb": "WornColor",
+        "worn_rgh": "WornRoughness",
+        "blend_alb": "AlbedoComposite",
+        "blend_rgh": "RoughnessComposite",
+    })
     return save_variant(g, _LABEL, "l02_distressed_two_tone", 1)
 
 
@@ -239,6 +264,7 @@ def build_l03_suede(catalog: dict) -> str:
         sheen_label="Nap roughness", relief_label="Nap relief",
         pattern_size_param="iterations", pattern_size_label="Fiber grain",
     )
+    rename_nodes(g, {**_CROCODILE_NAMES, "voronoi_0": "NapGrainNoise"})
     return save_variant(g, _LABEL, "l03_suede", 1)
 
 
@@ -285,6 +311,7 @@ def build_l04_reptile_exotic(catalog: dict) -> str:
         sheen_label="Finish", relief_label="Scale relief",
         pattern_size_param="scale_x", pattern_size_label="Scale size",
     )
+    rename_nodes(g, dict(_CROCODILE_NAMES))
     return save_variant(g, _LABEL, "l04_reptile_exotic", 1)
 
 
@@ -404,6 +431,14 @@ def build_l05_quilted_leather(catalog: dict) -> str:
          ("normal_map_0", "param1", "param1", "Relief strength")],
         catalog,
     )
+    rename_nodes(g, {
+        **_CROCODILE_NAMES,
+        "pattern_q": "QuiltLayout",
+        "seam_mask": "SeamMask",
+        "seam_shade": "SeamShade",
+        "blend_h_q": "HeightComposite",
+        "blend_alb_q": "AlbedoComposite",
+    })
     return save_variant(g, _LABEL, "l05_quilted_leather", 1)
 
 
@@ -504,6 +539,14 @@ def build_l06_topstitched_leather(catalog: dict) -> str:
          ("normal_map_0", "param1", "param1", "Relief strength")],
         catalog,
     )
+    rename_nodes(g, {
+        **_CROCODILE_NAMES,
+        "dash_grid": "StitchDashes",
+        "stitch_mask": "StitchMask",
+        "thread_alb": "ThreadColor",
+        "blend_alb_st": "AlbedoComposite",
+        "blend_h_st": "HeightComposite",
+    })
     return save_variant(g, _LABEL, "l06_topstitched_leather", 1)
 
 

@@ -19,6 +19,14 @@ builds; the invariants behind them are in `docs/AUTHORING.md`.
 Each graph has a recipe card beside it, `<category>/<id>.md`, describing what
 it is, the levers that made it work, and where to look in the graph.
 
+Every card ends with a generated `## Nodes` table between `<!-- nodes:begin -->`
+and `<!-- nodes:end -->` markers: one row per node in the shipped graph with the
+subgraph it lives in and its type. `python -m quality.promote_cookbook` writes
+it and `--check` fails if it is missing or stale, so the card and the `.ptex`
+cannot disagree about node names. Prose above the markers is hand-written and
+may mention donor nodes (`wood`'s `colorize_2`) as the recipe's starting point;
+the table is the map of what is actually in the file.
+
 ## Regenerate
 
 The builders are the source; this folder is their locked output.

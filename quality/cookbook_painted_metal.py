@@ -33,13 +33,37 @@ import sys
 
 from quality.author_helpers import (load_example, set_gradient, set_param, save_variant,
                     add_node, rewire, drop_conn, node, _grad, group_into_subgraph,
-                    take_variant)
+                    take_variant, rename_nodes)
 from quality import author  # shared builder base; regression guard is promote_cookbook --check
 
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.config import load_config
 
 _LABEL = "cookbook-painted-metal"
+
+
+def _rock_family_names(*, pattern_cells, normal_cells, cell_mix, mix_noise,
+                        warp_noise, pattern_warp, normal_name):
+    """Shared donor mapping shape for pm01/pm02/pm04 (all clone `rock`,
+    identical voronoi->warp->normal chain, see `_group_rock_family`'s
+    docstring for the traced port sources). `colorize_0`/`colorize_1`/
+    `colorize_2` play the same role in every clone -- paint albedo, the flat
+    metallic=0 scalar, and paint roughness -- so those three get the same
+    names everywhere (matching the general PaintColor/PaintRoughness naming
+    used across this whole category); only the two generator names and the
+    warp/normal names differ per material."""
+    return {
+        "voronoi_0": pattern_cells,
+        "voronoi_1": normal_cells,
+        "blend_0": cell_mix,
+        "perlin_0": mix_noise,
+        "perlin_1": warp_noise,
+        "warp_0": pattern_warp,
+        "colorize_0": "PaintColor",
+        "colorize_1": "NonMetallic",
+        "colorize_2": "PaintRoughness",
+        "normal_map_0": normal_name,
+    }
 
 
 def _group_rock_family(g, catalog, *, pattern_name, pattern_label, density_label,
@@ -113,6 +137,11 @@ def build_pm01_powder_coat(catalog: dict) -> str:
         pattern_label="Orange Peel Pattern", density_label="Peel density",
         finish_roughness_label="Roughness", relief_label="Relief strength",
     )
+    rename_nodes(g, _rock_family_names(
+        pattern_cells="OrangePeelCells", normal_cells="OrangePeelNoise",
+        cell_mix="CellMix", mix_noise="MixNoise", warp_noise="WarpNoise",
+        pattern_warp="PeelWarp", normal_name="OrangePeelNormal",
+    ))
     return save_variant(g, _LABEL, "pm01_powder_coat", 1)
 
 
@@ -149,6 +178,12 @@ def build_pm02_automotive_enamel(catalog: dict) -> str:
         density_label="Fleck density", finish_roughness_label="Clearcoat gloss",
         relief_label="Coat smoothness",
     )
+    rename_nodes(g, _rock_family_names(
+        pattern_cells="FlakeCells", normal_cells="FlakeNormalCells",
+        cell_mix="CellMixUnused",   # dead end after the rewire() above
+        mix_noise="MixNoise", warp_noise="WarpNoise",
+        pattern_warp="ClearcoatWarp", normal_name="ClearcoatNormal",
+    ))
     return save_variant(g, _LABEL, "pm02_automotive_enamel", 1)
 
 
@@ -278,6 +313,31 @@ def build_pm03_chipped_paint(catalog: dict) -> str:
         [("normal_chip", "param1", "param0", "Chip edge relief")],
         catalog,
     )
+    rename_nodes(g, {
+        # rusted_metal donor, recolored to bare steel: perlin_1 drives both
+        # steel-tone ramps, colorize_3 is the internal mix mask for the two
+        # steel tones (distinct from mask_chip below, which is the paint
+        # chip mask), colorize_4/colorize_0 build the roughness variant.
+        "perlin_1": "SteelToneNoise",
+        "colorize_2": "BareMetalColor",
+        "colorize_1": "MetalShadowTone",
+        "perlin_2": "SteelMaskNoise",
+        "colorize_3": "SteelToneMask",
+        "colorize_4": "SteelRoughnessMaskTone",
+        "perlin_0": "SteelRoughnessNoise",
+        "colorize_0": "SteelRoughnessTone",
+        "blend_0": "BareMetalAlbedo",
+        "blend_1": "BareMetalRoughness",
+        # the chip mask: drives the albedo/roughness composite AND
+        # Material's metallic port directly (metal shows where paint chips)
+        "perlin_chip": "ChipNoise",
+        "mask_chip": "ChipMask",
+        "paint_alb": "PaintColor",
+        "paint_rgh": "PaintRoughness",
+        "blend_alb": "AlbedoComposite",
+        "blend_rgh": "RoughnessComposite",
+        "normal_chip": "ChipEdgeNormal",
+    })
     return save_variant(g, _LABEL, "pm03_chipped_paint", 1)
 
 
@@ -309,6 +369,11 @@ def build_pm04_hammertone(catalog: dict) -> str:
         pattern_label="Hammer Dimple Pattern", density_label="Dimple size",
         finish_roughness_label="Sheen", relief_label="Dimple depth",
     )
+    rename_nodes(g, _rock_family_names(
+        pattern_cells="HammerDimples", normal_cells="DimpleNormalCells",
+        cell_mix="CellMix", mix_noise="MixNoise", warp_noise="WarpNoise",
+        pattern_warp="DimpleWarp", normal_name="HammerNormal",
+    ))
     return save_variant(g, _LABEL, "pm04_hammertone", 1)
 
 
@@ -368,6 +433,22 @@ def build_pm05_scuffed_panel(catalog: dict) -> str:
          ("normal_map_0", "param1", "param1", "Scuff depth")],
         catalog,
     )
+    rename_nodes(g, {
+        # dead knot-warp branch left over from wood's donor structure, no
+        # path to Material at all after the rewire() above (see the
+        # docstring on the group_into_subgraph call above)
+        "perlin_0": "KnotWarpNoiseUnused",
+        "perlin_1": "KnotWarpAmountUnused",
+        "warp_0": "KnotWarpUnused",
+        "voronoi_0": "KnotCellsUnused",
+        "colorize_1": "KnotToneUnused",
+        "warp_1": "KnotOverlayUnused",
+        "perlin_2": "ScuffNoise",          # straightened grain, feeds blend_0 both inputs
+        "blend_0": "ScuffPattern",
+        "colorize_2": "PaintColor",
+        "colorize_0": "ScuffRoughness",
+        "normal_map_0": "ScuffNormal",
+    })
     return save_variant(g, _LABEL, "pm05_scuffed_panel", 1)
 
 
@@ -398,6 +479,29 @@ def build_combo01_rusted_painted_steel(catalog: dict) -> str:
          ("perlin_pm", "scale_x", "param2", "Peel patch size")],
         catalog,
     )
+    rename_nodes(g, {
+        # rusted_metal donor: perlin_1 drives both steel-tone and rust-tone
+        # ramps, colorize_3 is the mask that composites the albedo AND
+        # drives Material's metallic port directly (rust patches read
+        # metallic), same shared-mask-drives-metallic shape as pm03's
+        # ChipMask / o06's LichenMask.
+        "perlin_1": "MetalToneNoise",
+        "colorize_2": "BareMetalColor",
+        "colorize_1": "RustColor",
+        "perlin_2": "RustPatchNoise",
+        "colorize_3": "RustMask",
+        "colorize_4": "RustRoughnessTone",
+        "perlin_0": "RoughnessNoise",
+        "colorize_0": "RoughnessTone",
+        "blend_0": "RustAlbedo",
+        "blend_1": "RustRoughness",
+        "perlin_pm": "PeelNoise",
+        "colorize_pm": "PeelMask",
+        "paint_alb": "PaintColor",
+        "paint_rgh": "PaintRoughness",
+        "blend_alb": "AlbedoComposite",
+        "blend_rgh": "RoughnessComposite",
+    })
     return save_variant(g, _LABEL, "combo01_rusted_painted_steel", 1)
 
 

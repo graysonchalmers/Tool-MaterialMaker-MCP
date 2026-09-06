@@ -9,12 +9,30 @@ Then: python -m quality.promote_cookbook cookbook-ceramic
 import sys
 
 from quality import author  # shared builder base; regression guard is promote_cookbook --check
-from quality.author_helpers import save_variant, take_variant, group_into_subgraph
+from quality.author_helpers import save_variant, take_variant, group_into_subgraph, rename_nodes
 
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.config import load_config
 
 _LABEL = "cookbook-ceramic"
+
+# `beehive` donor mapping for man02. beehive_2 produces the clean hex value
+# (port 0, rewired to drive albedo/roughness directly) and a per-cell random
+# tone (port 1); colorize_2/colorize convert those two into the inputs mixed
+# by blend for the relief pathway (normal + height), which man02's albedo
+# and roughness no longer read from since they were rewired straight off
+# beehive_2. Material port 6 is depth_tex (height), fed by colorize_3.
+_MAN02_NAMES = {
+    "beehive_2": "HexLayout",
+    "colorize_5": "TileColor",       # albedo: tile + thin grout line
+    "colorize_4": "GlazeRoughness",  # roughness: inverted (glazed face, rough grout)
+    "colorize_2": "StructureTone",   # hex-value tone feeding the relief blend
+    "colorize": "CellRandomTone",    # per-cell random tone feeding the relief blend
+    "blend": "ReliefBlend",          # mixes the two tones for normal + height
+    "normal_map": "GroutNormal",
+    "colorize_3": "GroutDepth",      # feeds Material's depth_tex port
+    "uniform_greyscale": "NonMetallic",
+}
 
 
 def build_man02_ceramic_hex_tiles(catalog: dict) -> str:
@@ -42,6 +60,7 @@ def build_man02_ceramic_hex_tiles(catalog: dict) -> str:
          ("blend", "amount", "param1", "Edge softness")],
         catalog,
     )
+    rename_nodes(g, _MAN02_NAMES)
     return save_variant(g, _LABEL, "man02_ceramic_hex_tiles", 1)
 
 

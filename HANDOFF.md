@@ -107,6 +107,12 @@ Grayson's and has not happened. Nothing is in flight.
   inside `quality/` breaks `.env` lookup). Never launch a Godot render from
   `python -c` (the launcher does not exit; use `python -m quality.render_one`
   or a script file). Renders are one Godot at a time.
+- **Pass `render()` an absolute `outdir`.** Godot runs with the Material Maker
+  checkout as its cwd, so a relative outdir is never found, Material Maker
+  opens its GUI instead, and the render idles to the 180 s timeout with an
+  empty log (this cost two implementer runs on 2026-09-06).
+  `quality/render_tracked.py` resolves its own paths; `src/mm_mcp/render.py`
+  still accepts a relative one.
 - **Edit cookbook materials by changing the builder and re-promoting**, never
   the tracked `.ptex` by hand; `python -m quality.promote_cookbook --check`
   flags drift. `--check` compares against the existing gitignored

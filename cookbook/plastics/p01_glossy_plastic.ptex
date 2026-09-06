@@ -169,7 +169,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "colorize_0",
+         "node": "PlasticColor",
          "widget": "gradient"
         }
        ]
@@ -181,7 +181,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "perlin_0",
+         "node": "SurfaceNoise",
          "widget": "scale_x"
         }
        ]
@@ -189,7 +189,7 @@
      ]
     },
     {
-     "name": "perlin_0",
+     "name": "SurfaceNoise",
      "type": "perlin",
      "node_position": {
       "x": 0,
@@ -201,7 +201,7 @@
      }
     },
     {
-     "name": "colorize_0",
+     "name": "PlasticColor",
      "type": "colorize",
      "node_position": {
       "x": 300,
@@ -233,25 +233,25 @@
    ],
    "connections": [
     {
-     "from": "perlin_0",
+     "from": "SurfaceNoise",
      "from_port": 0,
-     "to": "colorize_0",
+     "to": "PlasticColor",
      "to_port": 0
     },
     {
-     "from": "perlin_0",
+     "from": "SurfaceNoise",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
-     "from": "colorize_0",
+     "from": "PlasticColor",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1
     },
     {
-     "from": "perlin_0",
+     "from": "SurfaceNoise",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 2
@@ -375,7 +375,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "rough_const",
+         "node": "RoughnessConst",
          "widget": "gradient"
         }
        ]
@@ -387,7 +387,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "normal_map_0",
+         "node": "SurfaceNormal",
          "widget": "param1"
         }
        ]
@@ -395,7 +395,7 @@
      ]
     },
     {
-     "name": "normal_map_0",
+     "name": "SurfaceNormal",
      "type": "normal_map",
      "node_position": {
       "x": 300,
@@ -409,7 +409,7 @@
      }
     },
     {
-     "name": "rough_const",
+     "name": "RoughnessConst",
      "type": "colorize",
      "node_position": {
       "x": 0,
@@ -443,23 +443,23 @@
     {
      "from": "gen_inputs",
      "from_port": 0,
-     "to": "normal_map_0",
+     "to": "SurfaceNormal",
      "to_port": 0
     },
     {
      "from": "gen_inputs",
      "from_port": 1,
-     "to": "rough_const",
+     "to": "RoughnessConst",
      "to_port": 0
     },
     {
-     "from": "normal_map_0",
+     "from": "SurfaceNormal",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
-     "from": "rough_const",
+     "from": "RoughnessConst",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1

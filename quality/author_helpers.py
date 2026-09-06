@@ -155,6 +155,79 @@ def add_node(graph: dict, name: str, ntype: str, params: dict) -> None:
                            "parameters": dict(params)})
 
 
+RESERVED_NODE_NAMES = frozenset({"Material", "gen_inputs", "gen_outputs", "gen_parameters"})
+
+
+def _levels(graph: dict):
+    """Yield (level_label, node_list, connection_list) for the top level and
+    every nested `graph` node, depth first."""
+    yield "", graph["nodes"], graph["connections"]
+    for n in graph["nodes"]:
+        if n.get("type") == "graph":
+            yield from ((n["name"] if not lbl else f"{n['name']}/{lbl}", nodes, conns)
+                        for lbl, nodes, conns in _levels(n))
+
+
+def rename_nodes(graph: dict, mapping: dict) -> None:
+    """Rename nodes in place at every level of `graph` (top level and inside
+    every `graph`-type subgraph): the node's `name`, both ends of every
+    connection at that level, and every `linked_widgets[].node` reference on
+    any node at that level. `node_position` is never touched, so Material
+    Maker's position-derived seeds (and therefore the renders) are unchanged.
+
+    Subgraph (`type == "graph"`) nodes are never renamed; mm-play slider ids
+    depend on their names.
+
+    Validates the whole mapping before changing anything:
+      KeyError   - a source name exists at no level
+      ValueError - a source or target is reserved, a source or target names a
+                   subgraph node, or a target already names a sibling at the
+                   level where the source lives
+    """
+    bad_reserved = [k for k in mapping if k in RESERVED_NODE_NAMES] + \
+                   [v for v in mapping.values() if v in RESERVED_NODE_NAMES]
+    if bad_reserved:
+        raise ValueError(f"reserved node names cannot be renamed or used: {sorted(set(bad_reserved))}")
+    found = {}
+    graph_names_by_level = {}
+    for label, nodes, _ in _levels(graph):
+        names = {n["name"] for n in nodes}
+        graph_names_by_level[label] = {n["name"] for n in nodes if n.get("type") == "graph"}
+        level_sources = [old for old in mapping if old in names]
+        for old in level_sources:
+            found.setdefault(old, []).append((label, names, level_sources))
+    missing = [k for k in mapping if k not in found]
+    if missing:
+        raise KeyError(f"nodes not found at any level: {sorted(missing)}")
+    bad_subgraph_sources = [old for old, levels in found.items()
+                            if any(old in graph_names_by_level[label] for label, _, _ in levels)]
+    if bad_subgraph_sources:
+        raise ValueError(f"subgraph nodes cannot be renamed: {sorted(set(bad_subgraph_sources))}")
+    bad_subgraph_targets = [(old, new) for old, new in mapping.items()
+                            for label, _, _ in found[old]
+                            if new in graph_names_by_level[label]]
+    if bad_subgraph_targets:
+        raise ValueError(f"cannot rename to a subgraph node's name: {sorted(set(bad_subgraph_targets))}")
+    for old, new in mapping.items():
+        for label, names, level_sources in found[old]:
+            where = label or "top level"
+            if new in names and new != old:
+                raise ValueError(f"{where}: cannot rename {old!r} to {new!r}, a sibling already has that name")
+            other_targets = {mapping[other] for other in level_sources if other != old}
+            if new in other_targets:
+                raise ValueError(f"{where}: cannot rename {old!r} to {new!r}, another node in this "
+                                  f"mapping at the same level also targets {new!r}")
+    for _, nodes, conns in _levels(graph):
+        for n in nodes:
+            n["name"] = mapping.get(n["name"], n["name"])
+            for w in n.get("widgets", []) or []:
+                for lw in w.get("linked_widgets", []) or []:
+                    lw["node"] = mapping.get(lw["node"], lw["node"])
+        for c in conns:
+            c["from"] = mapping.get(c["from"], c["from"])
+            c["to"] = mapping.get(c["to"], c["to"])
+
+
 def _boundary_port_type(catalog: dict, node_type: str, port: int, *, is_input: bool) -> str:
     entry = catalog.get(node_type, {})
     ports = entry.get("inputs" if is_input else "outputs", [])

@@ -175,7 +175,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "perlin_2",
+         "node": "PatchNoise",
          "widget": "scale_x"
         }
        ]
@@ -187,7 +187,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "colorize_3",
+         "node": "PatinaMask",
          "widget": "gradient"
         }
        ]
@@ -195,7 +195,7 @@
      ]
     },
     {
-     "name": "perlin_2",
+     "name": "PatchNoise",
      "node_position": {
       "x": 89,
       "y": -6
@@ -209,7 +209,7 @@
      "type": "perlin"
     },
     {
-     "name": "colorize_3",
+     "name": "PatinaMask",
      "node_position": {
       "x": 371,
       "y": 47
@@ -239,7 +239,7 @@
      "type": "colorize"
     },
     {
-     "name": "colorize_4",
+     "name": "PatinaRoughness",
      "node_position": {
       "x": 480,
       "y": 141
@@ -271,31 +271,31 @@
    ],
    "connections": [
     {
-     "from": "perlin_2",
+     "from": "PatchNoise",
      "from_port": 0,
-     "to": "colorize_3",
+     "to": "PatinaMask",
      "to_port": 0
     },
     {
-     "from": "colorize_3",
+     "from": "PatinaMask",
      "from_port": 0,
-     "to": "colorize_4",
+     "to": "PatinaRoughness",
      "to_port": 0
     },
     {
-     "from": "colorize_3",
+     "from": "PatinaMask",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
-     "from": "colorize_3",
+     "from": "PatinaMask",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1
     },
     {
-     "from": "colorize_4",
+     "from": "PatinaRoughness",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 2
@@ -447,7 +447,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "colorize_2",
+         "node": "CopperColor",
          "widget": "gradient"
         }
        ]
@@ -459,7 +459,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "colorize_1",
+         "node": "VerdigrisColor",
          "widget": "gradient"
         }
        ]
@@ -467,7 +467,7 @@
      ]
     },
     {
-     "name": "perlin_1",
+     "name": "MetalNoise",
      "node_position": {
       "x": 86,
       "y": 147
@@ -481,7 +481,7 @@
      "type": "perlin"
     },
     {
-     "name": "colorize_2",
+     "name": "CopperColor",
      "node_position": {
       "x": 365,
       "y": -41
@@ -511,7 +511,7 @@
      "type": "colorize"
     },
     {
-     "name": "colorize_1",
+     "name": "VerdigrisColor",
      "node_position": {
       "x": 371,
       "y": 214
@@ -541,7 +541,7 @@
      "type": "colorize"
     },
     {
-     "name": "blend_0",
+     "name": "ColorComposite",
      "node_position": {
       "x": 562,
       "y": -23
@@ -555,37 +555,37 @@
    ],
    "connections": [
     {
-     "from": "perlin_1",
+     "from": "MetalNoise",
      "from_port": 0,
-     "to": "colorize_1",
+     "to": "VerdigrisColor",
      "to_port": 0
     },
     {
-     "from": "colorize_2",
+     "from": "CopperColor",
      "from_port": 0,
-     "to": "blend_0",
+     "to": "ColorComposite",
      "to_port": 0
     },
     {
-     "from": "colorize_1",
+     "from": "VerdigrisColor",
      "from_port": 0,
-     "to": "blend_0",
+     "to": "ColorComposite",
      "to_port": 1
     },
     {
-     "from": "perlin_1",
+     "from": "MetalNoise",
      "from_port": 0,
-     "to": "colorize_2",
+     "to": "CopperColor",
      "to_port": 0
     },
     {
      "from": "gen_inputs",
      "from_port": 0,
-     "to": "blend_0",
+     "to": "ColorComposite",
      "to_port": 2
     },
     {
-     "from": "blend_0",
+     "from": "ColorComposite",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
@@ -697,7 +697,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "colorize_0",
+         "node": "RoughnessVariation",
          "widget": "gradient"
         }
        ]
@@ -705,7 +705,7 @@
      ]
     },
     {
-     "name": "perlin_0",
+     "name": "RoughnessNoise",
      "node_position": {
       "x": 86,
       "y": 301
@@ -719,7 +719,7 @@
      "type": "perlin"
     },
     {
-     "name": "colorize_0",
+     "name": "RoughnessVariation",
      "node_position": {
       "x": 363,
       "y": 337
@@ -749,7 +749,7 @@
      "type": "colorize"
     },
     {
-     "name": "blend_1",
+     "name": "RoughnessComposite",
      "node_position": {
       "x": 566,
       "y": 253
@@ -763,25 +763,25 @@
    ],
    "connections": [
     {
-     "from": "perlin_0",
+     "from": "RoughnessNoise",
      "from_port": 0,
-     "to": "colorize_0",
+     "to": "RoughnessVariation",
      "to_port": 0
     },
     {
-     "from": "colorize_0",
+     "from": "RoughnessVariation",
      "from_port": 0,
-     "to": "blend_1",
+     "to": "RoughnessComposite",
      "to_port": 1
     },
     {
      "from": "gen_inputs",
      "from_port": 0,
-     "to": "blend_1",
+     "to": "RoughnessComposite",
      "to_port": 0
     },
     {
-     "from": "blend_1",
+     "from": "RoughnessComposite",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0

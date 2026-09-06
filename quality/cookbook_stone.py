@@ -13,13 +13,37 @@ import sys
 
 from quality.author_helpers import (load_example, set_gradient, set_param, save_variant,
                              add_node, rewire, _grad, group_into_subgraph,
-                             take_variant)
+                             take_variant, rename_nodes)
 from quality import author  # shared builder base; regression guard is promote_cookbook --check
 
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.config import load_config
 
 _LABEL = "cookbook-stone"
+
+# Shared donor mapping for the dry_earth-voronoi-plate family (s07 cobblestone,
+# s08 dry stone wall, s10 flagstone, s11 marble). voronoi_0 is the crack-network
+# generator whose port1 fan-out (colorize_1 -> warp_0 -> blend_0) draws the
+# plate/joint pattern; the relief chain (perlin_1/colorize_3/perlin_0/
+# colorize_0/colorize_4/blend_1/colorize/normal_map_0) is dry_earth's original
+# height/roughness path, folded together per _group_paving_stone's docstring.
+# colorize_0 is orphaned in s07/s08/s10 once blend_0's port1 is rewired onto
+# colorize_cobble (see that docstring) -- s11 marble never rewires it, so it
+# overrides colorize_0/perlin_0/colorize_3 below (build_s11_marble docstring).
+_DRY_EARTH_NAMES = {
+    "voronoi_0": "PlateCells",
+    "colorize_1": "PlateEdges",
+    "warp_0": "JointWarp",
+    "blend_0": "JointComposite",
+    "perlin_1": "ReliefNoiseCoarse",
+    "colorize_3": "ReliefContrast",
+    "perlin_0": "ReliefNoiseFine",
+    "colorize_0": "ReliefFineUnused",
+    "colorize_4": "ReliefRamp",
+    "blend_1": "ReliefComposite",
+    "colorize": "ReliefHeight",
+    "normal_map_0": "StoneNormal",
+}
 
 
 def _group_paving_stone(g: dict, catalog: dict, *, relief_label: str = None) -> None:
@@ -177,6 +201,25 @@ def build_s04_scattered_river_stones(catalog: dict) -> str:
                          "relief", "Relief",
                          [("normal_map_0", "param1", "param0", "Relief strength")],
                          catalog)
+    rename_nodes(g, {
+        "voronoi_0": "PebbleCells",
+        "colorize_gap": "GapMask",
+        "colorize_stone": "StoneColor",
+        "colorize_sand": "SandColor",
+        "blend_stones": "StoneSandComposite",
+        "colorize_0": "StoneAlbedoUnused",
+        "colorize_2": "StoneRoughnessUnused",
+        "blend_0": "StoneBlendUnused",
+        "colorize_1": "NonMetallic",
+        "perlin_0": "SurfaceNoise",
+        "colorize_rgh_sand": "SandRoughness",
+        "colorize_rgh_stone": "StoneRoughness",
+        "blend_rgh": "RoughnessComposite",
+        "perlin_1": "ReliefWarpNoise",
+        "voronoi_1": "ReliefCells",
+        "warp_0": "ContactWarp",
+        "normal_map_0": "PebbleNormal",
+    })
     return save_variant(g, _LABEL, "s04_scattered_river_stones", 1)
 
 
@@ -267,6 +310,22 @@ def build_s05_hex_stone_tile(catalog: dict) -> str:
                          [("perlin_grain", "scale_x", "param0", "Grain scale"),
                           ("perlin_grain", "iterations", "param1", "Grain detail")],
                          catalog)
+    rename_nodes(g, {
+        "beehive_2": "HexLayout",
+        "colorize_2": "HexFaceMask",
+        "colorize": "HexEdgeMask",
+        "blend": "HexFieldComposite",
+        "colorize_3": "HexAO",
+        "normal_map": "HexNormal",
+        "colorize_5": "StoneColor",
+        "colorize_4": "StoneRoughness",
+        "uniform_greyscale": "NonMetallic",
+        "perlin_grain": "GrainNoise",
+        "colorize_grain_alb": "GrainContrastAlbedo",
+        "colorize_grain_rgh": "GrainContrastRoughness",
+        "blend_grain_alb": "AlbedoComposite",
+        "blend_grain_rgh": "RoughnessComposite",
+    })
     return save_variant(g, _LABEL, "s05_hex_stone_tile", 1)
 
 
@@ -356,6 +415,21 @@ def build_s06_river_pebbles(catalog: dict) -> str:
                          "relief", "Relief",
                          [("normal_map_0", "param1", "param0", "Relief strength")],
                          catalog)
+    rename_nodes(g, {
+        "voronoi_0": "PebbleCells",
+        "colorize_0": "PebbleColor",
+        "blend_0": "PebbleBlendUnused",
+        "colorize_1": "NonMetallic",
+        "colorize_2": "PebbleRoughness",
+        "perlin_0": "SurfaceNoise",
+        "perlin_grain": "GrainNoise",
+        "colorize_grain": "GrainContrast",
+        "blend_grain": "GrainOverPebbles",
+        "perlin_1": "ReliefWarpNoise",
+        "voronoi_1": "ReliefCells",
+        "warp_0": "ContactWarp",
+        "normal_map_0": "PebbleNormal",
+    })
     return save_variant(g, _LABEL, "s06_river_pebbles", 1)
 
 
@@ -427,6 +501,13 @@ def build_s07_cobblestone(catalog: dict) -> str:
     ]
     rewire(g, "Material", 0, "blend_grain", 0)   # albedo <- grain-multiplied cobbles
     _group_paving_stone(g, catalog)
+    rename_nodes(g, {
+        **_DRY_EARTH_NAMES,
+        "colorize_cobble": "StoneColor",
+        "perlin_grain": "GrainNoise",
+        "colorize_grain": "GrainContrast",
+        "blend_grain": "GrainOverStone",
+    })
     return save_variant(g, _LABEL, "s07_cobblestone", 1)
 
 
@@ -478,6 +559,13 @@ def build_s08_dry_stone_wall(catalog: dict) -> str:
     ]
     rewire(g, "Material", 0, "blend_grain", 0)
     _group_paving_stone(g, catalog)
+    rename_nodes(g, {
+        **_DRY_EARTH_NAMES,
+        "colorize_cobble": "StoneColor",
+        "perlin_grain": "GrainNoise",
+        "colorize_grain": "GrainContrast",
+        "blend_grain": "GrainOverStone",
+    })
     return save_variant(g, _LABEL, "s08_dry_stone_wall", 1)
 
 
@@ -547,6 +635,24 @@ def build_s09_ashlar_wall(catalog: dict) -> str:
                          "block_finish", "Block & Mortar Finish",
                          [("colorize_1", "gradient", "param0", "Block color")],
                          catalog)
+    rename_nodes(g, {
+        "Bricks": "BlockLayout",
+        "Warp": "BlockWarp",
+        "perlin_0": "BlockWarpNoise",
+        "colorize_2": "JointMask",
+        "colorize_7": "JointRoughness",
+        "Perlin": "SurfaceNoise",
+        "colorize_0": "MortarColor",
+        "blend_1": "PerBlockRandom",
+        "colorize_1": "BlockColor",
+        "blend_0": "AlbedoComposite",
+        "blend_2": "ReliefComposite",
+        "colorize_4": "BlockHeight",
+        "colorize_6": "BlockAO",
+        "normal_map_0": "BlockNormal",
+        "uniform_0": "NonMetallic",
+        "394": "ShaderPreviewUnused",
+    })
     return save_variant(g, _LABEL, "s09_ashlar_wall", 1)
 
 
@@ -596,6 +702,13 @@ def build_s10_flagstone(catalog: dict) -> str:
     # cobbles' 0.99 bulge) -- unlike s07/s08, this earns the Relief group
     # its own exposed parameter instead of being folded into Stone Color.
     _group_paving_stone(g, catalog, relief_label="Slab flatness")
+    rename_nodes(g, {
+        **_DRY_EARTH_NAMES,
+        "colorize_cobble": "StoneColor",
+        "perlin_grain": "GrainNoise",
+        "colorize_grain": "GrainContrast",
+        "blend_grain": "GrainOverStone",
+    })
     return save_variant(g, _LABEL, "s10_flagstone", 1)
 
 
@@ -657,6 +770,12 @@ def build_s11_marble(catalog: dict) -> str:
                          "marble_relief", "Relief & Metallic",
                          [("normal_map_0", "param1", "param0", "Vein relief")],
                          catalog)
+    rename_nodes(g, {
+        **_DRY_EARTH_NAMES,
+        "colorize_0": "StoneColor",   # active marble base cream here, not orphaned
+        "perlin_0": "BaseNoise",      # feeds StoneColor directly, not relief-fine-noise
+        "colorize_3": "NonMetallic",  # metallic zeroed here, not the relief-contrast role
+    })
     return save_variant(g, _LABEL, "s11_marble", 1)
 
 
@@ -692,6 +811,18 @@ def build_s02_gray_granite(catalog: dict) -> str:
          ("normal_map_0", "param1", "param1", "Relief strength")],
         catalog,
     )
+    rename_nodes(g, {
+        "voronoi_0": "FleckCells",
+        "blend_0": "FleckBlendUnused",
+        "colorize_0": "FleckColor",
+        "colorize_1": "NonMetallic",
+        "colorize_2": "PolishRoughness",
+        "voronoi_1": "ReliefCells",
+        "perlin_1": "ReliefWarpNoise",
+        "warp_0": "ReliefWarp",
+        "normal_map_0": "GraniteNormal",
+        "perlin_0": "SurfaceNoise",
+    })
     return save_variant(g, _LABEL, "s02_gray_granite", 1)
 
 

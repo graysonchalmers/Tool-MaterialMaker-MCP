@@ -11,13 +11,51 @@ import sys
 
 from quality.author_helpers import (load_example, node, set_gradient, set_param, retype,
                      rewire, drop_conn, add_node, save_variant, group_into_subgraph,
-                     take_variant)
+                     take_variant, rename_nodes)
 from quality import author  # shared builder base; regression guard is promote_cookbook --check
 
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.config import load_config
 
 _LABEL = "cookbook-organics"
+
+# Worked mapping for `wood` cloned unmodified structurally (o03; see
+# cookbook_wood.py's _WOOD_NAMES for the identical donor graph -- same 11
+# nodes, same wiring, just bark wording instead of wood wording since bark
+# wants ridges/furrows, not annual rings).
+_BARK_NAMES = {
+    "perlin_0": "GrainNoiseFine",
+    "perlin_1": "GrainNoiseCoarse",
+    "perlin_2": "GrainWobble",
+    "voronoi_0": "BarkRidges",       # furrow/ridge pattern (wood's ring pattern, recast)
+    "colorize_1": "RidgeContrast",
+    "warp_0": "GrainWarp",
+    "warp_1": "RidgeWarp",           # the knot-overlay waviness this builder keeps
+    "blend_0": "GrainMask",
+    "colorize_2": "BarkColor",
+    "colorize_0": "BarkRoughness",
+    "normal_map_0": "BarkNormal",
+}
+
+# Worked mapping for `dry_earth` cloned unmodified structurally (o01): the
+# shared perlin_0/perlin_1 sources feed both groups (see the docstring),
+# voronoi_0 is the plate/crack cell pattern, colorize_3 is the mask that
+# both composites the albedo AND drives Material's metallic port directly
+# (same shared-mask-drives-metallic shape as o06's LichenMask below).
+_MOSSY_FLOOR_NAMES = {
+    "perlin_0": "LitterNoise",
+    "perlin_1": "MossCoverageNoise",
+    "voronoi_0": "PlateCells",
+    "colorize_1": "PlateEdges",
+    "warp_0": "PlateWarp",
+    "colorize_0": "MossColor",
+    "blend_0": "AlbedoComposite",
+    "colorize_3": "MossMask",
+    "colorize_4": "ReliefRamp",
+    "blend_1": "ReliefComposite",
+    "colorize": "ReliefHeight",
+    "normal_map_0": "GroundNormal",
+}
 
 
 def _group_crocodile_skin_pattern(g, catalog, *, pattern_size_label,
@@ -90,6 +128,7 @@ def build_o03_tree_bark(catalog: dict) -> str:
         [("colorize_0", "gradient", "param0", "Bark sheen")],
         catalog,
     )
+    rename_nodes(g, _BARK_NAMES)
     return save_variant(g, _LABEL, "o03_tree_bark", 1)
 
 
@@ -125,6 +164,14 @@ def build_o04_snake_scales(catalog: dict) -> str:
         pattern_size_label="Scale size", pattern_color_label="Scale color",
         sheen_label="Sheen", relief_label="Scale relief",
     )
+    rename_nodes(g, {
+        "voronoi_0": "ScaleLayout",     # finished discrete scale tiling
+        "colorize_1": "ScaleColor",
+        "colorize_3": "ScaleSheen",
+        "colorize_0": "ScaleHeight",
+        "normal_map_0": "ScaleNormal",
+        "uniform_0": "NonMetallic",
+    })
     return save_variant(g, _LABEL, "o04_snake_scales", 1)
 
 
@@ -160,6 +207,14 @@ def build_o05_coral(catalog: dict) -> str:
         pattern_size_label="Cell size", pattern_color_label="Coral color",
         sheen_label="Surface tone", relief_label="Pore relief",
     )
+    rename_nodes(g, {
+        "voronoi_0": "PolypCells",     # fbm Cellular: porous, still noise not a rigid layout
+        "colorize_1": "CoralColor",
+        "colorize_3": "CoralSheen",
+        "colorize_0": "CoralHeight",
+        "normal_map_0": "CoralNormal",
+        "uniform_0": "NonMetallic",
+    })
     return save_variant(g, _LABEL, "o05_coral", 1)
 
 
@@ -224,6 +279,19 @@ def build_o06_lichen_crusted_rock(catalog: dict) -> str:
         [("normal_map_lichen", "param1", "param0", "Relief strength")],
         catalog,
     )
+    rename_nodes(g, {
+        "perlin_1": "StoneNoise",             # drives both base-stone and lichen-tone ramps
+        "colorize_2": "RockColor",
+        "colorize_1": "LichenColor",
+        "blend_0": "AlbedoComposite",
+        "perlin_2": "LichenCoverageNoise",
+        "colorize_3": "LichenMask",           # feeds blend_0's mask, colorize_4, AND the normal
+        "perlin_0": "RockRoughnessNoise",
+        "colorize_0": "RockRoughnessTone",
+        "colorize_4": "LichenRoughnessTone",
+        "blend_1": "RoughnessComposite",
+        "normal_map_lichen": "LichenNormal",
+    })
     return save_variant(g, _LABEL, "o06_lichen_crusted_rock", 1)
 
 
@@ -253,6 +321,7 @@ def build_o01_mossy_forest_floor(catalog: dict) -> str:
         [("normal_map_0", "param1", "param0", "Relief strength")],
         catalog,
     )
+    rename_nodes(g, _MOSSY_FLOOR_NAMES)
     return save_variant(g, _LABEL, "o01_mossy_forest_floor", 1)
 
 

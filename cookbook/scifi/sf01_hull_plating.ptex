@@ -173,7 +173,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "colorize_alb",
+         "node": "PlateColor",
          "widget": "gradient"
         }
        ]
@@ -181,7 +181,7 @@
      ]
     },
     {
-     "name": "pattern_1",
+     "name": "PlateCrossMask",
      "node_position": {
       "x": 78,
       "y": 382
@@ -196,7 +196,7 @@
      "type": "pattern"
     },
     {
-     "name": "colorize_0",
+     "name": "PlateGridLines",
      "node_position": {
       "x": 148,
       "y": 258
@@ -226,7 +226,7 @@
      "type": "colorize"
     },
     {
-     "name": "pattern_0",
+     "name": "PlateGridWave",
      "node_position": {
       "x": -127,
       "y": 256
@@ -241,7 +241,7 @@
      "type": "pattern"
     },
     {
-     "name": "transform_2",
+     "name": "PlateGridRotated",
      "node_position": {
       "x": 372,
       "y": 37
@@ -257,7 +257,7 @@
      "type": "transform"
     },
     {
-     "name": "blend_0",
+     "name": "PlateGridComposite",
      "node_position": {
       "x": 381,
       "y": 252
@@ -269,7 +269,7 @@
      "type": "blend"
     },
     {
-     "name": "colorize_alb",
+     "name": "PlateColor",
      "type": "colorize",
      "node_position": {
       "x": 0,
@@ -301,55 +301,55 @@
    ],
    "connections": [
     {
-     "from": "pattern_0",
+     "from": "PlateGridWave",
      "from_port": 0,
-     "to": "colorize_0",
+     "to": "PlateGridLines",
      "to_port": 0
     },
     {
-     "from": "transform_2",
+     "from": "PlateGridRotated",
      "from_port": 0,
-     "to": "blend_0",
+     "to": "PlateGridComposite",
      "to_port": 0
     },
     {
-     "from": "pattern_1",
+     "from": "PlateCrossMask",
      "from_port": 0,
-     "to": "blend_0",
+     "to": "PlateGridComposite",
      "to_port": 2
     },
     {
-     "from": "colorize_0",
+     "from": "PlateGridLines",
      "from_port": 0,
-     "to": "transform_2",
+     "to": "PlateGridRotated",
      "to_port": 0
     },
     {
-     "from": "colorize_0",
+     "from": "PlateGridLines",
      "from_port": 0,
-     "to": "blend_0",
+     "to": "PlateGridComposite",
      "to_port": 1
     },
     {
-     "from": "blend_0",
+     "from": "PlateGridComposite",
      "from_port": 0,
-     "to": "colorize_alb",
+     "to": "PlateColor",
      "to_port": 0
     },
     {
-     "from": "blend_0",
+     "from": "PlateGridComposite",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
-     "from": "colorize_alb",
+     "from": "PlateColor",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1
     },
     {
-     "from": "blend_0",
+     "from": "PlateGridComposite",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 2
@@ -473,7 +473,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "colorize_rgh",
+         "node": "SeamRoughness",
          "widget": "gradient"
         }
        ]
@@ -485,7 +485,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "normal_map_0",
+         "node": "PlateNormal",
          "widget": "param1"
         }
        ]
@@ -493,7 +493,7 @@
      ]
     },
     {
-     "name": "normal_map_0",
+     "name": "PlateNormal",
      "node_position": {
       "x": 668,
       "y": 268
@@ -510,7 +510,7 @@
      "type": "normal_map"
     },
     {
-     "name": "colorize_rgh",
+     "name": "SeamRoughness",
      "type": "colorize",
      "node_position": {
       "x": 0,
@@ -544,23 +544,23 @@
     {
      "from": "gen_inputs",
      "from_port": 0,
-     "to": "normal_map_0",
+     "to": "PlateNormal",
      "to_port": 0
     },
     {
      "from": "gen_inputs",
      "from_port": 1,
-     "to": "colorize_rgh",
+     "to": "SeamRoughness",
      "to_port": 0
     },
     {
-     "from": "normal_map_0",
+     "from": "PlateNormal",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
-     "from": "colorize_rgh",
+     "from": "SeamRoughness",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1

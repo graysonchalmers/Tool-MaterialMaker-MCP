@@ -1,19 +1,19 @@
 {
  "connections": [
   {
-   "from": "perlin_0",
+   "from": "AmbientNoise",
    "from_port": 0,
    "to": "base_color",
    "to_port": 0
   },
   {
-   "from": "perlin_1",
+   "from": "CrackWarpNoise",
    "from_port": 0,
    "to": "base_color",
    "to_port": 1
   },
   {
-   "from": "perlin_1",
+   "from": "CrackWarpNoise",
    "from_port": 0,
    "to": "base_color",
    "to_port": 2
@@ -25,13 +25,13 @@
    "to_port": 0
   },
   {
-   "from": "perlin_0",
+   "from": "AmbientNoise",
    "from_port": 0,
    "to": "surface_detail",
    "to_port": 0
   },
   {
-   "from": "perlin_0",
+   "from": "AmbientNoise",
    "from_port": 0,
    "to": "surface_detail",
    "to_port": 1
@@ -69,7 +69,7 @@
  },
  "nodes": [
   {
-   "name": "perlin_1",
+   "name": "CrackWarpNoise",
    "node_position": {
     "x": -144,
     "y": 50.25
@@ -83,7 +83,7 @@
    "type": "perlin"
   },
   {
-   "name": "perlin_0",
+   "name": "AmbientNoise",
    "node_position": {
     "x": 56,
     "y": -361.75
@@ -246,7 +246,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "voronoi_0",
+         "node": "FacetCells",
          "widget": "scale_x"
         }
        ]
@@ -258,7 +258,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "colorize_0",
+         "node": "BaseTone",
          "widget": "gradient"
         }
        ]
@@ -270,7 +270,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "blend_0",
+         "node": "CrackComposite",
          "widget": "amount"
         }
        ]
@@ -278,7 +278,7 @@
      ]
     },
     {
-     "name": "voronoi_0",
+     "name": "FacetCells",
      "node_position": {
       "x": -165,
       "y": -96.75
@@ -294,7 +294,7 @@
      "type": "voronoi"
     },
     {
-     "name": "colorize_1",
+     "name": "CrackRamp",
      "node_position": {
       "x": 93,
       "y": -117.75
@@ -324,7 +324,7 @@
      "type": "colorize"
     },
     {
-     "name": "colorize_0",
+     "name": "BaseTone",
      "node_position": {
       "x": 338,
       "y": -237.75
@@ -354,7 +354,7 @@
      "type": "colorize"
     },
     {
-     "name": "colorize_3",
+     "name": "ColorizeUnused",
      "node_position": {
       "x": 465,
       "y": 33.25
@@ -384,7 +384,7 @@
      "type": "colorize"
     },
     {
-     "name": "blend_0",
+     "name": "CrackComposite",
      "node_position": {
       "x": 541,
       "y": -82.75
@@ -396,7 +396,7 @@
      "type": "blend"
     },
     {
-     "name": "warp_0",
+     "name": "JointWarp",
      "node_position": {
       "x": 264,
       "y": -13.75
@@ -411,55 +411,55 @@
    ],
    "connections": [
     {
-     "from": "voronoi_0",
+     "from": "FacetCells",
      "from_port": 1,
-     "to": "colorize_1",
+     "to": "CrackRamp",
      "to_port": 0
     },
     {
-     "from": "colorize_0",
+     "from": "BaseTone",
      "from_port": 0,
-     "to": "blend_0",
+     "to": "CrackComposite",
      "to_port": 1
     },
     {
-     "from": "colorize_1",
+     "from": "CrackRamp",
      "from_port": 0,
-     "to": "warp_0",
+     "to": "JointWarp",
      "to_port": 0
     },
     {
-     "from": "warp_0",
+     "from": "JointWarp",
      "from_port": 0,
-     "to": "blend_0",
+     "to": "CrackComposite",
      "to_port": 0
     },
     {
      "from": "gen_inputs",
      "from_port": 0,
-     "to": "colorize_0",
+     "to": "BaseTone",
      "to_port": 0
     },
     {
      "from": "gen_inputs",
      "from_port": 1,
-     "to": "warp_0",
+     "to": "JointWarp",
      "to_port": 1
     },
     {
      "from": "gen_inputs",
      "from_port": 2,
-     "to": "colorize_3",
+     "to": "ColorizeUnused",
      "to_port": 0
     },
     {
-     "from": "blend_0",
+     "from": "CrackComposite",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
-     "from": "warp_0",
+     "from": "JointWarp",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1
@@ -593,7 +593,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "rough_const",
+         "node": "RoughnessConst",
          "widget": "gradient"
         }
        ]
@@ -605,7 +605,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "normal_map_0",
+         "node": "GlassNormal",
          "widget": "param1"
         }
        ]
@@ -613,7 +613,7 @@
      ]
     },
     {
-     "name": "blend_1",
+     "name": "ReliefComposite",
      "node_position": {
       "x": 442,
       "y": 175.25
@@ -625,7 +625,7 @@
      "type": "blend"
     },
     {
-     "name": "normal_map_0",
+     "name": "GlassNormal",
      "node_position": {
       "x": 706,
       "y": 95.25
@@ -642,7 +642,7 @@
      "type": "normal_map"
     },
     {
-     "name": "colorize_4",
+     "name": "ReliefContrast",
      "node_position": {
       "x": 252,
       "y": 178.25
@@ -672,7 +672,7 @@
      "type": "colorize"
     },
     {
-     "name": "colorize",
+     "name": "ReliefRamp",
      "node_position": {
       "x": 717.815796,
       "y": 200.5625
@@ -702,7 +702,7 @@
      "type": "colorize"
     },
     {
-     "name": "rough_const",
+     "name": "RoughnessConst",
      "type": "colorize",
      "node_position": {
       "x": 0,
@@ -734,55 +734,55 @@
    ],
    "connections": [
     {
-     "from": "colorize_4",
+     "from": "ReliefContrast",
      "from_port": 0,
-     "to": "blend_1",
+     "to": "ReliefComposite",
      "to_port": 1
     },
     {
-     "from": "blend_1",
+     "from": "ReliefComposite",
      "from_port": 0,
-     "to": "colorize",
+     "to": "ReliefRamp",
      "to_port": 0
     },
     {
-     "from": "colorize",
+     "from": "ReliefRamp",
      "from_port": 0,
-     "to": "normal_map_0",
+     "to": "GlassNormal",
      "to_port": 0
     },
     {
      "from": "gen_inputs",
      "from_port": 0,
-     "to": "blend_1",
+     "to": "ReliefComposite",
      "to_port": 0
     },
     {
      "from": "gen_inputs",
      "from_port": 1,
-     "to": "rough_const",
+     "to": "RoughnessConst",
      "to_port": 0
     },
     {
      "from": "gen_inputs",
      "from_port": 2,
-     "to": "colorize_4",
+     "to": "ReliefContrast",
      "to_port": 0
     },
     {
-     "from": "normal_map_0",
+     "from": "GlassNormal",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
-     "from": "blend_1",
+     "from": "ReliefComposite",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1
     },
     {
-     "from": "rough_const",
+     "from": "RoughnessConst",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 2

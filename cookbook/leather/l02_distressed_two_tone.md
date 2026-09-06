@@ -14,22 +14,23 @@ Pitfall: the first pass used a coarse perlin (scale 7) with a narrow threshold b
 
 Grouped per the "Grouping into subgraphs" lever in `docs/AUTHORING.md`. This
 is one of the three materials in this category the blend-tracing caution is
-about: it carries two `blend` nodes (`blend_alb`, `blend_rgh`), both sharing
-the same mask. Their port sources were traced from the serialized
+about: it carries two `blend` nodes (`AlbedoComposite`, `RoughnessComposite`),
+both sharing the same mask. Their port sources were traced from the serialized
 `connections` list assembled in the builder, against `blend.mmg`'s own
 shader model (ground truth, read directly from
 `z-Git/material-maker/addons/material_maker/nodes/blend.mmg`): input `s1` is
 port0 (foreground), `s2` is port1 (background), `a` is port2 (mask), and the
 output is `mask*port0 + (1-mask)*port1`. Traced wiring:
 
-- `blend_alb`: port0 (shown where mask=1) ← `worn_alb` (the scattered rubs);
-  port1 (shown where mask=0) ← `colorize_1` (base grain albedo, the
-  majority); port2 (mask) ← `colorize_wm`.
-- `blend_rgh`: port0 (shown where mask=1) ← `worn_rgh` (rubbed roughness);
-  port1 (shown where mask=0) ← `colorize_3` (base roughness, the majority);
-  port2 (mask) ← `colorize_wm` (the same mask feeds both blends).
+- `AlbedoComposite`: port0 (shown where mask=1) ← `WornColor` (the scattered
+  rubs); port1 (shown where mask=0) ← `LeatherColor` (base grain albedo, the
+  majority); port2 (mask) ← `RubMask`.
+- `RoughnessComposite`: port0 (shown where mask=1) ← `WornRoughness` (rubbed
+  roughness); port1 (shown where mask=0) ← `LeatherRoughness` (base
+  roughness, the majority); port2 (mask) ← `RubMask` (the same mask feeds
+  both blends).
 
-Polarity fix (2026-09-04): `colorize_wm`'s threshold ramps 0→1 between perlin
+Polarity fix (2026-09-04): `RubMask`'s threshold ramps 0→1 between perlin
 values 0.40 and 0.72, so the mask is 1 only in the smaller high-perlin region
 and 0 across the broader remainder. The worn tone is therefore the MINORITY
 (scattered rubs) and belongs on port0 (shown where mask=1), while the dark
@@ -39,28 +40,29 @@ the hide and the dark base showed through only in small patches — backwards
 from this recipe's own description. Both blends were swapped; a before/after
 render confirmed the field flipped from mostly-light to mostly-dark-saddle
 with lighter worn rubs scattered through it. As a bonus, the exposed `Wear
-blend strength` (`blend_alb.amount`) now controls what its label claims, since
-port0 is finally the wear layer.
+blend strength` (`AlbedoComposite.amount`) now controls what its label
+claims, since port0 is finally the wear layer.
 
 Opening the graph shows 4 top-level groups (plus `Material` and the
-untouched metallic `uniform_0`) instead of the raw 13-node graph:
+untouched metallic `NonMetallic`) instead of the raw 13-node graph:
 
 - **Grain Pattern** / **Surface Finish** — the same 2-group split as
   `l01_black_oiled_leather` (via the shared `_group_leather_grain` helper):
-  `voronoi_0`+`colorize_1` (Exposed: `Base leather color`), and
-  `colorize_0`+`colorize_3`+`normal_map_0` (Exposed: `Base roughness`,
-  `Relief strength`). `colorize_1`/`colorize_3`'s outputs now feed
-  `blend_alb`/`blend_rgh` instead of `Material` directly, but the grouping
-  mechanism handles that the same way regardless of the outgoing
-  connection's destination.
-- **Wear Pattern** — `perlin_wm`, `colorize_wm` (the mask), `worn_alb`,
-  `worn_rgh`. Exposed: `Wear pattern scale` (`perlin_wm.scale_x`), `Worn
-  color` (`worn_alb.gradient`).
-- **Wear Composite** — `blend_alb`, `blend_rgh` together, since both inputs
-  to each are external (majority/base from **Grain Pattern**/**Surface
-  Finish**, worn tone and mask from **Wear Pattern**) — the same
-  all-external-inputs shape `f08_donegal_tweed`'s `fleck_composite` used.
-  Exposed: `Wear blend strength` (`blend_alb.amount`).
+  `PoreCells`+`LeatherColor` (Exposed: `Base leather color`), and
+  `GrainHeight`+`LeatherRoughness`+`LeatherNormal` (Exposed: `Base
+  roughness`, `Relief strength`). `LeatherColor`/`LeatherRoughness`'s
+  outputs now feed `AlbedoComposite`/`RoughnessComposite` instead of
+  `Material` directly, but the grouping mechanism handles that the same way
+  regardless of the outgoing connection's destination.
+- **Wear Pattern** — `RubNoise`, `RubMask` (the mask), `WornColor`,
+  `WornRoughness`. Exposed: `Wear pattern scale` (`RubNoise.scale_x`), `Worn
+  color` (`WornColor.gradient`).
+- **Wear Composite** — `AlbedoComposite`, `RoughnessComposite` together,
+  since both inputs to each are external (majority/base from **Grain
+  Pattern**/**Surface Finish**, worn tone and mask from **Wear Pattern**) —
+  the same all-external-inputs shape `f08_donegal_tweed`'s
+  `fleck_composite` used. Exposed: `Wear blend strength`
+  (`AlbedoComposite.amount`).
 
 `group_into_subgraph` preserves each incoming connection's own target port
 independently when rehoming it through `gen_inputs`, so grouping cannot swap
@@ -73,3 +75,29 @@ at an exact `grid_mean_abs_diff` of `0.0` on all three exported maps.
 The invariant guide (`guide://authoring` resource, or `docs/AUTHORING.md`) for
 the rubric, the authoring workflow, the noise vocabulary, and the `param4=0`
 flat-normal fix.
+
+<!-- nodes:begin -->
+## Nodes
+
+Generated by `python -m quality.promote_cookbook` from the shipped graph;
+do not edit by hand. Open the `.ptex` and look for these names.
+
+| Subgraph | Node | Type |
+|---|---|---|
+| (top level) | NonMetallic | uniform |
+| (top level) | grain_pattern | graph |
+| (top level) | surface_finish | graph |
+| (top level) | wear_pattern | graph |
+| (top level) | wear_composite | graph |
+| grain_pattern | LeatherColor | colorize |
+| grain_pattern | PoreCells | voronoi |
+| surface_finish | LeatherRoughness | colorize |
+| surface_finish | GrainHeight | colorize |
+| surface_finish | LeatherNormal | normal_map |
+| wear_pattern | RubNoise | perlin |
+| wear_pattern | RubMask | colorize |
+| wear_pattern | WornColor | colorize |
+| wear_pattern | WornRoughness | colorize |
+| wear_composite | AlbedoComposite | blend |
+| wear_composite | RoughnessComposite | blend |
+<!-- nodes:end -->

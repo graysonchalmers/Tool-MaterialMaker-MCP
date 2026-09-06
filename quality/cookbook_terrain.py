@@ -11,12 +11,54 @@ import sys
 
 from quality.author_helpers import (load_example, node, set_gradient, set_param, retype,
                      rewire, drop_conn, add_node, save_variant, _grad,
-                     group_into_subgraph)
+                     group_into_subgraph, rename_nodes)
 
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.config import load_config
 
 _LABEL = "cookbook-terrain"
+
+# t01_sand_dunes clones `wood` structurally UNMODIFIED (see that builder's
+# docstring), so it reuses `_WOOD_NAMES`'s (quality/cookbook_wood.py, Task 5)
+# role semantics for the grain-warp chain that isn't touched here. Only the
+# three nodes this builder actually retunes get dune-specific names:
+# `perlin_2` (widened from wood's fine-grain "wobble" into the primary
+# broad-ripple driver), and the two exposed color ramps.
+_DUNE_NAMES = {
+    "perlin_0": "GrainNoiseFine",
+    "perlin_1": "GrainNoiseCoarse",
+    "voronoi_0": "RingPattern",
+    "colorize_1": "RingContrast",
+    "warp_0": "GrainWarp",
+    "warp_1": "RingWarp",
+    "blend_0": "GrainMask",
+    "normal_map_0": "GrainNormal",
+    "perlin_2": "DuneRipples",       # widened for broad, slow-rolling ripples
+    "colorize_2": "DuneColor",       # warm sand tan albedo
+    "colorize_0": "DuneRoughness",   # matte sand roughness
+}
+
+# t05_cracked_ice and t08_riverbed_pebbles both clone `dry_earth`'s
+# voronoi-plate structure via `_dry_earth_plates`/`_group_dry_earth_plate`
+# below -- the same donor shape as the stone paving family
+# (quality/cookbook_stone.py's `_DRY_EARTH_NAMES`, Task 10). Copied here with
+# ice wording for t05; t08 (pebbles) and t06 (lava, which regroups `warp_0`
+# away from the plain crack composite into its own glow chain) get their own
+# bespoke mappings below since their node roles genuinely differ.
+_ICE_PLATE_NAMES = {
+    "voronoi_0": "IcePlates",
+    "colorize_1": "CrackLines",
+    "warp_0": "CrackWarp",
+    "blend_0": "CrackComposite",
+    "perlin_1": "ReliefNoiseCoarse",
+    "colorize_3": "ReliefContrast",
+    "perlin_0": "ReliefNoiseFine",
+    "colorize_0": "ReliefFineUnused",
+    "colorize_4": "ReliefRamp",
+    "blend_1": "ReliefComposite",
+    "colorize": "CrackNormalSource",   # crack-only signal feeding the normal map
+    "normal_map_0": "IceNormal",
+}
 
 
 def build_t01_sand_dunes(catalog: dict) -> str:
@@ -73,6 +115,7 @@ def build_t01_sand_dunes(catalog: dict) -> str:
                          [("colorize_2", "gradient", "param0", "Sand color"),
                           ("colorize_0", "gradient", "param1", "Surface sheen")],
                          catalog)
+    rename_nodes(g, _DUNE_NAMES)
     return save_variant(g, _LABEL, "t01_sand_dunes", 1)
 
 
@@ -119,6 +162,18 @@ def build_t02_fresh_snow(catalog: dict) -> str:
                          "relief", "Relief",
                          [("normal_map_0", "param1", "param0", "Relief strength")],
                          catalog)
+    rename_nodes(g, {
+        "voronoi_0": "SnowSparkle",
+        "blend_0": "SnowPatternMix",
+        "colorize_0": "SnowColor",
+        "perlin_0": "DriftNoise",       # feeds the sparkle mix, metallic, AND sheen
+        "colorize_1": "NonMetallic",
+        "colorize_2": "SurfaceSheen",
+        "perlin_1": "ReliefWarpNoise",
+        "voronoi_1": "DriftShape",
+        "warp_0": "DriftWarp",
+        "normal_map_0": "SnowNormal",
+    })
     return save_variant(g, _LABEL, "t02_fresh_snow", 1)
 
 
@@ -166,6 +221,18 @@ def build_t03_gravel(catalog: dict) -> str:
                          "relief", "Relief",
                          [("normal_map_0", "param1", "param0", "Relief strength")],
                          catalog)
+    rename_nodes(g, {
+        "voronoi_0": "GravelCells",
+        "colorize_0": "GravelColor",
+        "blend_0": "GravelBlendUnused",   # orphaned once colorize_0 reads voronoi_0 port2
+        "colorize_1": "NonMetallic",
+        "colorize_2": "GravelRoughness",
+        "perlin_0": "SurfaceNoise",
+        "perlin_1": "ReliefWarpNoise",
+        "voronoi_1": "ReliefCells",
+        "warp_0": "ContactWarp",
+        "normal_map_0": "GravelNormal",
+    })
     return save_variant(g, _LABEL, "t03_gravel", 1)
 
 
@@ -233,6 +300,19 @@ def build_t04_grass_field(catalog: dict) -> str:
                          "surface_finish", "Surface Finish",
                          [("normal_map_grass", "param1", "param0", "Relief strength")],
                          catalog)
+    rename_nodes(g, {
+        "perlin_1": "SoilNoise",           # drives both base-soil and grass-tone ramps
+        "colorize_2": "SoilColor",
+        "colorize_1": "GrassColor",
+        "blend_0": "AlbedoComposite",
+        "perlin_2": "BladeNoise",
+        "colorize_3": "GrassCoverageMask",
+        "perlin_0": "SoilRoughnessNoise",
+        "colorize_0": "SoilRoughnessTone",
+        "colorize_4": "GrassRoughnessTone",
+        "blend_1": "RoughnessComposite",
+        "normal_map_grass": "GrassNormal",
+    })
     return save_variant(g, _LABEL, "t04_grass_field", 1)
 
 
@@ -333,6 +413,11 @@ def build_t05_cracked_ice(catalog: dict) -> str:
     rewire(g, "colorize", 0, "colorize_4", 0)
     _group_dry_earth_plate(g, catalog, plate_label="Ice Plate & Cracks",
                             color_label="Ice color", gap_label="Crack depth")
+    rename_nodes(g, {
+        **_ICE_PLATE_NAMES,
+        "colorize_plate": "IceColor",
+        "rough_const": "IceRoughness",
+    })
     return save_variant(g, _LABEL, "t05_cracked_ice", 1)
 
 
@@ -399,6 +484,23 @@ def build_t06_cooled_lava(catalog: dict) -> str:
                          "surface_relief", "Surface Relief",
                          [("rough_const", "gradient", "param0", "Roughness")],
                          catalog)
+    rename_nodes(g, {
+        "voronoi_0": "CrustPlates",
+        "colorize_1": "CrustEdges",
+        "colorize_plate": "CrustColor",
+        "blend_0": "CrustComposite",
+        "warp_0": "GlowMask",              # dry_earth's crack signal, reused as the glow mask
+        "colorize_glow": "GlowColor",
+        "perlin_1": "ReliefNoiseCoarse",
+        "colorize_3": "ReliefContrast",
+        "perlin_0": "ReliefNoiseFine",
+        "colorize_0": "ReliefFineUnused",
+        "blend_1": "ReliefComposite",
+        "colorize_4": "ReliefRamp",
+        "colorize": "ReliefHeight",
+        "normal_map_0": "LavaNormal",
+        "rough_const": "LavaRoughness",
+    })
     return save_variant(g, _LABEL, "t06_cooled_lava", 1)
 
 
@@ -449,6 +551,14 @@ def build_t07_forest_floor(catalog: dict) -> str:
                          [("colorize_3", "gradient", "param0", "Roughness"),
                           ("normal_map_0", "param1", "param1", "Debris relief")],
                          catalog)
+    rename_nodes(g, {
+        "voronoi_0": "LitterCells",     # fbm Cellular 4: scattered clumpy debris
+        "colorize_1": "LitterColor",
+        "colorize_3": "LitterRoughness",
+        "colorize_0": "LitterHeight",
+        "normal_map_0": "LitterNormal",
+        "uniform_0": "NonMetallic",
+    })
     return save_variant(g, _LABEL, "t07_forest_floor", 1)
 
 
@@ -473,6 +583,22 @@ def build_t08_riverbed_pebbles(catalog: dict) -> str:
         # a sibling of the ice plates
     _group_dry_earth_plate(g, catalog, plate_label="Pebble Bed & Gaps",
                             color_label="Pebble color", gap_label="Gap depth")
+    rename_nodes(g, {
+        "voronoi_0": "PebbleCells",
+        "colorize_1": "PebbleEdges",
+        "warp_0": "ContactWarp",
+        "blend_0": "ContactComposite",
+        "perlin_1": "ReliefNoiseCoarse",
+        "colorize_3": "ReliefContrast",
+        "perlin_0": "ReliefNoiseFine",
+        "colorize_0": "ReliefFineUnused",
+        "colorize_4": "ReliefRamp",
+        "blend_1": "ReliefComposite",
+        "colorize": "ReliefHeight",
+        "normal_map_0": "PebbleNormal",
+        "colorize_plate": "PebbleColor",
+        "rough_const": "PebbleRoughness",
+    })
     return save_variant(g, _LABEL, "t08_riverbed_pebbles", 1)
 
 

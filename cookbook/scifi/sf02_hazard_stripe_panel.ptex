@@ -192,7 +192,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "pattern_0",
+         "node": "StripeWave",
          "widget": "x_scale"
         }
        ]
@@ -204,7 +204,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "colorize_0",
+         "node": "StripeColor",
          "widget": "gradient"
         }
        ]
@@ -216,7 +216,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "transform_0",
+         "node": "StripeRotate",
          "widget": "rotate"
         }
        ]
@@ -224,7 +224,7 @@
      ]
     },
     {
-     "name": "pattern_0",
+     "name": "StripeWave",
      "type": "pattern",
      "node_position": {
       "x": 0,
@@ -239,7 +239,7 @@
      }
     },
     {
-     "name": "colorize_0",
+     "name": "StripeColor",
      "type": "colorize",
      "node_position": {
       "x": 0,
@@ -283,7 +283,7 @@
      }
     },
     {
-     "name": "transform_0",
+     "name": "StripeRotate",
      "type": "transform",
      "node_position": {
       "x": 0,
@@ -301,31 +301,31 @@
    ],
    "connections": [
     {
-     "from": "pattern_0",
+     "from": "StripeWave",
      "from_port": 0,
-     "to": "colorize_0",
+     "to": "StripeColor",
      "to_port": 0
     },
     {
-     "from": "colorize_0",
+     "from": "StripeColor",
      "from_port": 0,
-     "to": "transform_0",
+     "to": "StripeRotate",
      "to_port": 0
     },
     {
-     "from": "pattern_0",
+     "from": "StripeWave",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
-     "from": "transform_0",
+     "from": "StripeRotate",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1
     },
     {
-     "from": "transform_0",
+     "from": "StripeRotate",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 2
@@ -449,7 +449,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "colorize_rgh",
+         "node": "StripeRoughness",
          "widget": "gradient"
         }
        ]
@@ -461,7 +461,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "normal_map_0",
+         "node": "StripeNormal",
          "widget": "param1"
         }
        ]
@@ -469,7 +469,7 @@
      ]
     },
     {
-     "name": "colorize_rgh",
+     "name": "StripeRoughness",
      "type": "colorize",
      "node_position": {
       "x": 0,
@@ -499,7 +499,7 @@
      }
     },
     {
-     "name": "normal_map_0",
+     "name": "StripeNormal",
      "type": "normal_map",
      "node_position": {
       "x": 0,
@@ -517,23 +517,23 @@
     {
      "from": "gen_inputs",
      "from_port": 0,
-     "to": "colorize_rgh",
+     "to": "StripeRoughness",
      "to_port": 0
     },
     {
      "from": "gen_inputs",
      "from_port": 1,
-     "to": "normal_map_0",
+     "to": "StripeNormal",
      "to_port": 0
     },
     {
-     "from": "colorize_rgh",
+     "from": "StripeRoughness",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
-     "from": "normal_map_0",
+     "from": "StripeNormal",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1

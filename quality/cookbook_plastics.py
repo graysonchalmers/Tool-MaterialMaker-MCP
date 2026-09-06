@@ -9,12 +9,22 @@ Then: python -m quality.render_cookbook cookbook-plastics
 import sys
 
 from quality.author_helpers import (_from_scratch_noise_material, set_param, save_variant,
-                     add_node, _grad, group_into_subgraph)
+                     add_node, _grad, group_into_subgraph, rename_nodes)
 
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.config import load_config
 
 _LABEL = "cookbook-plastics"
+
+# `_from_scratch_noise_material`'s skeleton (perlin -> colorize -> Material,
+# perlin -> normal_map -> Material) plus the flat roughness texture this
+# builder adds.
+_P01_NAMES = {
+    "perlin_0": "SurfaceNoise",
+    "colorize_0": "PlasticColor",
+    "normal_map_0": "SurfaceNormal",
+    "rough_const": "RoughnessConst",   # flat colorize; feeds Material's roughness port so ORM exports
+}
 
 
 def build_p01_glossy_plastic(catalog: dict) -> str:
@@ -75,6 +85,7 @@ def build_p01_glossy_plastic(catalog: dict) -> str:
          ("normal_map_0", "param1", "param1", "Surface relief")],
         catalog,
     )
+    rename_nodes(g, _P01_NAMES)
     return save_variant(g, _LABEL, "p01_glossy_plastic", 1)
 
 

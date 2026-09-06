@@ -190,7 +190,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "pattern_holes",
+         "node": "HoleLayout",
          "widget": "x_scale"
         }
        ]
@@ -202,7 +202,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "colorize_0",
+         "node": "HolePlateColor",
          "widget": "gradient"
         }
        ]
@@ -210,7 +210,7 @@
      ]
     },
     {
-     "name": "pattern_holes",
+     "name": "HoleLayout",
      "type": "pattern",
      "node_position": {
       "x": 0,
@@ -225,7 +225,7 @@
      }
     },
     {
-     "name": "colorize_0",
+     "name": "HolePlateColor",
      "type": "colorize",
      "node_position": {
       "x": 0,
@@ -271,25 +271,25 @@
    ],
    "connections": [
     {
-     "from": "pattern_holes",
+     "from": "HoleLayout",
      "from_port": 0,
-     "to": "colorize_0",
+     "to": "HolePlateColor",
      "to_port": 0
     },
     {
-     "from": "colorize_0",
+     "from": "HolePlateColor",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
-     "from": "pattern_holes",
+     "from": "HoleLayout",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1
     },
     {
-     "from": "pattern_holes",
+     "from": "HoleLayout",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 2
@@ -413,7 +413,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "colorize_rgh",
+         "node": "GrilleRoughness",
          "widget": "gradient"
         }
        ]
@@ -425,7 +425,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "normal_map_0",
+         "node": "GrilleNormal",
          "widget": "param1"
         }
        ]
@@ -433,7 +433,7 @@
      ]
     },
     {
-     "name": "colorize_rgh",
+     "name": "GrilleRoughness",
      "type": "colorize",
      "node_position": {
       "x": 0,
@@ -463,7 +463,7 @@
      }
     },
     {
-     "name": "normal_map_0",
+     "name": "GrilleNormal",
      "type": "normal_map",
      "node_position": {
       "x": 0,
@@ -481,23 +481,23 @@
     {
      "from": "gen_inputs",
      "from_port": 0,
-     "to": "colorize_rgh",
+     "to": "GrilleRoughness",
      "to_port": 0
     },
     {
      "from": "gen_inputs",
      "from_port": 1,
-     "to": "normal_map_0",
+     "to": "GrilleNormal",
      "to_port": 0
     },
     {
-     "from": "colorize_rgh",
+     "from": "GrilleRoughness",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
-     "from": "normal_map_0",
+     "from": "GrilleNormal",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1

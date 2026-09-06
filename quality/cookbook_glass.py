@@ -10,12 +10,37 @@ Then: python -m quality.render_cookbook cookbook-glass
 import sys
 
 from quality.author_helpers import (load_example, set_gradient, set_param, drop_conn,
-                     save_variant, add_node, _grad, group_into_subgraph)
+                     save_variant, add_node, _grad, group_into_subgraph, rename_nodes)
 
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.config import load_config
 
 _LABEL = "cookbook-glass"
+
+# `dry_earth` donor mapping for gl01. voronoi_0 (facet cells) -> colorize_1
+# (tight crack ramp) -> warp_0 (jointing), then blended with colorize_0
+# (base tone from the shared perlin_0) into blend_0, which feeds
+# Material's albedo. colorize_3 fed Material's metallic port in the donor;
+# gl01 drops that connection and forces metallic=0, so colorize_3 is dead
+# here (same precedent as `wooden_floor`'s combine_0). The relief pathway
+# (warp_0 -> colorize_4 -> blend_1, mixed with the same shared perlin_0)
+# feeds colorize -> normal_map (and Material's height port), plus the flat
+# rough_const this builder adds.
+_GL01_NAMES = {
+    "voronoi_0": "FacetCells",
+    "colorize_1": "CrackRamp",
+    "warp_0": "JointWarp",
+    "colorize_0": "BaseTone",
+    "blend_0": "CrackComposite",
+    "colorize_3": "ColorizeUnused",     # dead: its Material connection is dropped, forced metallic=0
+    "perlin_0": "AmbientNoise",         # shared: feeds BaseTone and the relief composite
+    "perlin_1": "CrackWarpNoise",       # shared: feeds JointWarp's amount and the dead ColorizeUnused
+    "colorize_4": "ReliefContrast",
+    "blend_1": "ReliefComposite",
+    "colorize": "ReliefRamp",
+    "normal_map_0": "GlassNormal",
+    "rough_const": "RoughnessConst",
+}
 
 
 def build_gl01_frosted_glass(catalog: dict) -> str:
@@ -85,6 +110,7 @@ def build_gl01_frosted_glass(catalog: dict) -> str:
          ("normal_map_0", "param1", "param1", "Surface relief")],
         catalog,
     )
+    rename_nodes(g, _GL01_NAMES)
     return save_variant(g, _LABEL, "gl01_frosted_glass", 1)
 
 

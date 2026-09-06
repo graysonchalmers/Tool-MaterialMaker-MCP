@@ -67,6 +67,34 @@ graph, not a step that changes what the material looks like. New cookbook
 materials should reach for this from the start rather than shipping a raw
 tangle that needs a later retrofit pass.
 
+## Name every node by role
+
+The graph is the worked example the reader opens. A node called `colorize_2`
+teaches nothing; `WoodColor` teaches what the colorize is for. The one real
+human edit on record (`saved_graphs/bricks_grayson_edit.ptex`) renamed 21 of
+22 nodes before touching a parameter, which is the signal this lever comes from.
+
+Rules, enforced by `python -m quality.naming --cookbook` and
+`tests/test_cookbook_naming_gate.py`:
+
+- PascalCase, role first: `PlankLayout`, `MossMask`, `GrainNoise`, `PaintColor`.
+- Suffix by contribution when it helps: `*Noise` (perlin/fbm/voronoi
+  generators), `*Layout` (bricks/pattern structure), `*Mask` (what feeds a
+  blend's port 2), `*Color` (albedo colorize), `*Roughness`, `*Height`,
+  `*Normal`, `*Composite` (a blend that yields a final channel), `*Warp`,
+  `*Offset`, `*Flecks`, `NonMetallic`.
+- Say what the node contributes, not what it is: `MortarLines`, not `Bricks2`.
+- Unique among siblings. Reserved: `Material`, `gen_inputs`, `gen_outputs`,
+  `gen_parameters`. Subgraph nodes keep their existing names (`mm-play`
+  slider ids depend on them).
+- Dead donor nodes get an honest name ending in `Unused`.
+
+Mechanism: every builder ends with `rename_nodes(g, {...})` after grouping and
+before `save_variant`. Names never affect renders (Material Maker seeds from
+node position, not name), and `python -m quality.render_tracked --compare`
+proves it per category. The recipe card's generated `## Nodes` table is the
+map from the shipped names to their types.
+
 ## Authoring workflow (invariant across phases)
 
 1. Read the prompt; pick the closest starting graph with `list_examples` /

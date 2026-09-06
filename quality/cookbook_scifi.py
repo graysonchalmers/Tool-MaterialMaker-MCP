@@ -19,12 +19,64 @@ Then: python -m quality.render_cookbook cookbook-scifi
 import sys
 
 from quality.author_helpers import (load_example, node, set_gradient, set_param, add_node,
-                             rewire, save_variant, group_into_subgraph)
+                             rewire, save_variant, group_into_subgraph, rename_nodes)
 
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.config import load_config
 
 _LABEL = "cookbook-scifi"
+
+# `metal_pattern_2` donor mapping for sf01: pattern_0 -> colorize_0 makes the
+# fine grid lines, transform_2 rotates a copy 90 degrees, pattern_1 (a
+# second, coarser wave) is the blend-2 mask that stitches the straight and
+# rotated grids into the diamond-plate look; colorize_alb/colorize_rgh are
+# the builder-added albedo/roughness reads off that composite.
+_SF01_NAMES = {
+    "pattern_0": "PlateGridWave",       # fine grid-line generator
+    "colorize_0": "PlateGridLines",     # thresholds the wave into rgba lines
+    "transform_2": "PlateGridRotated",  # same lines, rotated 90
+    "pattern_1": "PlateCrossMask",      # coarser wave, blend-2 mask
+    "blend_0": "PlateGridComposite",    # straight + rotated grid via PlateCrossMask
+    "colorize_alb": "PlateColor",
+    "colorize_rgh": "SeamRoughness",
+    "normal_map_0": "PlateNormal",
+}
+
+# from-scratch mapping for sf02 (diagonal hazard stripes).
+_SF02_NAMES = {
+    "pattern_0": "StripeWave",
+    "colorize_0": "StripeColor",
+    "transform_0": "StripeRotate",
+    "colorize_rgh": "StripeRoughness",
+    "normal_map_0": "StripeNormal",
+}
+
+# from-scratch mapping for sf03 (PCB circuit board). *Mask names the hard
+# 0/1 opacity mask for each blend's port 2, split off from the albedo
+# colorize per the bleed-through fix in docs/AUTHORING.md (a mid-value
+# albedo colorize must never double as the opacity mask).
+_SF03_NAMES = {
+    "perlin_0": "BoardNoise",
+    "colorize_base": "BoardColor",
+    "pattern_traces": "TraceWave",
+    "colorize_traces": "TraceColor",
+    "colorize_traces_mask": "TraceMask",
+    "blend_traces": "TraceComposite",
+    "voronoi_chips": "ChipLayout",
+    "colorize_chips": "ChipColor",
+    "colorize_chips_mask": "ChipMask",
+    "blend_chips": "ChipComposite",
+    "colorize_rgh": "BoardRoughness",
+    "normal_map_0": "BoardNormal",
+}
+
+# from-scratch mapping for sf04 (square-hole vent grille).
+_SF04_NAMES = {
+    "pattern_holes": "HoleLayout",
+    "colorize_0": "HolePlateColor",
+    "colorize_rgh": "GrilleRoughness",
+    "normal_map_0": "GrilleNormal",
+}
 
 
 def _new_graph() -> dict:
@@ -88,6 +140,7 @@ def build_sf01_hull_plating(catalog: dict) -> str:
          ("normal_map_0", "param1", "param1", "Relief strength")],
         catalog,
     )
+    rename_nodes(g, _SF01_NAMES)
     return save_variant(g, _LABEL, "sf01_hull_plating", 1)
 
 
@@ -148,6 +201,7 @@ def build_sf02_hazard_stripe_panel(catalog: dict) -> str:
          ("normal_map_0", "param1", "param1", "Relief strength")],
         catalog,
     )
+    rename_nodes(g, _SF02_NAMES)
     return save_variant(g, _LABEL, "sf02_hazard_stripe_panel", 1)
 
 
@@ -279,6 +333,7 @@ def build_sf03_circuit_board(catalog: dict) -> str:
          ("normal_map_0", "param1", "param1", "Relief strength")],
         catalog,
     )
+    rename_nodes(g, _SF03_NAMES)
     return save_variant(g, _LABEL, "sf03_circuit_board", 1)
 
 
@@ -331,6 +386,7 @@ def build_sf04_vent_grille_panel(catalog: dict) -> str:
          ("normal_map_0", "param1", "param1", "Relief strength")],
         catalog,
     )
+    rename_nodes(g, _SF04_NAMES)
     return save_variant(g, _LABEL, "sf04_vent_grille_panel", 1)
 
 

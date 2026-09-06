@@ -256,7 +256,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "colorize_2",
+         "node": "BareMetalColor",
          "widget": "gradient"
         }
        ]
@@ -268,7 +268,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "colorize_1",
+         "node": "MetalShadowTone",
          "widget": "gradient"
         }
        ]
@@ -276,7 +276,7 @@
      ]
     },
     {
-     "name": "perlin_0",
+     "name": "SteelRoughnessNoise",
      "node_position": {
       "x": 86,
       "y": 301
@@ -290,7 +290,7 @@
      "type": "perlin"
     },
     {
-     "name": "perlin_1",
+     "name": "SteelToneNoise",
      "node_position": {
       "x": 86,
       "y": 147
@@ -304,7 +304,7 @@
      "type": "perlin"
     },
     {
-     "name": "perlin_2",
+     "name": "SteelMaskNoise",
      "node_position": {
       "x": 89,
       "y": -6
@@ -318,7 +318,7 @@
      "type": "perlin"
     },
     {
-     "name": "colorize_2",
+     "name": "BareMetalColor",
      "node_position": {
       "x": 365,
       "y": -41
@@ -348,7 +348,7 @@
      "type": "colorize"
     },
     {
-     "name": "colorize_0",
+     "name": "SteelRoughnessTone",
      "node_position": {
       "x": 363,
       "y": 337
@@ -378,7 +378,7 @@
      "type": "colorize"
     },
     {
-     "name": "colorize_3",
+     "name": "SteelToneMask",
      "node_position": {
       "x": 371,
       "y": 47
@@ -408,7 +408,7 @@
      "type": "colorize"
     },
     {
-     "name": "colorize_1",
+     "name": "MetalShadowTone",
      "node_position": {
       "x": 371,
       "y": 214
@@ -438,7 +438,7 @@
      "type": "colorize"
     },
     {
-     "name": "colorize_4",
+     "name": "SteelRoughnessMaskTone",
      "node_position": {
       "x": 480,
       "y": 141
@@ -468,7 +468,7 @@
      "type": "colorize"
     },
     {
-     "name": "blend_1",
+     "name": "BareMetalRoughness",
      "node_position": {
       "x": 566,
       "y": 253
@@ -480,7 +480,7 @@
      "type": "blend"
     },
     {
-     "name": "blend_0",
+     "name": "BareMetalAlbedo",
      "node_position": {
       "x": 562,
       "y": -23
@@ -494,73 +494,73 @@
    ],
    "connections": [
     {
-     "from": "perlin_0",
+     "from": "SteelRoughnessNoise",
      "from_port": 0,
-     "to": "colorize_0",
+     "to": "SteelRoughnessTone",
      "to_port": 0
     },
     {
-     "from": "perlin_1",
+     "from": "SteelToneNoise",
      "from_port": 0,
-     "to": "colorize_1",
+     "to": "MetalShadowTone",
      "to_port": 0
     },
     {
-     "from": "colorize_2",
+     "from": "BareMetalColor",
      "from_port": 0,
-     "to": "blend_0",
+     "to": "BareMetalAlbedo",
      "to_port": 0
     },
     {
-     "from": "colorize_1",
+     "from": "MetalShadowTone",
      "from_port": 0,
-     "to": "blend_0",
+     "to": "BareMetalAlbedo",
      "to_port": 1
     },
     {
-     "from": "perlin_2",
+     "from": "SteelMaskNoise",
      "from_port": 0,
-     "to": "colorize_3",
+     "to": "SteelToneMask",
      "to_port": 0
     },
     {
-     "from": "colorize_3",
+     "from": "SteelToneMask",
      "from_port": 0,
-     "to": "blend_0",
+     "to": "BareMetalAlbedo",
      "to_port": 2
     },
     {
-     "from": "colorize_0",
+     "from": "SteelRoughnessTone",
      "from_port": 0,
-     "to": "blend_1",
+     "to": "BareMetalRoughness",
      "to_port": 1
     },
     {
-     "from": "perlin_1",
+     "from": "SteelToneNoise",
      "from_port": 0,
-     "to": "colorize_2",
+     "to": "BareMetalColor",
      "to_port": 0
     },
     {
-     "from": "colorize_4",
+     "from": "SteelRoughnessMaskTone",
      "from_port": 0,
-     "to": "blend_1",
+     "to": "BareMetalRoughness",
      "to_port": 0
     },
     {
-     "from": "colorize_3",
+     "from": "SteelToneMask",
      "from_port": 0,
-     "to": "colorize_4",
+     "to": "SteelRoughnessMaskTone",
      "to_port": 0
     },
     {
-     "from": "blend_0",
+     "from": "BareMetalAlbedo",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
-     "from": "blend_1",
+     "from": "BareMetalRoughness",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1
@@ -653,7 +653,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "perlin_chip",
+         "node": "ChipNoise",
          "widget": "scale_x"
         }
        ]
@@ -661,7 +661,7 @@
      ]
     },
     {
-     "name": "perlin_chip",
+     "name": "ChipNoise",
      "type": "perlin",
      "node_position": {
       "x": 0,
@@ -674,7 +674,7 @@
      }
     },
     {
-     "name": "mask_chip",
+     "name": "ChipMask",
      "type": "colorize",
      "node_position": {
       "x": 0,
@@ -706,43 +706,43 @@
    ],
    "connections": [
     {
-     "from": "perlin_chip",
+     "from": "ChipNoise",
      "from_port": 0,
-     "to": "mask_chip",
+     "to": "ChipMask",
      "to_port": 0
     },
     {
-     "from": "mask_chip",
+     "from": "ChipMask",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
-     "from": "perlin_chip",
+     "from": "ChipNoise",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1
     },
     {
-     "from": "perlin_chip",
+     "from": "ChipNoise",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 2
     },
     {
-     "from": "mask_chip",
+     "from": "ChipMask",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 3
     },
     {
-     "from": "mask_chip",
+     "from": "ChipMask",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 4
     },
     {
-     "from": "mask_chip",
+     "from": "ChipMask",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 5
@@ -904,7 +904,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "paint_alb",
+         "node": "PaintColor",
          "widget": "gradient"
         }
        ]
@@ -916,7 +916,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "paint_rgh",
+         "node": "PaintRoughness",
          "widget": "gradient"
         }
        ]
@@ -924,7 +924,7 @@
      ]
     },
     {
-     "name": "paint_alb",
+     "name": "PaintColor",
      "type": "colorize",
      "node_position": {
       "x": 0,
@@ -954,7 +954,7 @@
      }
     },
     {
-     "name": "paint_rgh",
+     "name": "PaintRoughness",
      "type": "colorize",
      "node_position": {
       "x": 0,
@@ -988,23 +988,23 @@
     {
      "from": "gen_inputs",
      "from_port": 0,
-     "to": "paint_alb",
+     "to": "PaintColor",
      "to_port": 0
     },
     {
      "from": "gen_inputs",
      "from_port": 1,
-     "to": "paint_rgh",
+     "to": "PaintRoughness",
      "to_port": 0
     },
     {
-     "from": "paint_alb",
+     "from": "PaintColor",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
-     "from": "paint_rgh",
+     "from": "PaintRoughness",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1
@@ -1118,7 +1118,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "normal_chip",
+         "node": "ChipEdgeNormal",
          "widget": "param1"
         }
        ]
@@ -1126,7 +1126,7 @@
      ]
     },
     {
-     "name": "blend_alb",
+     "name": "AlbedoComposite",
      "type": "blend",
      "node_position": {
       "x": 0,
@@ -1138,7 +1138,7 @@
      }
     },
     {
-     "name": "blend_rgh",
+     "name": "RoughnessComposite",
      "type": "blend",
      "node_position": {
       "x": 0,
@@ -1150,7 +1150,7 @@
      }
     },
     {
-     "name": "normal_chip",
+     "name": "ChipEdgeNormal",
      "type": "normal_map",
      "node_position": {
       "x": 0,
@@ -1168,59 +1168,59 @@
     {
      "from": "gen_inputs",
      "from_port": 0,
-     "to": "blend_alb",
+     "to": "AlbedoComposite",
      "to_port": 0
     },
     {
      "from": "gen_inputs",
      "from_port": 1,
-     "to": "blend_rgh",
+     "to": "RoughnessComposite",
      "to_port": 0
     },
     {
      "from": "gen_inputs",
      "from_port": 2,
-     "to": "blend_alb",
+     "to": "AlbedoComposite",
      "to_port": 2
     },
     {
      "from": "gen_inputs",
      "from_port": 3,
-     "to": "blend_rgh",
+     "to": "RoughnessComposite",
      "to_port": 2
     },
     {
      "from": "gen_inputs",
      "from_port": 4,
-     "to": "normal_chip",
+     "to": "ChipEdgeNormal",
      "to_port": 0
     },
     {
      "from": "gen_inputs",
      "from_port": 5,
-     "to": "blend_alb",
+     "to": "AlbedoComposite",
      "to_port": 1
     },
     {
      "from": "gen_inputs",
      "from_port": 6,
-     "to": "blend_rgh",
+     "to": "RoughnessComposite",
      "to_port": 1
     },
     {
-     "from": "blend_alb",
+     "from": "AlbedoComposite",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
-     "from": "blend_rgh",
+     "from": "RoughnessComposite",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1
     },
     {
-     "from": "normal_chip",
+     "from": "ChipEdgeNormal",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 2

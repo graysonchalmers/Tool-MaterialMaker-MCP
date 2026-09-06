@@ -1,7 +1,7 @@
 {
  "connections": [
   {
-   "from": "uniform_0",
+   "from": "NonMetallic",
    "from_port": 0,
    "to": "Material",
    "to_port": 1
@@ -101,7 +101,7 @@
    "type": "material"
   },
   {
-   "name": "uniform_0",
+   "name": "NonMetallic",
    "node_position": {
     "x": 413,
     "y": 208
@@ -266,7 +266,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "colorize_1",
+         "node": "LeatherColor",
          "widget": "gradient"
         }
        ]
@@ -278,7 +278,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "colorize_3",
+         "node": "LeatherRoughness",
          "widget": "gradient"
         }
        ]
@@ -286,7 +286,7 @@
      ]
     },
     {
-     "name": "colorize_1",
+     "name": "LeatherColor",
      "node_position": {
       "x": 384,
       "y": 137
@@ -316,7 +316,7 @@
      "type": "colorize"
     },
     {
-     "name": "colorize_3",
+     "name": "LeatherRoughness",
      "node_position": {
       "x": 384,
       "y": 258
@@ -346,7 +346,7 @@
      "type": "colorize"
     },
     {
-     "name": "voronoi_0",
+     "name": "PoreCells",
      "node_position": {
       "x": 71,
       "y": 216
@@ -362,7 +362,7 @@
      "type": "voronoi"
     },
     {
-     "name": "colorize_0",
+     "name": "GrainHeight",
      "node_position": {
       "x": 264,
       "y": 331
@@ -401,37 +401,37 @@
    ],
    "connections": [
     {
-     "from": "voronoi_0",
+     "from": "PoreCells",
      "from_port": 0,
-     "to": "colorize_0",
+     "to": "GrainHeight",
      "to_port": 0
     },
     {
-     "from": "voronoi_0",
+     "from": "PoreCells",
      "from_port": 0,
-     "to": "colorize_1",
+     "to": "LeatherColor",
      "to_port": 0
     },
     {
-     "from": "voronoi_0",
+     "from": "PoreCells",
      "from_port": 0,
-     "to": "colorize_3",
+     "to": "LeatherRoughness",
      "to_port": 0
     },
     {
-     "from": "colorize_3",
+     "from": "LeatherRoughness",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
-     "from": "colorize_0",
+     "from": "GrainHeight",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1
     },
     {
-     "from": "colorize_1",
+     "from": "LeatherColor",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 2
@@ -509,7 +509,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "pattern_q",
+         "node": "QuiltLayout",
          "widget": "x_scale"
         }
        ]
@@ -517,7 +517,7 @@
      ]
     },
     {
-     "name": "pattern_q",
+     "name": "QuiltLayout",
      "type": "pattern",
      "node_position": {
       "x": 0,
@@ -534,19 +534,19 @@
    ],
    "connections": [
     {
-     "from": "pattern_q",
+     "from": "QuiltLayout",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
-     "from": "pattern_q",
+     "from": "QuiltLayout",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1
     },
     {
-     "from": "pattern_q",
+     "from": "QuiltLayout",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 2
@@ -668,7 +668,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "seam_shade",
+         "node": "SeamShade",
          "widget": "gradient"
         }
        ]
@@ -676,7 +676,7 @@
      ]
     },
     {
-     "name": "seam_mask",
+     "name": "SeamMask",
      "type": "colorize",
      "node_position": {
       "x": 0,
@@ -706,7 +706,7 @@
      }
     },
     {
-     "name": "seam_shade",
+     "name": "SeamShade",
      "type": "colorize",
      "node_position": {
       "x": 0,
@@ -740,23 +740,23 @@
     {
      "from": "gen_inputs",
      "from_port": 0,
-     "to": "seam_mask",
+     "to": "SeamMask",
      "to_port": 0
     },
     {
      "from": "gen_inputs",
      "from_port": 1,
-     "to": "seam_shade",
+     "to": "SeamShade",
      "to_port": 0
     },
     {
-     "from": "seam_shade",
+     "from": "SeamShade",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
-     "from": "seam_mask",
+     "from": "SeamMask",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1
@@ -857,7 +857,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "blend_h_q",
+         "node": "HeightComposite",
          "widget": "amount"
         }
        ]
@@ -869,7 +869,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "normal_map_0",
+         "node": "LeatherNormal",
          "widget": "param1"
         }
        ]
@@ -877,7 +877,7 @@
      ]
     },
     {
-     "name": "normal_map_0",
+     "name": "LeatherNormal",
      "node_position": {
       "x": 479,
       "y": 334
@@ -894,7 +894,7 @@
      "type": "normal_map"
     },
     {
-     "name": "blend_h_q",
+     "name": "HeightComposite",
      "type": "blend",
      "node_position": {
       "x": 0,
@@ -906,7 +906,7 @@
      }
     },
     {
-     "name": "blend_alb_q",
+     "name": "AlbedoComposite",
      "type": "blend",
      "node_position": {
       "x": 0,
@@ -920,49 +920,49 @@
    ],
    "connections": [
     {
-     "from": "blend_h_q",
+     "from": "HeightComposite",
      "from_port": 0,
-     "to": "normal_map_0",
+     "to": "LeatherNormal",
      "to_port": 0
     },
     {
      "from": "gen_inputs",
      "from_port": 0,
-     "to": "blend_h_q",
+     "to": "HeightComposite",
      "to_port": 1
     },
     {
      "from": "gen_inputs",
      "from_port": 1,
-     "to": "blend_alb_q",
+     "to": "AlbedoComposite",
      "to_port": 1
     },
     {
      "from": "gen_inputs",
      "from_port": 2,
-     "to": "blend_h_q",
+     "to": "HeightComposite",
      "to_port": 0
     },
     {
      "from": "gen_inputs",
      "from_port": 3,
-     "to": "blend_alb_q",
+     "to": "AlbedoComposite",
      "to_port": 0
     },
     {
      "from": "gen_inputs",
      "from_port": 4,
-     "to": "blend_alb_q",
+     "to": "AlbedoComposite",
      "to_port": 2
     },
     {
-     "from": "normal_map_0",
+     "from": "LeatherNormal",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
-     "from": "blend_alb_q",
+     "from": "AlbedoComposite",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1

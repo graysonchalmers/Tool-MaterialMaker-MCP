@@ -1,7 +1,7 @@
 {
  "connections": [
   {
-   "from": "uniform_greyscale",
+   "from": "NonMetallic",
    "from_port": 0,
    "to": "Material",
    "to_port": 1
@@ -77,7 +77,7 @@
    "type": "material"
   },
   {
-   "name": "uniform_greyscale",
+   "name": "NonMetallic",
    "node_position": {
     "x": -281.375671,
     "y": -63.305649
@@ -273,7 +273,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "beehive_2",
+         "node": "HexLayout",
          "widget": "sx"
         }
        ]
@@ -285,7 +285,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "beehive_2",
+         "node": "HexLayout",
          "widget": "sy"
         }
        ]
@@ -297,7 +297,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "colorize_5",
+         "node": "TileColor",
          "widget": "gradient"
         }
        ]
@@ -309,7 +309,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "colorize_4",
+         "node": "GlazeRoughness",
          "widget": "gradient"
         }
        ]
@@ -317,7 +317,7 @@
      ]
     },
     {
-     "name": "colorize_4",
+     "name": "GlazeRoughness",
      "node_position": {
       "x": -280.375671,
       "y": 7.194351
@@ -354,7 +354,7 @@
      "type": "colorize"
     },
     {
-     "name": "colorize_5",
+     "name": "TileColor",
      "node_position": {
       "x": -275.375671,
       "y": -143.805649
@@ -391,7 +391,7 @@
      "type": "colorize"
     },
     {
-     "name": "beehive_2",
+     "name": "HexLayout",
      "node_position": {
       "x": -595.426147,
       "y": -131.090683
@@ -405,37 +405,37 @@
    ],
    "connections": [
     {
-     "from": "beehive_2",
+     "from": "HexLayout",
      "from_port": 0,
-     "to": "colorize_5",
+     "to": "TileColor",
      "to_port": 0
     },
     {
-     "from": "beehive_2",
+     "from": "HexLayout",
      "from_port": 0,
-     "to": "colorize_4",
+     "to": "GlazeRoughness",
      "to_port": 0
     },
     {
-     "from": "beehive_2",
+     "from": "HexLayout",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
-     "from": "beehive_2",
+     "from": "HexLayout",
      "from_port": 1,
      "to": "gen_outputs",
      "to_port": 1
     },
     {
-     "from": "colorize_5",
+     "from": "TileColor",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 2
     },
     {
-     "from": "colorize_4",
+     "from": "GlazeRoughness",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 3
@@ -521,7 +521,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "normal_map",
+         "node": "GroutNormal",
          "widget": "param1"
         }
        ]
@@ -533,7 +533,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "blend",
+         "node": "ReliefBlend",
          "widget": "amount"
         }
        ]
@@ -541,7 +541,7 @@
      ]
     },
     {
-     "name": "colorize",
+     "name": "CellRandomTone",
      "node_position": {
       "x": -591.193665,
       "y": 41.163864
@@ -578,7 +578,7 @@
      "type": "colorize"
     },
     {
-     "name": "colorize_2",
+     "name": "StructureTone",
      "node_position": {
       "x": -591.193665,
       "y": -29.836136
@@ -622,7 +622,7 @@
      "type": "colorize"
     },
     {
-     "name": "blend",
+     "name": "ReliefBlend",
      "node_position": {
       "x": -603.703308,
       "y": 113.163872
@@ -635,7 +635,7 @@
      "type": "blend"
     },
     {
-     "name": "normal_map",
+     "name": "GroutNormal",
      "node_position": {
       "x": -270.375671,
       "y": 88.194351
@@ -649,7 +649,7 @@
      "type": "normal_map"
     },
     {
-     "name": "colorize_3",
+     "name": "GroutDepth",
      "node_position": {
       "x": -279.375671,
       "y": 225.694351
@@ -681,49 +681,49 @@
    ],
    "connections": [
     {
-     "from": "colorize_2",
+     "from": "StructureTone",
      "from_port": 0,
-     "to": "blend",
+     "to": "ReliefBlend",
      "to_port": 0
     },
     {
-     "from": "colorize",
+     "from": "CellRandomTone",
      "from_port": 0,
-     "to": "blend",
+     "to": "ReliefBlend",
      "to_port": 1
     },
     {
-     "from": "blend",
+     "from": "ReliefBlend",
      "from_port": 0,
-     "to": "normal_map",
+     "to": "GroutNormal",
      "to_port": 0
     },
     {
-     "from": "blend",
+     "from": "ReliefBlend",
      "from_port": 0,
-     "to": "colorize_3",
+     "to": "GroutDepth",
      "to_port": 0
     },
     {
      "from": "gen_inputs",
      "from_port": 0,
-     "to": "colorize_2",
+     "to": "StructureTone",
      "to_port": 0
     },
     {
      "from": "gen_inputs",
      "from_port": 1,
-     "to": "colorize",
+     "to": "CellRandomTone",
      "to_port": 0
     },
     {
-     "from": "normal_map",
+     "from": "GroutNormal",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
-     "from": "colorize_3",
+     "from": "GroutDepth",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1

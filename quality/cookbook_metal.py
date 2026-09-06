@@ -10,12 +10,49 @@ Then: python -m quality.promote_cookbook cookbook-metal
 import sys
 
 from quality import author  # shared builder base; regression guard is promote_cookbook --check
-from quality.author_helpers import save_variant, take_variant, group_into_subgraph
+from quality.author_helpers import save_variant, take_variant, group_into_subgraph, rename_nodes
 
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.config import load_config
 
 _LABEL = "cookbook-metal"
+
+# `rusted_metal` donor mapping for m01: the docstring's "three ideas" are
+# where the patches are (patina_pattern), what the two metals look like
+# (copper_color), and how rough each is (surface_finish). colorize_3's
+# output is a hard threshold reused three ways: the blend-2 mask in
+# copper_color, the metallic scalar wired straight to Material, and the
+# input to colorize_4's roughness bump.
+_M01_NAMES = {
+    "perlin_2": "PatchNoise",          # patina patch shape/size generator
+    "colorize_3": "PatinaMask",        # hard threshold: where patches sit
+    "colorize_4": "PatinaRoughness",   # roughness bump for patina areas
+    "perlin_1": "MetalNoise",          # shared noise base for both metal colors
+    "colorize_2": "CopperColor",       # base metal albedo
+    "colorize_1": "VerdigrisColor",    # patch albedo
+    "blend_0": "ColorComposite",       # base + patch, masked by PatinaMask
+    "perlin_0": "RoughnessNoise",
+    "colorize_0": "RoughnessVariation",
+    "blend_1": "RoughnessComposite",   # PatinaRoughness base + RoughnessVariation
+}
+
+# `wood` donor mapping for m02: brushed_finish is the working streak/normal
+# chain (straightened per the docstring); wood_knot_leftover is the dead
+# knot-warp chain the straightening disconnected, kept for the story but
+# renamed with an Unused suffix, same precedent as wood's CombineUnused.
+_M02_NAMES = {
+    "perlin_2": "StreakNoise",             # directional brush-streak generator
+    "blend_0": "StreakComposite",          # straightened: both inputs from StreakNoise
+    "colorize_2": "AluminumColor",
+    "normal_map_0": "BrushNormal",
+    "colorize_0": "RoughnessRamp",
+    "perlin_0": "KnotNoiseUnused",
+    "perlin_1": "KnotWarpNoiseUnused",
+    "warp_0": "KnotWarpUnused",
+    "voronoi_0": "KnotCellsUnused",
+    "colorize_1": "KnotColorUnused",
+    "warp_1": "KnotWarpFinalUnused",
+}
 
 
 def build_m01_weathered_copper(catalog: dict) -> str:
@@ -45,6 +82,7 @@ def build_m01_weathered_copper(catalog: dict) -> str:
         [("colorize_0", "gradient", "param0", "Roughness")],
         catalog,
     )
+    rename_nodes(g, _M01_NAMES)
     return save_variant(g, _LABEL, "m01_weathered_copper", 1)
 
 
@@ -76,6 +114,7 @@ def build_m02_brushed_aluminum(catalog: dict) -> str:
         [],
         catalog,
     )
+    rename_nodes(g, _M02_NAMES)
     return save_variant(g, _LABEL, "m02_brushed_aluminum", 1)
 
 
