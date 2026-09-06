@@ -7,9 +7,11 @@ the live external checkout's 43."""
 import json
 import os
 import pytest
+from pathlib import Path
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.config import load_config
 from mm_mcp.validator import validate_graph
+from quality import author_helpers
 
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DONORS_DIR = os.path.join(_ROOT, "quality", "donors")
@@ -17,8 +19,13 @@ DONOR_NAMES = [
     "beehive", "crocodile_skin", "dry_earth", "metal_pattern_2", "rock",
     "rusted_metal", "stone_wall", "wood", "wooden_floor",
 ]
-cfg = load_config()
-CATALOG = build_catalog(cfg.nodes_dir)
+
+
+@pytest.fixture(scope="module")
+def catalog():
+    """Built once per module. Only the validation tests need the Material
+    Maker checkout; presence and JSON-shape tests must not."""
+    return build_catalog(load_config().nodes_dir)
 
 
 def _all_graphs(node):
@@ -45,21 +52,17 @@ def test_donor_file_is_valid_json_graph(name):
 
 
 @pytest.mark.parametrize("name", DONOR_NAMES)
-def test_donor_graph_has_no_type_or_connection_errors(name):
+def test_donor_graph_has_no_type_or_connection_errors(name, catalog):
     path = os.path.join(DONORS_DIR, f"{name}.ptex")
     with open(path, encoding="utf-8") as fh:
         root = json.load(fh)
     hard_errors = []
     for g in _all_graphs(root):
-        for p in validate_graph(g, CATALOG):
+        for p in validate_graph(g, catalog):
             if p["severity"] == "error":
                 hard_errors.append(p["message"])
     assert hard_errors == [], f"{name}: {hard_errors}"
 
 
-from pathlib import Path
-
-
 def test_load_example_reads_from_the_vendored_donors_dir():
-    from quality import author_helpers
     assert Path(author_helpers._EX) == Path(DONORS_DIR)
