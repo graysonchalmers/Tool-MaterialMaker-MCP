@@ -3,24 +3,21 @@
 files -- 1 variant per material, no scorecard gate. Outputs land under
 quality/authored/cookbook-plastics/<case>/v1.ptex.
 
-Run: python quality/cookbook_plastics.py
-Then: python quality/render_cookbook.py cookbook-plastics
+Run: python -m quality.cookbook_plastics
+Then: python -m quality.render_cookbook cookbook-plastics
 """
-import os
 import sys
 
-sys.path.insert(0, os.path.dirname(__file__))
-from author_helpers import (_from_scratch_noise_material, set_param, save_variant,
+from quality.author_helpers import (_from_scratch_noise_material, set_param, save_variant,
                      add_node, _grad, group_into_subgraph)
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.config import load_config
 
 _LABEL = "cookbook-plastics"
 
 
-def build_p01_glossy_plastic() -> str:
+def build_p01_glossy_plastic(catalog: dict) -> str:
     """Glossy injection-molded plastic: every other cookbook category so far
     differentiates through visible micro-pattern (weave, crack network, cell
     facets); plastic differentiates the opposite way, as a smooth,
@@ -66,7 +63,6 @@ def build_p01_glossy_plastic() -> str:
     # noise input then arrives as a plain boundary port from surface_color;
     # that's an artifact of one generator feeding two visually distinct
     # concerns (color and relief/roughness), not a modeling error.
-    catalog = build_catalog(load_config().nodes_dir)
     group_into_subgraph(
         g, ["perlin_0", "colorize_0"], "surface_color", "Surface Color",
         [("colorize_0", "gradient", "param0", "Color"),
@@ -89,8 +85,9 @@ BUILDERS = {
 
 def main() -> int:
     targets = sys.argv[1:] or list(BUILDERS.keys())
+    catalog = build_catalog(load_config().nodes_dir)
     for case in targets:
-        path = BUILDERS[case]()
+        path = BUILDERS[case](catalog)
         print(f"{case}: {path}")
     return 0
 

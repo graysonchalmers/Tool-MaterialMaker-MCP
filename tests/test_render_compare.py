@@ -1,9 +1,7 @@
 import os
-import sys
 
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.join(_ROOT, "quality"))
-from render_compare import grid_mean_abs_diff, renders_match
+from quality.render_compare import grid_mean_abs_diff, renders_match
 
 _GLASS_THUMB = os.path.join(_ROOT, "docs", "images", "cookbook-glass",
                              "gl01_frosted_glass.png")

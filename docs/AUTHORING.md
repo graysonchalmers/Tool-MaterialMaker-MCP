@@ -2,12 +2,12 @@
 
 > **Phase 3 status:** done. The recipe sections below were filled in during
 > sub-phase 3C from the baseline miss taxonomy, and the frozen 15-case test
-> set now scores 15/15. See `quality/scorecards/` for the scorecards and
+> set now scores 15/15. See `docs/evidence/phase3/` for the scorecards and
 > STATUS.md for the phase gate.
 
 ## Scoring rubric (frozen with the test set)
 
-A prompt-to-graph attempt is scored per `quality/test_set.json`:
+A prompt-to-graph attempt is scored per `docs/evidence/phase3/test_set.json`:
 
 - **Any-variant scoring:** a case is a HIT if at least one of its 2-3 rendered
   variants is usable.
@@ -76,7 +76,7 @@ tangle that needs a later retrofit pass.
 2. Draft 2-3 variant graphs using the catalog (`list_node_types`,
    `describe_node`, or the `catalog://nodes` resource) for exact ports/params.
 3. `validate` each variant; fix every error-severity problem.
-4. Render via the harness (`quality/run_case.py`) or `render_graph`.
+4. Render via `render_graph` (or `python -m quality.render_one` for an authored variant).
 5. **Judge in 3D, not off the flat albedo.** Feed the render's output paths
    into `render_preview(albedo_path, normal_path, orm_path)` to composite the
    maps onto a sphere, a cube, and a cutaway ball on a tiled ground plane. This
@@ -161,7 +161,7 @@ the cookbook effectively used two. Same structural DNA recolored = materials
 that read alike. The fix is a wider base-noise vocabulary, not more recolors.
 
 Gallery source: `quality/noise_gallery.py` (single node -> grey ramp -> albedo,
-so you see the raw field). Render with `python quality/render_cookbook.py
+so you see the raw field). Render with `python -m quality.render_cookbook
 noise-gallery`. Tracked contact sheets:
 
 ![fbm bases](images/noise-gallery/fbm-bases.png)

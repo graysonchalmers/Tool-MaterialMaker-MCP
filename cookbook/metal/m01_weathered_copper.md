@@ -31,4 +31,4 @@ Opening the graph shows 4 top-level nodes instead of 11:
 ## See also
 
 `guide://authoring` (or `docs/AUTHORING.md`), the recolor lever and the
-masked two-layer blend; `quality/scorecards/2026-08-26-iter1.md`.
+masked two-layer blend; `docs/evidence/phase3/2026-08-26-iter1.md`.

@@ -1,6 +1,6 @@
 """Cookbook growth: painted-metal category authoring recipes beyond the frozen
 15-case Phase 3 test set. Additive, not an edit to the frozen metals
-(`m01`/`m02`/`m03` live in quality/test_set.json). Informal: 1 variant per
+(`m01`/`m02`/`m03` live in docs/evidence/phase3/test_set.json). Informal: 1 variant per
 material, no scorecard gate. Reuses author_helpers.py's graph-surgery helpers; outputs
 land under quality/authored/cookbook-painted-metal/<case>/v1.ptex.
 
@@ -26,19 +26,16 @@ Normal-map note: rock/wood donors feed their normal from a directly-fed
 analytic generator, so `normal_map_0.param4` must be 0 (raw edge_detect) for
 real relief; the default 1 (buffered) renders flat. See f01/s02 in author.py.
 
-Run: python quality/cookbook_painted_metal.py
-Then quality/render_one.py cookbook-painted-metal <case> renders one for review.
+Run: python -m quality.cookbook_painted_metal
+Then `python -m quality.render_one` cookbook-painted-metal <case> renders one for review.
 """
-import os
 import sys
 
-sys.path.insert(0, os.path.dirname(__file__))
-from author_helpers import (load_example, set_gradient, set_param, save_variant,
+from quality.author_helpers import (load_example, set_gradient, set_param, save_variant,
                     add_node, rewire, drop_conn, node, _grad, group_into_subgraph,
                     take_variant)
-import author  # frozen Phase-3 builders; called, never edited
+from quality import author  # shared builder base; regression guard is promote_cookbook --check
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.config import load_config
 

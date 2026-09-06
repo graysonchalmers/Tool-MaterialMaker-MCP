@@ -35,7 +35,7 @@ Why this project exists and what it's actually optimizing for is in
 >   Back up your work. Assume it will misbehave.
 > - **The material "quality" bar is deliberately low.** The goal is "gets you 80%
 >   of the way there so you finish in the app," not "photoreal." See the
->   `quality/` scorecard for exactly how well (and badly) it does on 15 prompts:
+>   [Phase-3 scorecard](docs/evidence/phase3/2026-08-26-iter1.md) for exactly how well (and badly) it does on 15 prompts:
 >   it currently passes all 15 of them by a generous, artist's eyeball
 >   standard (the ship gate was 11 of 15).
 >
@@ -315,9 +315,9 @@ Very early alpha (see the warning up top). Phases 0 through 3 and 5 of my own
 rough plan are done and verified on one machine; Phase 4 (public packaging) is
 partway there. See [STATUS.md](STATUS.md) for the gate ledger and
 [docs/PLAN.md](docs/PLAN.md) for the phase plan. Authoring quality is
-measured against a frozen 15-case test set in [`quality/`](quality/); the current
+measured against a frozen 15-case test set archived in [`docs/evidence/phase3/`](docs/evidence/phase3/); the current
 scorecard is 15/15 usable by an artist's eyeball standard (see
-`quality/scorecards/`). "Verified" here means "worked when I ran it," not
+`docs/evidence/phase3/`). "Verified" here means "worked when I ran it," not
 "battle-tested."
 
 ## License and attribution

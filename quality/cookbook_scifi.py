@@ -13,17 +13,14 @@ material would be invisible in the actual 4-map product output. Stuck to
 albedo/normal/roughness/metallic effects that the render pipeline actually
 captures.
 
-Run: python quality/cookbook_scifi.py
-Then: python quality/render_cookbook.py cookbook-scifi
+Run: python -m quality.cookbook_scifi
+Then: python -m quality.render_cookbook cookbook-scifi
 """
-import os
 import sys
 
-sys.path.insert(0, os.path.dirname(__file__))
-from author_helpers import (load_example, node, set_gradient, set_param, add_node,
+from quality.author_helpers import (load_example, node, set_gradient, set_param, add_node,
                              rewire, save_variant, group_into_subgraph)
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.config import load_config
 

@@ -22,11 +22,9 @@ run.log
 # Maker checkout (~266 MB, incl. a nested .git) here on first live-control use.
 mm_live_overlay/
 
-# Phase 3 quality: keep test_set + scorecards; ignore heavy renders and the
-# authored .ptex variants (author.py regenerates them deterministically).
-# The locked cookbook graphs are promoted from quality/authored/cookbook-*/
-# into the tracked cookbook/ tree by quality/promote_cookbook.py.
-quality/runs/
+# Cookbook authoring: the builders (quality/cookbook_*.py) write variants to
+# quality/authored/ and renders to quality/cookbook/; both regenerable.
+# quality/promote_cookbook.py copies locked variants into the tracked cookbook/.
 quality/authored/
 
 # Cookbook growth (informal, non-frozen extensions like the fabric cases):

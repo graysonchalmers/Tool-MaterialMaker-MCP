@@ -9,16 +9,14 @@ See docs/DEBUG_SWATCHES.md for the swatch legend the checks encode.
 import json
 import os
 import struct
-import sys
 import zlib
 
 import pytest
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "quality"))
-from pngread import read_png, Sampler        # noqa: E402
-import debug_swatches as D                    # noqa: E402
-from mm_mcp.config import load_config          # noqa: E402
-from mm_mcp.render import render               # noqa: E402
+from quality.pngread import read_png, Sampler
+from quality import debug_swatches as D
+from mm_mcp.config import load_config
+from mm_mcp.render import render
 
 cfg = load_config()
 _AUTHORED = os.path.join(os.path.dirname(__file__), "..", "quality",

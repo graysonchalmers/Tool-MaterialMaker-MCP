@@ -51,7 +51,7 @@ where = ["src"]
 mm_mcp = ["preview_project/*", "play/static/*"]
 
 [tool.pytest.ini_options]
-pythonpath = ["src"]
+pythonpath = ["src", "."]
 testpaths = ["tests"]
 markers = [
     "integration: tests that launch Godot (slow)",

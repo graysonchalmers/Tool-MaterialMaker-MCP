@@ -41,4 +41,4 @@ reads as exactly what it is, two layers feeding Material:
 ## See also
 
 `guide://authoring` (or `docs/AUTHORING.md`) for the blend mask and opacity
-notes in "Cross-material lessons"; `quality/scorecards/2026-08-26-iter1.md`.
+notes in "Cross-material lessons"; `docs/evidence/phase3/2026-08-26-iter1.md`.

@@ -3,16 +3,12 @@
 These are pure JSON-graph transforms with no Godot/render dependency, but they
 back every Phase 3 authoring recipe (denim's weave graft, granite's port-2
 rewire, aluminum's grain-straightening, combo01's blend splice), so a bug here
-would silently corrupt authored materials. Import path: quality/ isn't a
-package, so we add it to sys.path directly rather than relying on pytest's
-configured pythonpath (which only covers src/).
+would silently corrupt authored materials. quality/ is a package (see
+quality/__init__.py); pytest's configured pythonpath puts the repo root on
+the module search path, so `from quality.author_helpers import ...` resolves
+normally.
 """
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "quality"))
-
-from author_helpers import rewire, drop_conn, node, add_node, group_into_subgraph  # noqa: E402
+from quality.author_helpers import rewire, drop_conn, node, add_node, group_into_subgraph
 
 
 def _graph():
@@ -211,7 +207,7 @@ import json
 import os
 import pytest
 
-from author_helpers import take_variant
+from quality.author_helpers import take_variant
 
 
 def _fake_builder(tmp_path):

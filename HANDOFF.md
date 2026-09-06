@@ -105,9 +105,11 @@ No forced order. Candidates:
 
 ## ⚠️ Heads-up for the next agent
 
-- **Run `quality/*.py` from the repo root**, never from inside `quality/`
-  (breaks `.env` lookup). Never launch a Godot render from `python -c` (the
-  launcher does not exit; use `quality/render_one.py` or a script file).
+- **Run quality scripts as `python -m quality.<module>` from the repo root**
+  (a file-path launch no longer resolves the package imports; running from
+  inside `quality/` also breaks `.env` lookup). Never launch a Godot render
+  from `python -c` (the launcher does not exit; use `python -m
+  quality.render_one` or a script file).
   Renders are one Godot at a time.
 - **Edit cookbook materials by changing the builder and re-promoting**, never
   the tracked `.ptex` by hand; `promote_cookbook.py --check` flags drift.
@@ -129,8 +131,6 @@ No forced order. Candidates:
 - **`take_variant(builder, label, keep_n)`** (author_helpers) runs a frozen
   `author.py` builder under a cookbook label, returns the requested variant,
   and deletes every variant file it wrote; the caller must re-save as v1.
-  `quality/verify_hero_fold.py` now needs `examples/` restored from
-  `_to_delete` to run (documented in its docstring).
 - **Stale mm-play on 8788 is now a startup error with the PID**, not a mystery.
   If you ever see the old symptom anyway (renders "fail" while the code is
   fine), `Get-NetTCPConnection -LocalPort 8788 -State Listen`.
@@ -138,8 +138,6 @@ No forced order. Candidates:
   export.** Red herring; never treat it as evidence of a broken render.
 - **`ambientcg.com` redirected to a scareware page (2026-09-03).** Use Wikimedia
   Commons for reference photos until re-verified.
-- **`quality/cookbook_wood/glass/plastics.py` still build the catalog inside
-  each builder**; the other 9 thread one catalog through `main()`.
 - **Donors load from `quality/donors/`** (tracked), not the external MM
   checkout; vendor any new donor `.ptex` there.
 - **release-please has `bump-minor-pre-major: true`**; a `feat!` cuts 0.x, not

@@ -1,11 +1,7 @@
 import json
-import sys
 from pathlib import Path
 
-_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(_ROOT / "quality"))
-
-from promote_cookbook import promote  # noqa: E402
+from quality.promote_cookbook import promote
 
 
 def _authored(tmp_path: Path, label: str, case: str, payload: dict) -> Path:

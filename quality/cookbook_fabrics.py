@@ -1,23 +1,20 @@
 """Cookbook growth: fabric-category authoring recipes beyond the frozen 15-case
-Phase 3 test set (see quality/test_set.json's freeze note -- this is additive,
+Phase 3 test set (see docs/evidence/phase3/test_set.json's freeze note -- this is additive,
 not an edit to those cases). Informal: 1 variant per material, no scorecard
 gate. Reuses author_helpers.py's graph-surgery helpers; outputs land under
 quality/authored/cookbook-fabrics/<case>/v1.ptex, same layout convention as
 the Phase 3 iterations.
 
-Run: python quality/cookbook_fabrics.py
-Then quality/render_cookbook.py renders each variant for inspection.
+Run: python -m quality.cookbook_fabrics
+Then `python -m quality.render_cookbook` renders each variant for inspection.
 """
-import os
 import sys
 
-sys.path.insert(0, os.path.dirname(__file__))
-from author_helpers import (load_example, node, set_gradient, set_param, retype,
+from quality.author_helpers import (load_example, node, set_gradient, set_param, retype,
                     rewire, add_node, save_variant, group_into_subgraph,
                     take_variant)
-import author  # frozen Phase-3 builders; called, never edited
+from quality import author  # shared builder base; regression guard is promote_cookbook --check
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.config import load_config
 

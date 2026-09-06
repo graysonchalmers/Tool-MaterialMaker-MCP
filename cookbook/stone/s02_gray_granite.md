@@ -48,4 +48,4 @@ group, so folding it into either would just add a boundary port.
 
 The invariant guide (`guide://authoring` or `docs/AUTHORING.md`) for the
 rubric, the noise vocabulary, and the `param4=0` flat-normal fix. The frozen
-scorecard this material was judged on is `quality/scorecards/2026-08-26-iter1.md`.
+scorecard this material was judged on is `docs/evidence/phase3/2026-08-26-iter1.md`.
