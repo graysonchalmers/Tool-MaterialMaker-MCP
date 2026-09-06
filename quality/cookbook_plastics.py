@@ -17,7 +17,7 @@ from mm_mcp.config import load_config
 _LABEL = "cookbook-plastics"
 
 
-def build_p01_glossy_plastic() -> str:
+def build_p01_glossy_plastic(catalog: dict) -> str:
     """Glossy injection-molded plastic: every other cookbook category so far
     differentiates through visible micro-pattern (weave, crack network, cell
     facets); plastic differentiates the opposite way, as a smooth,
@@ -63,7 +63,6 @@ def build_p01_glossy_plastic() -> str:
     # noise input then arrives as a plain boundary port from surface_color;
     # that's an artifact of one generator feeding two visually distinct
     # concerns (color and relief/roughness), not a modeling error.
-    catalog = build_catalog(load_config().nodes_dir)
     group_into_subgraph(
         g, ["perlin_0", "colorize_0"], "surface_color", "Surface Color",
         [("colorize_0", "gradient", "param0", "Color"),
@@ -86,8 +85,9 @@ BUILDERS = {
 
 def main() -> int:
     targets = sys.argv[1:] or list(BUILDERS.keys())
+    catalog = build_catalog(load_config().nodes_dir)
     for case in targets:
-        path = BUILDERS[case]()
+        path = BUILDERS[case](catalog)
         print(f"{case}: {path}")
     return 0
 

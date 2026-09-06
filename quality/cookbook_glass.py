@@ -18,7 +18,7 @@ from mm_mcp.config import load_config
 _LABEL = "cookbook-glass"
 
 
-def build_gl01_frosted_glass() -> str:
+def build_gl01_frosted_glass(catalog: dict) -> str:
     """Sandblasted frosted glass, decomposed from a real macro photo (see the
     recipe card for the reference and the observation-by-observation
     reasoning). Reads as the same CONNECTED CRACK NETWORK topology as
@@ -70,7 +70,6 @@ def build_gl01_frosted_glass() -> str:
     # Material was dropped above, per dry_earth's own metallic-variance
     # wiring) and gets tucked inside base_color with its source, perlin_1,
     # rather than left as an orphaned top-level node.
-    catalog = build_catalog(load_config().nodes_dir)
     group_into_subgraph(
         g, ["voronoi_0", "colorize_1", "warp_0", "colorize_0", "blend_0", "colorize_3"],
         "base_color", "Base Color",
@@ -96,8 +95,9 @@ BUILDERS = {
 
 def main() -> int:
     targets = sys.argv[1:] or list(BUILDERS.keys())
+    catalog = build_catalog(load_config().nodes_dir)
     for case in targets:
-        path = BUILDERS[case]()
+        path = BUILDERS[case](catalog)
         print(f"{case}: {path}")
     return 0
 

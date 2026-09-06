@@ -20,7 +20,7 @@ from mm_mcp.config import load_config
 _LABEL = "cookbook-wood"
 
 
-def build_w03_painted_wood_siding() -> str:
+def build_w03_painted_wood_siding(catalog: dict) -> str:
     """Painted plank siding, paint worn off in patches to reveal the boards.
     CLONE `wooden_floor` (NOT `wood`), because siding needs visible BOARD
     STRUCTURE to read as siding at all -- wooden_floor's `bricks_0` (10 rows,
@@ -77,7 +77,6 @@ def build_w03_painted_wood_siding() -> str:
     rewire(g, "Material", 0, "blend_alb", 0)   # albedo <- paint-over-planks
     rewire(g, "Material", 2, "blend_rgh", 0)   # roughness <- paint-over-planks
 
-    catalog = build_catalog(load_config().nodes_dir)
     # Group the 16-node tangle (10 from the wooden_floor donor + 6 for the
     # paint-over composite) into two named subgraphs: the bare-plank
     # generation chain (structure + AO + the plank normal, which the
@@ -111,7 +110,7 @@ def build_w03_painted_wood_siding() -> str:
     return save_variant(g, _LABEL, "w03_painted_wood_siding", 1)
 
 
-def build_w04_driftwood_gray() -> str:
+def build_w04_driftwood_gray(catalog: dict) -> str:
     """Bleached coastal driftwood: pale silvery-gray, low saturation, smoothed
     by weathering rather than rough like barn wood. Pure recolor of `wood`'s
     already-working albedo/roughness ramps (same lever as w02 barn wood) --
@@ -136,7 +135,6 @@ def build_w04_driftwood_gray() -> str:
     # port 1 directly); colorize_2 rides along with it into wood_grain so
     # that group carries a real knob rather than exposing nothing, while
     # surface_finish keeps its own knob (colorize_0's roughness gradient).
-    catalog = build_catalog(load_config().nodes_dir)
     group_into_subgraph(
         g,
         ["perlin_0", "perlin_1", "perlin_2", "voronoi_0", "colorize_1",
@@ -155,7 +153,7 @@ def build_w04_driftwood_gray() -> str:
     return save_variant(g, _LABEL, "w04_driftwood_gray", 1)
 
 
-def build_w05_dark_walnut() -> str:
+def build_w05_dark_walnut(catalog: dict) -> str:
     """Rich dark walnut, semi-gloss furniture finish: deep saturated brown
     grain with more contrast than oak, lower roughness than barn wood (a
     finished/sealed surface, not raw weathered timber). Pure recolor of
@@ -173,7 +171,6 @@ def build_w05_dark_walnut() -> str:
     # 11-node graph, differing only in the two gradients this builder sets)
     # -- see that function's comment for why colorize_2 rides into wood_grain
     # alongside blend_0.
-    catalog = build_catalog(load_config().nodes_dir)
     group_into_subgraph(
         g,
         ["perlin_0", "perlin_1", "perlin_2", "voronoi_0", "colorize_1",
@@ -201,8 +198,9 @@ BUILDERS = {
 
 def main() -> int:
     targets = sys.argv[1:] or list(BUILDERS.keys())
+    catalog = build_catalog(load_config().nodes_dir)
     for case in targets:
-        path = BUILDERS[case]()
+        path = BUILDERS[case](catalog)
         print(f"{case}: {path}")
     return 0
 
