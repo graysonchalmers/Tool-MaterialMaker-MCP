@@ -231,7 +231,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "colorize_base",
+         "node": "BoardColor",
          "widget": "gradient"
         }
        ]
@@ -243,7 +243,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "pattern_traces",
+         "node": "TraceWave",
          "widget": "x_scale"
         }
        ]
@@ -255,7 +255,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "colorize_traces",
+         "node": "TraceColor",
          "widget": "gradient"
         }
        ]
@@ -263,7 +263,7 @@
      ]
     },
     {
-     "name": "perlin_0",
+     "name": "BoardNoise",
      "type": "perlin",
      "node_position": {
       "x": 0,
@@ -276,7 +276,7 @@
      }
     },
     {
-     "name": "colorize_base",
+     "name": "BoardColor",
      "type": "colorize",
      "node_position": {
       "x": 0,
@@ -306,7 +306,7 @@
      }
     },
     {
-     "name": "pattern_traces",
+     "name": "TraceWave",
      "type": "pattern",
      "node_position": {
       "x": 0,
@@ -321,7 +321,7 @@
      }
     },
     {
-     "name": "colorize_traces",
+     "name": "TraceColor",
      "type": "colorize",
      "node_position": {
       "x": 0,
@@ -365,7 +365,7 @@
      }
     },
     {
-     "name": "colorize_traces_mask",
+     "name": "TraceMask",
      "type": "colorize",
      "node_position": {
       "x": 0,
@@ -409,7 +409,7 @@
      }
     },
     {
-     "name": "blend_traces",
+     "name": "TraceComposite",
      "type": "blend",
      "node_position": {
       "x": 0,
@@ -423,49 +423,49 @@
    ],
    "connections": [
     {
-     "from": "perlin_0",
+     "from": "BoardNoise",
      "from_port": 0,
-     "to": "colorize_base",
+     "to": "BoardColor",
      "to_port": 0
     },
     {
-     "from": "pattern_traces",
+     "from": "TraceWave",
      "from_port": 0,
-     "to": "colorize_traces",
+     "to": "TraceColor",
      "to_port": 0
     },
     {
-     "from": "pattern_traces",
+     "from": "TraceWave",
      "from_port": 0,
-     "to": "colorize_traces_mask",
+     "to": "TraceMask",
      "to_port": 0
     },
     {
-     "from": "colorize_traces",
+     "from": "TraceColor",
      "from_port": 0,
-     "to": "blend_traces",
+     "to": "TraceComposite",
      "to_port": 0
     },
     {
-     "from": "colorize_base",
+     "from": "BoardColor",
      "from_port": 0,
-     "to": "blend_traces",
+     "to": "TraceComposite",
      "to_port": 1
     },
     {
-     "from": "colorize_traces_mask",
+     "from": "TraceMask",
      "from_port": 0,
-     "to": "blend_traces",
+     "to": "TraceComposite",
      "to_port": 2
     },
     {
-     "from": "blend_traces",
+     "from": "TraceComposite",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
-     "from": "blend_traces",
+     "from": "TraceComposite",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1
@@ -612,7 +612,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "voronoi_chips",
+         "node": "ChipLayout",
          "widget": "scale_x"
         }
        ]
@@ -624,7 +624,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "colorize_chips",
+         "node": "ChipColor",
          "widget": "gradient"
         }
        ]
@@ -632,7 +632,7 @@
      ]
     },
     {
-     "name": "voronoi_chips",
+     "name": "ChipLayout",
      "type": "voronoi",
      "node_position": {
       "x": 0,
@@ -648,7 +648,7 @@
      }
     },
     {
-     "name": "colorize_chips",
+     "name": "ChipColor",
      "type": "colorize",
      "node_position": {
       "x": 0,
@@ -692,7 +692,7 @@
      }
     },
     {
-     "name": "colorize_chips_mask",
+     "name": "ChipMask",
      "type": "colorize",
      "node_position": {
       "x": 0,
@@ -736,7 +736,7 @@
      }
     },
     {
-     "name": "blend_chips",
+     "name": "ChipComposite",
      "type": "blend",
      "node_position": {
       "x": 0,
@@ -750,43 +750,43 @@
    ],
    "connections": [
     {
-     "from": "voronoi_chips",
+     "from": "ChipLayout",
      "from_port": 2,
-     "to": "colorize_chips",
+     "to": "ChipColor",
      "to_port": 0
     },
     {
-     "from": "voronoi_chips",
+     "from": "ChipLayout",
      "from_port": 2,
-     "to": "colorize_chips_mask",
+     "to": "ChipMask",
      "to_port": 0
     },
     {
-     "from": "colorize_chips",
+     "from": "ChipColor",
      "from_port": 0,
-     "to": "blend_chips",
+     "to": "ChipComposite",
      "to_port": 0
     },
     {
-     "from": "colorize_chips_mask",
+     "from": "ChipMask",
      "from_port": 0,
-     "to": "blend_chips",
+     "to": "ChipComposite",
      "to_port": 2
     },
     {
      "from": "gen_inputs",
      "from_port": 0,
-     "to": "blend_chips",
+     "to": "ChipComposite",
      "to_port": 1
     },
     {
-     "from": "blend_chips",
+     "from": "ChipComposite",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
-     "from": "blend_chips",
+     "from": "ChipComposite",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1
@@ -910,7 +910,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "colorize_rgh",
+         "node": "BoardRoughness",
          "widget": "gradient"
         }
        ]
@@ -922,7 +922,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "normal_map_0",
+         "node": "BoardNormal",
          "widget": "param1"
         }
        ]
@@ -930,7 +930,7 @@
      ]
     },
     {
-     "name": "colorize_rgh",
+     "name": "BoardRoughness",
      "type": "colorize",
      "node_position": {
       "x": 0,
@@ -960,7 +960,7 @@
      }
     },
     {
-     "name": "normal_map_0",
+     "name": "BoardNormal",
      "type": "normal_map",
      "node_position": {
       "x": 0,
@@ -978,23 +978,23 @@
     {
      "from": "gen_inputs",
      "from_port": 0,
-     "to": "normal_map_0",
+     "to": "BoardNormal",
      "to_port": 0
     },
     {
      "from": "gen_inputs",
      "from_port": 1,
-     "to": "colorize_rgh",
+     "to": "BoardRoughness",
      "to_port": 0
     },
     {
-     "from": "colorize_rgh",
+     "from": "BoardRoughness",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
-     "from": "normal_map_0",
+     "from": "BoardNormal",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1
