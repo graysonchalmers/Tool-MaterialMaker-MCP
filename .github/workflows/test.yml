@@ -17,8 +17,17 @@ jobs:
         with:
           python-version: "3.13"
 
-      - name: Clone Material Maker (node defs + examples the suite reads)
-        run: git clone --depth 1 https://github.com/RodZill4/material-maker mm-checkout
+      # Pinned to the same upstream revision as the local checkout every
+      # cookbook graph was authored against (z-Git/material-maker, 2026-07-14).
+      # Bump MM_PIN deliberately, then re-run promote_cookbook.py --check.
+      - name: Clone Material Maker at the pinned revision (node defs + examples the suite reads)
+        env:
+          MM_PIN: ad19fcf
+        run: |
+          git init mm-checkout
+          git -C mm-checkout fetch --depth 1 https://github.com/RodZill4/material-maker $env:MM_PIN
+          git -C mm-checkout checkout --detach FETCH_HEAD
+        shell: pwsh
 
       - name: Write steam_appid.txt
         run: Set-Content -Path mm-checkout/steam_appid.txt -Value 4110830 -NoNewline

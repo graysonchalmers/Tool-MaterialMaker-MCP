@@ -11,6 +11,7 @@ failure for this tool, so this is the friendly front door to it.
 import os
 from dataclasses import dataclass
 
+from mm_mcp import MM_UPSTREAM_PIN
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.cookbook import list_cookbook
 from mm_mcp.config import Config, load_config
@@ -35,6 +36,9 @@ def check_setup(cfg: Config) -> list[Check]:
         checks.append(Check("MM_PROJECT_PATH", False, f"does not exist: '{pp}'"))
     else:
         checks.append(Check("MM_PROJECT_PATH", True, pp))
+
+    if pp and os.path.isdir(pp):
+        checks.append(Check("checkout revision", True, _checkout_revision(pp)))
 
     if os.path.isdir(cfg.nodes_dir):
         checks.append(Check("node definitions", True, cfg.nodes_dir))
@@ -126,6 +130,27 @@ def check_setup(cfg: Config) -> list[Check]:
                             "(os.pathsep-separated dirs) to bound client paths."))
 
     return checks
+
+
+def _checkout_revision(project_path: str) -> str:
+    """Short git sha of the Material Maker checkout, informational only.
+
+    Every cookbook graph was authored against one upstream revision, and CI
+    pins the same one (MM_UPSTREAM_PIN, mirrored as MM_PIN in test.yml). Printing it
+    here makes a mismatched local checkout visible instead of silent. Never
+    raises: no git, or not a git checkout, is reported as text.
+    """
+    import subprocess
+    try:
+        out = subprocess.run(
+            ["git", "-C", project_path, "rev-parse", "--short", "HEAD"],
+            capture_output=True, text=True, timeout=10,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return f"unknown (git not runnable: {exc})"
+    if out.returncode != 0:
+        return f"unknown (not a git checkout; CI pins upstream {MM_UPSTREAM_PIN})"
+    return f"{out.stdout.strip()} (CI pins upstream {MM_UPSTREAM_PIN})"
 
 
 def all_ok(checks: list[Check]) -> bool:

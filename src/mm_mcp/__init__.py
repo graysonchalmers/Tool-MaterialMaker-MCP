@@ -10,7 +10,7 @@ to PBR texture maps. Units:
   overlay.py          build/refresh the live-control addon overlay (disposable working copy)
   paths.py            client-path guards (allowed-roots bounding, traversal rejection)
   inspect.py          read-only .ptex metrics (for the inspect_project tool)
-  server.py           the MCP server (ten batch tools, six live tools, catalog resource)
+  server.py           the MCP server (ten batch tools, seven live tools, catalog + guide resources)
 """
 
 from importlib.metadata import version as _pkg_version, PackageNotFoundError
@@ -19,3 +19,9 @@ try:
     __version__ = _pkg_version("mm-mcp")
 except PackageNotFoundError:  # not pip-installed (tests import via pythonpath=src)
     __version__ = "0.0.0+unknown"
+
+# Upstream Material Maker revision every cookbook graph was authored against.
+# CI clones exactly this sha (.github/workflows/test.yml, MM_PIN; a test keeps
+# the two in sync) and `mm-mcp --check` prints the local checkout's sha beside
+# it. Bump deliberately, then re-run quality/promote_cookbook.py --check.
+MM_UPSTREAM_PIN = "ad19fcf"

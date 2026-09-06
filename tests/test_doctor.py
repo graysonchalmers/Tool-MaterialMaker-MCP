@@ -167,3 +167,42 @@ def test_check_setup_cookbook_read_error_is_reported_not_raised(monkeypatch):
     assert cookbook.ok
     assert "could not read" in cookbook.detail
     assert "simulated unreadable cookbook dir" in cookbook.detail
+
+
+def test_check_setup_reports_checkout_revision_for_git_checkout(tmp_path):
+    """The revision line is informational (never fails) and names the
+    upstream commit so CI's pin and the local checkout can be compared."""
+    from mm_mcp.doctor import check_setup
+    import subprocess
+    proj = tmp_path / "mm"
+    proj.mkdir()
+    subprocess.run(["git", "init", "-q", str(proj)], check=True)
+    subprocess.run(["git", "-C", str(proj), "-c", "user.email=t@t", "-c", "user.name=t",
+                    "commit", "-q", "--allow-empty", "-m", "x"], check=True)
+    cfg = load_config(overrides={"MM_PROJECT_PATH": str(proj), "MM_OUTPUT_DIR": str(tmp_path)})
+    by_name = {c.name: c for c in check_setup(cfg)}
+    rev = by_name["checkout revision"]
+    assert rev.ok
+    assert len(rev.detail.split()[0]) >= 7  # short sha leads the line
+
+
+def test_check_setup_checkout_revision_non_git_is_informational(tmp_path):
+    from mm_mcp.doctor import check_setup
+    proj = tmp_path / "mm"
+    proj.mkdir()
+    cfg = load_config(overrides={"MM_PROJECT_PATH": str(proj), "MM_OUTPUT_DIR": str(tmp_path)})
+    by_name = {c.name: c for c in check_setup(cfg)}
+    rev = by_name["checkout revision"]
+    assert rev.ok
+    assert "not a git checkout" in rev.detail
+
+
+def test_ci_pins_the_same_upstream_revision_as_the_package():
+    """The CI clone pin and the constant the doctor prints must not drift apart."""
+    import re
+    from mm_mcp import MM_UPSTREAM_PIN
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    wf = open(os.path.join(root, ".github", "workflows", "test.yml"), encoding="utf-8").read()
+    m = re.search(r"MM_PIN:\s*([0-9a-f]{7,40})", wf)
+    assert m, "test.yml no longer declares MM_PIN"
+    assert m.group(1) == MM_UPSTREAM_PIN
