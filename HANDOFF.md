@@ -1,6 +1,6 @@
 # 🧭 Session Handoff: Tool-MaterialMaker-MCP
 
-_Last updated: 2026-09-05 (teardown #4: hygiene sweep + quality/ packaged + Phase-3 harness archived) CT (America/Chicago)_
+_Last updated: 2026-09-06 (teardown #5 executed: MCP user-wide, crate into the Unity sandbox, kit-map layer, role-named cookbook) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up. **Shape rule (2026-09-05,
 teardown #3):** "Current state" describes the latest session only; anything
@@ -10,174 +10,178 @@ archive; there is no separate archive file.
 
 ## 🎯 Current state
 
-`main` at the merge `6e4568f` (+ the docs commit that lands this file), pushed.
-Fast suite **809 passed**, 25 integration deselected. `python -m
-quality.promote_cookbook --check` in sync. `mm-mcp --check` reports 53
-cookbook materials and now prints the Material Maker checkout revision
-(`ad19fcf`, the same sha CI pins).
+`main` at the merge `dbf66fc` (+ the docs commit that lands this file), pushed.
+Fast suite **964 passed**, 25 integration deselected. `python -m
+quality.promote_cookbook --check` in sync; `python -m quality.naming --cookbook`
+reports 53 graphs, 0 problems.
 
-This session ran `pickup` + a fourth adversarial `teardown`, then executed
-Grayson's picks 2 and 3 (pick 1, the hands-on loop session, is his):
+This session ran `pickup` + a fifth `teardown` with a usage angle (are we
+using the tool, from where, for what), then executed all three of Grayson's
+picks the same day:
 
-- **Teardown #4 (read-only, report delivered as a file).** No Rebuild
-  verdicts; `src/` is already the v2 core. The headline finding was the
-  premise, not the structure: the North Star's step 3 (Grayson opens and
-  edits the authored graph) has two `saved_graphs/` entries, both from
-  2026-08-28, and about 24 MCP-path renders in 12 days, against 53
-  Claude-authored materials and 677 MB of harness renders. Second finding,
-  cross-project: the 2026-09-05 21:00 nightly backup aborted after five
-  projects with no summary line (see Heads-up).
-- **Pick 2, hygiene sweep (direct commits `c836d38`, `d420ed8`).** CI clones
-  Material Maker at a pinned sha (`MM_UPSTREAM_PIN` in `mm_mcp/__init__.py`,
-  mirrored as `MM_PIN` in `test.yml`, a test keeps them equal) and the doctor
-  prints the local checkout's sha beside it. README no longer claims "no test
-  coverage beyond a small smoke and unit set". PLAN.md's `--export` and
-  7-tool list fixed. Baton dates corrected (the previous wrap-up wrote
-  09-06 for a 21:03 CT commit). Stale merged worktree
-  `.claude/worktrees/confident-tesla-ee9400` removed. Commons state file
-  written (it had never existed) and resolution lines appended to the three
-  shipped ideas in `_agent-commons/ideas/`.
-- **Pick 3, `quality/` as a package + Phase-3 archive (branch merged
-  `--no-ff` as `6e4568f`).** `quality/` is an importable package in place
-  (no rename): `from quality.<module> import ...`, scripts run as `python -m
-  quality.<module>` from the repo root, pytest `pythonpath = ["src", "."]`,
-  39 `sys.path` hacks gone, a gate test forbids their return. Every cookbook
-  builder is `build_<id>(catalog)` (wood/glass/plastics threaded, gate test
-  over all 53). The Phase-3 gate apparatus (frozen `test_set.json`,
-  freeze rule, both scorecards) lives under `docs/evidence/phase3/` with a
-  README and a sha256 pin; `run_case.py`, `score_baseline.py`,
-  `verify_hero_fold.py` are removed (last carried at `59d788f`);
-  `quality/runs/` (290 MB) moved to `_to_delete`; its `.gitignore` line and
-  the backup-ops exclusion are gone (`backup-ops` `3c3aca8`). `author.py`
-  lost the "frozen, do not edit" label: six builders import it and `--check`
-  is the real freeze. `tests/test_donors.py` builds the catalog in a
-  module fixture. Spec + plan under `docs/superpowers/` dated 2026-09-05.
+- **Teardown #5 (report delivered as a file).** Headline: in 48 sessions the
+  MCP authoring path (`validate`, `render_graph`, `save_graph`) had zero
+  calls; all 53 cookbook materials came from `quality/` builders; the server
+  was registered only in this repo's `.mcp.json`, so no other project could
+  call it; five portfolio consumers need PBR maps and none had received any
+  (gProdDevKit's kit map had no texture layer). Grayson's one hand-edit was a
+  rename pass; the cookbook was 66% auto-named. Verdict on the teardown
+  cadence itself: **moratorium until three use-sessions exist.**
+- **Pick 1, reachability + MCP-only authoring.** `material-maker` is now a
+  USER-scope MCP server (`claude mcp add --scope user`, absolute `MM_*`
+  env); verified connected from `_UnityQA-Sandbox` and exercised by a
+  headless `claude -p` run from that folder. A crate material was authored
+  over the MCP tools only (`load_example` w03 -> edit -> `validate` ->
+  `render_graph` -> `render_preview` -> `render_graph target="Unity/URP"` ->
+  `save_graph`): `saved_graphs/crate_pine_mcp_authored.ptex` (tracked, the
+  first shipped graph built that way and the naming-convention reference).
+  Its Unity export sits in `_UnityQA-Sandbox/Assets/Materials/CratePine/`
+  under UnityQA's `T_` naming with `.meta` guids, and `SM_Crate_A.prefab`
+  points at it (uncommitted there; not yet opened in Unity).
+- **Pick 2, gProdDevKit.** `KIT_MAP.md` gained layer `4b Texture / Material`,
+  a member row, decision D-KIT-9, a section 6 note; `kit-hub/web/tools.json`
+  has a `materialmaker` entry; README table row. `Test-Tools.ps1` green.
+  Committed locally in that repo, not pushed.
+- **Pick 3, role-named nodes (branch `role-named-nodes`, 24 commits, merged
+  `--no-ff` as `dbf66fc`).** `rename_nodes(graph, mapping)` in
+  `author_helpers.py` (recursive over subgraphs, validates before mutating,
+  refuses reserved names, sibling collisions, duplicate targets, and any
+  `type == "graph"` node so `mm-play` slider ids stay stable);
+  `quality/naming.py` checker (`python -m quality.naming --cookbook [cat]`);
+  `quality/render_tracked.py` (renders tracked graphs, compares every map
+  the baseline holds, resolves paths absolute); promote writes a generated
+  `## Nodes` table into every card between `<!-- nodes:begin/end -->`
+  markers and `--check` verifies it; every builder ends with
+  `rename_nodes`; all 53 graphs renamed with a per-category render-identical
+  proof and, at final review, a structural diff proving only
+  name/from/to/linked_widgets changed; gates
+  `tests/test_cookbook_naming_gate.py` and
+  `tests/test_cookbook_card_table_gate.py`; the "Name every node by role"
+  lever in `docs/AUTHORING.md`. Built with `writing-plans` ->
+  `subagent-driven-development` (12 tasks, 5 fix rounds, final opus review
+  "with fixes", one fix wave, re-review clean).
 
-Built with `writing-plans` -> `subagent-driven-development` (4 tasks, each
-reviewed, one fix round on Task 3, opus whole-branch review "with fixes",
-one fix wave, scoped re-review clean). Plan defect worth remembering: the
-plan's verification greps were keyed to file paths, not to the claims the
-change invalidated, which is how "frozen" survived in six comments until the
-final review.
+Bug found by walking the MCP path, not fixed: `validate` checks only
+top-level nodes and connections; a dangling connection inside a subgraph
+passes silently (`src/mm_mcp/validator.py`).
 
 ## 📌 Where we stopped
 
-Picks 2 and 3 are merged and pushed. Pick 1 (the hands-on loop session) is
-Grayson's and has not happened. Nothing is in flight.
+Everything above is merged and pushed. Grayson's part of pick 1 has not
+happened: open the sandbox in Unity, and edit the crate `.ptex` in Material
+Maker. Nothing is in flight.
 
 ## ▶️ Next concrete step
 
-1. **Grayson: run the loop by hand.** Open three cookbook graphs in Material
-   Maker, edit each, save to `saved_graphs/`, note what was hard to read.
-   Doubles as the `live_load` / `mm-play` live-session verification. This is
-   the only item four teardowns never tested; do it before adding materials.
-2. **`backup-ops`: find out why the 2026-09-05 nightly run died** after
-   `Skills` at 21:05 with no summary line. Until a run completes, the
-   MaterialMaker exclusion override (2026-09-05) is unproven.
-3. **Unreal UE5 export** (backlogged: memory pressure with a live Unreal
+1. **Grayson: close the loop by hand.** Open `_UnityQA-Sandbox` in Unity and
+   confirm `SM_Crate_A` shows the crate material. Then open
+   `saved_graphs/crate_pine_mcp_authored.ptex` in Material Maker, edit it,
+   save as `saved_graphs/crate_pine_grayson_edit.ptex`, note what was hard to
+   read. This is use-session one of the three the moratorium asks for.
+2. **`validate` should descend into subgraphs** (errors as data for inner
+   connections and unknown inner types). Small, testable, found by dogfooding.
+3. **`backup-ops`: the 2026-09-05 nightly abort** is still unexamined.
+4. **Unreal UE5 export** (backlogged: memory pressure with a live Unreal
    Editor + bridge; run a `stop-node-hogs` sweep first).
-4. **More cookbook materials** only after item 1 has produced a signal.
+5. More cookbook materials only after a consumer project asks for one.
 
 ## ❓ Open questions
 
-- PyPI vs GitHub-clone-only (leaning GitHub-only); macOS/Linux never run, no
-  machine. **v0.7.0 released 2026-09-05 CT** (CHANGELOG dates it 09-06 in
-  UTC). release-please will open the next PR on the pushed commits; cadence
-  still undecided.
-- NORTH_STAR treats UE4's export path as a lesser tier; Grayson never
-  explicitly confirmed that specific framing.
-- Is `.mcp.json` the right long-term wiring, or should it fold into
-  `project-setup`'s standard kit?
-- Two parked, low-priority overlay-builder findings (2026-08-28): no rollback
-  if `copytree` fails partway; staleness check hashes only the addon, not the
-  MM checkout.
-- README's "10 batch-mode tools" is the one count not test-enforced (no robust
-  way to count batch tools without a fragile heuristic; ruled skip 2026-09-05).
+- PyPI vs GitHub-clone-only (leaning GitHub-only); macOS/Linux never run.
+  release-please will open the next PR on the pushed commits.
+- NORTH_STAR treats UE4's export path as a lesser tier; never confirmed.
+- `.mcp.json` question resolved in practice: user-scope registration is the
+  wiring; `.mcp.json` stays for this repo's own dev sessions. Whether
+  `project-setup` should register MCP servers user-wide is open.
+- Two parked overlay-builder findings (2026-08-28): no rollback if `copytree`
+  fails partway; staleness check hashes only the addon.
+- README's "10 batch-mode tools" is the one count not test-enforced.
+- `m01_weathered_copper` ships without a normal map (content gap surfaced by
+  the render baseline).
 
 ## ⚠️ Heads-up for the next agent
 
 - **The 2026-09-05 nightly backup aborted** (`backup-ops\logs\Backup-All_2026-09-05_210003.log`,
-  89 lines, ends at `OK: Skills`, no summary). Plausible cause: a
-  `NativeCommandError` from `git diff HEAD --binary` printing an LF/CRLF
-  warning on stderr at `Backup.Common.ps1:229`. Not this repo's bug; needs a
+  ends at `OK: Skills`, no summary). Plausible cause: a `NativeCommandError`
+  from `git diff HEAD --binary` at `Backup.Common.ps1:229`. Needs a
   `backup-ops` session.
 - **Run quality scripts as `python -m quality.<module>` from the repo root**
-  (the scripts import `mm_mcp`, so `pip install -e .` is a prerequisite; a
-  file-path launch no longer resolves the package imports; running from
-  inside `quality/` breaks `.env` lookup). Never launch a Godot render from
-  `python -c` (the launcher does not exit; use `python -m quality.render_one`
-  or a script file). Renders are one Godot at a time.
+  (`pip install -e .` is a prerequisite; running from inside `quality/`
+  breaks `.env` lookup). Never launch a Godot render from `python -c`.
+  Renders are one Godot at a time.
 - **Pass `render()` an absolute `outdir`.** Godot runs with the Material Maker
   checkout as its cwd, so a relative outdir is never found, Material Maker
   opens its GUI instead, and the render idles to the 180 s timeout with an
-  empty log (this cost two implementer runs on 2026-09-06).
+  empty log (cost two implementer runs on 2026-09-06).
   `quality/render_tracked.py` resolves its own paths; `src/mm_mcp/render.py`
   still accepts a relative one.
+- **Subagents lose long Godot runs.** Run `render_tracked` per category; the
+  stone and terrain compares take 6 to 9 minutes because `quality/pngread.py`
+  decodes 2048x2048 normal maps in pure Python. Tell implementers to poll the
+  output file rather than return. One re-render of an unchanged graph once
+  measured 21.89 mean abs diff and 0.0 on two reruns: a single compare
+  failure is a rerender first, a regression second.
+- **In the Git Bash tool, `taskkill /F` is rewritten to `F:/`.** Use
+  `taskkill //F //IM Godot_v4.7.1-stable_win64_console.exe` (and the GUI exe).
+- **Every subagent dispatch spawns its own `mm-mcp.exe`** now that the server
+  is user-scoped; 26 idle instances were alive mid-session. Sweep them.
+- **Node names never affect renders** (Material Maker seeds from node
+  position), so a rename pass is render-identical by construction; add
+  materials through a builder that ends with `rename_nodes(g, {...})` after
+  grouping, and never rename a subgraph node (`mm-play` slider ids).
 - **Edit cookbook materials by changing the builder and re-promoting**, never
-  the tracked `.ptex` by hand; `python -m quality.promote_cookbook --check`
-  flags drift. `--check` compares against the existing gitignored
-  `quality/authored/` tree, so regenerate the category first when you want
-  proof a code change did not move outputs. `render_cookbook` /
-  `_make_previews` regenerate the WHOLE label and Godot is not
-  byte-deterministic, so unrelated thumbnails can churn: `git status` and
-  revert anything swept up.
-- **`quality/render_compare.renders_match` proves builder-before == builder-after**,
-  not that the tracked artifact was already right.
-- **`group_into_subgraph` fails silently on a mistyped member name** (the node
-  just stays top-level). Check names against the graph first.
+  the tracked `.ptex` or the generated card table by hand;
+  `promote_cookbook --check` flags both. `--check` compares against the
+  gitignored `quality/authored/`, so regenerate the category first. Godot is
+  not byte-deterministic: do not regenerate thumbnails for a name-only change.
+- **`group_into_subgraph` fails silently on a mistyped member name.**
 - **A `blend` shows port-1 where its port-2 mask is 0 and port-0 where it is 1**;
-  put the majority layer on port-1. Opacity = amount x mask, so never feed a
-  mid-value colorize as the mask. `normal_map` `param4=0` is the flat-normal
-  fix for directly-fed analytic generators. Voronoi output port 2 is the
-  per-cell random (fleck) source.
+  put the majority layer on port-1. Opacity = amount x mask. `normal_map`
+  `param4=0` is the flat-normal fix. Voronoi output port 2 is the per-cell
+  random source.
 - **Verify metallic/roughness/AO fixes by reading the exported ORM channel**
   (`quality/pngread.py`), not by eye.
-- **`take_variant(builder, label, keep_n)`** (author_helpers) runs an
-  `author.py` builder under a cookbook label, returns the requested variant,
-  and deletes every variant file it wrote; the caller must re-save as v1.
-- **Bumping the Material Maker pin** means changing `MM_UPSTREAM_PIN` in
-  `src/mm_mcp/__init__.py` AND `MM_PIN` in `.github/workflows/test.yml`
-  (a test fails if they differ), pulling the local `z-Git\material-maker`
-  checkout to the same sha, then regenerating every category and running
-  `--check`.
-- **Stale mm-play on 8788 is now a startup error with the PID**, not a mystery.
-  If you ever see the old symptom anyway (renders "fail" while the code is
-  fine), `Get-NetTCPConnection -LocalPort 8788 -State Listen`.
+- **`take_variant(builder, label, keep_n)`** returns one variant and deletes
+  the files it wrote; the caller re-saves as v1.
+- **Bumping the Material Maker pin** means `MM_UPSTREAM_PIN` in
+  `src/mm_mcp/__init__.py` AND `MM_PIN` in `.github/workflows/test.yml`,
+  then the local checkout, then regenerate every category and `--check`.
+- **Stale mm-play on 8788 is a startup error with the PID.**
 - **The SPIRV `SCRIPT ERROR` at `parse_args.gd:59` prints on every successful
-  export.** Red herring; never treat it as evidence of a broken render.
-- **`ambientcg.com` redirected to a scareware page (2026-09-03).** Use Wikimedia
-  Commons for reference photos until re-verified.
-- **Donors load from `quality/donors/`** (tracked), not the external MM
-  checkout; vendor any new donor `.ptex` there.
-- **release-please has `bump-minor-pre-major: true`**; a `feat!` cuts 0.x, not
-  1.0.0. Do not remove it.
-- **`.mcp.json` and `.env` are gitignored; never echo `.env`.**
+  export.** Red herring.
+- **`ambientcg.com` redirected to scareware (2026-09-03).** Use Wikimedia.
+- **Donors load from `quality/donors/`** (tracked); vendor new donors there.
+- **release-please has `bump-minor-pre-major: true`**; do not remove it.
+- **`.mcp.json` and `.env` are gitignored; never echo `.env`.** The user-scope
+  registration in `~/.claude.json` carries the same paths.
+- **A second Claude session may be active on this checkout** (it committed to
+  the feature branch and to `origin/main` on 2026-09-06). Check `git status`
+  and `git fetch` before branch switches and merges.
 
 ## 🕓 Session log
 
 Newest first. Keep at most 8 entries; older ones are in `git log` (search the
 commit subjects, every session ends with a `docs:` wrap-up commit).
 
-### 2026-09-05 (teardown #4 executed): hygiene sweep, quality/ packaged, Phase-3 archived
-- `pickup` clean, then `teardown` #4: no Rebuild verdicts; headline finding
-  is the untested premise (two hand-edits in 12 days) plus the aborted
-  nightly backup. Grayson: "I'll do 1 later, can you do 2 for me + 3".
-- Pick 2 as direct commits: CI pin (`c836d38`), honesty sweep (`d420ed8`),
-  worktree prune, commons state + ideas resolutions.
-- Pick 3 via `writing-plans` -> `subagent-driven-development`: 4 tasks,
-  Task 3 one fix round (seven cookbook cards still cited the moved
-  scorecard), final opus review 3 Important (all docs the branch made
-  stale: "frozen" comments, a false HANDOFF bullet, README/NORTH_STAR
-  scorecard pointers) fixed in one wave, re-review clean. Merged `--no-ff`
-  as `6e4568f`, pushed. Suite 638 -> 809.
-- Post-push: the pinned CI clone failed on its first run ("couldn't find
-  remote ref ad19fcf"; GitHub only serves fetch-by-sha for full 40-char
-  ids). Fixed in `c5d473c` (full sha in `MM_UPSTREAM_PIN` and `MM_PIN`,
-  doctor prints the 7-char form); CI green on that head.
+### 2026-09-06 (teardown #5 executed): MCP user-wide, crate into the Unity sandbox, kit-map layer 4b, role-named cookbook
+- `pickup`, then `teardown` #5 from usage evidence (48 transcripts, MCP
+  registration, portfolio survey). Grayson: "1, and do 2 + 3 in the same
+  session", then "merge, push, and wrap".
+- Pick 1: user-scope registration; crate authored over MCP only; Unity/URP
+  export placed in `_UnityQA-Sandbox` (`T_` names, prefab repointed).
+  `validate` found not to check subgraph internals.
+- Pick 2: gProdDevKit layer 4b, D-KIT-9, tools.json, README (local commit).
+- Pick 3 via `writing-plans` -> `subagent-driven-development`: 12 tasks.
+  Root cause of two lost implementer runs was the plan's own relative
+  `--out` (Godot cwd); compare rewritten to cover every map the baseline
+  holds (heightmaps, m01 no normal); per-category compares as the whole-tree
+  proof. Final opus review found three ratchets (subgraph-rename guard,
+  card-table gate, the HANDOFF heads-up); all landed. Merged `dbf66fc`,
+  pushed. Suite 809 -> 964.
+### 2026-09-05 (teardown #4 executed): hygiene sweep (CI pinned to the MM sha), `quality/` packaged, Phase-3 harness archived (`6e4568f`, `c5d473c`).
 ### 2026-09-05 (teardown #3 executed): examples/ folded into the cookbook (46 -> 53), mm-play port diagnostic, backup exclusions, baton diet (`87be578`, `5b93785`); v0.7.0 released.
 ### 2026-09-05 (mm-play verified): Grayson ran `play.bat` hands-on; row promoted 🔌 -> ✅ (`056dcd4`).
 ### 2026-09-04 (blocker correction): the "host can't render" blocker was a stale server squatting 8788, not GPU (`b016f1b`).
 ### 2026-09-04 (live_load): seventh live tool, in-place graph replace; play surface pushes the picked material live (`d523ad6`).
 ### 2026-09-04 (play-surface UI nits): slider panel docks; canvas re-fills on resize (`c7e85ee`).
 ### 2026-09-04 (play.bat + play-surface verified): one-click launcher; "MM for dummies" arc closed.
-### 2026-09-04 (cookbook bug fixes): t01 metallic wire, l02/l05 blend port order (`5cd9e0b`).
