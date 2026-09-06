@@ -100,3 +100,10 @@ def test_mapping_applied_atomically_when_one_key_is_bad():
     with pytest.raises(KeyError):
         rename_nodes(g, {"perlin_0": "GrainNoise", "missing_0": "X"})
     assert [n["name"] for n in g["nodes"]] == ["Material", "perlin_0", "colorize_0"]
+
+
+def test_two_sources_to_the_same_target_at_one_level_raise_valueerror():
+    g = _flat()
+    with pytest.raises(ValueError):
+        rename_nodes(g, {"perlin_0": "Same", "colorize_0": "Same"})
+    assert [n["name"] for n in g["nodes"]] == ["Material", "perlin_0", "colorize_0"]

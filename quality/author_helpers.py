@@ -187,17 +187,21 @@ def rename_nodes(graph: dict, mapping: dict) -> None:
     found = {}
     for label, nodes, _ in _levels(graph):
         names = {n["name"] for n in nodes}
-        for old, new in mapping.items():
-            if old in names:
-                found.setdefault(old, []).append((label, names))
+        level_sources = [old for old in mapping if old in names]
+        for old in level_sources:
+            found.setdefault(old, []).append((label, names, level_sources))
     missing = [k for k in mapping if k not in found]
     if missing:
         raise KeyError(f"nodes not found at any level: {sorted(missing)}")
     for old, new in mapping.items():
-        for label, names in found[old]:
+        for label, names, level_sources in found[old]:
+            where = label or "top level"
             if new in names and new != old:
-                where = label or "top level"
                 raise ValueError(f"{where}: cannot rename {old!r} to {new!r}, a sibling already has that name")
+            other_targets = {mapping[other] for other in level_sources if other != old}
+            if new in other_targets:
+                raise ValueError(f"{where}: cannot rename {old!r} to {new!r}, another node in this "
+                                  f"mapping at the same level also targets {new!r}")
     for _, nodes, conns in _levels(graph):
         for n in nodes:
             n["name"] = mapping.get(n["name"], n["name"])
