@@ -1,4 +1,6 @@
 import json
+import os
+import socket
 import threading
 import urllib.error
 import urllib.request
@@ -119,3 +121,52 @@ def test_render_endpoint_produces_maps(running_server):
         with urllib.request.urlopen(running_server + "/api/maps/" + name) as r:
             body = r.read()
         assert len(body) > 0
+
+
+def test_serve_reports_port_in_use_with_owner(capsys):
+    # A stale mm-play (or any process) already listening on the play port
+    # must produce an actionable startup message naming the port, not a
+    # server that silently binds beside the squatter (Windows SO_REUSEADDR
+    # quirk) or a bare OSError traceback.
+    squatter = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    squatter.bind(("127.0.0.1", 0))
+    squatter.listen(1)
+    port = squatter.getsockname()[1]
+    try:
+        cfg = replace(load_config(), play_port=port)
+        result = server.serve(cfg=cfg, open_browser=False)
+    finally:
+        squatter.close()
+    assert result is None
+    out = capsys.readouterr().out
+    assert f"port {port}" in out
+    assert "MM_PLAY_PORT" in out
+    if os.name == "nt":
+        assert "PID" in out and "Stop-Process" in out
+
+
+def test_port_in_use_probe():
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind(("127.0.0.1", 0))
+    s.listen(1)
+    port = s.getsockname()[1]
+    try:
+        assert server.port_in_use(port) is True
+    finally:
+        s.close()
+    assert server.port_in_use(port) is False
+
+
+def test_describe_port_owner_names_this_process_on_windows():
+    if os.name != "nt":
+        pytest.skip("netstat/tasklist parsing is Windows-only")
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind(("127.0.0.1", 0))
+    s.listen(1)
+    port = s.getsockname()[1]
+    try:
+        owner = server.describe_port_owner(port)
+    finally:
+        s.close()
+    assert owner is not None
+    assert f"PID {os.getpid()}" in owner
