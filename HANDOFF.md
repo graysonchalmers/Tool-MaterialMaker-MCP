@@ -164,6 +164,10 @@ commit subjects, every session ends with a `docs:` wrap-up commit).
   stale: "frozen" comments, a false HANDOFF bullet, README/NORTH_STAR
   scorecard pointers) fixed in one wave, re-review clean. Merged `--no-ff`
   as `6e4568f`, pushed. Suite 638 -> 809.
+- Post-push: the pinned CI clone failed on its first run ("couldn't find
+  remote ref ad19fcf"; GitHub only serves fetch-by-sha for full 40-char
+  ids). Fixed in `c5d473c` (full sha in `MM_UPSTREAM_PIN` and `MM_PIN`,
+  doctor prints the 7-char form); CI green on that head.
 ### 2026-09-05 (teardown #3 executed): examples/ folded into the cookbook (46 -> 53), mm-play port diagnostic, backup exclusions, baton diet (`87be578`, `5b93785`); v0.7.0 released.
 ### 2026-09-05 (mm-play verified): Grayson ran `play.bat` hands-on; row promoted 🔌 -> ✅ (`056dcd4`).
 ### 2026-09-04 (blocker correction): the "host can't render" blocker was a stale server squatting 8788, not GPU (`b016f1b`).
