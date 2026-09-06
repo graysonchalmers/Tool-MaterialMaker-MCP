@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from quality.promote_cookbook import promote
+from quality.promote_cookbook import node_table, write_card_block, check_card_block, promote
 
 
 def _authored(tmp_path: Path, label: str, case: str, payload: dict) -> Path:
@@ -77,5 +77,72 @@ def test_check_ignores_line_ending_differences(tmp_path):
     dst_dir = tmp_path / "cookbook" / "fabrics"
     dst_dir.mkdir(parents=True)
     (dst_dir / "f07_herringbone_tweed.ptex").write_bytes(payload.encode("utf-8"))
+    card = dst_dir / "f07_herringbone_tweed.md"
+    card.write_text("# f07_herringbone_tweed\n", encoding="utf-8")
+    write_card_block(card, {"type": "graph"})
     problems = promote(tmp_path / "authored", tmp_path / "cookbook", check=True)
     assert problems == []
+
+
+def _graph_for_card():
+    return {"nodes": [
+        {"name": "Material", "type": "material", "parameters": {}},
+        {"name": "plank_structure", "label": "Plank Structure", "type": "graph", "parameters": {},
+         "nodes": [
+             {"name": "gen_inputs", "type": "ios", "parameters": {}},
+             {"name": "gen_outputs", "type": "ios", "parameters": {}},
+             {"name": "gen_parameters", "type": "remote", "parameters": {}},
+             {"name": "PlankLayout", "type": "bricks", "parameters": {}},
+             {"name": "WoodColor", "type": "colorize", "parameters": {}},
+         ], "connections": []},
+    ], "connections": []}
+
+
+def test_node_table_lists_every_checkable_node_with_its_level():
+    block = node_table(_graph_for_card())
+    assert block.startswith("<!-- nodes:begin -->") and block.rstrip().endswith("<!-- nodes:end -->")
+    assert "| (top level) | plank_structure | graph |" in block
+    assert "| plank_structure | PlankLayout | bricks |" in block
+    assert "| plank_structure | WoodColor | colorize |" in block
+    assert "Material" not in block.split("|", 1)[1]   # reserved names are not rows
+
+
+def test_write_card_block_appends_when_missing_and_replaces_when_present(tmp_path):
+    card = tmp_path / "x.md"
+    card.write_text("# x\n\nprose\n", encoding="utf-8")
+    g = _graph_for_card()
+    write_card_block(card, g)
+    first = card.read_text(encoding="utf-8")
+    assert first.startswith("# x\n\nprose\n") and first.count("<!-- nodes:begin -->") == 1
+    g["nodes"][1]["nodes"][3]["name"] = "PlankGrid"
+    write_card_block(card, g)
+    second = card.read_text(encoding="utf-8")
+    assert second.count("<!-- nodes:begin -->") == 1
+    assert "PlankGrid" in second and "PlankLayout" not in second
+    assert second.startswith("# x\n\nprose\n")
+
+
+def test_check_card_block_reports_missing_and_stale(tmp_path):
+    card = tmp_path / "x.md"
+    card.write_text("# x\n", encoding="utf-8")
+    g = _graph_for_card()
+    assert "missing" in check_card_block(card, g)
+    write_card_block(card, g)
+    assert check_card_block(card, g) is None
+    g["nodes"][1]["nodes"][3]["name"] = "PlankGrid"
+    assert "stale" in check_card_block(card, g)
+
+
+def test_promote_writes_and_checks_card_blocks(tmp_path):
+    authored = tmp_path / "authored" / "cookbook-wood" / "w09_test"
+    authored.mkdir(parents=True)
+    (authored / "v1.ptex").write_text(json.dumps(_graph_for_card()), encoding="utf-8")
+    cookbook = tmp_path / "cookbook"
+    (cookbook / "wood").mkdir(parents=True)
+    (cookbook / "wood" / "w09_test.md").write_text("# w09_test\n", encoding="utf-8")
+    assert promote(tmp_path / "authored", cookbook) == []
+    assert "<!-- nodes:begin -->" in (cookbook / "wood" / "w09_test.md").read_text(encoding="utf-8")
+    assert promote(tmp_path / "authored", cookbook, check=True) == []
+    (cookbook / "wood" / "w09_test.md").write_text("# w09_test\n", encoding="utf-8")
+    problems = promote(tmp_path / "authored", cookbook, check=True)
+    assert len(problems) == 1 and "w09_test.md" in problems[0]
