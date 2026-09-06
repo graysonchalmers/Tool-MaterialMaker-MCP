@@ -1,7 +1,7 @@
 {
  "connections": [
   {
-   "from": "uniform_0",
+   "from": "NonMetallic",
    "from_port": 0,
    "to": "Material",
    "to_port": 1
@@ -57,13 +57,13 @@
   {
    "from": "block_finish",
    "from_port": 4,
-   "to": "394",
+   "to": "ShaderPreviewUnused",
    "to_port": 0
   },
   {
    "from": "block_finish",
    "from_port": 5,
-   "to": "394",
+   "to": "ShaderPreviewUnused",
    "to_port": 1
   }
  ],
@@ -75,7 +75,7 @@
  },
  "nodes": [
   {
-   "name": "uniform_0",
+   "name": "NonMetallic",
    "node_position": {
     "x": 931,
     "y": 95
@@ -118,7 +118,7 @@
    "type": "material"
   },
   {
-   "name": "394",
+   "name": "ShaderPreviewUnused",
    "node_position": {
     "x": 1184.978027,
     "y": -175.340729
@@ -279,7 +279,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "Bricks",
+         "node": "BlockLayout",
          "widget": "columns"
         }
        ]
@@ -291,7 +291,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "Bricks",
+         "node": "BlockLayout",
          "widget": "mortar"
         }
        ]
@@ -303,7 +303,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "Bricks",
+         "node": "BlockLayout",
          "widget": "bevel"
         }
        ]
@@ -311,7 +311,7 @@
      ]
     },
     {
-     "name": "perlin_0",
+     "name": "BlockWarpNoise",
      "node_position": {
       "x": -72,
       "y": 250
@@ -325,7 +325,7 @@
      "type": "perlin"
     },
     {
-     "name": "colorize_2",
+     "name": "JointMask",
      "node_position": {
       "x": 535.943665,
       "y": 163
@@ -355,7 +355,7 @@
      "type": "colorize"
     },
     {
-     "name": "colorize_7",
+     "name": "JointRoughness",
      "node_position": {
       "x": 915.356934,
       "y": 149
@@ -385,7 +385,7 @@
      "type": "colorize"
     },
     {
-     "name": "Warp",
+     "name": "BlockWarp",
      "node_position": {
       "x": 298,
       "y": 88.75
@@ -397,7 +397,7 @@
      "type": "warp"
     },
     {
-     "name": "Bricks",
+     "name": "BlockLayout",
      "node_position": {
       "x": -61,
       "y": 2
@@ -418,49 +418,49 @@
    ],
    "connections": [
     {
-     "from": "Warp",
+     "from": "BlockWarp",
      "from_port": 0,
-     "to": "colorize_2",
+     "to": "JointMask",
      "to_port": 0
     },
     {
-     "from": "perlin_0",
+     "from": "BlockWarpNoise",
      "from_port": 0,
-     "to": "Warp",
+     "to": "BlockWarp",
      "to_port": 1
     },
     {
-     "from": "colorize_2",
+     "from": "JointMask",
      "from_port": 0,
-     "to": "colorize_7",
+     "to": "JointRoughness",
      "to_port": 0
     },
     {
-     "from": "Bricks",
+     "from": "BlockLayout",
      "from_port": 0,
-     "to": "Warp",
+     "to": "BlockWarp",
      "to_port": 0
     },
     {
-     "from": "colorize_2",
+     "from": "JointMask",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
-     "from": "Warp",
+     "from": "BlockWarp",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1
     },
     {
-     "from": "colorize_7",
+     "from": "JointRoughness",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 2
     },
     {
-     "from": "Bricks",
+     "from": "BlockLayout",
      "from_port": 1,
      "to": "gen_outputs",
      "to_port": 3
@@ -663,7 +663,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "colorize_1",
+         "node": "BlockColor",
          "widget": "gradient"
         }
        ]
@@ -671,7 +671,7 @@
      ]
     },
     {
-     "name": "colorize_0",
+     "name": "MortarColor",
      "node_position": {
       "x": 560.943665,
       "y": 50
@@ -701,7 +701,7 @@
      "type": "colorize"
     },
     {
-     "name": "colorize_1",
+     "name": "BlockColor",
      "node_position": {
       "x": 393.943665,
       "y": -124
@@ -759,7 +759,7 @@
      "type": "colorize"
     },
     {
-     "name": "blend_1",
+     "name": "PerBlockRandom",
      "node_position": {
       "x": 286,
       "y": 252
@@ -771,7 +771,7 @@
      "type": "blend"
     },
     {
-     "name": "Perlin",
+     "name": "SurfaceNoise",
      "node_position": {
       "x": -66,
       "y": -133
@@ -785,7 +785,7 @@
      "type": "perlin"
     },
     {
-     "name": "colorize_6",
+     "name": "BlockAO",
      "node_position": {
       "x": 732,
       "y": 195
@@ -815,7 +815,7 @@
      "type": "colorize"
     },
     {
-     "name": "blend_0",
+     "name": "AlbedoComposite",
      "node_position": {
       "x": 790.943726,
       "y": -35
@@ -827,7 +827,7 @@
      "type": "blend"
     },
     {
-     "name": "colorize_4",
+     "name": "BlockHeight",
      "node_position": {
       "x": 787,
       "y": 296
@@ -857,7 +857,7 @@
      "type": "colorize"
     },
     {
-     "name": "normal_map_0",
+     "name": "BlockNormal",
      "node_position": {
       "x": 926.587036,
       "y": 211.716217
@@ -871,7 +871,7 @@
      "type": "normal_map"
     },
     {
-     "name": "blend_2",
+     "name": "ReliefComposite",
      "node_position": {
       "x": 537,
       "y": 264
@@ -885,109 +885,109 @@
    ],
    "connections": [
     {
-     "from": "colorize_0",
+     "from": "MortarColor",
      "from_port": 0,
-     "to": "blend_0",
+     "to": "AlbedoComposite",
      "to_port": 1
     },
     {
-     "from": "blend_1",
+     "from": "PerBlockRandom",
      "from_port": 0,
-     "to": "colorize_1",
+     "to": "BlockColor",
      "to_port": 0
     },
     {
-     "from": "Perlin",
+     "from": "SurfaceNoise",
      "from_port": 0,
-     "to": "blend_2",
+     "to": "ReliefComposite",
      "to_port": 1
     },
     {
-     "from": "blend_2",
+     "from": "ReliefComposite",
      "from_port": 0,
-     "to": "colorize_6",
+     "to": "BlockAO",
      "to_port": 0
     },
     {
-     "from": "Perlin",
+     "from": "SurfaceNoise",
      "from_port": 0,
-     "to": "blend_1",
+     "to": "PerBlockRandom",
      "to_port": 0
     },
     {
-     "from": "Perlin",
+     "from": "SurfaceNoise",
      "from_port": 0,
-     "to": "colorize_0",
+     "to": "MortarColor",
      "to_port": 0
     },
     {
-     "from": "blend_2",
+     "from": "ReliefComposite",
      "from_port": 0,
-     "to": "colorize_4",
+     "to": "BlockHeight",
      "to_port": 0
     },
     {
-     "from": "colorize_1",
+     "from": "BlockColor",
      "from_port": 0,
-     "to": "blend_0",
+     "to": "AlbedoComposite",
      "to_port": 0
     },
     {
-     "from": "blend_2",
+     "from": "ReliefComposite",
      "from_port": 0,
-     "to": "normal_map_0",
+     "to": "BlockNormal",
      "to_port": 0
     },
     {
      "from": "gen_inputs",
      "from_port": 0,
-     "to": "blend_0",
+     "to": "AlbedoComposite",
      "to_port": 2
     },
     {
      "from": "gen_inputs",
      "from_port": 1,
-     "to": "blend_2",
+     "to": "ReliefComposite",
      "to_port": 0
     },
     {
      "from": "gen_inputs",
      "from_port": 2,
-     "to": "blend_1",
+     "to": "PerBlockRandom",
      "to_port": 1
     },
     {
-     "from": "blend_0",
+     "from": "AlbedoComposite",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
-     "from": "colorize_4",
+     "from": "BlockHeight",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1
     },
     {
-     "from": "normal_map_0",
+     "from": "BlockNormal",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 2
     },
     {
-     "from": "colorize_6",
+     "from": "BlockAO",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 3
     },
     {
-     "from": "blend_0",
+     "from": "AlbedoComposite",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 4
     },
     {
-     "from": "normal_map_0",
+     "from": "BlockNormal",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 5

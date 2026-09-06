@@ -1,7 +1,7 @@
 {
  "connections": [
   {
-   "from": "uniform_greyscale",
+   "from": "NonMetallic",
    "from_port": 0,
    "to": "Material",
    "to_port": 1
@@ -89,7 +89,7 @@
    "type": "material"
   },
   {
-   "name": "uniform_greyscale",
+   "name": "NonMetallic",
    "node_position": {
     "x": -281.375671,
     "y": -63.305649
@@ -177,7 +177,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "beehive_2",
+         "node": "HexLayout",
          "widget": "sx"
         }
        ]
@@ -189,7 +189,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "beehive_2",
+         "node": "HexLayout",
          "widget": "sy"
         }
        ]
@@ -197,7 +197,7 @@
      ]
     },
     {
-     "name": "colorize",
+     "name": "HexEdgeMask",
      "node_position": {
       "x": -591.193665,
       "y": 41.163864
@@ -234,7 +234,7 @@
      "type": "colorize"
     },
     {
-     "name": "colorize_2",
+     "name": "HexFaceMask",
      "node_position": {
       "x": -591.193665,
       "y": -29.836136
@@ -278,7 +278,7 @@
      "type": "colorize"
     },
     {
-     "name": "blend",
+     "name": "HexFieldComposite",
      "node_position": {
       "x": -603.703308,
       "y": 113.163872
@@ -291,7 +291,7 @@
      "type": "blend"
     },
     {
-     "name": "normal_map",
+     "name": "HexNormal",
      "node_position": {
       "x": -270.375671,
       "y": 88.194351
@@ -305,7 +305,7 @@
      "type": "normal_map"
     },
     {
-     "name": "colorize_3",
+     "name": "HexAO",
      "node_position": {
       "x": -279.375671,
       "y": 225.694351
@@ -335,7 +335,7 @@
      "type": "colorize"
     },
     {
-     "name": "beehive_2",
+     "name": "HexLayout",
      "node_position": {
       "x": -595.426147,
       "y": -131.090683
@@ -349,61 +349,61 @@
    ],
    "connections": [
     {
-     "from": "colorize_2",
+     "from": "HexFaceMask",
      "from_port": 0,
-     "to": "blend",
+     "to": "HexFieldComposite",
      "to_port": 0
     },
     {
-     "from": "colorize",
+     "from": "HexEdgeMask",
      "from_port": 0,
-     "to": "blend",
+     "to": "HexFieldComposite",
      "to_port": 1
     },
     {
-     "from": "beehive_2",
+     "from": "HexLayout",
      "from_port": 0,
-     "to": "colorize_2",
+     "to": "HexFaceMask",
      "to_port": 0
     },
     {
-     "from": "beehive_2",
+     "from": "HexLayout",
      "from_port": 1,
-     "to": "colorize",
+     "to": "HexEdgeMask",
      "to_port": 0
     },
     {
-     "from": "blend",
+     "from": "HexFieldComposite",
      "from_port": 0,
-     "to": "normal_map",
+     "to": "HexNormal",
      "to_port": 0
     },
     {
-     "from": "blend",
+     "from": "HexFieldComposite",
      "from_port": 0,
-     "to": "colorize_3",
+     "to": "HexAO",
      "to_port": 0
     },
     {
-     "from": "blend",
+     "from": "HexFieldComposite",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
-     "from": "blend",
+     "from": "HexFieldComposite",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1
     },
     {
-     "from": "normal_map",
+     "from": "HexNormal",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 2
     },
     {
-     "from": "colorize_3",
+     "from": "HexAO",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 3
@@ -635,7 +635,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "colorize_5",
+         "node": "StoneColor",
          "widget": "gradient"
         }
        ]
@@ -647,7 +647,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "colorize_4",
+         "node": "StoneRoughness",
          "widget": "gradient"
         }
        ]
@@ -655,7 +655,7 @@
      ]
     },
     {
-     "name": "colorize_4",
+     "name": "StoneRoughness",
      "node_position": {
       "x": -280.375671,
       "y": 7.194351
@@ -692,7 +692,7 @@
      "type": "colorize"
     },
     {
-     "name": "colorize_5",
+     "name": "StoneColor",
      "node_position": {
       "x": -275.375671,
       "y": -143.805649
@@ -754,23 +754,23 @@
     {
      "from": "gen_inputs",
      "from_port": 0,
-     "to": "colorize_5",
+     "to": "StoneColor",
      "to_port": 0
     },
     {
      "from": "gen_inputs",
      "from_port": 1,
-     "to": "colorize_4",
+     "to": "StoneRoughness",
      "to_port": 0
     },
     {
-     "from": "colorize_5",
+     "from": "StoneColor",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
-     "from": "colorize_4",
+     "from": "StoneRoughness",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1
@@ -856,7 +856,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "perlin_grain",
+         "node": "GrainNoise",
          "widget": "scale_x"
         }
        ]
@@ -868,7 +868,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "perlin_grain",
+         "node": "GrainNoise",
          "widget": "iterations"
         }
        ]
@@ -876,7 +876,7 @@
      ]
     },
     {
-     "name": "perlin_grain",
+     "name": "GrainNoise",
      "type": "perlin",
      "node_position": {
       "x": 0,
@@ -889,7 +889,7 @@
      }
     },
     {
-     "name": "colorize_grain_alb",
+     "name": "GrainContrastAlbedo",
      "type": "colorize",
      "node_position": {
       "x": 0,
@@ -919,7 +919,7 @@
      }
     },
     {
-     "name": "colorize_grain_rgh",
+     "name": "GrainContrastRoughness",
      "type": "colorize",
      "node_position": {
       "x": 0,
@@ -949,7 +949,7 @@
      }
     },
     {
-     "name": "blend_grain_alb",
+     "name": "AlbedoComposite",
      "type": "blend",
      "node_position": {
       "x": 0,
@@ -961,7 +961,7 @@
      }
     },
     {
-     "name": "blend_grain_rgh",
+     "name": "RoughnessComposite",
      "type": "blend",
      "node_position": {
       "x": 0,
@@ -975,49 +975,49 @@
    ],
    "connections": [
     {
-     "from": "perlin_grain",
+     "from": "GrainNoise",
      "from_port": 0,
-     "to": "colorize_grain_alb",
+     "to": "GrainContrastAlbedo",
      "to_port": 0
     },
     {
-     "from": "perlin_grain",
+     "from": "GrainNoise",
      "from_port": 0,
-     "to": "colorize_grain_rgh",
+     "to": "GrainContrastRoughness",
      "to_port": 0
     },
     {
-     "from": "colorize_grain_alb",
+     "from": "GrainContrastAlbedo",
      "from_port": 0,
-     "to": "blend_grain_alb",
+     "to": "AlbedoComposite",
      "to_port": 1
     },
     {
-     "from": "colorize_grain_rgh",
+     "from": "GrainContrastRoughness",
      "from_port": 0,
-     "to": "blend_grain_rgh",
+     "to": "RoughnessComposite",
      "to_port": 1
     },
     {
      "from": "gen_inputs",
      "from_port": 0,
-     "to": "blend_grain_alb",
+     "to": "AlbedoComposite",
      "to_port": 0
     },
     {
      "from": "gen_inputs",
      "from_port": 1,
-     "to": "blend_grain_rgh",
+     "to": "RoughnessComposite",
      "to_port": 0
     },
     {
-     "from": "blend_grain_alb",
+     "from": "AlbedoComposite",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
-     "from": "blend_grain_rgh",
+     "from": "RoughnessComposite",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1
