@@ -6,7 +6,7 @@ A saddle-tan grain base raised into a grid of puffy pads with recessed stitch-ch
 
 ## Recipe
 
-Clones `crocodile_skin` for its base grain, but the quilt pads themselves come from the `pattern` node rather than the voronoi cells: two Sine waves multiplied (`x_wave`/`y_wave` = Sine, `mix` = Multiply, scale around 5) give a smooth grid of rounded pads that peak at the pad centers and fall to the seams, the quilt shape. Drive the normal from the pattern pads (`param1` around 0.9 for pronounced padding), with the crocodile grain blended on top as fine detail: the height blend weights the pads at 0.85 and the grain at 0.15 (`blend_h_q.amount=0.85`), so the puffy quilt shape dominates and the grain is a subtle overlay. Darken the seams in albedo with a seam mask off the same pattern so the channels read as recessed.
+Clones `crocodile_skin` for its base grain, but the quilt pads themselves come from the `pattern` node rather than the voronoi cells: two Sine waves multiplied (`x_wave`/`y_wave` = Sine, `mix` = Multiply, scale around 5) give a smooth grid of rounded pads that peak at the pad centers and fall to the seams, the quilt shape. Drive the normal from the pattern pads (`param1` around 0.9 for pronounced padding), with the crocodile grain blended on top as fine detail: the height blend weights the pads at 0.85 and the grain at 0.15 (`HeightComposite.amount=0.85`), so the puffy quilt shape dominates and the grain is a subtle overlay. Darken the seams in albedo with a seam mask off the same pattern so the channels read as recessed.
 
 Pitfall specific to this material: the natural way to lay down stitch dashes is a small `shape` repeated by `tiler`, but that approach fought back badly. In the full graph it produced no visible dashes, and isolating the tiler output to the albedo timed out the renderer at 180 seconds (a single centered shape through `tiler` builds a degenerate or expensive shader in this setup). The reliable path was the parameter-only `pattern` node instead, with no shape or tiler shader surprises. Honest gap: this delivers the quilt shape and channel seams but not individual per-stitch dash marks running along the seams. l06 in this cookbook solves the dash generator that l05 lacks.
 
@@ -14,31 +14,31 @@ Pitfall specific to this material: the natural way to lay down stitch dashes is 
 
 Grouped per the "Grouping into subgraphs" lever in `docs/AUTHORING.md`. This
 is one of the three materials in this category the blend-tracing caution is
-about: it carries two `blend` nodes (`blend_h_q` for height, `blend_alb_q`
-for albedo). Their port sources were traced from the serialized
-`connections` list assembled in the builder, against `blend.mmg`'s own
-shader model (ground truth): input `s1` is port0 (foreground), `s2` is port1
-(background), `a` is port2 (mask), output = `mask*port0 + (1-mask)*port1`.
-Traced wiring:
+about: it carries two `blend` nodes (`HeightComposite` for height,
+`AlbedoComposite` for albedo). Their port sources were traced from the
+serialized `connections` list assembled in the builder, against
+`blend.mmg`'s own shader model (ground truth): input `s1` is port0
+(foreground), `s2` is port1 (background), `a` is port2 (mask), output =
+`mask*port0 + (1-mask)*port1`. Traced wiring:
 
-- `blend_h_q`: port0 ← `pattern_q` (the quilt pads), port1 ← `colorize_0`
-  (grain height). Port2 (mask) has no connection at all, so it uses the
-  node's own default of a constant `1.0`, making the opacity equal to
-  `amount`. This is a flat, unmasked `amount*pads + (1-amount)*grain` mix, not
-  a spatial composite. Height weighting fix (2026-09-04): `amount` was `0.35`
-  (pads underweighted, grain dominant, so the busy high-frequency crocodile
-  grain overpowered the smooth quilt pads in the normal). Now `0.85`, so the
-  pads drive the relief with the grain as ~0.15 fine detail, matching the
-  recipe's stated pad-driven intent; confirmed in a 3D preview (puffy padded
-  bumps with recessed channels). The exposed "Quilt puffiness" slider IS this
-  `amount`, so higher reads as puffier.
-- `blend_alb_q`: port0 (shown where mask=1) ← `seam_shade` (the dark
-  constant, in the recessed seams); port1 (shown where mask=0) ← `colorize_1`
-  (base grain, on the pad faces); port2 (mask) ← `seam_mask`.
+- `HeightComposite`: port0 ← `QuiltLayout` (the quilt pads), port1 ←
+  `GrainHeight` (grain height). Port2 (mask) has no connection at all, so it
+  uses the node's own default of a constant `1.0`, making the opacity equal
+  to `amount`. This is a flat, unmasked `amount*pads + (1-amount)*grain` mix,
+  not a spatial composite. Height weighting fix (2026-09-04): `amount` was
+  `0.35` (pads underweighted, grain dominant, so the busy high-frequency
+  crocodile grain overpowered the smooth quilt pads in the normal). Now
+  `0.85`, so the pads drive the relief with the grain as ~0.15 fine detail,
+  matching the recipe's stated pad-driven intent; confirmed in a 3D preview
+  (puffy padded bumps with recessed channels). The exposed "Quilt puffiness"
+  slider IS this `amount`, so higher reads as puffier.
+- `AlbedoComposite`: port0 (shown where mask=1) ← `SeamShade` (the dark
+  constant, in the recessed seams); port1 (shown where mask=0) ←
+  `LeatherColor` (base grain, on the pad faces); port2 (mask) ← `SeamMask`.
 
-Polarity fix (2026-09-04): `seam_mask` is 1 for low `pattern_q` values (the
+Polarity fix (2026-09-04): `SeamMask` is 1 for low `QuiltLayout` values (the
 recessed seams) and 0 for high ones (the raised pad centers), and blend output
-is `mask*port0 + (1-mask)*port1`, so the dark `seam_shade` must sit on port0
+is `mask*port0 + (1-mask)*port1`, so the dark `SeamShade` must sit on port0
 (shown where mask=1 = the seams) and the grain on port1 (shown where mask=0 =
 the pads). The original wiring had these reversed, so the dark landed on the
 pad centers as button-tuft dots rather than in the seams. A before/after
@@ -53,29 +53,29 @@ minor stylization. A proper broad-diamond quilt would need a different wave
 shape (e.g. `pattern` Bounce) and is a separate, larger change.
 
 Opening the graph shows 4 top-level groups (plus `Material` and the
-untouched metallic `uniform_0`) instead of the raw 11-node graph:
+untouched metallic `NonMetallic`) instead of the raw 11-node graph:
 
-- **Leather Grain** — `voronoi_0`, `colorize_1`, `colorize_3`, and
-  `colorize_0`. Unlike `l01`/`l03`/`l04`'s `_group_leather_grain` shape,
-  `colorize_0` sits here rather than in a separate finish group: this
-  builder rewires `normal_map_0`'s input away from `colorize_0` and onto
-  `blend_h_q`'s output, so `colorize_0` no longer feeds `normal_map_0`
-  directly and instead only feeds the quilt composite below. Exposed:
-  `Leather color` (`colorize_1.gradient`), `Roughness`
-  (`colorize_3.gradient`).
-- **Quilt Pattern** — `pattern_q` alone. Exposed: `Quilt pad size`
-  (`pattern_q.x_scale`).
-- **Seam Shading** — `seam_mask`, `seam_shade`. Exposed: `Seam color`
-  (`seam_shade.gradient`). The mask's own threshold gradient is not
+- **Leather Grain** — `PoreCells`, `LeatherColor`, `LeatherRoughness`, and
+  `GrainHeight`. Unlike `l01`/`l03`/`l04`'s `_group_leather_grain` shape,
+  `GrainHeight` sits here rather than in a separate finish group: this
+  builder rewires `LeatherNormal`'s input away from `GrainHeight` and onto
+  `HeightComposite`'s output, so `GrainHeight` no longer feeds
+  `LeatherNormal` directly and instead only feeds the quilt composite below.
+  Exposed: `Leather color` (`LeatherColor.gradient`), `Roughness`
+  (`LeatherRoughness.gradient`).
+- **Quilt Pattern** — `QuiltLayout` alone. Exposed: `Quilt pad size`
+  (`QuiltLayout.x_scale`).
+- **Seam Shading** — `SeamMask`, `SeamShade`. Exposed: `Seam color`
+  (`SeamShade.gradient`). The mask's own threshold gradient is not
   exposed, matching this project's standing convention for threshold masks.
-- **Quilt Composite** — `blend_h_q`, `blend_alb_q`, and `normal_map_0`
-  together, since `normal_map_0`'s only input is now `blend_h_q`'s output
-  rather than a raw donor colorize. All of this group's external inputs come
-  from **Leather Grain** (base albedo/height), **Quilt Pattern** (pad
-  shape), and **Seam Shading** (mask/color) — the same all-external-inputs
-  shape `f08_donegal_tweed`'s `fleck_composite` used. Exposed: `Quilt
-  puffiness` (`blend_h_q.amount`), `Relief strength`
-  (`normal_map_0.param1`).
+- **Quilt Composite** — `HeightComposite`, `AlbedoComposite`, and
+  `LeatherNormal` together, since `LeatherNormal`'s only input is now
+  `HeightComposite`'s output rather than a raw donor colorize. All of this
+  group's external inputs come from **Leather Grain** (base albedo/height),
+  **Quilt Pattern** (pad shape), and **Seam Shading** (mask/color) — the
+  same all-external-inputs shape `f08_donegal_tweed`'s `fleck_composite`
+  used. Exposed: `Quilt puffiness` (`HeightComposite.amount`), `Relief
+  strength` (`LeatherNormal.param1`).
 
 `group_into_subgraph` preserves each incoming connection's own target port
 independently when rehoming it through `gen_inputs`, so grouping cannot swap
@@ -88,3 +88,28 @@ at an exact `grid_mean_abs_diff` of `0.0` on all three exported maps.
 The invariant guide (`guide://authoring` resource, or `docs/AUTHORING.md`) for
 the rubric, the authoring workflow, the noise vocabulary, and the `param4=0`
 flat-normal fix.
+
+<!-- nodes:begin -->
+## Nodes
+
+Generated by `python -m quality.promote_cookbook` from the shipped graph;
+do not edit by hand. Open the `.ptex` and look for these names.
+
+| Subgraph | Node | Type |
+|---|---|---|
+| (top level) | NonMetallic | uniform |
+| (top level) | leather_grain | graph |
+| (top level) | quilt_pattern | graph |
+| (top level) | seam_shading | graph |
+| (top level) | quilt_composite | graph |
+| leather_grain | LeatherColor | colorize |
+| leather_grain | LeatherRoughness | colorize |
+| leather_grain | PoreCells | voronoi |
+| leather_grain | GrainHeight | colorize |
+| quilt_pattern | QuiltLayout | pattern |
+| seam_shading | SeamMask | colorize |
+| seam_shading | SeamShade | colorize |
+| quilt_composite | LeatherNormal | normal_map |
+| quilt_composite | HeightComposite | blend |
+| quilt_composite | AlbedoComposite | blend |
+<!-- nodes:end -->
