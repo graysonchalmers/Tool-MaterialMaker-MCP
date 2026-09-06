@@ -713,6 +713,12 @@ The older open backlog, unchanged unless noted:
 - **Milestone:** the "Material Maker for dummies" arc (subgraph retrofit + web play
   surface + `play.bat` + `live_load`) is fully closed and verified. This was the
   last open item with a named finish line.
+- **Follow-ups:** backlogged Unreal UE5 export (`615d335`, Grayson hit memory
+  issues on the pipeline). Then ran a `stop-node-hogs` machine sweep: killed 58
+  node/esbuild processes (~2.7 GB freed, including a leftover
+  `unreal-engine-mcp-server` and duplicate playwright/pdf MCP servers from an
+  earlier session), 8 live servers remained/reconnected. Machine-wide action, not
+  project code.
 
 ### 2026-09-04 (blocker correction): the "host can't render" blocker was a squatted port
 - `pickup` reconciled clean (`main` at `a1ed4da`, tree clean, in sync). Grayson
