@@ -19,11 +19,17 @@ doesn't serve that loop, check with Grayson before building it.
 - [HANDOFF.md](HANDOFF.md) is the session baton. Read it at pickup, write it at wrap-up.
 - [STATUS.md](STATUS.md) is the gate ledger. Three states only: verified, wired, not started.
 - [docs/PLAN.md](docs/PLAN.md) holds the phase plan and exit gates.
-- [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md) holds older HANDOFF.md
-  content, moved out to keep the live doc scannable. Not read at pickup by
-  default. At wrap-up, keep at most the 3 most recent "Changed this session"
-  write-ups and the 5 most recent session-log entries in HANDOFF.md; move
-  anything older there verbatim instead of letting HANDOFF.md grow unbounded.
+- Baton shape (adopted 2026-09-05 after teardown #3 found the baton had become
+  the archive): HANDOFF.md's "Current state" describes the latest session
+  only; older sessions are one line each in the session log (max 8 entries);
+  "Heads-up" is a bounded list of live gotchas, dropped once a mechanism makes
+  one moot. STATUS.md cells hold state + one line + an evidence pointer;
+  corrections and narrative go to the session log or `git log`, never into a
+  cell. There is no archive file: git history is the archive (every session
+  ends with a `docs:` wrap-up commit, so `git log --grep` finds it).
+- Never type counts (materials, categories, tools) into README.md by hand;
+  `tests/test_readme_counts.py` recomputes them from the tree and the wording
+  it parses is fixed. Change the tree, then the number.
 
 ## Environment (this machine)
 

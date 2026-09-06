@@ -1,823 +1,172 @@
 # 🧭 Session Handoff: Tool-MaterialMaker-MCP
 
-_Last updated: 2026-09-05 (mm-play verified via hands-on play.bat run) CT (America/Chicago)_
+_Last updated: 2026-09-06 (teardown #3 executed: examples/ folded into the cookbook, play port diagnostic, baton diet) CT (America/Chicago)_
 
-The session baton. Read at pickup, rewrite at wrap-up.
+The session baton. Read at pickup, rewrite at wrap-up. **Shape rule (2026-09-05,
+teardown #3):** "Current state" describes the latest session only; anything
+older is one line in the session log. "Heads-up" is a bounded list of live
+gotchas (drop an entry once a mechanism makes it moot). Git history is the
+archive; there is no separate archive file.
 
 ## 🎯 Current state
 
-**LATEST (2026-09-05): `mm-play` is now ✅ verified.** Grayson ran `play.bat`
-himself with port 8788 free and it rendered correctly on his real machine, the
-exact hands-on criterion the row was waiting on. That closes the play-surface
-blocker for good and, with it, the whole "Material Maker for dummies" arc
-(subgraph retrofit + web play surface + `play.bat` + `live_load`). It was the
-last open item with a named finish line. The promotion is committed and pushed
-(`056dcd4`). See the details just below for why the earlier "host can't render"
-scare was a false alarm.
+`main` at the merge `87be578` (+ the docs commit that lands this file), pushed,
+in sync. Fast suite **635 passed**, 25 integration deselected.
+`promote_cookbook.py --check` in sync. `mm-mcp --check` reports 53 cookbook
+materials. CI: see the session log for the result of the run on `87be578`.
 
-**EARLIER (2026-09-04): the "local render dead on host" blocker does NOT
-reproduce. It was a stale server squatting a port, not a GPU or code fault.**
-This session, my tools ran directly on Grayson's real Legion
-(`GC-Legion-Slim5`, RTX 4060 Laptop, NVIDIA driver 591.59), not a separate
-agent box like the prior "blocker" session assumed. Findings, each measured:
-- A real MM export (`--export-material bricks.ptex`) produced real, non-blank
-  PBR maps (pixel stats show real variation in albedo/normal/heightmap/orm),
-  and again through the actual play server on a clean port (canvas_burlap:
-  real tan albedo, proper normal map, ORM). Not blank.
-- `RenderingServer.create_local_rendering_device()` works under
-  `--rendering-driver vulkan` AND `d3d12`. It returns null ONLY when Godot is
-  given no driver and falls back to the OpenGL/Compatibility renderer (which
-  has no RenderingDevice). The prior "null under both Vulkan and D3D12" claim
-  is refuted by a two-line probe.
-- The `WinError 2` Grayson saw came from a STALE play-server process
-  squatting port 8788 (pid 26176, up since 11:50 AM that day, a prior-session
-  leftover running older code). New servers could not bind 8788, so every
-  request hit the broken squatter while the identical render code succeeded
-  when called directly or on a clean port. With 8788 freed, a clean
-  `python -m mm_mcp.play.server` renders correctly.
-- The `SCRIPT ERROR: Cannot call method 'shader_compile_spirv_from_source' on
-  a null value` (`parse_args.gd:59`) prints on EVERY successful export and
-  does not gate the four maps. It is a red herring, very likely what sent the
-  prior session down the "blank maps" path.
+This session ran `pickup` + a third adversarial `teardown`, then executed its
+picks in Grayson's order (backup exclusions first, then examples fold + port
+diagnostic, then the baton diet):
 
-**Cannot prove a driver update was the fix** (no record of the driver version
-at blocker time), so the honest statement is: does not reproduce on driver
-591.59. **`mm-play` stays 🔌**, not promoted, because "verified" in this
-project means Grayson ran it hands-on and every render this session was
-automation-run. To reach ✅ he runs `play.bat` himself with 8788 free (kill
-any stale listener first: `Get-NetTCPConnection -LocalPort 8788 -State Listen |
-ForEach-Object { Get-Process -Id $_.OwningProcess }`). The port was left free
-and my test servers were all stopped at the end of the session.
+- **Backup fixed (item 3).** `backup-ops/projects.psd1` now has a
+  `Tool-MaterialMaker-MCP` override excluding `output/`, `mm_live_overlay/`,
+  and `quality/{runs,cookbook,authored}` (full paths for the quality ones so
+  the tracked `cookbook/` tree keeps backing up). About 1.3 GB of regenerable
+  render output had been mirrored nightly through two teardowns. Committed in
+  backup-ops (`ca5b3fb`). The 458 MB `output/` scratch was moved to
+  `C:\Projects-local\_to_delete\Tool-MaterialMaker-MCP-output-scratch-2026-09-05`
+  and an empty `output/` recreated.
+- **examples/ folded into the cookbook (item 1).** The 8 Phase-3 hero graphs
+  the README gallery linked to lived outside the cookbook, ungrouped (7 of 8
+  had zero subgraph nodes), ungated, unserved. Seven are now cookbook
+  materials via the frozen `author.py` builders + a new `take_variant` helper
+  + `group_into_subgraph`: `s02_gray_granite` (stone), `f01_woven_denim`
+  (fabrics), `o01_mossy_forest_floor` (organics),
+  `combo01_rusted_painted_steel` (painted-metal), `m01_weathered_copper` +
+  `m02_brushed_aluminum` (NEW `metal`), `man02_ceramic_hex_tiles` (NEW
+  `ceramic`). `s01_red_brick_wall` was a verbatim copy of the bundled `bricks`
+  example and was dropped. Every fold was render-verified against the
+  original (`quality/verify_hero_fold.py`, all 7 at `grid_mean_abs_diff=0.000`).
+  Cookbook 46 -> 53 materials, 10 -> 12 categories. `examples/` copied to
+  `C:\Projects-local\_to_delete\Tool-MaterialMaker-MCP-examples-2026-09-05`
+  then `git rm`'d. README repointed; counts stated in digits and enforced by
+  `tests/test_readme_counts.py` (materials, categories, live-tool count and
+  table). Contact sheet regenerated (53 tiles) and saved as an 8-bit palette
+  (1.6 MB; the RGB save was 7 MB and was kept out of `main`'s history).
+- **mm-play port diagnostic (item 4).** `play/server.py` probes the port with
+  a plain connect before binding (Windows `SO_REUSEADDR` let a second bind
+  succeed beside a stale listener, which is how the 2026-09-04 false "GPU
+  dead" scare happened), names the owning PID and process via
+  netstat/tasklist, prints `Stop-Process -Id N` and the `MM_PLAY_PORT`
+  alternative, and binds strictly (`allow_reuse_address = os.name != "nt"`).
+  Three real-socket tests.
+- **Baton diet (item 2).** This file and STATUS.md rewritten to the shape
+  rules above; `docs/HANDOFF_ARCHIVE.md` retired (git is the archive; teardown
+  Kill verdict twice); CLAUDE.md trim rule amended; `.env.example` personal
+  paths replaced with placeholders.
 
-**Superseded by the above:** the earlier (now-corrected) diagnosis held that
-`play.bat` could not render on Grayson's host because
-`create_local_rendering_device()` returned null under both Vulkan and D3D12,
-so MM exported blank maps, and that the `.env` Godot path existed only
-agent-side. That was wrong on both counts for this session's environment. The
-play-server hardening from that pass still stands and is good (commit
-`991f958`, fast suite 590): `serve()` runs `require_valid` at startup, handlers
-return `{ok:false,error}` JSON, the client surfaces failed renders instead of
-hanging on "rendering...". It just was not needed to work around a GPU bug that
-does not exist here.
-
-**Before this, `live_load` shipped and merged to `main` (`d523ad6`, pushed, in sync).**
-A new `live_load` MCP tool (the seventh live tool) replaces the graph shown in
-a running Material Maker session in place, from a graph dict or a `.ptex` path,
-validated against the catalog first, no save. It closes backlog item J. The
-A new `live_load` MCP tool (the seventh live tool) replaces the graph shown in
-a running Material Maker session in place, from a graph dict or a `.ptex` path,
-validated against the catalog first, no save. It closes backlog item J. The
-play surface now pushes the picked material into a live session on a pick
-change (inside the render lock), so its live path drives the material you
-actually picked instead of only working on a coincidental match. Built via the
-full stack: `live.load_graph` client -> `load_graph` GDScript addon command
-(in-place replace via `set_new_generator`, no tab pileup, proven by a
-real-Godot round-trip) -> `live_load` MCP tool -> `play/renderer.py` wiring.
-Fast suite 588; a mid-session process restart during the addon task cost
-nothing (git reconciled, the interrupted task re-ran clean). Built
-subagent-driven: 5 tasks, each reviewed, opus whole-branch review cleared it to
-merge with only cosmetic minors (one fixed inline, one deferred).
-
-**Before this, the two non-blocking play-surface UI nits were FIXED and
-browser-verified (`main` at `c7e85ee`, in sync).** The slider panel docks
-always-visible at the bottom of the sidebar (gallery scrolls above it in its
-own region), and the WebGL sphere re-fills the viewport reliably on a
-mid-session browser resize. Static-only edits to `src/mm_mcp/play/static/
-style.css` + `app.js`; fast suite 579, no test-coverage change. The
-"Material Maker for dummies" play surface is now fully closed, verified, and
-polished.
-
-**Before this, the live web play surface was VERIFIED with a one-click
-`play.bat` launcher at the repo root.** Grayson ran `mm-play` hands-on via
-`play.bat` (double-click -> starts the server, auto-opens the browser at
-`http://127.0.0.1:8788/`), which moved the STATUS `mm-play` row from `wired`
-to `verified` and closed the "Material Maker for dummies" idea end to end.
-The two UI nits it recorded are the ones fixed above.
-
-The play surface itself: a `src/mm_mcp/play/` package (stdlib `http.server`
-+ a vendored three.js frontend, launched by the `mm-play` console command,
-or `play.bat`) turns each cookbook material's exposed subgraph parameters into
-friendly web sliders driving a live WebGL PBR sphere. Aimed at a non-technical
-person tweaking a finished material without touching the node graph. Fast suite
-579, stdlib only, no new runtime deps.
-
-**Before this, the three cookbook bugs the subgraph retrofit surfaced were all
-fixed,
-verified, promoted, committed, and pushed.** `main` was at `5cd9e0b`, in sync
-with origin. Fast suite 505 passed, `promote_cookbook.py --check` in sync, no
-incidental render-sweep churn.
-- **t01_sand_dunes (terrain):** the `wood` donor wired `blend_0` (the master
-  ripple pattern) into Material's metallic port, and Material's metallic
-  scalar defaults to 1, so parts of the sand read as metal. Fixed by dropping
-  the wire AND `set_param(Material, metallic, 0)`. Verified by reading the
-  exported ORM's metallic (B) channel directly: flat 0.
-- **l02_distressed_two_tone (leather):** swapped port0/port1 on both blends so
-  the dark saddle base is the majority and the lighter worn rubs are the
-  scattered minority (was reversed). Before/after render confirmed the flip.
-  Bonus: the exposed "Wear blend strength" param now controls the wear layer
-  as its label claims.
-- **l05_quilted_leather (leather):** swapped port0/port1 on `blend_alb_q` so
-  the dark seam_shade lands in the recessed seams instead of on the pad
-  centers. The `sin*sin` pattern makes compact round peaks, so the result
-  reads as round grain pads on a dark seam grid; Grayson reviewed before/after
-  and chose the swap over relabeling (documented honestly in the card). **A
-  follow-up (`6d460c4`) then fixed l05's inverted height weighting:
-  `blend_h_q.amount` 0.35 to 0.85, so the quilt pads drive the relief instead
-  of the crocodile grain overpowering them; confirmed in a 3D preview (puffy
-  padded bumps with recessed channels).**
-- Recipe cards for all three rewritten to describe the fixed behavior (they
-  had previously asserted the broken behavior as intentional).
-
-**Before this (2026-09-04), all 46 existing cookbook materials were
-retrofitted to use Material Maker's native subgraph mechanism.**
-Opening any cookbook material now shows a handful of friendly, labeled
-nodes instead of a wall of raw ones (524 -> 179 top-level nodes across the
-cookbook, 66% fewer, average 11.4 -> 3.9 per material), purely
-organizational, zero materials failed to reduce, zero regressions.
-- Picked up Grayson's backlog idea ("Material Maker for dummies" -- a raw
-  node graph "scared the shit out of" a non-technical viewer he showed it
-  to) via `pickup` -> `brainstorming`. Investigating a dead-end lead
-  ("generic parameters") surfaced the real answer: Material Maker already
-  has a native subgraph mechanism (`Ctrl+G` groups nodes into one collapsed
-  node exposing a curated, named set of parameters), the same shape its own
-  50 bundled compound nodes (`normal_map`, `occlusion`) already use. No new
-  infrastructure needed.
-- Decomposed into two sequenced sub-projects: (1) a subgraph
-  authoring/retrofit lever (this session), (2) a later live web companion
-  that will read its slider definitions from (1)'s exposed parameters
-  (deferred, unscoped). Grayson chose to retrofit all 46 existing
-  materials, not just apply the lever going forward, which upgraded
-  sub-project 1 from bounded to architectural.
-- Spec + 12-task plan -> `subagent-driven-development` on branch
-  `cookbook-subgraph-retrofit`. Task 1 built `group_into_subgraph` (a new
-  primitive in `quality/author_helpers.py`, pure JSON graph surgery, no
-  Godot dependency) plus a tolerance-based render comparison utility
-  (`quality/render_compare.py`, since Godot's render isn't perfectly
-  deterministic run to run). A pilot task proved the whole process on
-  `glass` (1 material) before fanning out to the other 9 categories, one
-  dispatch per category, largest last (`stone` 8, `terrain` 8). A final
-  task added a permanent regression gate: every cookbook material must
-  carry at least one subgraph node, `pytest`-enforced across all 46.
-- Every task hit an exact `grid_mean_abs_diff == 0.0` render match (not
-  merely under tolerance). The final whole-branch review went further:
-  it built an independent flatten-diff harness (resolves every subgraph's
-  boundary threading back to a flat graph, diffs node types/params/
-  connections against pre-branch `main`) across all 46 materials in all 13
-  commits. 45/46 matched byte-for-byte; the one exception
-  (`f04_wool_knit`) was an incidental, disclosed correction of an
-  already-stale tracked artifact (its committed `.ptex` predated a 2026-08
-  builder/card fix and had never been re-promoted), not a retrofit-caused
-  change -- fixed by correcting the recipe card's parity claim, not the
-  artifact (already correct).
-- Two real, pre-existing, unrelated bugs surfaced during the retrofit and
-  correctly left unfixed per each task's organizational-only scope
-  (documented in their own recipe cards): `l02_distressed_two_tone` and
-  `l05_quilted_leather`'s visible composite layers are reversed from what
-  their own names/docstrings describe; `t01_sand_dunes`'s wood-donor wires
-  a `blend_0` node directly to the Material's metallic port. **All three
-  FIXED 2026-09-04 in the next session (`5cd9e0b`); see this doc's top
-  Current-state section.**
-- Fast suite 453 -> 505 (Task 1's +6, Task 12's +46 parametrized gate
-  cases). Merged `--no-ff` (`034aeaf`), pushed, feature branch deleted.
-
-**Before this, plastics (new category) and a second, differently-flecked
-tweed both landed in the cookbook: `p01_glossy_plastic` and
-`f08_donegal_tweed`.** Cookbook grew to 46 materials across ten categories
-(was 44/nine).
-- Picked up on the two smallest open backlog items from the prior session's
-  briefing (plastics, two-color tweed). Scoped via `brainstorming` (bounded
-  path): plastics differentiates through the ABSENCE of visible
-  micro-pattern (every other category so far uses one), so it's the first
-  cookbook material built from scratch via `_from_scratch_noise_material`
-  rather than cloned from a donor. Tweed differentiates through color
-  (flecks) rather than weave geometry (f07's chevron).
-- `p01_glossy_plastic`: narrow near-single-color saturated red albedo, low
-  roughness (glossy), non-metallic, normal relief kept just above zero
-  (`param1=0.04`, `param4=0`). Hit the same scalar-roughness ORM gap
-  `gl01_frosted_glass` did; fixed the same way, a flat `rough_const`
-  texture wired into `Material` port 2.
-- `f08_donegal_tweed`: plain `weave2` base (`stitch=1`) plus a SEPARATE
-  `voronoi` node purely for flecks (retyping the base loses its own
-  rand3 output), hard-thresholded to the top ~20% of cells for sparse
-  coverage, cream/rust two-tone color. First pass was too sparse (~4
-  flecks per crop, sent to Grayson, revised); second pass approved.
-  Composited via `blend` (`blend_type=0`, base on majority port 1, flecks
-  on minority port 0, mask on port 2).
-- Both promoted through `promote_cookbook.py`, carded, thumbnailed
-  (`_make_previews.py`). README counts updated (44/nine -> 46/ten).
-  **Real gotcha hit and worked around:** re-rendering a whole
-  `cookbook-<category>` label for one new entry re-renders and
-  re-thumbnails every case in it; `f04_wool_knit`'s thumbnail came out
-  byte-different (render non-determinism, not a content change) and had
-  to be reverted before committing. Fast suite 447 -> 453.
-
-**Before this, the "image-to-material decomposition" backlog idea closed: a
-reference-photo authoring workflow is documented and proven with a real
-cookbook material.**
-- Scoped via `brainstorming`: the decomposition reasoning happens in
-  Claude's own vision during a chat session, no new server code, no new MCP
-  tool, no new dependency, which downgraded the task from architectural to
-  bounded (a documented workflow, not a subsystem).
-- New "Authoring from a reference photo" section in `docs/AUTHORING.md`,
-  extends the existing step-1 workflow with a decomposition rubric
-  (color/tone, pattern topology, scale, roughness, relief cues), reusing
-  the noise vocabulary and cross-material lessons already documented rather
-  than inventing new taxonomy.
-- Proved it out end to end: sourced a real CC-BY-SA 4.0 macro photo of
-  sandblasted glass (Wikimedia Commons), decomposed it, and authored
-  `cookbook/glass/gl01_frosted_glass`, cloning `dry_earth`'s connected-
-  crack-network topology at a much finer scale, judged in the 3D preview,
-  promoted through the normal `promote_cookbook.py` path. First entry in a
-  new `glass` category, closes half of the glass/plastics backlog gap.
-  Fast suite 444 -> 447.
-- Also cleared a pre-existing stale local build artifact
-  (`quality/authored/cookbook-fabrics/f04_wool_knit/`, gitignored, left
-  over from the 2026-09-01 wool-knit exploration) that was making
-  `promote_cookbook.py --check` report false drift.
-
-Older write-ups/log beyond the cap live in
-[docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).
+Built with `writing-plans` -> `subagent-driven-development` (7 tasks, each
+reviewed, one plan defect caught and ruled on mid-run, opus whole-branch
+review "with fixes", one fix wave, scoped re-review clean). Plan:
+`docs/superpowers/plans/2026-09-05-fold-examples-into-cookbook.md`.
 
 ## 📌 Where we stopped
 
-**mm-play is now ✅ verified (2026-09-05).** Grayson ran `play.bat` himself with
-port 8788 free and it rendered correctly on his real machine, which is the exact
-hands-on criterion the row was waiting on. The play-surface blocker is closed for
-good. STATUS row + last-updated line promoted 🔌 -> ✅; docs-only change, ready to
-commit.
+Teardown #3's four picks are all done. Nothing is in flight. The teardown
+report itself was delivered as a file to Grayson, not committed (same
+convention as #1 and #2).
 
 ## ▶️ Next concrete step
 
-1. **DONE 2026-09-05: Grayson ran `play.bat` hands-on and it rendered.**
-   `mm-play` promoted 🔌 -> ✅; play-surface blocker closed for good.
-2. **Commit the docs promotion + prior correction.** STATUS.md + HANDOFF.md carry
-   the mm-play ✅ promotion (and the earlier blocker correction). A `docs:` commit
-   lands both.
-3. **Check Unreal UE5 export — BACKLOGGED 2026-09-05 (memory issues).** The
-   `mcp__unreal-engine__*` tools show connected, but Grayson hit memory issues
-   running the Unreal pipeline, so this is parked for now rather than a live
-   next step. Revisit when the machine has headroom (a live Unreal Editor plus
-   the bridge is heavy); a `stop-node-hogs`-style orphaned-process sweep is
-   worth ruling out first if the memory pressure persists.
-4. **Hands-on verify `live_load` / the new live play path.** The addon
-   round-trip is proven by an integration test, but a hands-on run (drive the
-   play surface against a live MM session, pick a material that differs from
-   what is loaded, watch it switch in-app then tweak sliders) would promote the
-   play-surface live path from "tested" to "you saw it work."
-3. **More cookbook categories/materials** remain open-ended, no specific
-   quick-win flagged. New materials land in `cookbook/` via
-   `promote_cookbook.py`, get a card, and should call `group_into_subgraph`
-   before `save_variant` returns (see `docs/AUTHORING.md`).
+No forced order. Candidates:
 
-The older open backlog, unchanged unless noted:
-- **2 findings ruled out, not fixed** (deliberate): #8 (`_cmd_clear_graph`'s
-  guard is correct, `new_material()` creates the generator, doesn't read
-  one) and #10 (`generic_size or 1` coercion is safer than passing an
-  explicit 0). Both annotated in-code. Findings 3-7 and 9 are fixed.
-- **`list_node_types` tool decision — KEEP.** ~5KB name list vs the ~260KB
-  full `catalog://nodes` resource, so it's the cheap discovery lever, not
-  redundant with the resource + `describe_node`.
-- **B. More cookbook categories** — fabrics, organics, sci-fi, terrain, wood,
-  stone, leather, painted-metal, glass, and plastics are all represented
-  (ten categories, 46 materials); terrain includes the natural-surface set
-  (ice/lava/forest floor/pebbles). No specific remaining gap flagged right
-  now. All 46 now grouped into subgraphs (see 2026-09-04 below).
-- **K. Cookbook subgraph retrofit — DONE, 2026-09-04.** All 46 existing
-  materials grouped into Material Maker's native subgraph mechanism; new
-  materials should do the same at authoring time going forward (see
-  `docs/AUTHORING.md`).
-- **L. "Material Maker for dummies" — DONE.** Subgraph retrofit + the live
-  web play surface both shipped; `live_load` (2026-09-04) closed the last
-  gap by letting the play surface push the picked material into a live session.
-- **C. True cobblestone — DONE.** `s07_cobblestone` closed this; the `s05`
-  hex-grid partial is superseded.
-- **D. Wool loop-knit — CLOSED as unreachable.** No bundled generator makes
-  upright-V stockinette; `f04` stays the honest coarse-weave stand-in and
-  `f07_herringbone_tweed` shipped as the closing probe's byproduct.
-- **E. Image-to-material decomposition — CLOSED, 2026-09-03.** Shipped as
-  the "Authoring from a reference photo" section in `docs/AUTHORING.md`
-  plus `cookbook/glass/gl01_frosted_glass` as the worked proof. Scoped to
-  Claude's own vision doing the decomposition in-session, no new server
-  code or MCP tool.
-- **F. PyPI publish** (on hold; GitHub-clone is the current route).
-- **J. Load an existing `.ptex` into a live session — DONE, 2026-09-04.**
-  Shipped as the `live_load` MCP tool (dict or path), the `load_graph` addon
-  command, and the play-surface pick-change wiring.
+1. **Hands-on verify the `live_load` play path.** Drive `mm-play` against a
+   live Material Maker session, pick a material that differs from what is
+   loaded, watch it switch in-app, tweak sliders. Promotes "tested" to "you
+   saw it work". Ten minutes.
+2. **Unreal UE5 export** (backlogged 2026-09-05: memory pressure with a live
+   Unreal Editor + bridge; run a `stop-node-hogs` sweep first).
+3. **More cookbook materials.** New ones land via `quality/cookbook_<category>.py`
+   -> `promote_cookbook.py`, with a card and `group_into_subgraph` from the
+   start (see `docs/AUTHORING.md`). No specific gap flagged.
+4. **Small hygiene left from teardown #3** (none blocking): thread one catalog
+   through `cookbook_wood/glass/plastics.py` like the other builders; move the
+   retired plans under `docs/superpowers/` out of the tracked tree or banner
+   them as history; `tests/test_donors.py` module-level catalog build makes a
+   missing `MM_PROJECT_PATH` fail all 20 donor tests (fixture split).
 
 ## ❓ Open questions
 
-- **New 2026-09-03:** `quality/README.md`'s "Cookbook growth" section was
-  corrected this session (it still said helpers were "imported from
-  `author.py`"), but hasn't been re-read end to end for other drift since
-  the split. Worth a skim next time that file is touched.
-- **New 2026-09-03 (parked, not fixed, no downstream dependency):**
-  `tests/test_donors.py`'s module-level `build_catalog(cfg.nodes_dir)` call
-  means a missing `MM_PROJECT_PATH` fails all 20 donor tests together
-  (including the 10 that don't actually need the catalog), not just the 9
-  catalog-validation ones. Low blast-radius issue, not a correctness bug;
-  worth a `pytest.fixture` split only if it ever actually bites.
-- Still open, unchanged: does `backup-ops` exclude the ~1GB of regenerable
-  renders under `output/`, `quality/cookbook/`, `quality/runs/` (plus the
-  266MB `mm_live_overlay/`)? Flagged by an earlier teardown, not verified.
-- Still open, unchanged, deferred minors from the cookbook-as-data reviews
-  (all small): `tests/test_config.py`'s default-dir test reads the real
-  machine env (pre-existing pattern); `_default_cookbook_dir()`'s empty
-  branch is untested; `server.py`'s source-validation error string is
-  near-duplicated between the two example tools; the contact sheet adds a
-  5MB blob per regeneration.
-- Still open, unchanged: the cross-engine North Star wording treats UE4's
-  export path (PNGs + manual in-editor assembly) as a lesser tier, not a
-  real target, Grayson said "sounds good" generally but never explicitly
-  confirmed that specific framing. Worth a quick check before it drives real
-  scope decisions.
-- Still open, unchanged: is `.mcp.json` the right long-term wiring, or
-  should it fold into `project-setup`'s standard kit? Not decided.
-- Still open, unchanged: PyPI vs. GitHub-clone-only (leaning GitHub-only);
-  cross-platform (macOS/Linux) verification, still untested, no machine
-  available; two parked-not-fixed overlay-builder findings from a much
-  earlier session (staleness marker, `_append_autoload`'s first-occurrence
-  match, both verified low-priority).
-
-## 🗂️ Changed this session (live_load)
-
-- **`src/mm_mcp/live.py`**: new `load_graph(graph=None, path=None, *, cfg=None,
-  timeout=30.0)` client. Exactly one of graph/path; a `path` is bounded with
-  `paths.ensure_within_roots` (NOT `reject_path_fragment`, which rejects any
-  string with a separator, so it cannot take a real path); the dict is validated
-  against the catalog before the socket; sends `{"cmd":"load_graph","data":<json>}`.
-  The mutation-op timeout comment now lists `load_graph`.
-- **`addons/mm_live/live_server.gd`**: new `_cmd_load_graph` + dispatch arm.
-  Replaces the current tab's graph IN PLACE via
-  `MMLoader.string_to_dict_tree` -> `await mm_loader.create_gen` ->
-  `graph_edit.set_new_generator`. Deliberately not `do_load_material_from_data`
-  (spawns a new tab per pick) and not `load_file` (blocking `.mmcr` dialog).
-  No real save-path set (a stray Ctrl+S must not overwrite a tracked `.ptex`);
-  `_has_active_graph()` re-probe after load. `create_gen` is awaited (the
-  un-awaited-coroutine trap).
-- **`src/mm_mcp/server.py`**: new `live_load` MCP tool (seventh live tool) +
-  `mcp.tool()(live_load)` registration; thin wrapper over `live.load_graph`
-  through `_ensure_live_session`.
-- **`src/mm_mcp/play/renderer.py` + `api.py`**: `render_material` gains
-  keyword-only `material_id` + a `live_load` seam; a module `_last_pushed_id`
-  (read/written only under `_RENDER_LOCK`) drives a load-once-per-pick-change:
-  on a new pick with a live session up, `live_load(graph=applied_graph)` first,
-  then the existing per-param `set_param` loop. A load/param failure falls
-  through to headless (the safe fallback); a manual in-app tab switch degrades
-  the same way. `api.render_request` passes `material_id=name`.
-- **Docs**: README live-tools table gained a `live_load` row; STATUS live row +
-  item J closed; spec `docs/superpowers/specs/2026-09-04-live-load-design.md`,
-  plan `docs/superpowers/plans/2026-09-04-live-load.md`.
-- **Tests**: 5 client + 1 real-Godot integration round-trip + 2 tool + 2 play
-  unit tests. Fast suite 579 -> 588.
-- **Decisions (+ why):** general MCP tool over play-internal (Grayson's call,
-  closes item J and gives the play surface its wiring free); accept both dict
-  and path (Grayson's call); in-place replace over new-tab (matches `clear_graph`
-  precedent, no pileup); `ensure_within_roots` only on the path (spec bug caught:
-  it said `reject_path_fragment`, which raises on any real path); v1 accepts the
-  stale-belief -> headless degrade rather than re-verifying every render.
-- **Process:** `pickup` -> `brainstorming` (architectural, 2 clarifying
-  questions) -> `writing-plans` -> `subagent-driven-development` on branch
-  `live-load`. 5 tasks each per-task-reviewed; a mid-session process restart hit
-  the addon task (nothing committed, only a correct uncommitted test survived) --
-  reconciled from git, kept the test, re-dispatched fresh, the real-Godot
-  round-trip then ran and passed. Final opus whole-branch review: ready to merge,
-  no Critical/Important. One Minor fixed inline (timeout comment), one deferred
-  (the `PathNotAllowed` client branch is untested; `ensure_within_roots`'s raise
-  is already covered in `test_paths.py`). Merged `--no-ff` (`d523ad6`), pushed,
-  branch + SDD workspace deleted.
-
-## 🗂️ Changed this session (play-surface UI nits)
-
-- **`src/mm_mcp/play/static/style.css`**: the sidebar (`#left`) is now a flex
-  column. The title stays pinned, `#gallery` scrolls in its own `flex:1` region,
-  and `#controls` (the slider panel) docks in an always-visible region at the
-  bottom (`max-height:48%`, own scroll) instead of sitting below the whole
-  46-button gallery. `#viewport` gained `min-width:0` + `overflow:hidden` and the
-  canvas is now `position:absolute`, so the canvas's inline pixel size can no
-  longer pin the flex container open.
-- **`src/mm_mcp/play/static/app.js`**: replaced the `window.resize` handler with
-  a `ResizeObserver` on the viewport element (a `fit()` helper that reads
-  `clientWidth/Height`, guards against 0, and updates `renderer.setSize` +
-  `camera.aspect`). Fires on any container size change, not just window resize.
-- **Root cause (nit 2):** the classic flexbox min-width feedback trap.
-  `renderer.setSize` writes an inline pixel width onto the canvas; with
-  `#viewport` at the default `min-width:auto`, that wide canvas kept the flex
-  container from shrinking, so `clientWidth` never got smaller and the canvas
-  could not re-fill. The CSS containment above is what actually fixes it; the
-  ResizeObserver just makes the trigger reliable.
-- **Verified live** in the in-app Browser pane: gallery scrolls with the panel
-  docked at the bottom; shrank to a 500px window (sphere re-fit the narrow strip,
-  stayed round) and grew to 1100px (re-filled, sphere centered); a real
-  `l04_reptile_exotic` render came back "ready". Fast suite 579, static-only.
-- **Committed `c7e85ee`, pushed** on Grayson's "1" (commit + push + wrap).
-
-## 🗂️ Changed this session (live web play surface)
-
-- **New package `src/mm_mcp/play/`**: `sliders.py` (the bridge: derive sliders
-  from each material's subgraph `remote` widgets + catalog ranges, and apply
-  values back), `renderer.py` (render facade: live-vs-headless selection,
-  serialized under a lock, live outputs copied into the served dir), `api.py`
-  (pure handlers: materials list, sliders, render, export), `server.py` (stdlib
-  `http.server`, routing, `mm-play` entry, path-bounded static/map serving),
-  `static/` (vendored three.js WebGL PBR sphere frontend, no runtime CDN).
-- **`src/mm_mcp/config.py`**: new `play_port` field (default 8788, `MM_PLAY_PORT`).
-- **`src/mm_mcp/catalog_builder.py`**: `_parse_generic_node` gained
-  `_resolve_widget_range`, resolving compound-node parameter ranges from each
-  remote widget's linked inner shader node (e.g. `normal_map` param1 ->
-  `edge_detect_1.amount` 0..2). Additive: only fills previously-null range fields;
-  the leaf-node shader_model path is untouched. This is the fix for 34/46
-  materials that otherwise had unranged sliders.
-- **`pyproject.toml`**: `mm-play` console script + `play/static/*` package-data.
-- **Docs**: North Star non-goals bullet (the companion, hides the graph,
-  secondary audience, export still hands back the real `.ptex`), README "Play
-  surface" subsection, `doctor.py` informational play line + test, STATUS row
-  (`wired`). Spec `docs/superpowers/specs/2026-09-04-play-surface-design.md`,
-  plan `docs/superpowers/plans/2026-09-04-play-surface.md`.
-- **Decisions (+ why):** unique per-slider id `f"{subgraph_node}/{slot_id}"`
-  because slot_ids collide across subgraphs (velvet had two `param0`); fix
-  compound ranges in `catalog_builder` (correct for all consumers) not by guessing
-  in the bridge; corrected the plan's `reject_path_fragment` usage (it raises, not
-  returns-truthy); added a `__main__` guard so `python -m mm_mcp.play.server`
-  actually serves; kept STATUS at `wired` because "verified" means Grayson ran it
-  hands-on; fixed the live-path map-dir mismatch in the facade rather than
-  touching the frozen Phase 5 `live.py`.
-- **Process:** `pickup` -> `brainstorming` (architectural) -> `writing-plans` ->
-  `subagent-driven-development` on branch `play-surface`. Four clarifying
-  questions set scope (play surface for non-tech, both/auto-detect runtime, WebGL
-  sphere, all four v1 features). Every task per-task-reviewed; the final
-  whole-branch review (opus) found one Important live-path bug (maps landed in
-  the wrong dir), fixed in one wave. Controller live-verified the UI in a browser.
-  Merged via PR #5 (merged) + local `--no-ff` to `main`, pushed, branch and SDD
-  workspace cleaned. Fast suite 559 -> 579.
-
-> 📦 **29 older "Changed this session" write-ups archived**, newest first the
-> 2026-09-04 leather + terrain bug fixes session, then the
-> 2026-09-04 cookbook subgraph retrofit session, then the
-> 2026-09-03 plastics category + Donegal tweed session, then the
-> 2026-09-03 reference-photo authoring + glass cookbook session, then the
-> 2026-09-03 v0.6.0 release + author.py split + donor vendoring session, then the
-> 2026-09-04 v0.5.0 release + AUTHORING split + hygiene session, then the
-> 2026-09-03 teardown #2 + cookbook-as-data session, then through
-> 2026-09-01, incl. the wool-knit closure/f07/terrain session, the blend-opacity
-> debug swatches, the painted-metal cookbook, and the v0.4.0 release-unblock
-> + README gallery session --
-> the pre-release audit/teardown/doc-fix pass,
-> render_node_output/live_render_node_output (item H), saved_graphs/
-> round-trip, Unity export proof, wood/stone cookbooks, the overlay
-> read-only `rmtree` fix, Phase 5 hands-on verification + `live_clear`, the
-> `connect_or_launch` readiness race, and the Phase 5 MCP tool surface --
-> moved to [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md) per the trim
-> convention (see the note above the Session log below).
+- PyPI vs GitHub-clone-only (leaning GitHub-only); macOS/Linux never run, no
+  machine. Release PR `chore(main): release 0.7.0` (#4) has been open since
+  2026-09-04 and now also carries the play surface, `live_load`, and this
+  fold; release cadence is still undecided.
+- NORTH_STAR treats UE4's export path as a lesser tier; Grayson never
+  explicitly confirmed that specific framing.
+- Is `.mcp.json` the right long-term wiring, or should it fold into
+  `project-setup`'s standard kit?
+- Two parked, low-priority overlay-builder findings (2026-08-28): no rollback
+  if `copytree` fails partway; staleness check hashes only the addon, not the
+  MM checkout.
+- README's "10 batch-mode tools" is the one count not test-enforced (no robust
+  way to count batch tools without a fragile heuristic; ruled skip 2026-09-05).
 
 ## ⚠️ Heads-up for the next agent
 
-- **CORRECTED (2026-09-04): the "local render dead on host" blocker does NOT
-  reproduce.** The earlier BLOCKER note here was wrong. On Grayson's real
-  machine this session, MM renders real (non-blank) maps and
-  `create_local_rendering_device()` works under `vulkan`/`d3d12` (null only
-  under the driverless OpenGL fallback). The `WinError 2` was a stale
-  play-server squatting port 8788, not a GPU/code fault. The SPIRV
-  `SCRIPT ERROR` at `parse_args.gd:59` is a RED HERRING that prints on every
-  successful export. See the "Current state" section at the top of this doc for
-  the full evidence. **The real gotcha to carry forward: a leftover play-server
-  (or any orphaned Python) holding port 8788 makes every render fail with
-  `WinError 2` while the code is fine.** Before blaming the GPU/code, check the
-  port: `Get-NetTCPConnection -LocalPort 8788 -State Listen | ForEach-Object {
-  Get-Process -Id $_.OwningProcess }`, and kill any stale listener. There is a
-  pile of orphaned Python processes on this machine from prior sessions (the
-  `stop-node-hogs` pattern); worth a sweep. The play-server hardening
-  (`991f958`) still stands (fail-fast `require_valid`, JSON errors, client error
-  surfacing) and is good on its own merits.
-- **The play surface lives in `src/mm_mcp/play/` (new this session).** Launch it
-  with `mm-play` (or `.venv\Scripts\python.exe -m mm_mcp.play.server`, which now
-  works thanks to the `__main__` guard). It serves `http://127.0.0.1:8788/`
-  (`Config.play_port`/`MM_PLAY_PORT`). The one new piece of logic is
-  `play/sliders.py` (the bridge: subgraph widgets + catalog ranges -> sliders,
-  addressed by a UNIQUE id `f"{subgraph_node}/{slot_id}"` because slot_ids collide
-  across subgraphs). It reuses `cookbook.py`, the catalog, `render.py`, and frozen
-  `live.py`. Renders are serialized (one Godot at a time), small + debounced. To
-  drive a render at the API: `POST /api/render {material_id, values (keyed by
-  slider id), size}`.
-- **Compound-node parameter ranges are now resolved in `catalog_builder`**
-  (`_parse_generic_node` -> `_resolve_widget_range`). This was needed for the
-  sliders but is a general improvement: `catalog[compound_type]["parameters"]`
-  entries now carry real min/max/step/type, resolved from the linked inner shader
-  node in the `.mmg`. Additive, the leaf-node path is untouched.
-- **Every cookbook material now uses subgraphs (`group_into_subgraph` in
-  `quality/author_helpers.py`); a new material should too, from the start.**
-  Call it before `save_variant` returns, following `docs/AUTHORING.md`'s
-  "Grouping into subgraphs" section, so it doesn't need a second retrofit
-  pass later. `tests/test_cookbook_subgraph_gate.py` enforces this
-  permanently (every cookbook material must carry >=1 `type: "graph"` node).
-- **`quality/render_compare.py`'s `renders_match`/`grid_mean_abs_diff` proves
-  builder-output-before matches builder-output-after -- it does NOT prove the
-  tracked `.ptex` on disk matches what was there before your change.** If a
-  builder's own graph is already stale/wrong before you touch it (as
-  `f04_wool_knit`'s was), the comparison will still report a clean `0.0` even
-  though the tracked artifact changes. If you're not sure whether a material
-  was already stale, diff the tracked `.ptex` against a fresh build from the
-  current builder BEFORE making any other change.
-- **Run `quality/*.py` scripts from the repo root, not from inside
-  `quality/`.** Running from inside `quality/` breaks `.env` lookup and
-  produces spurious "unknown node type" errors.
-- **`quality/cookbook_wood.py`/`cookbook_glass.py`/`cookbook_plastics.py`
-  still build the catalog inside each builder function** (pre-dating the
-  "build once, thread through" convention the other 7 categories use). Not
-  broken, just inconsistent; wood is the natural first cleanup target (3
-  rebuilds per run).
-- **`group_into_subgraph` fails silently on a mistyped `member_names`
-  entry** -- the intended node just stays top-level, no error raised. Double
-  check member names against the actual node list before calling it.
-- **`render_cookbook.py <label>` and `_make_previews.py <label>` operate on
-  the WHOLE label, not just the case you're adding.** Adding one material to
-  an existing category (e.g. `f08_donegal_tweed` to `cookbook-fabrics`) and
-  running these regenerates and re-thumbnails every other case in that
-  category too. Godot's own render is not perfectly deterministic run to
-  run, so an unrelated case's thumbnail can come back byte-different with
-  zero content change. Always `git status` after these before committing,
-  and revert anything that changed only because it got swept up in the same
-  label's regen.
-- **`ambientcg.com` redirected to a malicious scareware page during this
-  session** (a fake "McAfee Security" page at `securesweep.pro`, hit via
-  the in-app Browser pane's `navigate`). Closed the tab immediately without
-  interacting; switched to Wikimedia Commons for reference photos instead,
-  which worked cleanly. Worth avoiding `ambientcg.com` until/unless
-  verified safe again.
-- **`docs/AUTHORING.md` now has an "Authoring from a reference photo"
-  section** right after the main workflow list. If a future session is
-  asked to build a material from an attached photo, read that section
-  first, it's a decomposition rubric that plugs into the existing donor/
-  topology vocabulary, not a separate pipeline.
-- **`quality/author.py` is now a builders-only file; graph-surgery helpers
-  live in `quality/author_helpers.py`.** If you're adding a new cookbook
-  category or debug swatch, `from author_helpers import ...` the helpers
-  (`load_example`, `node`, `set_gradient`, `set_param`, `save_variant`,
-  `rewire`, `drop_conn`, `add_node`, `retype`, `_grad`), not `from author
-  import ...`, that module now only exports the 12 Phase-3 `build_*`
-  functions, `BUILDERS`, and `main()`.
-- **Donor graphs (`beehive`, `crocodile_skin`, `dry_earth`, `metal_pattern_2`,
-  `rock`, `rusted_metal`, `stone_wall`, `wood`, `wooden_floor`) load from
-  `quality/donors/`, a tracked directory in this repo, not the external
-  Material Maker checkout anymore.** If you add a 10th donor to any builder,
-  vendor its `.ptex` into `quality/donors/` too (copy from
-  `<MM_PROJECT_PATH>/material_maker/examples/<name>.ptex`), `load_example()`
-  won't find it in the external checkout's path anymore. Browsing all 43 of
-  Material Maker's bundled examples over MCP (`list_examples(source=
-  "material_maker")`) and the Phase 1 gate test are unaffected by any of
-  this, they still read live from the external checkout.
-- **`list_examples` / `load_example` changed shape 2026-09-03.** `list_examples`
-  returns `{"ok": True, "examples": [{"name", "source", "category"}]}` (not a list
-  of names); `load_example` returns `{"ok": False, "error": ...}` for unknown
-  names instead of raising, and tries `cookbook/` before Material Maker's bundled
-  examples. Cookbook materials are edited by rebuilding with
-  `quality/cookbook_<category>.py` then `quality/promote_cookbook.py`; edit the
-  builder, never the tracked `.ptex` by hand (`--check` would flag it).
-- **The 2026-08-29 8-angle code review found 10 verified correctness bugs.
-  As of a prior cleanup session: 7 are fixed (findings 1-7 and 9), and 2 are
-  ruled out as deliberate non-changes (#8, #10) with in-code reasons. That
-  leaves none outstanding.** Recorded here so they aren't tribal knowledge
-  living only in a conversation transcript. Ranked most severe first:
-  1. **✅ FIXED.** `server.py` (`live_render_node_output`): the restore-original-wiring
-     call after a preview wasn't checked for success — a failed restore used
-     to report overall success while the live graph stayed wired to the
-     temporary preview connection. Now checked; a failed restore reports
-     `ok=False` with a message naming the live graph's actual state (still
-     wired to the preview), while still attaching the render's own image if
-     the render itself succeeded. New tests:
-     `test_live_render_node_output_reports_a_failed_reconnect_restore`,
-     `..._reports_a_failed_disconnect_restore`,
-     `..._combines_render_and_restore_failures`.
-  2. **✅ FIXED.** `server.py` (`live_apply`): only caught `(KeyError, TypeError)`
-     from op handlers; a malformed op (e.g. a list where a parameters dict
-     is expected) could raise an uncaught `AttributeError` from deep inside
-     `validate_graph`'s `.items()` call, discarding the batch's
-     already-succeeded results. `AttributeError` added to the caught tuple.
-     New test: `test_live_apply_reports_a_malformed_op_field_as_data_not_a_raised_exception`.
-  3. **✅ FIXED.** `server.py`: no atexit handler called `_live_session.close()`,
-     orphaning a launched Godot process on unclean exit. Added
-     `_close_live_session_atexit` + `atexit.register`; verified it fires at
-     real interpreter shutdown (the `close()`→`_terminate` it calls was
-     already integration-proven).
-  4. **✅ FIXED.** `validator.py`: port-range validation only checked the
-     upper bound. Now rejects a negative `from_port`/`to_port` too; message
-     names the valid range (`0..N-1`).
-  5. **✅ FIXED.** `overlay.py` (`ensure_overlay`): a rebuild that failed
-     partway left an ambiguous marker-less partial. Now removes the
-     half-built overlay and re-raises (unambiguous: complete overlay or
-     none). Cleanup is best-effort, can't mask the original error.
-  6. **✅ FIXED (docstring).** `live.py` (`render`) always returns an empty
-     `log_tail` on the live path (live Godot output goes to `mm_live.log`,
-     whole-process). Docstrings in `live.render`/`live_render_node_output`
-     corrected to say so and point at `mm_live.log`, rather than populating
-     `log_tail` from a possibly-stale, misleading whole-process tail.
-  7. **✅ FIXED.** `live.py`: the five mutation ops now default to a 30s
-     socket timeout (was 5s), so a cold-launch shader compile doesn't
-     spuriously time out. 30s is a ceiling, half `render()`'s proven 60s;
-     read-only one-shots (`ping`/`get_graph`/`clear_graph`) stay 5s.
-     PLAUSIBLE, not reproduced.
-  8. **⛔ RULED OUT (non-bug).** `_cmd_clear_graph`'s `graph_edit==null`-only
-     guard is CORRECT, not a missing `generator==null` check. `new_material()`
-     CREATES a fresh generator (`clear_material()`→`create_gen`); it doesn't
-     read one like the mutating siblings. Adding the guard would refuse to
-     clear exactly the graph-less state a clear recovers. Confirmed against
-     Material Maker's `graph_edit.gd:690-724`. Annotated in-code.
-  9. **✅ FIXED.** `live.py` (`_launch_overlay`): the parent's `mm_live.log`
-     handle is now closed (try/finally) after Popen dups the fd, was leaking
-     one fd per launch.
-  10. **⛔ RULED OUT (deliberate).** `catalog_builder.py`'s `generic_size or 1`
-      coercion is intentional: an explicit `0` would build an input-less
-      (broken) node, so treating a falsy value as the default 1 is safer than
-      passing 0 through. No bundled `.mmg` triggers it. Annotated in-code.
-      PLAUSIBLE.
-  The full teardown also found real cleanup/duplication issues (a dead
-  `Graph` class in `graph.py`, three byte-for-byte-duplicated helper pairs,
-  an unused `list_node_types` tool) — see the delivered teardown file for
-  those; they were ranked below correctness bugs and not re-verified
-  individually here.
-- **`ensure_overlay`'s rebuild path now clears read-only file attributes
-  before `rmtree` -- fixed a prior session, real and load-bearing, not
-  theoretical.** The overlay is a full copy of the real git checkout at
-  `z-Git\material-maker`; git marks `.git/objects/pack/*.idx` read-only,
-  and `shutil.rmtree` can't delete a read-only file on Windows without
-  help. Fixed via a `_clear_readonly()` helper in `overlay.py`, called right
-  before `rmtree`. If `live_start`/`connect_or_launch` ever fails again with
-  a bare, detail-free MCP error, reproduce directly via
-  `.venv\Scripts\python.exe -c "from mm_mcp import live; live.connect_or_launch()"`
-  rather than trusting the MCP tool's error message -- it swallows
-  exception detail on a raise; the real traceback only shows up outside it.
-- **`ping`'s response has a `has_graph` field alongside `ready`, and they
-  mean different things -- don't conflate them.** `ready` is purely
-  "main_window resolved." `has_graph` is "a graph tab actually exists"
-  (`get_current_graph_edit()`/`.generator` non-null). `connect_or_launch`
-  requires both before declaring a session usable.
-- **`server.py` has four live MCP tools consuming `live.py`:**
-  `live_start`/`live_get_graph`/`live_apply`/`live_render`, all going through
-  a shared `_ensure_live_session(cfg, launch_timeout=60.0)` helper that
-  calls `live.connect_or_launch` fresh every time. **Do not read
-  `server._live_session` directly** to check on a launched process --
-  always call `_ensure_live_session(cfg)` yourself, the module global is
-  internal bookkeeping, not a public handle.
-- **`live_apply(ops)` dispatches via `_LIVE_OP_HANDLERS`, a dict keyed by
-  `op["op"]`** (`"add_node"`/`"connect_nodes"`/`"set_param"`), stops at the
-  first failing op, and reports a malformed op as a data-shaped error rather
-  than raising. If you add a fourth op kind, add its handler to that dict
-  and nowhere else.
-- **Run tests with `.venv\Scripts\python.exe`** (or activate the venv).
-  Fast suite: `pytest -q -m "not integration"` (444 passed, 23 deselected).
-  `pytest -q` adds the Godot-launching integration tests.
-- **`mm-mcp --check`** is the setup doctor (green/red preflight); `--version`,
-  `--help` also work. Build/release tooling lives in the `release` extra
-  (`pip install -e .[release]` -> build, twine).
-- All Phase 1-2 render gotchas still hold (see CLAUDE.md): `--export-material`,
-  `_console.exe`, no `--headless`, `steam_appid.txt`.
-- `normal_map` is a compound node; real params `param0` (size), `param1`
-  (strength), `param2`, `param4` (0 = real relief for analytic generators,
-  1 = flat) -- NOT `amount`/`size`. Voronoi **output port 2** = `rand3`
-  random-per-cell (the fleck/speckle source); ports 0/1 are distance fields.
-- **Cookbook growth pattern** (`quality/cookbook_<category>.py` +
-  `render_cookbook.py` + `_make_previews.py`) is separate from the frozen
-  Phase 3 test set on purpose, copy it for the next category rather than
-  touching `test_set.json`/`run_case.py`/`author.py`'s `BUILDERS` dict. See
-  `quality/README.md` for the short version and `docs/AUTHORING.md` for every
-  recipe + the levers that didn't pan out.
-
----
+- **Run `quality/*.py` from the repo root**, never from inside `quality/`
+  (breaks `.env` lookup). Never launch a Godot render from `python -c` (the
+  launcher does not exit; use `quality/render_one.py` or a script file).
+  Renders are one Godot at a time.
+- **Edit cookbook materials by changing the builder and re-promoting**, never
+  the tracked `.ptex` by hand; `promote_cookbook.py --check` flags drift.
+  `render_cookbook.py <label>` / `_make_previews.py <label>` regenerate the
+  WHOLE label and Godot is not byte-deterministic, so unrelated thumbnails can
+  churn: `git status` and revert anything that changed only by being swept up.
+- **`quality/render_compare.renders_match` proves builder-before == builder-after**,
+  not that the tracked artifact was already right. Diff the tracked `.ptex`
+  against a fresh build before trusting a clean 0.0.
+- **`group_into_subgraph` fails silently on a mistyped member name** (the node
+  just stays top-level). Check names against the graph first.
+- **A `blend` shows port-1 where its port-2 mask is 0 and port-0 where it is 1**;
+  put the majority layer on port-1. Opacity = amount x mask, so never feed a
+  mid-value colorize as the mask. `normal_map` `param4=0` is the flat-normal
+  fix for directly-fed analytic generators. Voronoi output port 2 is the
+  per-cell random (fleck) source.
+- **Verify metallic/roughness/AO fixes by reading the exported ORM channel**
+  (`quality/pngread.py`), not by eye.
+- **`take_variant(builder, label, keep_n)`** (author_helpers) runs a frozen
+  `author.py` builder under a cookbook label, returns the requested variant,
+  and deletes every variant file it wrote; the caller must re-save as v1.
+  `quality/verify_hero_fold.py` now needs `examples/` restored from
+  `_to_delete` to run (documented in its docstring).
+- **Stale mm-play on 8788 is now a startup error with the PID**, not a mystery.
+  If you ever see the old symptom anyway (renders "fail" while the code is
+  fine), `Get-NetTCPConnection -LocalPort 8788 -State Listen`.
+- **The SPIRV `SCRIPT ERROR` at `parse_args.gd:59` prints on every successful
+  export.** Red herring; never treat it as evidence of a broken render.
+- **`ambientcg.com` redirected to a scareware page (2026-09-03).** Use Wikimedia
+  Commons for reference photos until re-verified.
+- **`quality/cookbook_wood/glass/plastics.py` still build the catalog inside
+  each builder**; the other 9 thread one catalog through `main()`.
+- **Donors load from `quality/donors/`** (tracked), not the external MM
+  checkout; vendor any new donor `.ptex` there.
+- **release-please has `bump-minor-pre-major: true`**; a `feat!` cuts 0.x, not
+  1.0.0. Do not remove it.
+- **`.mcp.json` and `.env` are gitignored; never echo `.env`.**
 
 ## 🕓 Session log
 
-> 📦 **Trim convention (adopted 2026-08-29):** this doc keeps at most the 3
-> most recent "Changed this session" write-ups and the 5 most recent
-> session-log entries below. When a new wrap-up entry would push either
-> section past that cap, the oldest entry moves out verbatim (no
-> summarizing) into [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md)
-> instead of letting this doc grow unbounded -- flagged as a real pickup
-> cost by the 2026-08-29 teardown (Maintainer lens). **34 older entries are
-> now archived there**, from the 2026-09-03 plastics category + Donegal tweed
-> session back through the 2026-09-04 v0.5.0 release + AUTHORING split
-> session back through the project's Phase 1-2 kickoff on 2026-08-25.
+Newest first. Keep at most 8 entries; older ones are in `git log` (search the
+commit subjects, every session ends with a `docs:` wrap-up commit).
 
-
-### 2026-09-05 (mm-play verified): Grayson ran play.bat, the blocker is closed for good
-- `pickup` reconciled clean (`main` at `b016f1b`, tree clean, in sync). One drift
-  flagged: the handoff said the blocker-correction docs were uncommitted, but they
-  were already in as `b016f1b`. Briefed the choose-a-direction menu.
-- Grayson ran `play.bat` hands-on with port 8788 free and it rendered correctly on
-  his real machine. That is the exact hands-on criterion the `mm-play` row was
-  waiting on, so I promoted it 🔌 -> ✅ (STATUS row + last-updated line, HANDOFF
-  where-we-stopped + next-step). Docs-only, no code touched.
-- Committed `056dcd4` and pushed on "commit it" then "push it"; `main` level with
-  `origin/main`. Landed the commons log via `Push-Repo` (Skills repo `badc687`,
-  which also swept in three other sessions' already-written log files). Trimmed the
-  session log to the 5-entry cap (moved the live-web-play-surface and
-  leather+terrain entries to the archive verbatim). Then this wrap-up.
-- **Milestone:** the "Material Maker for dummies" arc (subgraph retrofit + web play
-  surface + `play.bat` + `live_load`) is fully closed and verified. This was the
-  last open item with a named finish line.
-- **Follow-ups:** backlogged Unreal UE5 export (`615d335`, Grayson hit memory
-  issues on the pipeline). Then ran a `stop-node-hogs` machine sweep: killed 58
-  node/esbuild processes (~2.7 GB freed, including a leftover
-  `unreal-engine-mcp-server` and duplicate playwright/pdf MCP servers from an
-  earlier session), 8 live servers remained/reconnected. Machine-wide action, not
-  project code.
-
-### 2026-09-04 (blocker correction): the "host can't render" blocker was a squatted port
-- `pickup` reconciled clean (`main` at `a1ed4da`, tree clean, in sync). Grayson
-  picked next-move #1: chase the host render blocker. Ran through
-  `systematic-debugging`.
-- First surprise: my tools this session run directly on Grayson's real Legion
-  (`GC-Legion-Slim5`, RTX 4060, NVIDIA 591.59), NOT a separate agent box. So I
-  could reproduce/test everything, contrary to the prior session's
-  environment-separation note (stale for this session).
-- Root-cause probes, each measured: (a) a GDScript probe showed
-  `create_local_rendering_device()` returns null with the DEFAULT driver (OpenGL
-  fallback) but OK under forced `vulkan`/`d3d12`; (b) a real MM export produced
-  real, non-blank PBR maps (pixel stats), with the SPIRV `SCRIPT ERROR` printing
-  anyway (so it is a red herring, co-exists with correct output).
-- The `WinError 2` from the play surface took several rounds because a STALE
-  play-server (pid 26176, up since 11:50 that day) squatted port 8788; every
-  POST hit it while identical render code succeeded directly. Advisor consult
-  reframed it ("run the play path, not adjacent commands; the SPIRV error
-  co-exists with correct output"). Proved it by running the play server on a
-  clean port (8799 -> ok) and then on a freed 8788 (ok). Real maps both times.
-- Conclusion: blocker does NOT reproduce; cannot prove a driver update caused
-  it. `mm-play` stays 🔌 (automation-run, not hands-on). Left 8788 free and
-  stopped every test server. Corrected STATUS.md + HANDOFF.md (this edit).
-  Docs-only, not yet committed.
-
-### 2026-09-04 (live_load): the live session finally takes a whole graph
-- `pickup` reconciled clean (`main` at `e78457d`); Grayson picked next-move #2,
-  the deferred "push the picked material into a live session" flow.
-- `brainstorming` classified it architectural (new command across the frozen
-  live stack). Two clarifying questions locked scope: a general `live_load` MCP
-  tool (not play-internal), accepting both a graph dict and a `.ptex` path.
-  Grounded feasibility in MM's own source: `create_gen` takes the graph shape we
-  have; cookbook `.ptex` files are string-form (safe for `load_from_data`);
-  `do_load_material_from_data` spawns a new tab, so the addon uses
-  `set_new_generator` for an in-place replace. Advisor consult before writing
-  caught the round-trip shape question and the `set_save_path`/`.mmcr`/await
-  traps.
-- Spec + 5-task plan -> `subagent-driven-development` on branch `live-load`
-  (feature branch in the main checkout, the repo's editable-`.venv` convention).
-  Tasks: `live.load_graph` client, `load_graph` addon command (real-Godot
-  round-trip), `live_load` tool, play-surface pick-change wiring, docs. Each
-  per-task-reviewed clean.
-- A process restart interrupted the addon task mid-run: nothing committed, only
-  a correct uncommitted integration test on disk. Reconciled from git (not the
-  lost notification), confirmed no orphaned Godot, kept the test, re-dispatched a
-  fresh implementer -- the round-trip then launched real MM and passed.
-- Final opus whole-branch review: ready to merge, no Critical/Important. Minor 1
-  (timeout comment) fixed inline; Minor 2 (untested `PathNotAllowed` client
-  branch) deferred (its raise is covered in `test_paths.py`). Merged `--no-ff`
-  (`d523ad6`), pushed, branch + SDD workspace deleted. Fast suite 579 -> 588.
-  Then this wrap-up.
-- **Post-wrap follow-up (same session): Grayson ran the play surface himself and
-  it would not render.** `systematic-debugging` traced it end to end: the render
-  request reached the server but Godot exported blank maps because
-  `create_local_rendering_device()` returns null on his host (both Vulkan and
-  D3D12). Along the way we established the agent env and his host share the
-  project folder but not the system drive (the `.env` Godot path exists only
-  agent-side), so all renders were agent-side. Shipped play-server hardening
-  (`991f958`, fast suite 590): fail-fast `require_valid` at startup, JSON error
-  responses, client error surfacing. Corrected STATUS/HANDOFF (mm-play ✅ -> 🔌,
-  local render BLOCKED on host). Cleaned up the temp diag files + copied `_godot`
-  binary; reverted `.env`. Local rendering on the host stays open (next lead:
-  NVIDIA driver update or a different Godot build).
-
-### 2026-09-04 (play-surface UI nits): the two cosmetic loose ends, closed
-- `pickup` (`+ fix the two play-surface UI nits`) reconciled clean (`main` at
-  `de0711b`, tree clean, in sync). The two nits were named in the `mm-play`
-  STATUS row from the prior session.
-- Both are frontend-only. Nit 1 (slider panel buried below the 46-button
-  gallery): made the sidebar a flex column so the gallery scrolls in its own
-  region and the slider panel docks always-visible at the bottom. Nit 2 (canvas
-  not re-filling on resize): diagnosed the flexbox min-width feedback trap
-  (`renderer.setSize`'s inline canvas width pinned the flex viewport open),
-  fixed with `min-width:0` + `overflow:hidden` + an absolutely-positioned
-  canvas, and swapped `window.resize` for a `ResizeObserver` on the container.
-- Verified live in the in-app Browser pane: gallery scroll + docked panel;
-  shrank to 500px (sphere re-fit, round) and grew to 1100px (re-filled,
-  centered); real reptile render "ready". Fast suite 579, static-only.
-- Committed `c7e85ee`, pushed on Grayson's "1" (commit + push + wrap). Commons
-  log written. Then this wrap-up.
-
-### 2026-09-04 (play.bat + play-surface verified): the last loose end closed
-- `pickup` reconciled clean (`main` at `2369eb9`, one wrap-up-doc commit past
-  the baton's stated `9b0e64e`, tree clean, in sync). Grayson picked next move
-  #1 (run `mm-play` hands-on) and asked for a one-click bat.
-- Wrote `play.bat` at the repo root: double-click launcher that cd's to its own
-  dir (`%~dp0`), checks `.venv\Scripts\python.exe`, and runs `python -m
-  mm_mcp.play.server` (which auto-opens the browser at `http://127.0.0.1:8788/`
-  via `open_browser=True`). CRLF line endings for a Windows `.bat`.
-- Re-drove the play surface in the in-app browser before handing it over:
-  gallery of all 46 materials, author-named sliders on `l04_reptile_exotic`,
-  a live re-render on a slider drag (Scale relief 0.7 -> 2, scales visibly
-  deepened), WebGL sphere shading the real maps. Stopped the background server
-  so the port was free for Grayson's bat.
-- Grayson ran `play.bat` hands-on and confirmed, so the play-surface STATUS row
-  moved from `wired` to `verified`, closing the whole "Material Maker for
-  dummies" idea end to end. Two non-blocking UI nits recorded in STATUS (slider
-  panel at the bottom of the sidebar, canvas resize).
-- Committed `play.bat` + STATUS.md (`27bf78f`) and pushed on "commit this and
-  push it + wrap." Commons log written. Then this wrap-up.
-
-_(Older entries continue in [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).)_
+### 2026-09-05/06 (teardown #3 executed): examples/ folded, port diagnostic, baton diet
+- `pickup` clean, then `teardown` #3: no Rebuild verdicts; findings were the
+  ungrouped front-door `examples/`, the baton-as-archive, and 1.3 GB of
+  regenerable output in the nightly backup. Grayson picked "3, then 1 + 4, then 2".
+- Item 3: backup-ops override + `output/` scratch moved to `_to_delete`.
+- Items 1 + 4: `writing-plans` -> `subagent-driven-development`, 7 tasks,
+  merged `--no-ff` as `87be578`, pushed. One plan defect (take_variant left
+  the kept file) ruled and fixed in Task 2. Final opus review: 3 Important
+  (brittle README regexes, 7 MB RGB contact sheet, stale verify docstring),
+  fixed in one wave, re-review clean; the palette fix was folded into the
+  retire commit by amend + cherry-pick so the 7 MB blob never reached `main`.
+- Item 2: STATUS/HANDOFF rewritten to the shape rules above, archive retired,
+  CLAUDE.md rule amended, `.env.example` de-personalized.
+### 2026-09-05 (mm-play verified): Grayson ran `play.bat` hands-on; row promoted 🔌 -> ✅ (`056dcd4`).
+### 2026-09-04 (blocker correction): the "host can't render" blocker was a stale server squatting 8788, not GPU (`b016f1b`).
+### 2026-09-04 (live_load): seventh live tool, in-place graph replace; play surface pushes the picked material live (`d523ad6`).
+### 2026-09-04 (play-surface UI nits): slider panel docks; canvas re-fills on resize (`c7e85ee`).
+### 2026-09-04 (play.bat + play-surface verified): one-click launcher; "MM for dummies" arc closed.
+### 2026-09-04 (cookbook bug fixes): t01 metallic wire, l02/l05 blend port order (`5cd9e0b`).
+### 2026-09-04 (subgraph retrofit): all 46 materials grouped, 524 -> 179 top-level nodes (`034aeaf`).
