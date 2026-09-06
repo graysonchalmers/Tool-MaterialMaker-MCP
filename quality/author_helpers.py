@@ -58,6 +58,26 @@ def save_variant(graph: dict, iter_label: str, case_id: str, n: int) -> str:
     return str(path)
 
 
+def take_variant(builder, label: str, keep_n: int) -> dict:
+    """Run a Phase-3 `author.py` builder under a cookbook label and keep ONE of
+    its variants. `builder(label)` writes v1.ptex, v2.ptex, ... under
+    quality/authored/<label>/<case>/ and returns their paths; this loads the
+    `v{keep_n}.ptex` one, deletes the others (promote_cookbook.py only ever
+    promotes v1.ptex, so leftovers would be misleading), and returns the graph
+    so the caller can group_into_subgraph it and re-save it as v1."""
+    paths = builder(label)
+    wanted = f"v{keep_n}.ptex"
+    keep = next((p for p in paths if os.path.basename(p) == wanted), None)
+    if keep is None:
+        raise FileNotFoundError(f"{builder.__name__}({label!r}) produced no {wanted}: {paths}")
+    with open(keep, encoding="utf-8") as fh:
+        graph = json.load(fh)
+    for p in paths:
+        if p != keep and os.path.exists(p):
+            os.remove(p)
+    return graph
+
+
 def _grad(points):
     return {"interpolation": 1, "type": "Gradient",
             "points": [{"a": 1, "r": r, "g": g, "b": b, "pos": p}
