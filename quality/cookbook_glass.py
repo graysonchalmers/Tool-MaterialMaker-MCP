@@ -4,8 +4,8 @@ reference photo" workflow in docs/AUTHORING.md. Same informal convention as
 the other cookbook_*.py files -- 1 variant per material, no scorecard gate.
 Outputs land under quality/authored/cookbook-glass/<case>/v1.ptex.
 
-Run: python quality/cookbook_glass.py
-Then: python quality/render_cookbook.py cookbook-glass
+Run: python -m quality.cookbook_glass
+Then: python -m quality.render_cookbook cookbook-glass
 """
 import sys
 

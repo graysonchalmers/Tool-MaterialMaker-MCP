@@ -3,8 +3,8 @@
 files -- 1 variant per material, no scorecard gate. Outputs land under
 quality/authored/cookbook-plastics/<case>/v1.ptex.
 
-Run: python quality/cookbook_plastics.py
-Then: python quality/render_cookbook.py cookbook-plastics
+Run: python -m quality.cookbook_plastics
+Then: python -m quality.render_cookbook cookbook-plastics
 """
 import sys
 

@@ -1,11 +1,11 @@
 """Cookbook growth: fabric-category authoring recipes beyond the frozen 15-case
-Phase 3 test set (see quality/test_set.json's freeze note -- this is additive,
+Phase 3 test set (see docs/evidence/phase3/test_set.json's freeze note -- this is additive,
 not an edit to those cases). Informal: 1 variant per material, no scorecard
 gate. Reuses author_helpers.py's graph-surgery helpers; outputs land under
 quality/authored/cookbook-fabrics/<case>/v1.ptex, same layout convention as
 the Phase 3 iterations.
 
-Run: python quality/cookbook_fabrics.py
+Run: python -m quality.cookbook_fabrics
 Then quality/render_cookbook.py renders each variant for inspection.
 """
 import sys

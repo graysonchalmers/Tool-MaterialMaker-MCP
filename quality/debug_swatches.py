@@ -1,13 +1,13 @@
 """Debug diagnostic swatches: minimal single-node graphs that isolate ONE node
 behavior so a wrong wiring is obvious on sight. A visual smoke test AND a
-learning aid, separate from the frozen Phase 3 test set (test_set.json) and the
+learning aid, separate from the frozen Phase 3 test set (docs/evidence/phase3/test_set.json) and the
 cookbook recipes (cookbook_*.py). Nothing here clones a full material; each
 swatch wires one generator straight into a Material so what you see IS that
 node's raw behavior.
 
 Phase 1 (this file): the visual gallery. Each builder writes one v1.ptex to
 quality/authored/debug-swatches/<swatch>/, rendered for eyeballing by
-  python quality/render_cookbook.py debug-swatches
+  python -m quality.render_cookbook debug-swatches
 Each swatch's known-correct appearance is documented in docs/DEBUG_SWATCHES.md.
 If a render doesn't match its legend, a node is miswired -- that's the whole
 point (the inverted voronoi-port-0 grain that bit the leather cookbook would
@@ -18,8 +18,8 @@ headless pixel assertion (sample a cell center vs a border, assert the channel
 ordering) so these run as a real automated regression smoke test. Not built yet
 -- see docs/DEBUG_SWATCHES.md for the intended shape.
 
-Run: python quality/debug_swatches.py
-Then: python quality/render_cookbook.py debug-swatches
+Run: python -m quality.debug_swatches
+Then: python -m quality.render_cookbook debug-swatches
 """
 import os
 import sys

@@ -22,8 +22,8 @@ bases, scale and iterations pinned, only the basis varying. It is
 self-validating -- if some Cellular bases read as near-duplicates, that is an
 honest finding to report, not a failure.
 
-Run:   python quality/noise_gallery.py
-Then:  python quality/render_cookbook.py noise-gallery
+Run:   python -m quality.noise_gallery
+Then:  python -m quality.render_cookbook noise-gallery
 """
 from quality.author_helpers import _grad, save_variant
 
@@ -128,4 +128,4 @@ if __name__ == "__main__":
     for p in paths:
         print("wrote", p)
     print(f"\n{len(paths)} noise-gallery graphs authored.")
-    print("Render: python quality/render_cookbook.py noise-gallery")
+    print("Render: python -m quality.render_cookbook noise-gallery")

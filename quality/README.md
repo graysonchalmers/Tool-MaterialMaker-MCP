@@ -1,67 +1,61 @@
-# quality/ - Phase 3 authoring-quality harness
+# quality/: the cookbook factory
 
-Measures whether prompt-to-graph authoring produces usable materials.
+A Python package (`from quality.<module> import ...`; run scripts as
+`python -m quality.<module>` from the repo root). Not shipped in the wheel:
+everything here needs Godot and a Material Maker checkout. The tracked
+`cookbook/` tree is its locked output; `docs/AUTHORING.md` holds the
+invariants the builders follow.
 
 ## Layout
 
-`quality/` is a package: import with `from quality.<module> import ...` and
-run scripts as `python -m quality.<module>` from the repo root (a file-path
-launch no longer resolves the imports).
+- `cookbook_<category>.py` (twelve): builders, one `build_<id>(catalog)` per
+  material, `BUILDERS` dict, `main()` builds the catalog once and threads it
+  through. Output: `quality/authored/cookbook-<category>/<id>/v1.ptex`
+  (gitignored).
+- `author_helpers.py`: pure graph-surgery helpers (`load_example`, `node`,
+  `set_param`, `set_gradient`, `rewire`, `drop_conn`, `add_node`, `retype`,
+  `save_variant`, `take_variant`, `group_into_subgraph`). No Godot.
+- `author.py`: the material builders six categories import as their base.
+  Edit freely; `--check` is the guard.
+- `promote_cookbook.py`: copies each `v1.ptex` into `cookbook/<category>/<id>.ptex`;
+  `--check` diffs regenerated output against the tracked copies and exits 1
+  on drift. This is the regression baseline for the whole cookbook.
+- `render_cookbook.py <label>` / `render_one.py <label> <case> [size]`:
+  validate + render authored variants to `quality/cookbook/<label>/`
+  (gitignored) for eyeballing. One Godot at a time. Run as a module, never
+  from `python -c`.
+- `_make_previews.py <label>` and `contact_sheet.py [labels]`: thumbnails
+  under `docs/images/cookbook-<category>/` and the README contact sheet
+  (save as an 8-bit palette).
+- `render_compare.py`: `grid_mean_abs_diff`, `renders_match` (builder-before
+  vs builder-after; it does not prove the tracked artifact was right).
+- `debug_swatches.py`, `noise_gallery.py`, `pngread.py`: the diagnostic
+  swatch gallery (`docs/DEBUG_SWATCHES.md`), the noise vocabulary gallery,
+  and the vendored stdlib PNG reader used to verify ORM channels by value.
+- `donors/`: the nine vendored Material Maker example graphs the builders
+  start from (tracked; `tests/test_donors.py`).
 
-- `test_set.json`: the 15 frozen cases + the scoring rubric (`_rubric`).
-- `run_case.py`: renders authored variants for a case and (re)builds the
-  scorecard. Reuses `mm_mcp` render + validate; adds no render logic.
-- `runs/<run>/<case_id>/variant_N/`: per-variant outputs, 4 PBR maps +
-  `source.ptex`. `runs/<run>/<case_id>/_result.json` holds the case's render
-  results and the judge verdict fields.
-- `scorecards/<run>.md`: one auto-generated scorecard per run.
-- `scorecards/README.md`: the freeze rule for the test set.
+## Workflow
 
-## Flow
+1. Add or edit a builder in `cookbook_<category>.py`; call
+   `group_into_subgraph` before `save_variant` returns.
+2. `python -m quality.cookbook_<category> [case ...]` regenerates the variants.
+3. `python -m quality.render_one cookbook-<category> <id>` to look; judge
+   relief in 3D (`render_preview`), verify metallic/roughness/AO with
+   `pngread`, not by eye.
+4. `python -m quality.promote_cookbook --check` to see what would change;
+   `python -m quality.promote_cookbook` to accept. Write or update the card
+   `cookbook/<category>/<id>.md` and regenerate the thumbnail.
+5. `tests/test_cookbook_gate.py` and `test_cookbook_subgraph_gate.py` keep
+   every tracked graph valid, grouped, carded, and thumbnailed.
 
-1. Claude authors 2-3 variant `.ptex` graphs for a case (this is what Phase 3
-   measures).
-2. `run_case.py --run <label> --case <id> --variants a.ptex b.ptex c.ptex`
-   validates + renders each and writes `_result.json`.
-3. The judge (Claude vision) fills the `verdict` block in each `_result.json`
-   against the rubric; Grayson audits.
-4. `run_case.py --run <label> --rebuild-scorecard` regenerates the Markdown.
+Run from the repo root (`.env` is read from the working directory). Godot
+is not byte-deterministic, so a category-wide re-render can churn unrelated
+thumbnails; `git status` and revert anything swept up.
 
-## Runs are named, not numbered
+## History
 
-- `<date>-baseline`: the 3B control (no AUTHORING.md recipes).
-- `<date>-iter<N>`: each 3C tuning iteration.
-
-The **gate** is a scorecard showing >= 70% (>= 11/15) any-variant hit-rate,
-Grayson-audited, recorded in `STATUS.md`.
-
-## Cookbook growth (beyond the frozen 15)
-
-`test_set.json`'s 15 cases are frozen (see its `_meta`/freeze note) and stay
-that way. To grow the recipe library into new material categories WITHOUT
-touching frozen infra, use the `cookbook_fabrics.py` pattern instead of
-`author.py`/`run_case.py`: a small `quality/cookbook_<category>.py` (same
-graph-surgery helpers, imported from `author_helpers.py`) writes variants to
-`quality/authored/cookbook-<category>/`, and `python -m quality.render_cookbook <label>`
-validates + renders them to `quality/cookbook/<label>/` for eyeballing, no
-`test_set.json` entry, no scorecard, no gate. Invariants that generalize
-across materials belong in `docs/AUTHORING.md` (the lean guide, also served
-as the `guide://authoring` resource); a recipe that pans out for one material
-gets written up in that graph's own card, `cookbook/<category>/<id>.md`.
-Both output dirs are gitignored (regenerable). A new `build_*` function
-should call `group_into_subgraph` (from `quality/author_helpers.py`) before
-`save_variant` returns — see "Grouping into subgraphs" in
-`docs/AUTHORING.md` — so future categories don't need a second retrofit pass.
-
-When a material is locked (rendered, 3D-previewed, written up), promote it:
-`python -m quality.promote_cookbook` copies each `v1.ptex` into the tracked
-`cookbook/<category>/<id>.ptex` tree the MCP server serves through
-`list_examples` / `load_example`. `promote_cookbook.py --check` diffs
-regenerated output against the tracked copies and exits 1 on any drift, which
-is the regression baseline for the cookbook (non-scorecard) materials.
-
-While iterating on ONE material, use `python -m quality.render_one <label> <case>` (renders a
-single case, one Godot at a time) instead of `render_cookbook.py` (which renders
-every case under the label). Run either as a script FILE, never `python -c`.
-Driving a Godot render from `python -c` leaves the launcher process not exiting
-and reads as a bogus 180s timeout.
+The Phase-3 authoring-quality gate (15/15 on a frozen 15-case set,
+2026-08-26) was measured with a runner that lived here. Its frozen test set,
+rubric, and scorecards are archived under `docs/evidence/phase3/`; the runner
+is retired (see that folder's README).

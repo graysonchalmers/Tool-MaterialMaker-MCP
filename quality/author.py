@@ -1,12 +1,13 @@
-"""Phase 3C authoring case builders: transform bundled example graphs toward
-a prompt.
+"""Material builders shared by six cookbook categories.
 
 Each build_* function codifies the kind of remixing a live authoring session
 does (recolor a ramp, swap a generator, blend two layers) so each variant is
-reproducible and auditable. The graph-surgery primitives these builders call
-(load_example, node, set_gradient, rewire, ...) live in author_helpers.py,
-shared with quality/cookbook_<category>.py and friends. Author variants land
-under quality/authored/<iter>/<case>/vN.ptex.
+reproducible. These started as the Phase-3 case builders and are still the
+base that cookbook_ceramic/fabrics/metal/organics/painted_metal/stone import
+(via take_variant). Edit them like any other builder: the regression guard is
+`python -m quality.promote_cookbook --check`, which fails on any output drift
+whichever file caused it. The graph-surgery primitives live in
+author_helpers.py. Variants land under quality/authored/<label>/<case>/vN.ptex.
 """
 import os
 import sys

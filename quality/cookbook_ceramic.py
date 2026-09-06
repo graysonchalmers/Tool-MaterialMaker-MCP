@@ -3,8 +3,8 @@ examples/ folder (2026-09-05): the graph comes unchanged from
 quality/author.py's frozen builder via take_variant; this builder only groups
 it. Outputs land under quality/authored/cookbook-ceramic/<case>/v1.ptex.
 
-Run: python quality/cookbook_ceramic.py
-Then: python quality/promote_cookbook.py cookbook-ceramic
+Run: python -m quality.cookbook_ceramic
+Then: python -m quality.promote_cookbook cookbook-ceramic
 """
 import sys
 

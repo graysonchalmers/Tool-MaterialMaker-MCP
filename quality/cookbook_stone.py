@@ -1,12 +1,12 @@
 """Cookbook growth: stone/masonry-category authoring recipes beyond the
 frozen 15-case Phase 3 test set (`s01_red_brick_wall`/`s02_gray_granite`/
-`s03_cracked_concrete` are already frozen there -- see quality/test_set.json's
+`s03_cracked_concrete` are already frozen there -- see docs/evidence/phase3/test_set.json's
 freeze note; this is additive, not an edit to those cases). Informal: 1
 variant per material, no scorecard gate. Reuses author_helpers.py's graph-surgery
 helpers; outputs land under quality/authored/cookbook-stone/<case>/v1.ptex,
 same layout convention as the Phase 3 iterations.
 
-Run: python quality/cookbook_stone.py
+Run: python -m quality.cookbook_stone
 Then quality/render_cookbook.py renders each variant for inspection.
 """
 import sys

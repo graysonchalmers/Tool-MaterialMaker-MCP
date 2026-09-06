@@ -4,8 +4,8 @@ from quality/author.py's frozen builders via take_variant; these builders
 only group them into named subgraphs. Outputs land under
 quality/authored/cookbook-metal/<case>/v1.ptex.
 
-Run: python quality/cookbook_metal.py
-Then: python quality/promote_cookbook.py cookbook-metal
+Run: python -m quality.cookbook_metal
+Then: python -m quality.promote_cookbook cookbook-metal
 """
 import sys
 

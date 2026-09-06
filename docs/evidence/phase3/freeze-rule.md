@@ -1,6 +1,6 @@
-# scorecards/ — the freeze rule
+# scorecards: the freeze rule
 
-The test set (`quality/test_set.json`) and its rubric **freeze at the end of
+The test set (`test_set.json`) and its rubric **freeze at the end of
 sub-phase 3A**, after Grayson's review, by setting `_meta.frozen = true`.
 
 Once frozen:
@@ -18,6 +18,6 @@ thing being measured.
 
 ## Freeze log
 
-- **2026-08-26** — FROZEN. Grayson reviewed the 15 cases; `m02_brushed_aluminum`
+- **2026-08-26**: FROZEN. Grayson reviewed the 15 cases; `m02_brushed_aluminum`
   anisotropy criterion softened to "directional streaking (aligned along one
   axis), not isotropic noise" before locking. `_meta.frozen = true`.

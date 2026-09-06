@@ -3,8 +3,8 @@ case under a label. Keeps a single Godot render to one material during
 iteration (renders must run sequentially, one Godot at a time).
 
 Usage:
-  python quality/render_one.py <label> <case> [size]
-  e.g. python quality/render_one.py cookbook-stone s07_cobblestone
+  python -m quality.render_one <label> <case> [size]
+  e.g. python -m quality.render_one cookbook-stone s07_cobblestone
 
 Run as a script FILE, never `python -c` -- launching Godot's console binary
 from `python -c` leaves the launcher process not exiting (a console/handle
@@ -26,7 +26,7 @@ _QUALITY = _ROOT / "quality"
 
 def main() -> int:
     if len(sys.argv) < 3:
-        print("usage: python quality/render_one.py <label> <case> [size]")
+        print("usage: python -m quality.render_one <label> <case> [size]")
         return 2
     label, case = sys.argv[1], sys.argv[2]
     size = int(sys.argv[3]) if len(sys.argv) > 3 else 512

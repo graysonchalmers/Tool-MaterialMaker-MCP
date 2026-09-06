@@ -1,6 +1,6 @@
 """Cookbook growth: painted-metal category authoring recipes beyond the frozen
 15-case Phase 3 test set. Additive, not an edit to the frozen metals
-(`m01`/`m02`/`m03` live in quality/test_set.json). Informal: 1 variant per
+(`m01`/`m02`/`m03` live in docs/evidence/phase3/test_set.json). Informal: 1 variant per
 material, no scorecard gate. Reuses author_helpers.py's graph-surgery helpers; outputs
 land under quality/authored/cookbook-painted-metal/<case>/v1.ptex.
 
@@ -26,7 +26,7 @@ Normal-map note: rock/wood donors feed their normal from a directly-fed
 analytic generator, so `normal_map_0.param4` must be 0 (raw edge_detect) for
 real relief; the default 1 (buffered) renders flat. See f01/s02 in author.py.
 
-Run: python quality/cookbook_painted_metal.py
+Run: python -m quality.cookbook_painted_metal
 Then quality/render_one.py cookbook-painted-metal <case> renders one for review.
 """
 import sys

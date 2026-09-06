@@ -131,8 +131,6 @@ No forced order. Candidates:
 - **`take_variant(builder, label, keep_n)`** (author_helpers) runs a frozen
   `author.py` builder under a cookbook label, returns the requested variant,
   and deletes every variant file it wrote; the caller must re-save as v1.
-  `quality/verify_hero_fold.py` now needs `examples/` restored from
-  `_to_delete` to run (documented in its docstring).
 - **Stale mm-play on 8788 is now a startup error with the PID**, not a mystery.
   If you ever see the old symptom anyway (renders "fail" while the code is
   fine), `Get-NetTCPConnection -LocalPort 8788 -State Listen`.

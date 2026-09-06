@@ -4,8 +4,8 @@ this widens into organism SURFACES: bark, scales, coral, lichen-on-stone).
 Same informal convention as cookbook_fabrics.py -- 1 variant per material, no
 scorecard gate. Outputs land under quality/authored/cookbook-organics/<case>/v1.ptex.
 
-Run: python quality/cookbook_organics.py
-Then: python quality/render_cookbook.py cookbook-organics
+Run: python -m quality.cookbook_organics
+Then: python -m quality.render_cookbook cookbook-organics
 """
 import sys
 

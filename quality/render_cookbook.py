@@ -1,10 +1,10 @@
 """Validate + render quality/authored/<label>/<case>/vN.ptex graphs for
-inspection, without touching the frozen test_set.json / runs/ / scorecards/
+inspection, without touching the frozen docs/evidence/phase3/
 machinery (see quality/cookbook_fabrics.py). Outputs land under
 quality/cookbook/<label>/<case>/.
 
 Usage:
-  python quality/render_cookbook.py cookbook-fabrics
+  python -m quality.render_cookbook cookbook-fabrics
 """
 import json
 import sys

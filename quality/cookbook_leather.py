@@ -1,6 +1,6 @@
 """Cookbook growth: leather-category authoring recipes beyond the frozen 15-case
 Phase 3 test set (`f02_brown_leather` is frozen there already -- see
-quality/test_set.json's freeze note; this is additive, not an edit to that
+docs/evidence/phase3/test_set.json's freeze note; this is additive, not an edit to that
 case). Informal: 1 variant per material, no scorecard gate. Reuses author_helpers.py's
 graph-surgery helpers; outputs land under
 quality/authored/cookbook-leather/<case>/v1.ptex, same layout convention as the
@@ -16,7 +16,7 @@ reptile scale. Where a variant wants real grain relief, it applies the
 `param4=0` normal_map fix (see AUTHORING.md) -- f02 predates that fix and
 renders a flat normal.
 
-Run: python quality/cookbook_leather.py
+Run: python -m quality.cookbook_leather
 Then quality/render_cookbook.py cookbook-leather renders each for inspection.
 """
 import sys
