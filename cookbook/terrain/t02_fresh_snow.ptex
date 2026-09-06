@@ -183,7 +183,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "colorize_0",
+         "node": "SnowColor",
          "widget": "gradient"
         }
        ]
@@ -191,7 +191,7 @@
      ]
     },
     {
-     "name": "colorize_0",
+     "name": "SnowColor",
      "node_position": {
       "x": 530,
       "y": 171
@@ -228,7 +228,7 @@
      "type": "colorize"
     },
     {
-     "name": "voronoi_0",
+     "name": "SnowSparkle",
      "node_position": {
       "x": 117,
       "y": 448
@@ -244,7 +244,7 @@
      "type": "voronoi"
     },
     {
-     "name": "blend_0",
+     "name": "SnowPatternMix",
      "node_position": {
       "x": 327,
       "y": 411
@@ -258,31 +258,31 @@
    ],
    "connections": [
     {
-     "from": "voronoi_0",
+     "from": "SnowSparkle",
      "from_port": 0,
-     "to": "blend_0",
+     "to": "SnowPatternMix",
      "to_port": 0
     },
     {
-     "from": "voronoi_0",
+     "from": "SnowSparkle",
      "from_port": 1,
-     "to": "blend_0",
+     "to": "SnowPatternMix",
      "to_port": 1
     },
     {
-     "from": "blend_0",
+     "from": "SnowPatternMix",
      "from_port": 0,
-     "to": "colorize_0",
+     "to": "SnowColor",
      "to_port": 0
     },
     {
      "from": "gen_inputs",
      "from_port": 0,
-     "to": "blend_0",
+     "to": "SnowPatternMix",
      "to_port": 2
     },
     {
-     "from": "colorize_0",
+     "from": "SnowColor",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
@@ -398,7 +398,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "colorize_2",
+         "node": "SurfaceSheen",
          "widget": "gradient"
         }
        ]
@@ -406,7 +406,7 @@
      ]
     },
     {
-     "name": "colorize_1",
+     "name": "NonMetallic",
      "node_position": {
       "x": 533,
       "y": 343
@@ -436,7 +436,7 @@
      "type": "colorize"
     },
     {
-     "name": "colorize_2",
+     "name": "SurfaceSheen",
      "node_position": {
       "x": 526,
       "y": 258
@@ -466,7 +466,7 @@
      "type": "colorize"
     },
     {
-     "name": "perlin_0",
+     "name": "DriftNoise",
      "node_position": {
       "x": 105,
       "y": 305
@@ -482,31 +482,31 @@
    ],
    "connections": [
     {
-     "from": "perlin_0",
+     "from": "DriftNoise",
      "from_port": 0,
-     "to": "colorize_1",
+     "to": "NonMetallic",
      "to_port": 0
     },
     {
-     "from": "perlin_0",
+     "from": "DriftNoise",
      "from_port": 0,
-     "to": "colorize_2",
+     "to": "SurfaceSheen",
      "to_port": 0
     },
     {
-     "from": "colorize_1",
+     "from": "NonMetallic",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
-     "from": "colorize_2",
+     "from": "SurfaceSheen",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1
     },
     {
-     "from": "perlin_0",
+     "from": "DriftNoise",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 2
@@ -574,7 +574,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "normal_map_0",
+         "node": "SnowNormal",
          "widget": "param1"
         }
        ]
@@ -582,7 +582,7 @@
      ]
     },
     {
-     "name": "normal_map_0",
+     "name": "SnowNormal",
      "node_position": {
       "x": 583,
       "y": 463
@@ -599,7 +599,7 @@
      "type": "normal_map"
     },
     {
-     "name": "perlin_1",
+     "name": "ReliefWarpNoise",
      "node_position": {
       "x": 102,
       "y": 166
@@ -613,7 +613,7 @@
      "type": "perlin"
     },
     {
-     "name": "voronoi_1",
+     "name": "DriftShape",
      "node_position": {
       "x": 115,
       "y": 63
@@ -629,7 +629,7 @@
      "type": "voronoi"
     },
     {
-     "name": "warp_0",
+     "name": "DriftWarp",
      "node_position": {
       "x": 317,
       "y": 139
@@ -644,25 +644,25 @@
    ],
    "connections": [
     {
-     "from": "perlin_1",
+     "from": "ReliefWarpNoise",
      "from_port": 0,
-     "to": "warp_0",
+     "to": "DriftWarp",
      "to_port": 1
     },
     {
-     "from": "voronoi_1",
+     "from": "DriftShape",
      "from_port": 1,
-     "to": "warp_0",
+     "to": "DriftWarp",
      "to_port": 0
     },
     {
-     "from": "warp_0",
+     "from": "DriftWarp",
      "from_port": 0,
-     "to": "normal_map_0",
+     "to": "SnowNormal",
      "to_port": 0
     },
     {
-     "from": "normal_map_0",
+     "from": "SnowNormal",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0

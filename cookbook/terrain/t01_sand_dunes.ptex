@@ -142,7 +142,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "perlin_2",
+         "node": "DuneRipples",
          "widget": "scale_x"
         }
        ]
@@ -154,7 +154,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "perlin_2",
+         "node": "DuneRipples",
          "widget": "iterations"
         }
        ]
@@ -162,7 +162,7 @@
      ]
     },
     {
-     "name": "perlin_2",
+     "name": "DuneRipples",
      "node_position": {
       "x": -312,
       "y": 2.5
@@ -176,7 +176,7 @@
      "type": "perlin"
     },
     {
-     "name": "perlin_1",
+     "name": "GrainNoiseCoarse",
      "node_position": {
       "x": -635,
       "y": 341.5
@@ -190,7 +190,7 @@
      "type": "perlin"
     },
     {
-     "name": "perlin_0",
+     "name": "GrainNoiseFine",
      "node_position": {
       "x": -635,
       "y": 210.5
@@ -204,7 +204,7 @@
      "type": "perlin"
     },
     {
-     "name": "warp_0",
+     "name": "GrainWarp",
      "node_position": {
       "x": -311,
       "y": 280.5
@@ -216,7 +216,7 @@
      "type": "warp"
     },
     {
-     "name": "colorize_1",
+     "name": "RingContrast",
      "node_position": {
       "x": -340,
       "y": 402.5
@@ -246,7 +246,7 @@
      "type": "colorize"
     },
     {
-     "name": "warp_1",
+     "name": "RingWarp",
      "node_position": {
       "x": -89,
       "y": 325.5
@@ -258,7 +258,7 @@
      "type": "warp"
     },
     {
-     "name": "voronoi_0",
+     "name": "RingPattern",
      "node_position": {
       "x": -648,
       "y": 482.5
@@ -274,7 +274,7 @@
      "type": "voronoi"
     },
     {
-     "name": "blend_0",
+     "name": "GrainMask",
      "node_position": {
       "x": 101,
       "y": 250.5
@@ -288,61 +288,61 @@
    ],
    "connections": [
     {
-     "from": "perlin_0",
+     "from": "GrainNoiseFine",
      "from_port": 0,
-     "to": "warp_0",
+     "to": "GrainWarp",
      "to_port": 0
     },
     {
-     "from": "perlin_1",
+     "from": "GrainNoiseCoarse",
      "from_port": 0,
-     "to": "warp_0",
+     "to": "GrainWarp",
      "to_port": 1
     },
     {
-     "from": "perlin_2",
+     "from": "DuneRipples",
      "from_port": 0,
-     "to": "blend_0",
+     "to": "GrainMask",
      "to_port": 0
     },
     {
-     "from": "voronoi_0",
+     "from": "RingPattern",
      "from_port": 0,
-     "to": "colorize_1",
+     "to": "RingContrast",
      "to_port": 0
     },
     {
-     "from": "warp_0",
+     "from": "GrainWarp",
      "from_port": 0,
-     "to": "warp_1",
+     "to": "RingWarp",
      "to_port": 0
     },
     {
-     "from": "colorize_1",
+     "from": "RingContrast",
      "from_port": 0,
-     "to": "warp_1",
+     "to": "RingWarp",
      "to_port": 1
     },
     {
-     "from": "warp_1",
+     "from": "RingWarp",
      "from_port": 0,
-     "to": "blend_0",
+     "to": "GrainMask",
      "to_port": 1
     },
     {
-     "from": "blend_0",
+     "from": "GrainMask",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
-     "from": "blend_0",
+     "from": "GrainMask",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1
     },
     {
-     "from": "blend_0",
+     "from": "GrainMask",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 2
@@ -528,7 +528,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "colorize_2",
+         "node": "DuneColor",
          "widget": "gradient"
         }
        ]
@@ -540,7 +540,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "colorize_0",
+         "node": "DuneRoughness",
          "widget": "gradient"
         }
        ]
@@ -548,7 +548,7 @@
      ]
     },
     {
-     "name": "colorize_2",
+     "name": "DuneColor",
      "node_position": {
       "x": 407.35144,
       "y": 127.181824
@@ -585,7 +585,7 @@
      "type": "colorize"
     },
     {
-     "name": "normal_map_0",
+     "name": "GrainNormal",
      "node_position": {
       "x": 431,
       "y": 423.5
@@ -599,7 +599,7 @@
      "type": "normal_map"
     },
     {
-     "name": "colorize_0",
+     "name": "DuneRoughness",
      "node_position": {
       "x": 423,
       "y": 306.5
@@ -633,35 +633,35 @@
     {
      "from": "gen_inputs",
      "from_port": 0,
-     "to": "normal_map_0",
+     "to": "GrainNormal",
      "to_port": 0
     },
     {
      "from": "gen_inputs",
      "from_port": 1,
-     "to": "colorize_0",
+     "to": "DuneRoughness",
      "to_port": 0
     },
     {
      "from": "gen_inputs",
      "from_port": 2,
-     "to": "colorize_2",
+     "to": "DuneColor",
      "to_port": 0
     },
     {
-     "from": "normal_map_0",
+     "from": "GrainNormal",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
-     "from": "colorize_0",
+     "from": "DuneRoughness",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1
     },
     {
-     "from": "colorize_2",
+     "from": "DuneColor",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 2

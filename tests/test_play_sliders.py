@@ -21,7 +21,7 @@ def test_derive_sliders_from_a_terrain_material():
     labels = [s["label"] for s in sliders]
     assert "Ripple scale" in labels
     ripple = next(s for s in sliders if s["label"] == "Ripple scale")
-    assert ripple["binding"] == {"node": "perlin_2", "widget": "scale_x"}
+    assert ripple["binding"] == {"node": "DuneRipples", "widget": "scale_x"}
     assert ripple["kind"] == "float"
     assert ripple["min"] is not None and ripple["max"] is not None
     assert ripple["value"] is not None
@@ -63,13 +63,13 @@ def test_apply_values_round_trips_through_derive():
     # internal node updated in the applied graph
     sub = next(n for n in applied["nodes"] if n.get("type") == "graph"
                and n.get("label") == "Dune Ripples")
-    perlin = next(n for n in sub["nodes"] if n.get("name") == "perlin_2")
+    perlin = next(n for n in sub["nodes"] if n.get("name") == "DuneRipples")
     assert perlin["parameters"]["scale_x"] == 9.0
     assert sub["parameters"]["param0"] == 9.0
     # the sibling subgraph's own "param0" (a different id) is untouched
     sand_finish = next(n for n in applied["nodes"] if n.get("type") == "graph"
                         and n.get("label") == "Sand Finish")
-    colorize = next(n for n in sand_finish["nodes"] if n.get("name") == "colorize_2")
+    colorize = next(n for n in sand_finish["nodes"] if n.get("name") == "DuneColor")
     assert colorize["parameters"].get("gradient") != 9.0
     # and derive now reports the new value
     sliders = apply_then_derive = derive_sliders(applied, cat)
@@ -101,10 +101,10 @@ def test_apply_values_does_not_fan_out_across_subgraphs_sharing_a_slot_id():
 
     dune = next(n for n in applied["nodes"] if n.get("type") == "graph"
                 and n.get("name") == "dune_ripples")
-    perlin = next(n for n in dune["nodes"] if n.get("name") == "perlin_2")
+    perlin = next(n for n in dune["nodes"] if n.get("name") == "DuneRipples")
     assert perlin["parameters"]["scale_x"] != 42.0
 
     sand = next(n for n in applied["nodes"] if n.get("type") == "graph"
                 and n.get("name") == "sand_finish")
-    colorize = next(n for n in sand["nodes"] if n.get("name") == "colorize_2")
+    colorize = next(n for n in sand["nodes"] if n.get("name") == "DuneColor")
     assert colorize["parameters"]["gradient"] == 42.0
