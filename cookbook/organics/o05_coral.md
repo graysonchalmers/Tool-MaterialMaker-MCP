@@ -22,7 +22,7 @@ Grouped per the "Grouping into subgraphs" lever in `docs/AUTHORING.md`,
 sharing a helper (`_group_crocodile_skin_pattern` in
 `quality/cookbook_organics.py`) with `o04_snake_scales` since both clone
 `crocodile_skin`'s identical 6-node graph (the `fbm` retype above changes
-`voronoi_0`'s noise, not its name or wiring). Opening the graph shows 4
+`PolypCells`'s noise type, not its wiring). Opening the graph shows 4
 top-level nodes instead of the raw 6-node `crocodile_skin` tangle:
 
 - **Surface Pattern** — `PolypCells` (the retyped `fbm` cellular generator)

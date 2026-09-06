@@ -107,3 +107,18 @@ def test_two_sources_to_the_same_target_at_one_level_raise_valueerror():
     with pytest.raises(ValueError):
         rename_nodes(g, {"perlin_0": "Same", "colorize_0": "Same"})
     assert [n["name"] for n in g["nodes"]] == ["Material", "perlin_0", "colorize_0"]
+
+
+def test_subgraph_node_cannot_be_renamed():
+    g = _grouped()
+    with pytest.raises(ValueError):
+        rename_nodes(g, {"grain": "GrainGroup"})
+    assert g["nodes"][1]["name"] == "grain"
+
+
+def test_same_key_at_two_levels_renames_both():
+    g = _grouped()
+    g["nodes"].append({"name": "perlin_0", "type": "perlin", "parameters": {}})   # top-level twin of the inner perlin_0
+    rename_nodes(g, {"perlin_0": "GrainNoise"})
+    assert [n["name"] for n in g["nodes"]][-1] == "GrainNoise"
+    assert g["nodes"][1]["nodes"][3]["name"] == "GrainNoise"

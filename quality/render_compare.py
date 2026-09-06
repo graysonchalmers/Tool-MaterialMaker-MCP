@@ -5,9 +5,13 @@ the gate is a small mean-absolute-difference tolerance, not byte-identity.
 """
 from quality.pngread import Sampler
 
-# Empirically, unrelated re-renders of an unchanged graph differ by a mean
-# per-channel delta well under 1.0 (out of 255). A real content change
-# (a different pattern or color) produces a mean delta well above this.
+# Empirically, unrelated re-renders of an unchanged graph mostly differ by a
+# mean per-channel delta well under 1.0 (out of 255), but this is not a hard
+# ceiling: on 2026-09-06 one re-render of an unchanged graph
+# (`t05_cracked_ice_normal`) measured 21.89 once and 0.0 on two further
+# renders. A real content change (a different pattern or color) produces a
+# mean delta well above this. Treat a single failure above TOLERANCE as a
+# rerender first, a regression second.
 TOLERANCE = 3.0
 
 

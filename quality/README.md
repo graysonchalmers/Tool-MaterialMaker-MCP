@@ -18,7 +18,7 @@ invariants the builders follow.
   by role).
 - `author_helpers.py`: pure graph-surgery helpers (`load_example`, `node`,
   `set_param`, `set_gradient`, `rewire`, `drop_conn`, `add_node`, `retype`,
-  `save_variant`, `take_variant`, `group_into_subgraph`). No Godot.
+  `rename_nodes`, `save_variant`, `take_variant`, `group_into_subgraph`). No Godot.
 - `author.py`: the material builders six categories import as their base.
   Edit freely; `--check` is the guard.
 - `promote_cookbook.py`: copies each `v1.ptex` into `cookbook/<category>/<id>.ptex`;

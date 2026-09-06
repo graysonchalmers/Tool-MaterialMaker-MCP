@@ -175,24 +175,39 @@ def rename_nodes(graph: dict, mapping: dict) -> None:
     any node at that level. `node_position` is never touched, so Material
     Maker's position-derived seeds (and therefore the renders) are unchanged.
 
+    Subgraph (`type == "graph"`) nodes are never renamed; mm-play slider ids
+    depend on their names.
+
     Validates the whole mapping before changing anything:
       KeyError   - a source name exists at no level
-      ValueError - a source or target is reserved, or a target already names a
-                   sibling at the level where the source lives
+      ValueError - a source or target is reserved, a source or target names a
+                   subgraph node, or a target already names a sibling at the
+                   level where the source lives
     """
     bad_reserved = [k for k in mapping if k in RESERVED_NODE_NAMES] + \
                    [v for v in mapping.values() if v in RESERVED_NODE_NAMES]
     if bad_reserved:
         raise ValueError(f"reserved node names cannot be renamed or used: {sorted(set(bad_reserved))}")
     found = {}
+    graph_names_by_level = {}
     for label, nodes, _ in _levels(graph):
         names = {n["name"] for n in nodes}
+        graph_names_by_level[label] = {n["name"] for n in nodes if n.get("type") == "graph"}
         level_sources = [old for old in mapping if old in names]
         for old in level_sources:
             found.setdefault(old, []).append((label, names, level_sources))
     missing = [k for k in mapping if k not in found]
     if missing:
         raise KeyError(f"nodes not found at any level: {sorted(missing)}")
+    bad_subgraph_sources = [old for old, levels in found.items()
+                            if any(old in graph_names_by_level[label] for label, _, _ in levels)]
+    if bad_subgraph_sources:
+        raise ValueError(f"subgraph nodes cannot be renamed: {sorted(set(bad_subgraph_sources))}")
+    bad_subgraph_targets = [(old, new) for old, new in mapping.items()
+                            for label, _, _ in found[old]
+                            if new in graph_names_by_level[label]]
+    if bad_subgraph_targets:
+        raise ValueError(f"cannot rename to a subgraph node's name: {sorted(set(bad_subgraph_targets))}")
     for old, new in mapping.items():
         for label, names, level_sources in found[old]:
             where = label or "top level"
