@@ -40,7 +40,7 @@ Opening the graph shows 3 top-level nodes (these two groups plus `Material`)
 instead of the raw 16-node tangle (10 from the `wooden_floor` donor plus 6
 for the paint-over composite):
 
-- **Board Structure** — the whole bare-plank chain: the `bricks_0` board
+- **Board Structure** — the whole bare-plank chain: the `PlankLayout` board
   pattern, its relief/transform inputs, the plank albedo colorize, the AO
   uniform, and the plank's own normal map. The plank normal is grouped here
   (not with the paint) because it's the boards' own relief, deliberately

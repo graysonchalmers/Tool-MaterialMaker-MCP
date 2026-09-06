@@ -47,7 +47,7 @@ top-level since each fed both groups), `SurfaceNoise` here is folded into
 feeding all three downstream nodes (`PlasticColor`, `SurfaceNormal`,
 `RoughnessConst`), so the only way to leave it top-level would still need
 boundary ports into both groups, and the alternative -- a `Surface Color`
-group containing only `colorize_0` -- would be a degenerate single-node
+group containing only `PlasticColor` -- would be a degenerate single-node
 "group" that doesn't actually simplify anything. `Surface Finish`'s noise
 input arrives as a plain boundary port from `Surface Color`; that's an
 artifact of one generator feeding two visually distinct concerns (color and
