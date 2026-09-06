@@ -1,12 +1,21 @@
 # 🧭 Session Handoff: Tool-MaterialMaker-MCP
 
-_Last updated: 2026-09-04 (blocker corrected: local render works on host) CT (America/Chicago)_
+_Last updated: 2026-09-05 (mm-play verified via hands-on play.bat run) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up.
 
 ## 🎯 Current state
 
-**LATEST (2026-09-04): the "local render dead on host" blocker does NOT
+**LATEST (2026-09-05): `mm-play` is now ✅ verified.** Grayson ran `play.bat`
+himself with port 8788 free and it rendered correctly on his real machine, the
+exact hands-on criterion the row was waiting on. That closes the play-surface
+blocker for good and, with it, the whole "Material Maker for dummies" arc
+(subgraph retrofit + web play surface + `play.bat` + `live_load`). It was the
+last open item with a named finish line. The promotion is committed and pushed
+(`056dcd4`). See the details just below for why the earlier "host can't render"
+scare was a false alarm.
+
+**EARLIER (2026-09-04): the "local render dead on host" blocker does NOT
 reproduce. It was a stale server squatting a port, not a GPU or code fault.**
 This session, my tools ran directly on Grayson's real Legion
 (`GC-Legion-Slim5`, RTX 4060 Laptop, NVIDIA driver 591.59), not a separate
@@ -685,6 +694,23 @@ The older open backlog, unchanged unless noted:
 > session back through the project's Phase 1-2 kickoff on 2026-08-25.
 
 
+### 2026-09-05 (mm-play verified): Grayson ran play.bat, the blocker is closed for good
+- `pickup` reconciled clean (`main` at `b016f1b`, tree clean, in sync). One drift
+  flagged: the handoff said the blocker-correction docs were uncommitted, but they
+  were already in as `b016f1b`. Briefed the choose-a-direction menu.
+- Grayson ran `play.bat` hands-on with port 8788 free and it rendered correctly on
+  his real machine. That is the exact hands-on criterion the `mm-play` row was
+  waiting on, so I promoted it 🔌 -> ✅ (STATUS row + last-updated line, HANDOFF
+  where-we-stopped + next-step). Docs-only, no code touched.
+- Committed `056dcd4` and pushed on "commit it" then "push it"; `main` level with
+  `origin/main`. Landed the commons log via `Push-Repo` (Skills repo `badc687`,
+  which also swept in three other sessions' already-written log files). Trimmed the
+  session log to the 5-entry cap (moved the live-web-play-surface and
+  leather+terrain entries to the archive verbatim). Then this wrap-up.
+- **Milestone:** the "Material Maker for dummies" arc (subgraph retrofit + web play
+  surface + `play.bat` + `live_load`) is fully closed and verified. This was the
+  last open item with a named finish line.
+
 ### 2026-09-04 (blocker correction): the "host can't render" blocker was a squatted port
 - `pickup` reconciled clean (`main` at `a1ed4da`, tree clean, in sync). Grayson
   picked next-move #1: chase the host render blocker. Ran through
@@ -784,58 +810,5 @@ The older open backlog, unchanged unless noted:
   panel at the bottom of the sidebar, canvas resize).
 - Committed `play.bat` + STATUS.md (`27bf78f`) and pushed on "commit this and
   push it + wrap." Commons log written. Then this wrap-up.
-
-### 2026-09-04 (live web play surface): the node graph gets a slider panel a non-coder can use
-- `pickup` reconciled clean (`main` at `108c6e0`). Grayson picked next move #1:
-  scope the deferred live web companion (sub-project 2 of "MM for dummies").
-- `brainstorming` (architectural): four decisions locked via clarifying
-  questions: purpose = a play surface for non-technical people (graph hidden);
-  runtime = both/auto-detect (standalone headless, or drive a live MM session);
-  preview = in-browser WebGL three.js sphere; v1 = all four of gallery,
-  standalone render loop, live auto-detect, download. One honest flag carried
-  into the spec: this serves the North Star's SECONDARY audience and hides the
-  graph, so it is framed as a companion (export still returns the real `.ptex`).
-- Spec + 10-task plan -> `subagent-driven-development` on branch `play-surface`.
-  Ledger-tracked. Several controller rulings on plan/design gaps found mid-build:
-  the compound-node range fix in `catalog_builder` (34/46 materials had unranged
-  sliders), the unique-slider-id addressing (slot_id collisions across
-  subgraphs), the `reject_path_fragment` usage correction, and the `__main__`
-  guard. Controller did the live browser verification (headless path); the final
-  whole-branch review (opus) then caught the one bug a headless-only check could
-  not: on the live path, maps landed in `cfg.output_dir` but the server serves
-  `cfg.output_dir/play`, so live previews would 404. Fixed in the facade (copy
-  live outputs into the served dir), keeping frozen `live.py` untouched.
-- Integrated per Grayson's "1 + 2 + commit + wrap": pushed the branch, opened PR
-  #5, merged `--no-ff` to `main` (`9b0e64e`) and pushed (PR auto-detected as
-  merged), deleted the branch local and remote, cleaned the SDD workspace. Fast
-  suite 559 -> 579. Then this wrap-up.
-
-### 2026-09-04 (leather + terrain bug fixes): the three bugs the retrofit left behind, closed
-- `pickup` reconciled clean (`main` at `8cf496a`); Grayson's command was
-  `+ fix the leather and terrain bugs`, the three pre-existing bugs the
-  subgraph retrofit surfaced and correctly left unfixed.
-- Read the three recipe cards + both builders + the `wood` donor wiring, then
-  one advisor consult before editing. Advisor confirmed t01/l02, flagged the
-  whole-label render-sweep hazard, re-promotion (non-zero diffs on purpose this
-  time), and rewriting the three now-wrong cards.
-- **t01_sand_dunes:** dropped the `blend_0 -> Material:1` metallic wire and set
-  `Material.metallic = 0` (donor scalar defaults to 1). Verified the ORM
-  metallic channel reads flat 0.
-- **l02_distressed_two_tone:** swapped port0/port1 on both blends; before/after
-  render confirmed the field flipped to mostly-dark-saddle with lighter worn
-  rubs. Bonus: the exposed wear-strength param now controls the wear layer.
-- **l05_quilted_leather:** swapped port0/port1 on `blend_alb_q` (dark now in the
-  seams). Sent Grayson before/after; the `sin*sin` geometry makes round pads on
-  a dark grid, and he chose the swap (option 1) over relabeling. Documented the
-  geometry limitation and the deferred `blend_h_q` 35% height-weighting question.
-- Builder-only edits, `render_one.py` per fixed case to dodge the sweep, three
-  cards rewritten, fast suite 505 passed, `promote --check` in sync, `git status`
-  clean of incidental churn. One commit (`5cd9e0b`), pushed on "push it and wrap
-  up." Then a first wrap-up (`bda24f8`).
-- **Follow-up (Grayson: "fix the l05 height weighting"):** the deferred
-  `blend_h_q` inversion. Bumped `amount` 0.35 -> 0.85 (pads dominant, grain
-  ~0.15 detail); 0.65 wasn't enough visually so pushed to 0.85, confirmed in a
-  3D `render_preview` (puffy padded bumps, sent to Grayson). Promoted, card
-  updated, suite 505, committed `6d460c4`, pushed. Then this final wrap-up.
 
 _(Older entries continue in [docs/HANDOFF_ARCHIVE.md](docs/HANDOFF_ARCHIVE.md).)_

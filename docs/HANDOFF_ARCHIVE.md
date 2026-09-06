@@ -1048,6 +1048,59 @@ doc's window.
 
 ## Archived session log
 
+### 2026-09-04 (live web play surface): the node graph gets a slider panel a non-coder can use
+- `pickup` reconciled clean (`main` at `108c6e0`). Grayson picked next move #1:
+  scope the deferred live web companion (sub-project 2 of "MM for dummies").
+- `brainstorming` (architectural): four decisions locked via clarifying
+  questions: purpose = a play surface for non-technical people (graph hidden);
+  runtime = both/auto-detect (standalone headless, or drive a live MM session);
+  preview = in-browser WebGL three.js sphere; v1 = all four of gallery,
+  standalone render loop, live auto-detect, download. One honest flag carried
+  into the spec: this serves the North Star's SECONDARY audience and hides the
+  graph, so it is framed as a companion (export still returns the real `.ptex`).
+- Spec + 10-task plan -> `subagent-driven-development` on branch `play-surface`.
+  Ledger-tracked. Several controller rulings on plan/design gaps found mid-build:
+  the compound-node range fix in `catalog_builder` (34/46 materials had unranged
+  sliders), the unique-slider-id addressing (slot_id collisions across
+  subgraphs), the `reject_path_fragment` usage correction, and the `__main__`
+  guard. Controller did the live browser verification (headless path); the final
+  whole-branch review (opus) then caught the one bug a headless-only check could
+  not: on the live path, maps landed in `cfg.output_dir` but the server serves
+  `cfg.output_dir/play`, so live previews would 404. Fixed in the facade (copy
+  live outputs into the served dir), keeping frozen `live.py` untouched.
+- Integrated per Grayson's "1 + 2 + commit + wrap": pushed the branch, opened PR
+  #5, merged `--no-ff` to `main` (`9b0e64e`) and pushed (PR auto-detected as
+  merged), deleted the branch local and remote, cleaned the SDD workspace. Fast
+  suite 559 -> 579. Then this wrap-up.
+
+### 2026-09-04 (leather + terrain bug fixes): the three bugs the retrofit left behind, closed
+- `pickup` reconciled clean (`main` at `8cf496a`); Grayson's command was
+  `+ fix the leather and terrain bugs`, the three pre-existing bugs the
+  subgraph retrofit surfaced and correctly left unfixed.
+- Read the three recipe cards + both builders + the `wood` donor wiring, then
+  one advisor consult before editing. Advisor confirmed t01/l02, flagged the
+  whole-label render-sweep hazard, re-promotion (non-zero diffs on purpose this
+  time), and rewriting the three now-wrong cards.
+- **t01_sand_dunes:** dropped the `blend_0 -> Material:1` metallic wire and set
+  `Material.metallic = 0` (donor scalar defaults to 1). Verified the ORM
+  metallic channel reads flat 0.
+- **l02_distressed_two_tone:** swapped port0/port1 on both blends; before/after
+  render confirmed the field flipped to mostly-dark-saddle with lighter worn
+  rubs. Bonus: the exposed wear-strength param now controls the wear layer.
+- **l05_quilted_leather:** swapped port0/port1 on `blend_alb_q` (dark now in the
+  seams). Sent Grayson before/after; the `sin*sin` geometry makes round pads on
+  a dark grid, and he chose the swap (option 1) over relabeling. Documented the
+  geometry limitation and the deferred `blend_h_q` 35% height-weighting question.
+- Builder-only edits, `render_one.py` per fixed case to dodge the sweep, three
+  cards rewritten, fast suite 505 passed, `promote --check` in sync, `git status`
+  clean of incidental churn. One commit (`5cd9e0b`), pushed on "push it and wrap
+  up." Then a first wrap-up (`bda24f8`).
+- **Follow-up (Grayson: "fix the l05 height weighting"):** the deferred
+  `blend_h_q` inversion. Bumped `amount` 0.35 -> 0.85 (pads dominant, grain
+  ~0.15 detail); 0.65 wasn't enough visually so pushed to 0.85, confirmed in a
+  3D `render_preview` (puffy padded bumps, sent to Grayson). Promoted, card
+  updated, suite 505, committed `6d460c4`, pushed. Then this final wrap-up.
+
 ### 2026-09-04 (cookbook subgraph retrofit): the node graph stops scaring people, one Ctrl+G at a time
 - `pickup` reconciled clean (`main` at `c3cc3f2`). Grayson picked backlog item
   #2 from the briefing, "scope Material Maker for dummies."
