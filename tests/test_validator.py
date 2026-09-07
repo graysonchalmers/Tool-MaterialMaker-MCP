@@ -144,3 +144,59 @@ def test_node_missing_required_keys():
     # Should report unknown type since type is missing (None)
     errs = [p for p in problems if p["severity"] == "error"]
     assert len(errs) > 0
+
+
+def _nested():
+    """A top-level graph carrying one subgraph node ('sub') with a clean interior."""
+    g = _good()
+    g["nodes"].append({"name": "sub", "type": "graph", "nodes": [
+        {"name": "ip", "type": "perlin", "parameters": {"scale_x": 4}},
+        {"name": "ib", "type": "blend", "parameters": {"blend_type": 1}},
+    ], "connections": [
+        {"from": "ip", "from_port": 0, "to": "ib", "to_port": 0},
+    ]})
+    return g
+
+
+def test_clean_subgraph_has_no_errors():
+    errs = [p for p in validate_graph(_nested(), CATALOG) if p["severity"] == "error"]
+    assert errs == []
+
+
+def test_dangling_connection_inside_subgraph_is_error():
+    """Regression (found by dogfooding the MCP path 2026-09-06): a connection to a
+    missing node INSIDE a subgraph must be reported, and be locatable to the
+    subgraph by name."""
+    g = _nested()
+    g["nodes"][-1]["connections"][0]["to"] = "missing"
+    errs = [p for p in validate_graph(g, CATALOG) if p["severity"] == "error"]
+    assert any("missing" in e["message"] for e in errs)
+    assert any("sub" in str(e["where"]) for e in errs)
+
+
+def test_unknown_node_type_inside_subgraph_is_error():
+    g = _nested()
+    g["nodes"][-1]["nodes"][0]["type"] = "nope"
+    errs = [p for p in validate_graph(g, CATALOG) if p["severity"] == "error"]
+    assert any("nope" in e["message"] for e in errs)
+    assert any("sub" in str(e["where"]) for e in errs)
+
+
+def test_port_out_of_range_inside_subgraph_is_error():
+    g = _nested()
+    g["nodes"][-1]["connections"][0]["to_port"] = 9
+    errs = [p for p in validate_graph(g, CATALOG) if p["severity"] == "error"]
+    assert any("port" in e["message"].lower() for e in errs)
+    assert any("sub" in str(e["where"]) for e in errs)
+
+
+def test_deeply_nested_subgraph_is_validated():
+    """Recursion must reach a subgraph inside a subgraph."""
+    g = _nested()
+    inner = {"name": "deep", "type": "graph", "nodes": [
+        {"name": "dp", "type": "nope", "parameters": {}},
+    ], "connections": []}
+    g["nodes"][-1]["nodes"].append(inner)
+    errs = [p for p in validate_graph(g, CATALOG) if p["severity"] == "error"]
+    assert any("nope" in e["message"] for e in errs)
+    assert any("sub/deep" in str(e["where"]) for e in errs)

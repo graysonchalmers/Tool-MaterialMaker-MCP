@@ -1,10 +1,16 @@
 from mm_mcp.catalog_builder import SPECIAL_TYPES
 
 
-def validate_graph(ptex: dict, catalog: dict) -> list[dict]:
+def validate_graph(ptex: dict, catalog: dict, _path: str = "") -> list[dict]:
     problems = []
     nodes = ptex.get("nodes", [])
     by_name = {n.get("name"): n for n in nodes if n.get("name") is not None}
+    # A subgraph node is itself type "graph" and carries its own nodes/connections;
+    # prefix inner problems with the subgraph path so they stay locatable.
+    prefix = f"{_path}/" if _path else ""
+
+    def _where(w):
+        return f"{prefix}{w}" if prefix else w
 
     for n in nodes:
         t = n.get("type")
@@ -12,7 +18,7 @@ def validate_graph(ptex: dict, catalog: dict) -> list[dict]:
             continue
         node_def = catalog.get(t)
         if node_def is None:
-            problems.append({"severity": "error", "where": n.get("name", "?"),
+            problems.append({"severity": "error", "where": _where(n.get("name", "?")),
                              "message": f"unknown node type '{t}'"})
             continue
         declared = {p["name"]: p for p in node_def["parameters"]}
@@ -23,7 +29,7 @@ def validate_graph(ptex: dict, catalog: dict) -> list[dict]:
                 # parameter names from older files are silently stored and never
                 # read rather than rejected. Match that tolerance: flag as a
                 # warning, not a hard error.
-                problems.append({"severity": "warning", "where": n.get("name", "?"),
+                problems.append({"severity": "warning", "where": _where(n.get("name", "?")),
                                  "message": f"unknown parameter '{pname}' for '{t}'"})
                 continue
             spec = declared[pname]
@@ -45,13 +51,13 @@ def validate_graph(ptex: dict, catalog: dict) -> list[dict]:
                                f"editor's default slider range "
                                f"[{spec['min']}, {spec['max']}] - not "
                                f"shader-clamped, often fine; verify visually")
-                    problems.append({"severity": "warning", "where": n.get("name", "?"),
+                    problems.append({"severity": "warning", "where": _where(n.get("name", "?")),
                                      "message": msg})
 
     for c in ptex.get("connections", []):
         for end in ("from", "to"):
             if c.get(end) not in by_name and c.get(end) not in ("graph",):
-                problems.append({"severity": "error", "where": str(c),
+                problems.append({"severity": "error", "where": _where(str(c)),
                                  "message": f"connection references missing node '{c.get(end)}'"})
         src = by_name.get(c.get("from"))
         if src:
@@ -60,7 +66,7 @@ def validate_graph(ptex: dict, catalog: dict) -> list[dict]:
                 n_out = len(catalog[src_type]["outputs"])
                 from_port = c.get("from_port", 0)
                 if from_port < 0 or from_port >= n_out:
-                    problems.append({"severity": "error", "where": src.get("name", "?"),
+                    problems.append({"severity": "error", "where": _where(src.get("name", "?")),
                                      "message": f"from_port {from_port} out of range "
                                                 f"(valid port indices are 0..{n_out - 1})"})
         dst = by_name.get(c.get("to"))
@@ -70,7 +76,15 @@ def validate_graph(ptex: dict, catalog: dict) -> list[dict]:
                 n_in = len(catalog[dst_type]["inputs"])
                 to_port = c.get("to_port", 0)
                 if to_port < 0 or to_port >= n_in:
-                    problems.append({"severity": "error", "where": dst.get("name", "?"),
+                    problems.append({"severity": "error", "where": _where(dst.get("name", "?")),
                                      "message": f"to_port {to_port} out of range "
                                                 f"(valid port indices are 0..{n_in - 1})"})
+
+    # Descend into subgraph nodes: a subgraph is a "graph"-typed node carrying its
+    # own nodes/connections, which the top-level loops skip (graph is a SPECIAL_TYPE).
+    # Recurse so dangling inner connections and unknown inner types are caught too.
+    for n in nodes:
+        if n.get("type") == "graph" and isinstance(n.get("nodes"), list):
+            child_path = f"{_path}/{n.get('name', '?')}" if _path else n.get("name", "?")
+            problems.extend(validate_graph(n, catalog, child_path))
     return problems
