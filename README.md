@@ -211,7 +211,8 @@ config) example:
       "env": {
         "MM_GODOT_BINARY": "C:\\path\\to\\Godot_v4.7.1-stable_win64_console.exe",
         "MM_PROJECT_PATH": "C:\\path\\to\\material-maker",
-        "MM_OUTPUT_DIR": "C:\\path\\to\\output"
+        "MM_OUTPUT_DIR": "C:\\path\\to\\output",
+        "MM_IDLE_EXIT_MINUTES": "120"
       }
     }
   }
@@ -224,6 +225,15 @@ If `mm-mcp` is not on the client's PATH, use the venv's Python instead:
 Config is validated at startup, so a missing or wrong `MM_GODOT_BINARY` /
 `MM_PROJECT_PATH` fails fast with an actionable message rather than partway
 through a render.
+
+Because the server is typically registered at user scope, every client
+session spawns its own `mm-mcp` process, and abandoned sessions leave their
+server running indefinitely. Set `MM_IDLE_EXIT_MINUTES` to have the server
+exit on its own after that many minutes with no tool call (0, the default,
+means never). This is opt-in: Claude Code does not restart an exited stdio
+server, so the next tool call in a long-idle session fails until the session
+reconnects. That trade-off is worth it for cleaning up abandoned sessions,
+but is not the right default for every client.
 
 ## Tools
 
