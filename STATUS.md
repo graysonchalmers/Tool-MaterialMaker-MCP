@@ -31,7 +31,7 @@ row points at.
 | Component | State | What it is / evidence |
 |---|---|---|
 | `src/mm_mcp/catalog_builder.py` | ✅ | `.mmg` -> `catalog.json`, incl. compound-node param ranges. `tests/test_catalog_*.py` |
-| `src/mm_mcp/validator.py`, `graph.py` | ✅ | Graph validation (errors as data) + pure helpers. `tests/test_validator.py`, `tests/test_graph.py` |
+| `src/mm_mcp/validator.py`, `graph.py` | ✅ | Graph validation (errors as data), recurses into subgraphs (2026-09-06, `577592f`), + pure helpers. `tests/test_validator.py`, `tests/test_graph.py` |
 | `src/mm_mcp/render.py` | ✅ | Headless Godot runner, `--target` profiles (Godot, Unity/URP verified; Unreal UE5 file-level only), process-tree kill, temp-file IO. `tests/test_render.py` |
 | `src/mm_mcp/server.py` | ✅ | 10 batch tools + 7 live tools + `catalog://nodes` + `guide://authoring`. `tests/test_server_tools.py`, `tests/test_server_live.py`; counts enforced by `tests/test_readme_counts.py` |
 | `src/mm_mcp/doctor.py`, `paths.py`, `inspect.py`, `config.py` | ✅ | Setup preflight, opt-in path bounding (`MM_ALLOWED_ROOTS`), `.ptex` metrics, env config. Matching `tests/test_*.py` |

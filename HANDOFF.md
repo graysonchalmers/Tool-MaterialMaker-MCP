@@ -1,6 +1,6 @@
 # 🧭 Session Handoff: Tool-MaterialMaker-MCP
 
-_Last updated: 2026-09-06 (teardown #5 executed: MCP user-wide, crate into the Unity sandbox, kit-map layer, role-named cookbook) CT (America/Chicago)_
+_Last updated: 2026-09-06 (validate() descends into subgraphs + crate round-trip prep) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up. **Shape rule (2026-09-05,
 teardown #3):** "Current state" describes the latest session only; anything
@@ -10,66 +10,37 @@ archive; there is no separate archive file.
 
 ## 🎯 Current state
 
-`main` at the merge `dbf66fc` (+ the docs commit that lands this file), pushed.
-Fast suite **964 passed**, 25 integration deselected. `python -m
-quality.promote_cookbook --check` in sync; `python -m quality.naming --cookbook`
-reports 53 graphs, 0 problems.
+`main` at `577592f`, pushed, in sync (0/0). Fast suite **993 passed, 1
+flaked** (the one flake was `test_live.py::test_load_graph_round_trips_a_cookbook_material`,
+a live-overlay test that collided with a concurrent Godot render; it passes
+in 25 s on its own and its material validates with 0 errors under the new
+code). `promote_cookbook --check` and `naming --cookbook` untouched this
+session.
 
-This session ran `pickup` + a fifth `teardown` with a usage angle (are we
-using the tool, from where, for what), then executed all three of Grayson's
-picks the same day:
+Short `pickup` + do-it session. Grayson picked two of the five surfaced
+moves and both landed:
 
-- **Teardown #5 (report delivered as a file).** Headline: in 48 sessions the
-  MCP authoring path (`validate`, `render_graph`, `save_graph`) had zero
-  calls; all 53 cookbook materials came from `quality/` builders; the server
-  was registered only in this repo's `.mcp.json`, so no other project could
-  call it; five portfolio consumers need PBR maps and none had received any
-  (gProdDevKit's kit map had no texture layer). Grayson's one hand-edit was a
-  rename pass; the cookbook was 66% auto-named. Verdict on the teardown
-  cadence itself: **moratorium until three use-sessions exist.**
-- **Pick 1, reachability + MCP-only authoring.** `material-maker` is now a
-  USER-scope MCP server (`claude mcp add --scope user`, absolute `MM_*`
-  env); verified connected from `_UnityQA-Sandbox` and exercised by a
-  headless `claude -p` run from that folder. A crate material was authored
-  over the MCP tools only (`load_example` w03 -> edit -> `validate` ->
-  `render_graph` -> `render_preview` -> `render_graph target="Unity/URP"` ->
-  `save_graph`): `saved_graphs/crate_pine_mcp_authored.ptex` (tracked, the
-  first shipped graph built that way and the naming-convention reference).
-  Its Unity export sits in `_UnityQA-Sandbox/Assets/Materials/CratePine/`
-  under UnityQA's `T_` naming with `.meta` guids, and `SM_Crate_A.prefab`
-  points at it (uncommitted there; not yet opened in Unity).
-- **Pick 2, gProdDevKit.** `KIT_MAP.md` gained layer `4b Texture / Material`,
-  a member row, decision D-KIT-9, a section 6 note; `kit-hub/web/tools.json`
-  has a `materialmaker` entry; README table row. `Test-Tools.ps1` green.
-  Committed locally in that repo, not pushed.
-- **Pick 3, role-named nodes (branch `role-named-nodes`, 24 commits, merged
-  `--no-ff` as `dbf66fc`).** `rename_nodes(graph, mapping)` in
-  `author_helpers.py` (recursive over subgraphs, validates before mutating,
-  refuses reserved names, sibling collisions, duplicate targets, and any
-  `type == "graph"` node so `mm-play` slider ids stay stable);
-  `quality/naming.py` checker (`python -m quality.naming --cookbook [cat]`);
-  `quality/render_tracked.py` (renders tracked graphs, compares every map
-  the baseline holds, resolves paths absolute); promote writes a generated
-  `## Nodes` table into every card between `<!-- nodes:begin/end -->`
-  markers and `--check` verifies it; every builder ends with
-  `rename_nodes`; all 53 graphs renamed with a per-category render-identical
-  proof and, at final review, a structural diff proving only
-  name/from/to/linked_widgets changed; gates
-  `tests/test_cookbook_naming_gate.py` and
-  `tests/test_cookbook_card_table_gate.py`; the "Name every node by role"
-  lever in `docs/AUTHORING.md`. Built with `writing-plans` ->
-  `subagent-driven-development` (12 tasks, 5 fix rounds, final opus review
-  "with fixes", one fix wave, re-review clean).
-
-Bug found by walking the MCP path, not fixed: `validate` checks only
-top-level nodes and connections; a dangling connection inside a subgraph
-passes silently (`src/mm_mcp/validator.py`).
+- **Pick 2 (option 2 in the pickup list): `validate` now descends into
+  subgraphs.** TDD: five subgraph-descent tests written failing first
+  (clean nested case, dangling inner connection, unknown inner type, inner
+  port out of range, doubly-nested), then `validate_graph` made to recurse
+  into `graph`-typed nodes, prefixing inner problems' `where` with the
+  subgraph path (e.g. `sub/deep`) so they stay locatable.
+  `tests/test_validator.py` 19/19. Commit `577592f`, pushed. This closes the
+  "found by dogfooding, not fixed" bug from the prior session.
+- **Pick 1 prep (option 1): crate round-trip readied for Grayson's hands-on
+  half.** The Unity side was verified from disk (no Unity launch needed):
+  `SM_Crate_A.prefab` points at `M_Crate_Pine.mat` on both slots, and that
+  .mat references all three `T_Crate_Pine_*` textures by matching guids. A
+  3D starting-point preview of `saved_graphs/crate_pine_mcp_authored.ptex`
+  was rendered and sent to Grayson (session scratchpad only, not tracked).
+  The hand-edit itself is deliberately left to him: it is the experiment the
+  moratorium wants.
 
 ## 📌 Where we stopped
 
-Everything above is merged and pushed. Grayson's part of pick 1 has not
-happened: open the sandbox in Unity, and edit the crate `.ptex` in Material
-Maker. Nothing is in flight.
+Both picks done and pushed. Grayson's hands-on half of pick 1 (use-session
+one of the moratorium's three) has NOT happened. Nothing is in flight.
 
 ## ▶️ Next concrete step
 
@@ -78,12 +49,12 @@ Maker. Nothing is in flight.
    `saved_graphs/crate_pine_mcp_authored.ptex` in Material Maker, edit it,
    save as `saved_graphs/crate_pine_grayson_edit.ptex`, note what was hard to
    read. This is use-session one of the three the moratorium asks for.
-2. **`validate` should descend into subgraphs** (errors as data for inner
-   connections and unknown inner types). Small, testable, found by dogfooding.
-3. **`backup-ops`: the 2026-09-05 nightly abort** is still unexamined.
-4. **Unreal UE5 export** (backlogged: memory pressure with a live Unreal
+2. **`backup-ops`: the 2026-09-05 nightly abort** is still unexamined.
+3. **Unreal UE5 export** (backlogged: memory pressure with a live Unreal
    Editor + bridge; run a `stop-node-hogs` sweep first).
-5. More cookbook materials only after a consumer project asks for one.
+4. More cookbook materials only after a consumer project asks for one.
+5. Optional: note in README/AUTHORING that `validate` now covers subgraph
+   internals (currently only in the validator and its tests).
 
 ## ❓ Open questions
 
@@ -157,15 +128,32 @@ Maker. Nothing is in flight.
 - **release-please has `bump-minor-pre-major: true`**; do not remove it.
 - **`.mcp.json` and `.env` are gitignored; never echo `.env`.** The user-scope
   registration in `~/.claude.json` carries the same paths.
-- **A second Claude session may be active on this checkout** (it committed to
-  the feature branch and to `origin/main` on 2026-09-06). Check `git status`
-  and `git fetch` before branch switches and merges.
+- **A second Claude session is active on this machine and its `Push-Repo`
+  runs `git add -A`.** On 2026-09-06 it swept this session's untracked
+  `_agent-commons` log into its own commit (`f94c240`, subject "vibecheck
+  s102...") and pushed it. Content is intact, but the log is not findable by
+  commit subject: search the commons by filename, not `git log --grep`. It
+  also committed a `docs:` correction (`868d16a`) to THIS file. `git fetch`
+  and re-read before editing shared files.
+- **The user-scope `mm-mcp.exe` runs the INSTALLED package, not the working
+  tree.** The `577592f` validator change is live in local pytest but NOT in
+  the MCP `validate` tool until a reinstall/restart of that server.
 
 ## 🕓 Session log
 
 Newest first. Keep at most 8 entries; older ones are in `git log` (search the
 commit subjects, every session ends with a `docs:` wrap-up commit).
 
+### 2026-09-06 (validate subgraph descent + crate round-trip prep)
+- `pickup`; Grayson picked options 1 + 2 ("automate most of 1 for me").
+- Option 2 TDD: `validate_graph` recurses into subgraph nodes, inner
+  problems path-prefixed; 5 new tests; `577592f` pushed. Closes the prior
+  session's dogfooding bug.
+- Option 1: Unity crate wiring verified from disk; 3D preview rendered and
+  sent. Hand-edit left to Grayson (use-session one).
+- Full suite 993 passed / 1 flake (live-overlay test, Godot contention;
+  passes alone). A concurrent session's `Push-Repo` swept this session's
+  commons log into its `f94c240` and pushed it.
 ### 2026-09-06 (teardown #5 executed): MCP user-wide, crate into the Unity sandbox, kit-map layer 4b, role-named cookbook
 - `pickup`, then `teardown` #5 from usage evidence (48 transcripts, MCP
   registration, portfolio survey). Grayson: "1, and do 2 + 3 in the same
@@ -187,4 +175,3 @@ commit subjects, every session ends with a `docs:` wrap-up commit).
 ### 2026-09-04 (blocker correction): the "host can't render" blocker was a stale server squatting 8788, not GPU (`b016f1b`).
 ### 2026-09-04 (live_load): seventh live tool, in-place graph replace; play surface pushes the picked material live (`d523ad6`).
 ### 2026-09-04 (play-surface UI nits): slider panel docks; canvas re-fills on resize (`c7e85ee`).
-### 2026-09-04 (play.bat + play-surface verified): one-click launcher; "MM for dummies" arc closed.
