@@ -86,17 +86,17 @@ of noise-driven.
 
 | Swatch | Isolates | Should look like |
 |---|---|---|
-| `warp` | slope-driven displacement (mode=Slope) | The `ref_mask` split shifted RIGHT by `2*amount*eps` = 0.2. The vertical boundary sits at x=0.3 instead of x=0.5 — a pixel at x=0.45 (black in the undistorted reference) now reads WHITE. No shift = `d` (port 1) isn't wired to a real height map. |
+| `warp` | slope-driven displacement (mode=Slope) | The `ref_mask` split shifted RIGHT by `2*amount*eps` = 0.2. The vertical boundary sits at x=0.3 instead of x=0.5, so a pixel at x=0.45 (black in the undistorted reference) now reads WHITE. No shift = `d` (port 1) isn't wired to a real height map. |
 | `warp2` | the simpler unit-slope warp | Same shift shape as `warp`, but by exactly `amount` = 0.3 (no `eps`). The boundary sits at x=0.2; x=0.35 flips from black to white. |
 | `directional_warp` | a constant per-pixel shift along a fixed `angle` | With `anglemap`/`strengthmap` left unconnected (their MM defaults make the formula reduce to a constant `-0.5*strength` shift), `angle=0, strength=1.0` shifts the boundary LEFT by 0.5 (wrapping): x=0.45 flips from black to white. Proves you don't need to wire the optional map inputs to get a clean, deterministic displacement out of this node. |
-| `slope_blur` | smearing along a height map's slope | **Not currently renderable here** — see the concern box below. If it ever renders: the hard x=0.5 boundary should read as an INTERMEDIATE grey ramp, not a hard step. |
+| `slope_blur` | smearing along a height map's slope | **Not currently renderable here**, see the concern box below. If it ever renders: the hard x=0.5 boundary should read as an INTERMEDIATE grey ramp, not a hard step. |
 
 **Concern: `slope_blur` does not render in this project's headless pipeline.**
 Its compound graph is built entirely from `buffer`-type nodes (compute
 shaders) sandwiching an edge-detect shader, with no unbuffered bypass. Those
 `buffer` nodes fail to compile their compute shader under `--export-material`
 ("Cannot call method 'shader_compile_spirv_from_source' on a null value"),
-producing an all-black image — confirmed even for a completely bare, unwired
+producing an all-black image, confirmed even for a completely bare, unwired
 `slope_blur` node, so it is not a wiring mistake in this swatch. The relief
 family's `normal_map` also contains an internal `buffer` node and hits the
 identical error every render, but survives because its `switch` node picks

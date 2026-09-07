@@ -588,23 +588,40 @@ def _check_blend_opacity(s):
     return out
 
 
-def _check_displaced_to_white(x: float):
+def _check_displaced_to_white(white_x: float, black_x: float):
     """Builds a check for a distortion swatch whose known displacement moves
     the reference boundary so that a pixel black in the UNDISTORTED reference
-    (x < 0.5) reads white at sample coordinate `x` after the warp. A pixel
-    still reading black means the node did not displace anything."""
+    (x < 0.5) reads white at sample coordinate `white_x` after the warp. A
+    pixel still reading black at `white_x` means the node did not displace
+    anything.
+
+    Also samples `black_x`, a point deep in the region the displacement does
+    NOT move into (derived from the same shift algebra as `white_x`, see each
+    builder's docstring), and asserts it stays black. Without this second
+    sample, a bug that saturated the WHOLE render white (for example an
+    unconnected input silently defaulting to a white fill) would still pass
+    the single white-pixel assertion above -- a uniform-white false pass."""
     def check(s):
-        px = s.at(x, 0.5)
-        if not (px[0] > 140 and px[1] > 140 and px[2] > 140):
-            return [f"expected the displaced boundary pixel at x={x} to read "
-                    f"white (proving displacement), got {px}"]
-        return []
+        out = []
+        white_px = s.at(white_x, 0.5)
+        if not (white_px[0] > 140 and white_px[1] > 140 and white_px[2] > 140):
+            out.append(f"expected the displaced boundary pixel at x={white_x} "
+                       f"to read white (proving displacement), got {white_px}")
+        black_px = s.at(black_x, 0.5)
+        if not (black_px[0] < 60 and black_px[1] < 60 and black_px[2] < 60):
+            out.append(f"expected x={black_x} to remain black (ruling out a "
+                       f"uniform-white false pass), got {black_px}")
+        return out
     return check
 
 
-_check_warp = _check_displaced_to_white(0.45)
-_check_warp2 = _check_displaced_to_white(0.35)
-_check_directional_warp = _check_displaced_to_white(0.45)
+# black_x for each swatch is picked deep inside the region the node's own
+# shift algebra (see each build_swatch_* docstring) proves does NOT get
+# displaced into white, well clear of both the new boundary and the ref_mask
+# anti-alias band at the original 0.499-0.5 split.
+_check_warp = _check_displaced_to_white(0.45, 0.1)            # boundary moves to x=0.3; 0.1 stays black
+_check_warp2 = _check_displaced_to_white(0.35, 0.05)           # boundary moves to x=0.2; 0.05 stays black
+_check_directional_warp = _check_displaced_to_white(0.45, 0.75)  # black region is x in [0.5, 1.0); 0.75 stays black
 
 
 # No _check_slope_blur / PIXEL_CHECKS entry: see build_swatch_slope_blur's
