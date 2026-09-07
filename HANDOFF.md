@@ -123,8 +123,11 @@ Maker. Nothing is in flight.
   failure is a rerender first, a regression second.
 - **In the Git Bash tool, `taskkill /F` is rewritten to `F:/`.** Use
   `taskkill //F //IM Godot_v4.7.1-stable_win64_console.exe` (and the GUI exe).
-- **Every subagent dispatch spawns its own `mm-mcp.exe`** now that the server
-  is user-scoped; 26 idle instances were alive mid-session. Sweep them.
+- **Every Claude Code session on this machine now spawns its own `mm-mcp.exe`**
+  (user-scope registration); 13 launcher chains (26 python processes) were
+  alive at once on 2026-09-06, one per live `claude.exe`, none orphaned.
+  Killing one only disconnects that session's MCP; check `claude.exe` parents
+  before sweeping.
 - **Node names never affect renders** (Material Maker seeds from node
   position), so a rename pass is render-identical by construction; add
   materials through a builder that ends with `rename_nodes(g, {...})` after
