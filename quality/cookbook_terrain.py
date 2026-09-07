@@ -38,13 +38,14 @@ _DUNE_NAMES = {
     "colorize_0": "DuneRoughness",   # matte sand roughness
 }
 
-# t05_cracked_ice and t08_riverbed_pebbles both clone `dry_earth`'s
-# voronoi-plate structure via `_dry_earth_plates`/`_group_dry_earth_plate`
-# below -- the same donor shape as the stone paving family
-# (quality/cookbook_stone.py's `_DRY_EARTH_NAMES`, Task 10). Copied here with
-# ice wording for t05; t08 (pebbles) and t06 (lava, which regroups `warp_0`
-# away from the plain crack composite into its own glow chain) get their own
-# bespoke mappings below since their node roles genuinely differ.
+# t05_cracked_ice, t08_riverbed_pebbles, and t09_parched_clay all clone
+# `dry_earth`'s voronoi-plate structure via `_dry_earth_plates`/
+# `_group_dry_earth_plate` below -- the same donor shape as the stone paving
+# family (quality/cookbook_stone.py's `_DRY_EARTH_NAMES`, Task 10). Copied
+# here with ice wording for t05, clay wording for t09; t08 (pebbles) and t06
+# (lava, which regroups `warp_0` away from the plain crack composite into its
+# own glow chain) get their own bespoke mappings below since their node roles
+# genuinely differ.
 _ICE_PLATE_NAMES = {
     "voronoi_0": "IcePlates",
     "colorize_1": "CrackLines",
@@ -58,6 +59,25 @@ _ICE_PLATE_NAMES = {
     "blend_1": "ReliefComposite",
     "colorize": "CrackNormalSource",   # crack-only signal feeding the normal map
     "normal_map_0": "IceNormal",
+}
+
+# t09_parched_clay keeps dry_earth's DEFAULT relief chain (grainy plate faces,
+# not t05's smooth-plate crack-only rewire), so its `colorize` node still
+# reads `blend_1`'s grainy height signal rather than the crack-only network --
+# named `ClayHeight` rather than `CrackNormalSource` to reflect that.
+_CLAY_PLATE_NAMES = {
+    "voronoi_0": "ClayPlates",
+    "colorize_1": "CrackLines",
+    "warp_0": "CrackWarp",
+    "blend_0": "CrackComposite",
+    "perlin_1": "ReliefNoiseCoarse",
+    "colorize_3": "ReliefContrast",
+    "perlin_0": "ReliefNoiseFine",
+    "colorize_0": "ReliefFineUnused",
+    "colorize_4": "ReliefRamp",
+    "blend_1": "ReliefComposite",
+    "colorize": "ClayHeight",
+    "normal_map_0": "ClayNormal",
 }
 
 
@@ -603,119 +623,53 @@ def build_t08_riverbed_pebbles(catalog: dict) -> str:
 
 
 def build_t09_parched_clay(catalog: dict) -> str:
-    """Parched clay / sun-baked cracked ground -- REVISED after visual review
-    (v1 read as soft mottled blobs, not sharp cracks: feeding the raw fbm
-    field straight into the albedo colorize left the cell edges soft, so
-    "connected crack network" showed up as continuous tone gradients instead
-    of distinct dark lines). Still built on the crocodile_skin donor and the
-    retype-to-fbm technique that is the whole point of this material (a
-    zero-use noise base, do not re-base onto the voronoi dry_earth donor),
-    still Cellular 2 (`noise=3`, AUTHORING.md's fbm table: "cracked-plate
-    network -- dry earth, marble veining, crazing"). What changed is the
-    COMPOSITE, borrowed from the dry_earth plate family
-    (`_dry_earth_plates`/`_group_dry_earth_plate` above) even though this
-    material does not use that donor:
+    """Parched clay / sun-baked lakebed -- RE-BASED after two failed fbm
+    passes (Grayson's call, not a render-driven tune this time): pass 1 (soft
+    fbm) read as mottled blobs, pass 2 (hard-thresholded fbm Cellular) read as
+    scattered dark pits, not a connected crack network. Root cause:
+    thresholding an fbm-Cellular VALUE field isolates cell AREAS, not the thin
+    cell-BORDER ridges a crack network needs. `dry_earth`'s voronoi
+    distance-to-edge signal is the right tool for that -- it is exactly what
+    t05_cracked_ice and t08_riverbed_pebbles already use for the same reason.
+    fbm-Cellular coverage in this cookbook is preserved by t07_forest_floor
+    (scattered clumps, not cracks), so re-basing here loses no coverage.
 
-    1. `CrackMask` is a NEW colorize with a near-step gradient (flat black
-       0.0-0.42, flat white 0.48-1.0, a narrow 0.06-wide ramp between) run on
-       the raw fbm field. This is the key move: it turns the soft grayscale
-       cell boundaries into a crisp binary mask, so the cracks read as thin
-       distinct lines instead of a blurry gradient.
-    2. Albedo is composited the dry_earth way: `AlbedoComposite` (`blend`,
-       `blend_type=0`, `amount=1`) with the dark `CrackColor` (a `uniform`) on
-       port 0 (shown where the mask is 1, the minority crack lines) and the
-       ochre/tan `ClayColor` plate colorize on port 1 (shown where the mask is
-       0, the majority plate faces), `CrackMask` on port 2. `ClayColor`'s own
-       gradient no longer carries a dark "crack shadow" stop -- that job now
-       belongs entirely to the hard mask, so the plate tone is pure warm
-       ochre/tan variation.
-    3. `ClayHeight` (was a plain 0-to-1 ramp of the raw noise) now reads
-       `CrackMask` and INVERTS it (white at input 0, black at input 1), so
-       plates land high and the crack lines drop out as recessed grooves once
-       fed through `ClayNormal` (`normal_map`, `param4=0` flat-normal fix,
-       medium `param1`). This is where the sharp cracks show up in 3D relief,
-       not just in color.
+    Same `_dry_earth_plates`/`_group_dry_earth_plate` template as t05/t08,
+    tuned for the dry, matte, monochrome-warm sibling of that pair:
 
-    `ClayRoughness` is untouched (still reads the raw fbm field directly,
-    a soft roughness gradient is fine, cracks don't need to be extra glossy
-    or extra matte). Scale stays coarse (5) so the plates read large and the
-    crack lines stay continuous instead of fragmenting into many small
-    cells; iterations held at 5, matching the family."""
-    g = load_example("crocodile_skin")
-    retype(g, "voronoi_0", "fbm",
-           {"noise": 3, "scale_x": 5, "scale_y": 5, "folds": 0,
-            "iterations": 5, "persistence": 0.5})
-
-    # Hard-threshold crack mask: near-step gradient over the raw fbm field.
-    # 0.42/0.48 puts the transition close to the field's midpoint (fbm's
-    # Cellular output straddles ~0.5 at cell boundaries), and the 0.06-wide
-    # ramp is narrow enough to read as a thin line, not a soft edge.
-    add_node(g, "crack_mask", "colorize", {"gradient": _grad([
-        (0.0,  0, 0, 0),
-        (0.42, 0, 0, 0),
-        (0.48, 1, 1, 1),
-        (1.0,  1, 1, 1),
-    ])})
-    g["connections"].append(
-        {"from": "voronoi_0", "from_port": 0, "to": "crack_mask", "to_port": 0})
-
-    set_gradient(g, "colorize_1", [    # warm ochre/tan plate tone only, no
-        (0.0, 0.38, 0.25, 0.13),       # dark crack stop -- the hard mask now
-        (0.5, 0.52, 0.36, 0.20),       # owns all crack darkening
-        (1.0, 0.64, 0.48, 0.28),
-    ])
-    add_node(g, "crack_color", "uniform",
-             {"color": {"type": "Color", "r": 0.08, "g": 0.05, "b": 0.03, "a": 1}})
-    add_node(g, "albedo_composite", "blend", {"blend_type": 0, "amount": 1})
-    g["connections"] += [
-        {"from": "crack_color", "from_port": 0, "to": "albedo_composite", "to_port": 0},  # crack (minority, mask=1)
-        {"from": "colorize_1", "from_port": 0, "to": "albedo_composite", "to_port": 1},   # plate (majority, mask=0)
-        {"from": "crack_mask", "from_port": 0, "to": "albedo_composite", "to_port": 2},
-    ]
-    rewire(g, "Material", 0, "albedo_composite", 0)   # was colorize_1 -> Material:0 directly
-
-    set_gradient(g, "colorize_3", [    # high matte roughness, bone-dry
-        (0.0, 0.88, 0.88, 0.88),
-        (1.0, 0.97, 0.97, 0.97),
-    ])
-    # ClayHeight: INVERTED crack mask, not the raw noise -- plates (mask=0)
-    # read white/high, crack lines (mask=1) read black/low, so the cracks
-    # come out as recessed grooves once fed through normal_map below.
-    rewire(g, "colorize_0", 0, "crack_mask", 0)       # was voronoi_0 -> colorize_0
-    set_gradient(g, "colorize_0", [(0.0, 1, 1, 1), (1.0, 0, 0, 0)])
-    node(g, "normal_map_0")["parameters"] = {
-        "param0": 11, "param1": 0.45, "param2": 0, "param4": 0}
-
-    # Subgraph grouping -- crack_pattern now carries the whole mask+composite
-    # chain (member names below are the PRE-rename names, verified against
-    # the graph above); surface_finish keeps the same roughness/relief-
-    # consumer shape as before, its `colorize_0` input now crossing the group
-    # boundary from `crack_mask` inside crack_pattern instead of from the
-    # raw `voronoi_0` -- the same cross-group-input pattern t07/t08 already
-    # use for their own noise base. `uniform_0` (Material's untouched
-    # metallic-0 scalar) stays top-level, same precedent as t07/o05.
-    group_into_subgraph(g, ["voronoi_0", "crack_mask", "colorize_1", "crack_color",
-                             "albedo_composite"],
-                         "crack_pattern", "Crack Pattern",
-                         [("voronoi_0", "scale_x", "param0", "Plate scale"),
-                          ("colorize_1", "gradient", "param1", "Clay color"),
-                          ("crack_color", "color", "param2", "Crack color")],
-                         catalog)
-    group_into_subgraph(g, ["colorize_0", "colorize_3", "normal_map_0"],
-                         "surface_finish", "Surface Finish",
-                         [("colorize_3", "gradient", "param0", "Roughness"),
-                          ("normal_map_0", "param1", "param1", "Crack relief")],
-                         catalog)
+    - `scale=7`: medium-large plates, between t05's 5 (big ice sheets) and
+      t08's 8 (tight-packed pebbles) -- a sun-baked lakebed plate is bigger
+      than a river stone but not as vast as a lake-ice sheet.
+    - Palette: warm ochre/tan monochrome only (light tan -> mid ochre -> a
+      slightly darker earthy brown), never blue (t05) and never multicolor
+      (t08) -- clay is one dried mineral, not glassy ice or tumbled river
+      stone.
+    - `blend_amount=0.7`: matches t05's deep crack-darkening value so the
+      inter-plate gaps read as distinct dark cracks, not the shallow contact
+      joints t08 uses for packed pebbles (0.6).
+    - `warp=0.12`: t05's clean-crack value -- crisp lines, not smeared haze.
+      t08 uses near-zero (0.02) for rounded contact gaps instead of cracks.
+    - `roughness=0.85`: bone-dry matte, the highest of the three siblings
+      (t05 ice 0.12 glossy, t08 wet pebbles 0.2 damp sheen). No sheen at all.
+    - Relief: KEEPS dry_earth's default grainy-plate-face chain (does NOT do
+      t05's smooth-plate rewire that feeds the crack-only signal into the
+      normal). Parched clay has a textured, sun-cracked surface, not a
+      glassy-smooth one -- the plate faces should carry grain, not be flat."""
+    g = _dry_earth_plates(
+        scale=7,
+        plate_grad=[            # warm ochre/tan, dry and monochrome
+            (0.0,  0.62, 0.50, 0.34),   # light sun-bleached tan
+            (0.4,  0.55, 0.40, 0.24),   # mid ochre
+            (0.7,  0.46, 0.32, 0.18),   # deeper ochre
+            (1.0,  0.34, 0.23, 0.13),   # darker earthy brown
+        ],
+        blend_amount=0.7, warp=0.12, roughness=0.85)
+    _group_dry_earth_plate(g, catalog, plate_label="Clay Plate & Cracks",
+                            color_label="Clay color", gap_label="Crack depth")
     rename_nodes(g, {
-        "voronoi_0": "ClayCells",      # fbm Cellular 2: connected crack-plate network
-        "crack_mask": "CrackMask",
-        "colorize_1": "ClayColor",
-        "crack_color": "CrackColor",
-        "albedo_composite": "AlbedoComposite",
-        "colorize_3": "ClayRoughness",
-        "colorize_0": "ClayHeight",
-        "normal_map_0": "ClayNormal",
-        "uniform_0": "NonMetallic",
+        **_CLAY_PLATE_NAMES,
+        "colorize_plate": "ClayColor",
+        "rough_const": "ClayRoughness",
     })
     return save_variant(g, _LABEL, "t09_parched_clay", 1)
 

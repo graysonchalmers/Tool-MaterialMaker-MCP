@@ -2,30 +2,52 @@
 
 _Category: terrain. Open the graph: `cookbook/terrain/t09_parched_clay.ptex`._
 
-Sun-baked cracked ground: a single connected network of cracks splitting a warm ochre/tan clay surface into irregular plates.
+Sun-baked, bone-dry lakebed clay: a connected network of deep dark cracks splitting a warm ochre/tan, matte plate surface.
 
 ## Recipe
 
-Revised after visual review: the first version fed the raw `fbm` field straight into the albedo colorize, and the soft cell edges of a continuous noise field read as mottled blobs, not distinct crack lines. This version keeps the `fbm` base (still `crocodile_skin`, `voronoi_0` retyped to `fbm`, Cellular 2 via `noise=3`, the connected crack-plate network `docs/AUTHORING.md`'s fbm table documents for "dry earth, marble veining, crazing") but adds a hard-threshold step and composites the result the way the `dry_earth` voronoi-plate family does, even though this material does not use that donor.
+Re-based onto the `dry_earth` voronoi-plate donor after two failed fbm-based passes (Grayson's call): a soft fbm field read as mottled blobs, and hard-thresholding an fbm-Cellular field read as scattered dark pits, not a connected crack network. Thresholding an fbm-Cellular VALUE field isolates cell AREAS, not the thin cell-BORDER ridges a crack network needs -- `dry_earth`'s voronoi distance-to-edge signal is the right tool for that, the same one `t05_cracked_ice` and `t08_riverbed_pebbles` already use. fbm-Cellular coverage in this cookbook is preserved by `t07_forest_floor`, so re-basing here loses no coverage.
 
-`CrackMask` is a new colorize node reading the raw `fbm` field through a near-step gradient: flat black from 0.0 to 0.42, flat white from 0.48 to 1.0, a 0.06-wide ramp between. That turns the soft grayscale cell boundary into a crisp binary mask, thin dark lines instead of a blur. Albedo is then composited with a `blend` (`AlbedoComposite`, `blend_type=0`, `amount=1`): the dark `CrackColor` (a `uniform`) on port 0 (shown where the mask is 1, the minority crack lines), the ochre/tan `ClayColor` plate gradient on port 1 (shown where the mask is 0, the majority plate faces), `CrackMask` as the port-2 mask. `ClayColor` itself no longer carries a dark "crack shadow" gradient stop, that job now belongs entirely to the hard mask and the separate `CrackColor` node.
+Built with the shared `_dry_earth_plates()` helper in `cookbook_terrain.py` at scale 7 (medium-large plates, between t05's 5 and t08's 8), warm ochre/tan monochrome per-plate tint (light tan -> mid ochre -> darker earthy brown, never blue and never multicolor), `warp_0` at 0.12 for the same clean sharp cracks t05 uses, `blend_0` amount 0.7 for deep dark crack darkening, and roughness 0.85 for bone-dry matte with no sheen. The helper also gives this material a flat roughness texture rather than a scalar, so an ORM map actually exports.
 
-The same `CrackMask` also drives relief: `ClayHeight` reads it through an INVERTED ramp (white at input 0, black at input 1), so plates land high and the crack lines drop out as recessed grooves once fed through `ClayNormal` (`normal_map`, `param4=0` proactive flat-normal fix, medium `param1`). This is where the sharp cracks show up in 3D relief, not just in color. `ClayRoughness` is untouched, it still reads the raw `fbm` field directly for a soft high-matte roughness ramp (bone-dry ground has no sheen); cracks don't need extra gloss or extra matte of their own. Scale is held coarse (5) so the plates read large and the crack lines stay continuous rather than breaking up into small isolated cells, with iterations left at 5.
+Unlike t05, this material keeps `dry_earth`'s DEFAULT relief chain: the plate faces carry their normal grainy texture rather than being smoothed to a crack-only signal. Parched clay is a textured, sun-baked surface, not a glassy one, so the grain stays.
+
+Differentiation from its dry_earth-plate siblings: t05_cracked_ice is glossy blue-white with low roughness (0.12) and smooth plate faces; t08_riverbed_pebbles is wet multicolor with low roughness (0.2) and tight rounded plates with near-zero warp; t09_parched_clay is the dry, matte (0.85 roughness), warm monochromatic sibling with larger flatter plates and the deepest crack darkening of the three.
 
 ## Subgraph structure
 
-Grouped per the "Grouping into subgraphs" lever in `docs/AUTHORING.md`:
+Grouped per the "Grouping into subgraphs" lever in `docs/AUTHORING.md`, via
+the shared `_group_dry_earth_plate()` helper reused across `t05`, `t08`, and
+`t09` (the three plain plate materials with no emission chain --
+`t06_cooled_lava`'s glow chain needs bespoke handling, see its own card).
 
-- **Crack Pattern** -- `ClayCells` (`fbm`, retyped from `voronoi_0`, Cellular 2), `CrackMask` (hard-threshold colorize), `ClayColor` (plate-tone colorize), `CrackColor` (dark crack-shadow uniform), `AlbedoComposite` (the crack-over-plate blend). Exposed: `Plate scale` (`ClayCells.scale_x`), `Clay color` (`ClayColor.gradient`), `Crack color` (`CrackColor.color`).
-- **Surface Finish** -- `ClayRoughness`, `ClayHeight` (now the inverted crack mask, crossing the subgraph boundary from Crack Pattern), `ClayNormal`. Exposed: `Roughness` (`ClayRoughness.gradient`), `Crack relief` (`ClayNormal.param1`).
+- **Clay Plate & Cracks** -- `ClayPlates`, `CrackLines`, `ReliefFineUnused`,
+  `ClayColor`, `CrackWarp`, `CrackComposite`, `ReliefRamp`,
+  `ReliefComposite`, `ClayHeight`, `ClayNormal`. `CrackWarp` has two direct
+  consumers here -- `CrackComposite` (the crack darkening in albedo) and,
+  via `ReliefRamp`, the crack-relief chain feeding `ClayNormal` -- so both
+  are kept in the same group as `CrackWarp`, per the standing rule that
+  `CrackWarp.amount` is never exposed as a friendly parameter and always
+  stays with what it feeds. Exposed: `Plate scale` (`ClayPlates.scale_x`),
+  `Clay color` (`ClayColor.gradient`), `Crack depth`
+  (`CrackComposite.amount`).
+- **Surface Finish** -- `ReliefNoiseCoarse`, `ReliefContrast`,
+  `ReliefNoiseFine`, `ClayRoughness`. Exposed: `Roughness`
+  (`ClayRoughness.gradient`, the flat roughness texture the helper adds).
+  `ReliefContrast` (orphaned once `dry_earth`'s metallic wire is dropped)
+  folds in since it shares `ReliefNoiseCoarse` with nothing else.
 
-`NonMetallic` (the untouched metallic-0 scalar, feeding Material port 1 directly) stays top-level, matching the same precedent used for `t07_forest_floor` and `o05_coral`.
+`Material` port 0 (albedo) and port 4 (normal) are both wired, confirmed by
+reading the connections in the saved graph.
 
-Not rendered as part of this revision: the controller runs the headless render and 3D preview and sends them to Grayson for the visual verdict.
+Not rendered as part of this revision: the controller runs the headless
+render and 3D preview and sends them to Grayson for the visual verdict.
 
 ## See also
 
-The invariant guide (`guide://authoring` resource, or `docs/AUTHORING.md`) for the rubric, the authoring workflow, the noise vocabulary, and the `param4=0` flat-normal fix.
+The invariant guide (`guide://authoring` resource, or `docs/AUTHORING.md`) for
+the rubric, the authoring workflow, the noise vocabulary, and the `param4=0`
+flat-normal fix.
 
 <!-- nodes:begin -->
 ## Nodes
@@ -35,15 +57,20 @@ do not edit by hand. Open the `.ptex` and look for these names.
 
 | Subgraph | Node | Type |
 |---|---|---|
-| (top level) | NonMetallic | uniform |
-| (top level) | crack_pattern | graph |
+| (top level) | plate_pattern | graph |
 | (top level) | surface_finish | graph |
-| crack_pattern | ClayColor | colorize |
-| crack_pattern | ClayCells | fbm |
-| crack_pattern | CrackMask | colorize |
-| crack_pattern | CrackColor | uniform |
-| crack_pattern | AlbedoComposite | blend |
+| plate_pattern | ClayPlates | voronoi |
+| plate_pattern | CrackLines | colorize |
+| plate_pattern | ReliefFineUnused | colorize |
+| plate_pattern | CrackComposite | blend |
+| plate_pattern | CrackWarp | warp |
+| plate_pattern | ReliefComposite | blend |
+| plate_pattern | ClayNormal | normal_map |
+| plate_pattern | ReliefRamp | colorize |
+| plate_pattern | ClayHeight | colorize |
+| plate_pattern | ClayColor | colorize |
+| surface_finish | ReliefNoiseCoarse | perlin |
+| surface_finish | ReliefNoiseFine | perlin |
+| surface_finish | ReliefContrast | colorize |
 | surface_finish | ClayRoughness | colorize |
-| surface_finish | ClayHeight | colorize |
-| surface_finish | ClayNormal | normal_map |
 <!-- nodes:end -->

@@ -1,44 +1,50 @@
 {
  "connections": [
   {
-   "from": "NonMetallic",
+   "from": "plate_pattern",
    "from_port": 0,
    "to": "Material",
-   "to_port": 1
+   "to_port": 0
   },
   {
-   "from": "crack_pattern",
+   "from": "plate_pattern",
    "from_port": 1,
-   "to": "Material",
-   "to_port": 0
-  },
-  {
-   "from": "crack_pattern",
-   "from_port": 0,
-   "to": "surface_finish",
-   "to_port": 0
-  },
-  {
-   "from": "crack_pattern",
-   "from_port": 2,
-   "to": "surface_finish",
-   "to_port": 1
-  },
-  {
-   "from": "surface_finish",
-   "from_port": 0,
    "to": "Material",
    "to_port": 4
   },
   {
+   "from": "plate_pattern",
+   "from_port": 2,
+   "to": "Material",
+   "to_port": 6
+  },
+  {
+   "from": "surface_finish",
+   "from_port": 0,
+   "to": "Material",
+   "to_port": 2
+  },
+  {
    "from": "surface_finish",
    "from_port": 1,
-   "to": "Material",
+   "to": "plate_pattern",
+   "to_port": 0
+  },
+  {
+   "from": "surface_finish",
+   "from_port": 2,
+   "to": "plate_pattern",
+   "to_port": 1
+  },
+  {
+   "from": "surface_finish",
+   "from_port": 3,
+   "to": "plate_pattern",
    "to_port": 2
   }
  ],
  "label": "Graph",
- "name": "240",
+ "name": "258",
  "node_position": {
   "x": 0,
   "y": 0
@@ -47,8 +53,8 @@
   {
    "name": "Material",
    "node_position": {
-    "x": 674,
-    "y": 164
+    "x": 944,
+    "y": -30
    },
    "parameters": {
     "albedo_color": {
@@ -59,78 +65,62 @@
      "type": "Color"
     },
     "ao_light_affect": 1,
-    "depth_scale": 1,
+    "depth_scale": 0.1,
     "emission_energy": 1,
-    "metallic": 1,
+    "metallic": 0,
     "normal_scale": 1,
     "resolution": 1,
-    "roughness": 1,
+    "roughness": 0.85,
     "size": 11,
     "subsurf_scatter_strength": 0
    },
    "type": "material"
   },
   {
-   "name": "NonMetallic",
-   "node_position": {
-    "x": 413,
-    "y": 208
-   },
-   "parameters": {
-    "color": {
-     "a": 1,
-     "b": 0,
-     "g": 0,
-     "r": 0,
-     "type": "Color"
-    }
-   },
-   "type": "uniform"
-  },
-  {
-   "name": "crack_pattern",
-   "label": "Crack Pattern",
+   "name": "plate_pattern",
+   "label": "Clay Plate & Cracks",
    "type": "graph",
    "node_position": {
-    "x": 91.0,
-    "y": 70.6
+    "x": 318.8815796,
+    "y": 10.05625
    },
    "parameters": {
-    "param0": 5,
+    "param0": 7,
     "param1": {
      "interpolation": 1,
+     "type": "Gradient",
      "points": [
       {
        "a": 1,
-       "r": 0.38,
-       "g": 0.25,
-       "b": 0.13,
+       "r": 0.62,
+       "g": 0.5,
+       "b": 0.34,
        "pos": 0.0
       },
       {
        "a": 1,
-       "r": 0.52,
-       "g": 0.36,
-       "b": 0.2,
-       "pos": 0.5
+       "r": 0.55,
+       "g": 0.4,
+       "b": 0.24,
+       "pos": 0.4
       },
       {
        "a": 1,
-       "r": 0.64,
-       "g": 0.48,
-       "b": 0.28,
+       "r": 0.46,
+       "g": 0.32,
+       "b": 0.18,
+       "pos": 0.7
+      },
+      {
+       "a": 1,
+       "r": 0.34,
+       "g": 0.23,
+       "b": 0.13,
        "pos": 1.0
       }
-     ],
-     "type": "Gradient"
+     ]
     },
-    "param2": {
-     "type": "Color",
-     "r": 0.08,
-     "g": 0.05,
-     "b": 0.03,
-     "a": 1
-    }
+    "param2": 0.7
    },
    "seed_int": 0,
    "nodes": [
@@ -138,11 +128,27 @@
      "name": "gen_inputs",
      "type": "ios",
      "node_position": {
-      "x": -309.0,
-      "y": 70.6
+      "x": -81.11842039999999,
+      "y": 10.05625
      },
      "parameters": {},
-     "ports": [],
+     "ports": [
+      {
+       "name": "in0",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "in1",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "in2",
+       "type": "rgba",
+       "group_size": 0
+      }
+     ],
      "seed": 0,
      "seed_locked": true
     },
@@ -150,8 +156,8 @@
      "name": "gen_outputs",
      "type": "ios",
      "node_position": {
-      "x": 491.0,
-      "y": 70.6
+      "x": 718.8815796,
+      "y": 10.05625
      },
      "parameters": {},
      "ports": [
@@ -162,12 +168,12 @@
       },
       {
        "name": "out1",
-       "type": "rgba",
+       "type": "rgb",
        "group_size": 0
       },
       {
        "name": "out2",
-       "type": "f",
+       "type": "rgba",
        "group_size": 0
       }
      ],
@@ -177,56 +183,57 @@
      "name": "gen_parameters",
      "type": "remote",
      "node_position": {
-      "x": -309.0,
-      "y": 270.6
+      "x": -81.11842039999999,
+      "y": 210.05625
      },
      "parameters": {
-      "param0": 5,
+      "param0": 7,
       "param1": {
        "interpolation": 1,
+       "type": "Gradient",
        "points": [
         {
          "a": 1,
-         "r": 0.38,
-         "g": 0.25,
-         "b": 0.13,
+         "r": 0.62,
+         "g": 0.5,
+         "b": 0.34,
          "pos": 0.0
         },
         {
          "a": 1,
-         "r": 0.52,
-         "g": 0.36,
-         "b": 0.2,
-         "pos": 0.5
+         "r": 0.55,
+         "g": 0.4,
+         "b": 0.24,
+         "pos": 0.4
         },
         {
          "a": 1,
-         "r": 0.64,
-         "g": 0.48,
-         "b": 0.28,
+         "r": 0.46,
+         "g": 0.32,
+         "b": 0.18,
+         "pos": 0.7
+        },
+        {
+         "a": 1,
+         "r": 0.34,
+         "g": 0.23,
+         "b": 0.13,
          "pos": 1.0
         }
-       ],
-       "type": "Gradient"
+       ]
       },
-      "param2": {
-       "type": "Color",
-       "r": 0.08,
-       "g": 0.05,
-       "b": 0.03,
-       "a": 1
-      }
+      "param2": 0.7
      },
      "seed": 0,
      "widgets": [
       {
        "name": "param0",
-       "shortdesc": "Plate scale",
+       "shortdesc": "Plate size",
        "label": "",
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "ClayCells",
+         "node": "ClayPlates",
          "widget": "scale_x"
         }
        ]
@@ -245,23 +252,39 @@
       },
       {
        "name": "param2",
-       "shortdesc": "Crack color",
+       "shortdesc": "Crack depth",
        "label": "",
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "CrackColor",
-         "widget": "color"
+         "node": "CrackComposite",
+         "widget": "amount"
         }
        ]
       }
      ]
     },
     {
-     "name": "ClayColor",
+     "name": "ClayPlates",
      "node_position": {
-      "x": 384,
-      "y": 137
+      "x": -165,
+      "y": -96.75
+     },
+     "parameters": {
+      "intensity": 0.6,
+      "randomness": 1,
+      "scale_x": 7,
+      "scale_y": 7,
+      "stretch_x": 1,
+      "stretch_y": 1
+     },
+     "type": "voronoi"
+    },
+    {
+     "name": "CrackLines",
+     "node_position": {
+      "x": 93,
+      "y": -117.75
      },
      "parameters": {
       "gradient": {
@@ -269,24 +292,17 @@
        "points": [
         {
          "a": 1,
-         "r": 0.38,
-         "g": 0.25,
-         "b": 0.13,
-         "pos": 0.0
+         "b": 0,
+         "g": 0,
+         "pos": 0,
+         "r": 0
         },
         {
          "a": 1,
-         "r": 0.52,
-         "g": 0.36,
-         "b": 0.2,
-         "pos": 0.5
-        },
-        {
-         "a": 1,
-         "r": 0.64,
-         "g": 0.48,
-         "b": 0.28,
-         "pos": 1.0
+         "b": 1,
+         "g": 1,
+         "pos": 0.063636,
+         "r": 1
         }
        ],
        "type": "Gradient"
@@ -295,23 +311,151 @@
      "type": "colorize"
     },
     {
-     "name": "ClayCells",
+     "name": "ReliefFineUnused",
      "node_position": {
-      "x": 71,
-      "y": 216
+      "x": 338,
+      "y": -237.75
      },
      "parameters": {
-      "noise": 3,
-      "scale_x": 5,
-      "scale_y": 5,
-      "folds": 0,
-      "iterations": 5,
-      "persistence": 0.5
+      "gradient": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "b": 0.200277,
+         "g": 0.378784,
+         "pos": 0.245455,
+         "r": 0.557292
+        },
+        {
+         "a": 1,
+         "b": 0.03776,
+         "g": 0.150513,
+         "pos": 0.645455,
+         "r": 0.25
+        }
+       ],
+       "type": "Gradient"
+      }
      },
-     "type": "fbm"
+     "type": "colorize"
     },
     {
-     "name": "CrackMask",
+     "name": "CrackComposite",
+     "node_position": {
+      "x": 541,
+      "y": -82.75
+     },
+     "parameters": {
+      "amount": 0.7,
+      "blend_type": 2
+     },
+     "type": "blend"
+    },
+    {
+     "name": "CrackWarp",
+     "node_position": {
+      "x": 264,
+      "y": -13.75
+     },
+     "parameters": {
+      "amount": 0.12,
+      "eps": 0.045,
+      "epsilon": 0
+     },
+     "type": "warp"
+    },
+    {
+     "name": "ReliefComposite",
+     "node_position": {
+      "x": 442,
+      "y": 175.25
+     },
+     "parameters": {
+      "amount": 0.5,
+      "blend_type": 0
+     },
+     "type": "blend"
+    },
+    {
+     "name": "ClayNormal",
+     "node_position": {
+      "x": 706,
+      "y": 95.25
+     },
+     "parameters": {
+      "amount": 0.35,
+      "param0": 11,
+      "param1": 0.99,
+      "param2": 0,
+      "param3": 0,
+      "param4": 1,
+      "size": 2
+     },
+     "type": "normal_map"
+    },
+    {
+     "name": "ReliefRamp",
+     "node_position": {
+      "x": 252,
+      "y": 178.25
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "b": 1,
+         "g": 1,
+         "pos": 0,
+         "r": 1
+        },
+        {
+         "a": 1,
+         "b": 0,
+         "g": 0,
+         "pos": 1,
+         "r": 0
+        }
+       ],
+       "type": "Gradient"
+      }
+     },
+     "type": "colorize"
+    },
+    {
+     "name": "ClayHeight",
+     "node_position": {
+      "x": 717.815796,
+      "y": 200.5625
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "b": 1,
+         "g": 1,
+         "pos": 0,
+         "r": 1
+        },
+        {
+         "a": 1,
+         "b": 0,
+         "g": 0,
+         "pos": 1,
+         "r": 0
+        }
+       ],
+       "type": "Gradient"
+      }
+     },
+     "type": "colorize"
+    },
+    {
+     "name": "ClayColor",
      "type": "colorize",
      "node_position": {
       "x": 0,
@@ -324,111 +468,124 @@
        "points": [
         {
          "a": 1,
-         "r": 0,
-         "g": 0,
-         "b": 0,
+         "r": 0.62,
+         "g": 0.5,
+         "b": 0.34,
          "pos": 0.0
         },
         {
          "a": 1,
-         "r": 0,
-         "g": 0,
-         "b": 0,
-         "pos": 0.42
+         "r": 0.55,
+         "g": 0.4,
+         "b": 0.24,
+         "pos": 0.4
         },
         {
          "a": 1,
-         "r": 1,
-         "g": 1,
-         "b": 1,
-         "pos": 0.48
+         "r": 0.46,
+         "g": 0.32,
+         "b": 0.18,
+         "pos": 0.7
         },
         {
          "a": 1,
-         "r": 1,
-         "g": 1,
-         "b": 1,
+         "r": 0.34,
+         "g": 0.23,
+         "b": 0.13,
          "pos": 1.0
         }
        ]
       }
      }
-    },
-    {
-     "name": "CrackColor",
-     "type": "uniform",
-     "node_position": {
-      "x": 0,
-      "y": 0
-     },
-     "parameters": {
-      "color": {
-       "type": "Color",
-       "r": 0.08,
-       "g": 0.05,
-       "b": 0.03,
-       "a": 1
-      }
-     }
-    },
-    {
-     "name": "AlbedoComposite",
-     "type": "blend",
-     "node_position": {
-      "x": 0,
-      "y": 0
-     },
-     "parameters": {
-      "blend_type": 0,
-      "amount": 1
-     }
     }
    ],
    "connections": [
     {
-     "from": "ClayCells",
-     "from_port": 0,
-     "to": "ClayColor",
-     "to_port": 0
-    },
-    {
-     "from": "ClayCells",
-     "from_port": 0,
-     "to": "CrackMask",
-     "to_port": 0
-    },
-    {
-     "from": "CrackColor",
-     "from_port": 0,
-     "to": "AlbedoComposite",
+     "from": "ClayPlates",
+     "from_port": 1,
+     "to": "CrackLines",
      "to_port": 0
     },
     {
      "from": "ClayColor",
      "from_port": 0,
-     "to": "AlbedoComposite",
+     "to": "CrackComposite",
      "to_port": 1
     },
     {
-     "from": "CrackMask",
+     "from": "CrackLines",
      "from_port": 0,
-     "to": "AlbedoComposite",
-     "to_port": 2
+     "to": "CrackWarp",
+     "to_port": 0
     },
     {
-     "from": "CrackMask",
+     "from": "CrackWarp",
+     "from_port": 0,
+     "to": "CrackComposite",
+     "to_port": 0
+    },
+    {
+     "from": "CrackWarp",
+     "from_port": 0,
+     "to": "ReliefRamp",
+     "to_port": 0
+    },
+    {
+     "from": "ReliefRamp",
+     "from_port": 0,
+     "to": "ReliefComposite",
+     "to_port": 1
+    },
+    {
+     "from": "ReliefComposite",
+     "from_port": 0,
+     "to": "ClayHeight",
+     "to_port": 0
+    },
+    {
+     "from": "ClayHeight",
+     "from_port": 0,
+     "to": "ClayNormal",
+     "to_port": 0
+    },
+    {
+     "from": "ClayPlates",
+     "from_port": 2,
+     "to": "ClayColor",
+     "to_port": 0
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 0,
+     "to": "ReliefFineUnused",
+     "to_port": 0
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 1,
+     "to": "CrackWarp",
+     "to_port": 1
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 2,
+     "to": "ReliefComposite",
+     "to_port": 0
+    },
+    {
+     "from": "CrackComposite",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
-     "from": "AlbedoComposite",
+     "from": "ClayNormal",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1
     },
     {
-     "from": "ClayCells",
+     "from": "ReliefComposite",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 2
@@ -440,31 +597,30 @@
    "label": "Surface Finish",
    "type": "graph",
    "node_position": {
-    "x": 375.6666666666667,
-    "y": 307.6666666666667
+    "x": 94.25,
+    "y": -69.5625
    },
    "parameters": {
     "param0": {
      "interpolation": 1,
+     "type": "Gradient",
      "points": [
       {
        "a": 1,
-       "r": 0.88,
-       "g": 0.88,
-       "b": 0.88,
+       "r": 0.85,
+       "g": 0.85,
+       "b": 0.85,
        "pos": 0.0
       },
       {
        "a": 1,
-       "r": 0.97,
-       "g": 0.97,
-       "b": 0.97,
+       "r": 0.85,
+       "g": 0.85,
+       "b": 0.85,
        "pos": 1.0
       }
-     ],
-     "type": "Gradient"
-    },
-    "param1": 0.45
+     ]
+    }
    },
    "seed_int": 0,
    "nodes": [
@@ -472,22 +628,11 @@
      "name": "gen_inputs",
      "type": "ios",
      "node_position": {
-      "x": -24.333333333333314,
-      "y": 307.6666666666667
+      "x": -305.75,
+      "y": -69.5625
      },
      "parameters": {},
-     "ports": [
-      {
-       "name": "in0",
-       "type": "f",
-       "group_size": 0
-      },
-      {
-       "name": "in1",
-       "type": "f",
-       "group_size": 0
-      }
-     ],
+     "ports": [],
      "seed": 0,
      "seed_locked": true
     },
@@ -495,19 +640,29 @@
      "name": "gen_outputs",
      "type": "ios",
      "node_position": {
-      "x": 775.6666666666667,
-      "y": 307.6666666666667
+      "x": 494.25,
+      "y": -69.5625
      },
      "parameters": {},
      "ports": [
       {
        "name": "out0",
-       "type": "rgb",
+       "type": "rgba",
        "group_size": 0
       },
       {
        "name": "out1",
-       "type": "rgba",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "out2",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "out3",
+       "type": "f",
        "group_size": 0
       }
      ],
@@ -517,31 +672,30 @@
      "name": "gen_parameters",
      "type": "remote",
      "node_position": {
-      "x": -24.333333333333314,
-      "y": 507.6666666666667
+      "x": -305.75,
+      "y": 130.4375
      },
      "parameters": {
       "param0": {
        "interpolation": 1,
+       "type": "Gradient",
        "points": [
         {
          "a": 1,
-         "r": 0.88,
-         "g": 0.88,
-         "b": 0.88,
+         "r": 0.85,
+         "g": 0.85,
+         "b": 0.85,
          "pos": 0.0
         },
         {
          "a": 1,
-         "r": 0.97,
-         "g": 0.97,
-         "b": 0.97,
+         "r": 0.85,
+         "g": 0.85,
+         "b": 0.85,
          "pos": 1.0
         }
-       ],
-       "type": "Gradient"
-      },
-      "param1": 0.45
+       ]
+      }
      },
      "seed": 0,
      "widgets": [
@@ -556,56 +710,42 @@
          "widget": "gradient"
         }
        ]
-      },
-      {
-       "name": "param1",
-       "shortdesc": "Crack relief",
-       "label": "",
-       "type": "linked_control",
-       "linked_widgets": [
-        {
-         "node": "ClayNormal",
-         "widget": "param1"
-        }
-       ]
       }
      ]
     },
     {
-     "name": "ClayRoughness",
+     "name": "ReliefNoiseCoarse",
      "node_position": {
-      "x": 384,
-      "y": 258
+      "x": -144,
+      "y": 50.25
      },
      "parameters": {
-      "gradient": {
-       "interpolation": 1,
-       "points": [
-        {
-         "a": 1,
-         "r": 0.88,
-         "g": 0.88,
-         "b": 0.88,
-         "pos": 0.0
-        },
-        {
-         "a": 1,
-         "r": 0.97,
-         "g": 0.97,
-         "b": 0.97,
-         "pos": 1.0
-        }
-       ],
-       "type": "Gradient"
-      }
+      "iterations": 3,
+      "persistence": 0.5,
+      "scale_x": 4,
+      "scale_y": 4
      },
-     "type": "colorize"
+     "type": "perlin"
     },
     {
-     "name": "ClayHeight",
+     "name": "ReliefNoiseFine",
      "node_position": {
-      "x": 264,
-      "y": 331
+      "x": 56,
+      "y": -361.75
+     },
+     "parameters": {
+      "iterations": 10,
+      "persistence": 0.9,
+      "scale_x": 2,
+      "scale_y": 2
+     },
+     "type": "perlin"
+    },
+    {
+     "name": "ReliefContrast",
+     "node_position": {
+      "x": 465,
+      "y": 33.25
      },
      "parameters": {
       "gradient": {
@@ -613,17 +753,17 @@
        "points": [
         {
          "a": 1,
-         "r": 1,
-         "g": 1,
-         "b": 1,
-         "pos": 0.0
-        },
-        {
-         "a": 1,
-         "r": 0,
-         "g": 0,
          "b": 0,
-         "pos": 1.0
+         "g": 0,
+         "pos": 0,
+         "r": 0
+        },
+        {
+         "a": 1,
+         "b": 0.520833,
+         "g": 0.520833,
+         "pos": 1,
+         "r": 0.520833
         }
        ],
        "type": "Gradient"
@@ -632,50 +772,72 @@
      "type": "colorize"
     },
     {
-     "name": "ClayNormal",
+     "name": "ClayRoughness",
+     "type": "colorize",
      "node_position": {
-      "x": 479,
-      "y": 334
+      "x": 0,
+      "y": 0
      },
      "parameters": {
-      "param0": 11,
-      "param1": 0.45,
-      "param2": 0,
-      "param4": 0
-     },
-     "type": "normal_map"
+      "gradient": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.85,
+         "g": 0.85,
+         "b": 0.85,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.85,
+         "g": 0.85,
+         "b": 0.85,
+         "pos": 1.0
+        }
+       ]
+      }
+     }
     }
    ],
    "connections": [
     {
-     "from": "ClayHeight",
+     "from": "ReliefNoiseCoarse",
      "from_port": 0,
-     "to": "ClayNormal",
+     "to": "ReliefContrast",
      "to_port": 0
     },
     {
-     "from": "gen_inputs",
+     "from": "ReliefNoiseFine",
      "from_port": 0,
-     "to": "ClayHeight",
-     "to_port": 0
-    },
-    {
-     "from": "gen_inputs",
-     "from_port": 1,
      "to": "ClayRoughness",
-     "to_port": 0
-    },
-    {
-     "from": "ClayNormal",
-     "from_port": 0,
-     "to": "gen_outputs",
      "to_port": 0
     },
     {
      "from": "ClayRoughness",
      "from_port": 0,
      "to": "gen_outputs",
+     "to_port": 0
+    },
+    {
+     "from": "ReliefNoiseFine",
+     "from_port": 0,
+     "to": "gen_outputs",
      "to_port": 1
+    },
+    {
+     "from": "ReliefNoiseCoarse",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 2
+    },
+    {
+     "from": "ReliefNoiseFine",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 3
     }
    ]
   }
