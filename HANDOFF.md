@@ -1,6 +1,6 @@
 # 🧭 Session Handoff: Tool-MaterialMaker-MCP
 
-_Last updated: 2026-09-06 (validate() descends into subgraphs + crate round-trip prep) CT (America/Chicago)_
+_Last updated: 2026-09-06 (idle-exit watchdog shipped; validate() descends into subgraphs; crate round-trip prep) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up. **Shape rule (2026-09-05,
 teardown #3):** "Current state" describes the latest session only; anything
@@ -10,7 +10,7 @@ archive; there is no separate archive file.
 
 ## 🎯 Current state
 
-`main` at `577592f`, pushed, in sync (0/0). Fast suite **993 passed, 1
+`main` at `ebba5b6` plus the idle-exit merge `f669f8c` and this docs commit, pushed, in sync (0/0). Two sessions ran on this checkout in parallel today; this file merges both. Fast suite **993 passed, 1
 flaked** (the one flake was `test_live.py::test_load_graph_round_trips_a_cookbook_material`,
 a live-overlay test that collided with a concurrent Godot render; it passes
 in 25 s on its own and its material validates with 0 errors under the new
@@ -36,6 +36,14 @@ moves and both landed:
   was rendered and sent to Grayson (session scratchpad only, not tracked).
   The hand-edit itself is deliberately left to him: it is the experiment the
   moratorium wants.
+- **Idle-exit watchdog (other session, merge `f669f8c`, suite 989).**
+  `MM_IDLE_EXIT_MINUTES` (default 0 = off) makes the stdio server exit after
+  that many minutes without a tool call: `src/mm_mcp/idle.py`, every one of
+  the 17 tools touches it (a test pins the count against the registrations),
+  and the exit path closes any live Material Maker session before
+  `os._exit(0)`. Grayson's user-scope registration and this repo's `.mcp.json`
+  carry `120`. Built in a git worktree because this checkout was mid-edit;
+  worktree removed. Thirteen stale per-session servers were killed by hand.
 
 ## 📌 Where we stopped
 
@@ -94,11 +102,13 @@ one of the moratorium's three) has NOT happened. Nothing is in flight.
   failure is a rerender first, a regression second.
 - **In the Git Bash tool, `taskkill /F` is rewritten to `F:/`.** Use
   `taskkill //F //IM Godot_v4.7.1-stable_win64_console.exe` (and the GUI exe).
-- **Every Claude Code session on this machine now spawns its own `mm-mcp.exe`**
-  (user-scope registration); 13 launcher chains (26 python processes) were
-  alive at once on 2026-09-06, one per live `claude.exe`, none orphaned.
-  Killing one only disconnects that session's MCP; check `claude.exe` parents
-  before sweeping.
+- **Every Claude Code session on this machine spawns its own `mm-mcp.exe`**
+  (user-scope registration). Since `f669f8c` a server with no tool call for
+  `MM_IDLE_EXIT_MINUTES` (120 in Grayson's registration) closes its live
+  session and exits on its own. Claude Code does NOT restart an exited stdio
+  server: a tab idle for two hours loses its Material Maker tools until it
+  reconnects (`/mcp`) or the session restarts. Servers started before the
+  change keep running without the timer.
 - **Node names never affect renders** (Material Maker seeds from node
   position), so a rename pass is render-identical by construction; add
   materials through a builder that ends with `rename_nodes(g, {...})` after
@@ -144,6 +154,7 @@ one of the moratorium's three) has NOT happened. Nothing is in flight.
 Newest first. Keep at most 8 entries; older ones are in `git log` (search the
 commit subjects, every session ends with a `docs:` wrap-up commit).
 
+### 2026-09-06 (idle-exit watchdog): `MM_IDLE_EXIT_MINUTES` opt-in idle exit, 17/17 tools touch it, live session closed on exit; review found and fixed the two untouched tools and the atexit skip; merged `--no-ff` as `f669f8c`, suite 989; registration set to 120.
 ### 2026-09-06 (validate subgraph descent + crate round-trip prep)
 - `pickup`; Grayson picked options 1 + 2 ("automate most of 1 for me").
 - Option 2 TDD: `validate_graph` recurses into subgraph nodes, inner
@@ -174,4 +185,3 @@ commit subjects, every session ends with a `docs:` wrap-up commit).
 ### 2026-09-05 (mm-play verified): Grayson ran `play.bat` hands-on; row promoted 🔌 -> ✅ (`056dcd4`).
 ### 2026-09-04 (blocker correction): the "host can't render" blocker was a stale server squatting 8788, not GPU (`b016f1b`).
 ### 2026-09-04 (live_load): seventh live tool, in-place graph replace; play surface pushes the picked material live (`d523ad6`).
-### 2026-09-04 (play-surface UI nits): slider panel docks; canvas re-fills on resize (`c7e85ee`).
