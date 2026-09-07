@@ -1,5 +1,49 @@
 # Changelog
 
+## [0.8.0](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/compare/v0.7.0...v0.8.0) (2026-09-07)
+
+
+### Features
+
+* **idle:** add IdleWatchdog for opt-in stdio server idle-exit ([5557965](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/55579651a0193ff8d7acc3ec152547165889bd15))
+* **quality:** naming checker for cookbook graphs (auto-names, bare types, sibling collisions) ([7fc80a6](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/7fc80a6bb3324f07abc51724f22bd5e94fe83c35))
+* **quality:** promote writes a generated node table into each recipe card; --check verifies it ([393160c](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/393160cad299594ac0df3b5f7e1f5a8c3f15352b))
+* **quality:** rename_nodes helper, recursive over subgraphs, validates before writing ([b81a093](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/b81a093661cd47af163b1c85aece09bf4a338ed5))
+* **quality:** render_tracked renders tracked cookbook graphs and compares against a baseline ([2b585a6](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/2b585a62e70b06fcfa98667f8ee48d47e80faf33))
+* **server:** wire idle-exit watchdog behind MM_IDLE_EXIT_MINUTES ([ff23a81](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/ff23a812ea7d5b5b970f088b1938172c7a34b08f))
+
+
+### Bug Fixes
+
+* **ci:** pin Material Maker by full sha; GitHub refuses fetch-by-sha for short ids ([c5d473c](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/c5d473ccd5a2c5f078ab0e188e30d744a4be9479))
+* **ci:** pin the Material Maker clone to upstream ad19fcf; doctor prints the checkout revision ([c836d38](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/c836d38891a2098f03a17869b2b0892a7c320deb))
+* **idle:** every tool touches the watchdog; idle exit closes the live session first ([ca3499b](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/ca3499b1e21b3212c61fafdfac9c0e922250c2d0))
+* **quality:** naming CLI no longer swallows a .ptex that follows --cookbook ([56da02b](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/56da02b7cf1557e2ca286e70fabc5819027b4788))
+* **quality:** rename_nodes rejects two sources mapped to one target at the same level ([2c8bd37](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/2c8bd3763422f476e9bb71fea2913e2347835320))
+* **quality:** render_tracked compares every map the baseline holds, not a fixed triple ([837c041](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/837c041d14c3315faaf2a083697835727b2488ad))
+
+
+### Documentation
+
+* **cookbook:** finish the p01 and w03 card prose renames (PlasticColor, PlankLayout) ([d10b2e1](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/d10b2e12d943d145be07927283644b4e9dffb653))
+* **cookbook:** repoint seven recipe cards at the archived Phase-3 scorecard ([7b6127c](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/7b6127cf2e9327ecd8a66c6a611f315839eab680))
+* **cookbook:** s09 card names the shipped BlockLayout node, not the donor's Bricks ([4124b7b](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/4124b7bf0600b47ade7df800b9c0fb2cd8788fb7))
+* correct the mm-mcp process heads-up (one server per live session, not per subagent) ([868d16a](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/868d16ad589b31289d4313be29e1d11bfd16f96c))
+* document MM_IDLE_EXIT_MINUTES opt-in idle exit ([46c22f3](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/46c22f3e3b37a1bcfbc71ded0e972106b755969f))
+* fold the idle-exit watchdog into the baton (HANDOFF current state, heads-up, session log; STATUS server row) ([07b65bd](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/07b65bd889581a931f04efa72bd6b28b8a56ecb9))
+* honesty sweep (teardown [#4](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/issues/4) finding 6 + 8) ([d420ed8](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/d420ed8f9d5edd67774bf6f3b9a9b287c0409c40))
+* mark backup-ops nightly truncation fixed (cross-project session) ([b41b65c](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/b41b65c612557a7da35a045091199058c0f76abb))
+* note the CI pin fix in the session log ([ae791e8](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/ae791e817b7fa95585220e7d7c3492b17cea3f77))
+* note v0.7.0 released in the baton ([14a9d3f](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/14a9d3f070f3df35f21b835cf18c36cda7b02193))
+* note validate() descends into subgraphs; correct editable-install heads-up ([ff30f5f](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/ff30f5ff687c12ac8961d22b59424002aecaf721))
+* **plan:** quality/ as a package + Phase-3 harness archive (teardown [#4](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/issues/4) findings 3 and 5) ([db7f5c8](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/db7f5c829234eef9f1701f02c8b4f8e00bbb2a98))
+* **plan:** role-named cookbook nodes (teardown [#5](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/issues/5) pick 3) + the MCP-authored crate graph ([1052bca](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/1052bca0a15bbcb012052d68837b7cafd7d870a3))
+* **readme:** add gProdDevKit member tag linking to public hub ([1bd9477](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/1bd9477819083387b36062d92fde37e82e24b71e))
+* **readme:** add gProdDevKit member tag linking to public hub ([c65489b](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/c65489bfd83f137f6cf78b1f8ea8f37e9d4463d2))
+* wrap up teardown [#4](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/issues/4) (picks 2 + 3 executed) in the baton ([062c00d](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/062c00dc18fb0abdc0586d360a255d3043b874cf))
+* wrap up teardown [#5](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/issues/5) executed (MCP user-wide, crate into the Unity sandbox, kit-map layer, role-named cookbook) in the baton ([d0d3eb5](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/d0d3eb551b974fda67f02f09f8e1d9560199200c))
+* wrap up validate subgraph descent + crate round-trip prep ([ebba5b6](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/ebba5b67e4c319134197ba01cff44d9f9e2614c5))
+
 ## [0.7.0](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/compare/v0.6.0...v0.7.0) (2026-09-06)
 
 
