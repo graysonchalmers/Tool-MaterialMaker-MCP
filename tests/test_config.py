@@ -117,3 +117,25 @@ def test_play_port_defaults_to_8788():
 def test_play_port_reads_env():
     cfg = load_config(overrides={"MM_PLAY_PORT": "9001"})
     assert cfg.play_port == 9001
+
+
+def test_idle_exit_minutes_defaults_to_zero():
+    cfg = load_config(overrides={"MM_IDLE_EXIT_MINUTES": ""})
+    assert cfg.idle_exit_minutes == 0
+
+
+def test_idle_exit_minutes_reads_env():
+    cfg = load_config(overrides={"MM_IDLE_EXIT_MINUTES": "120"})
+    assert cfg.idle_exit_minutes == 120
+
+
+def test_idle_exit_minutes_rejects_non_integer():
+    with pytest.raises(ValueError) as exc_info:
+        load_config(overrides={"MM_IDLE_EXIT_MINUTES": "abc"})
+    assert "MM_IDLE_EXIT_MINUTES" in str(exc_info.value)
+
+
+def test_idle_exit_minutes_rejects_negative():
+    with pytest.raises(ValueError) as exc_info:
+        load_config(overrides={"MM_IDLE_EXIT_MINUTES": "-5"})
+    assert "MM_IDLE_EXIT_MINUTES" in str(exc_info.value)
