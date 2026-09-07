@@ -106,6 +106,17 @@ The builder still authors a valid `.ptex` (see
 but it is intentionally left out of the live pixel-check table above until
 this environment/engine limitation is resolved.
 
+### The baseline toolbox (`colorize`, `normal_map`, `pattern`)
+
+These three round out the workhorse nodes every cookbook material uses at
+least once, each with a clean known-answer.
+
+| Swatch | Isolates | Should look like |
+|---|---|---|
+| `colorize` | a raw 0-to-1 ramp mapped through a red-to-blue gradient | LEFT edge (x~0.05) **red-dominant**, RIGHT edge (x~0.95) **blue-dominant**, with the midpoint a genuine red/blue mix, not a hard switch. |
+| `normal_map` | `perlin` bump -> `normal_map(param1=0.6, param4=0)` -> albedo unused, normal only | A visibly bumpy normal map, NOT the flat-normal constant (0.5, 0.5, 1.0), i.e. roughly (127, 127, 255) in 8-bit. `param4=1` (buffered) is the trap that renders flat, the same buffer/compute-shader gotcha the relief family documents. |
+| `pattern` | `pattern` node, sin-times-sin (`mix=Multiply`, `x_wave=y_wave=Sine`, scale 1x1) | A single bright **PEAK at the center** (0.5, 0.5) and a dark **VALLEY at each corner** (sampled at 0.05, 0.05), since `wave_sine(t)` peaks at t=0.5 and is 0 at t=0/1 on both axes. |
+
 ### 3D preview for a relief swatch
 
 ```

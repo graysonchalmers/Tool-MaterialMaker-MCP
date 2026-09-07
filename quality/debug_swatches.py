@@ -447,6 +447,70 @@ def build_swatch_slope_blur() -> str:
     return save_variant(_graph(nodes, conns), _LABEL, "slope_blur", 1)
 
 
+# ---- 7. baseline toolbox: colorize / normal_map / pattern -----------------
+# The three workhorse nodes every cookbook material uses at least once. Each
+# swatch isolates the node with a known-answer input so a wiring regression
+# is a pixel assertion, not an eyeball.
+
+def build_swatch_colorize() -> str:
+    """A raw horizontal 0->1 ramp (`ramp`, same gradient-node shape as
+    `_ref_field`'s ref_grad) fed into a `colorize` whose own gradient maps
+    0->RED, 1->BLUE. Known answer: x~0.05 (near 0 on the ramp) reads
+    red-dominant, x~0.95 (near 1) reads blue-dominant, and the midpoint reads
+    a genuine red/blue mix (proving a smooth gradient, not a hard switch)."""
+    nodes = [
+        {"name": "ramp", "type": "gradient", "node_position": {"x": 0, "y": 0},
+         "parameters": {"repeat": 1, "rotate": 0, "mirror": False,
+                        "gradient": _grad([(0.0, 0, 0, 0), (1.0, 1, 1, 1)])}},
+        {"name": "colorize_0", "type": "colorize", "node_position": {"x": 300, "y": 0},
+         "parameters": {"gradient": _grad([(0.0, 0.9, 0.1, 0.1), (1.0, 0.1, 0.1, 0.9)])}},
+    ]
+    conns = [
+        {"from": "ramp", "from_port": 0, "to": "colorize_0", "to_port": 0},
+        {"from": "colorize_0", "from_port": 0, "to": "Material", "to_port": 0},
+    ]
+    return save_variant(_graph(nodes, conns), _LABEL, "colorize", 1)
+
+
+def build_swatch_normal_map() -> str:
+    """A bumpy `perlin` field fed straight into `normal_map` with
+    `param1=0.6` (strength) and `param4=0` -- the unbuffered/flat-fix branch
+    required for `normal_map` to render at all headless (its internal
+    `buffer` node's compute-shader compile fails headless; a `switch` node
+    picks the unbuffered branch only when param4=0, see build_relief_circle's
+    docstring and task-1-report.md for the full investigation). Known
+    answer: for a bumpy input the rendered normal map must NOT be the flat-
+    normal constant (0.5, 0.5, 1.0), i.e. roughly (127, 127, 255) in 8-bit,
+    across a substantial fraction of the image. param4=1 (buffered) is the
+    exact trap this memorializes -- it renders flat."""
+    nodes = [
+        {"name": "perlin_0", "type": "perlin", "node_position": {"x": 0, "y": 0},
+         "parameters": {"scale_x": 6, "scale_y": 6, "iterations": 3, "persistence": 0.5}},
+        {"name": "normal_map_0", "type": "normal_map", "node_position": {"x": 300, "y": 0},
+         "parameters": {"param0": 11, "param1": 0.6, "param2": 0, "param4": 0}},
+    ]
+    conns = [
+        {"from": "perlin_0", "from_port": 0, "to": "normal_map_0", "to_port": 0},
+        {"from": "normal_map_0", "from_port": 0, "to": "Material", "to_port": 4},
+    ]
+    return save_variant(_graph(nodes, conns), _LABEL, "normal_map", 1)
+
+
+def build_swatch_pattern() -> str:
+    """A `pattern` node, sin*sin shape (mix=Multiply, x_wave=y_wave=Sine,
+    x_scale=y_scale=1 so exactly one period spans the whole 0->1 UV range)
+    fed straight to Material albedo. wave_sine(t) = 0.5-0.5*cos(2*pi*t) peaks
+    at t=0.5 and is 0 at t=0/1, so the two independent sine terms multiply to
+    a single bright PEAK at the center (0.5, 0.5) and a dark VALLEY at each
+    corner, sampled here at (0.05, 0.05)."""
+    nodes = [
+        {"name": "pattern_0", "type": "pattern", "node_position": {"x": 0, "y": 0},
+         "parameters": {"mix": 0, "x_wave": 0, "x_scale": 1, "y_wave": 0, "y_scale": 1}},
+    ]
+    conns = [{"from": "pattern_0", "from_port": 0, "to": "Material", "to_port": 0}]
+    return save_variant(_graph(nodes, conns), _LABEL, "pattern", 1)
+
+
 # ---- phase 2: known-answer pixel checks -----------------------------------
 # Each entry: swatch name -> (which rendered map to sample, check function). A
 # check takes a pngread.Sampler (0-255 rgb, v points down) and returns a list of
@@ -624,6 +688,52 @@ _check_warp2 = _check_displaced_to_white(0.35, 0.05)           # boundary moves 
 _check_directional_warp = _check_displaced_to_white(0.45, 0.75)  # black region is x in [0.5, 1.0); 0.75 stays black
 
 
+def _check_colorize(s):
+    """Left (x=0.05) must be red-dominant, right (x=0.95) blue-dominant, and
+    the midpoint must be a genuine red/blue mix -- proving a smooth gradient
+    ramp drove the colorize, not a hard left/right switch."""
+    left, right, mid = s.at(0.05, 0.5), s.at(0.95, 0.5), s.at(0.5, 0.5)
+    out = []
+    if not (left[0] > 140 and left[2] < 110):
+        out.append(f"left (x=0.05) should be red-dominant (0->RED), got {left}")
+    if not (right[2] > 140 and right[0] < 110):
+        out.append(f"right (x=0.95) should be blue-dominant (1->BLUE), got {right}")
+    if left[0] <= right[0]:
+        out.append(f"polarity flip? red channel should be higher on the left: left R={left[0]} right R={right[0]}")
+    if abs(mid[0] - mid[2]) > 70:
+        out.append(f"midpoint should read a red/blue mix (linear gradient, not a switch), got {mid}")
+    return out
+
+
+def _check_normal_map_relief(s):
+    """Scans the FULL buffer (not a sparse grid, matching _check_relief_present's
+    reasoning) and asserts a substantial fraction of pixels are off the
+    flat-normal constant (~127,127,255). A flat render (the param4=1 buffered
+    trap) is uniform, so any reasonable ratio of off-neutral pixels separates
+    real perlin-driven relief from the flat fallback."""
+    buf, c = s.buf, s.c
+    total = len(buf) // c
+    off = sum(1 for i in range(0, len(buf), c)
+              if abs(buf[i] - 127) > 20 or abs(buf[i + 1] - 127) > 20)
+    if off < total * 0.08:
+        return [f"expected substantial normal-map relief for a bumpy perlin "
+                f"input, only {off}/{total} pixels off flat-normal (param4 "
+                f"buffered-flat trap?)"]
+    return []
+
+
+def _check_pattern(s):
+    """Center (0.5, 0.5) must be bright (the sin*sin peak); a corner (0.05,
+    0.05) must be dark (a sin*sin valley, both terms near zero there)."""
+    peak, valley = s.at(0.5, 0.5), s.at(0.05, 0.05)
+    out = []
+    if min(peak) < 140:
+        out.append(f"peak at (0.5, 0.5) should be bright, got {peak}")
+    if max(valley) > 90:
+        out.append(f"valley at (0.05, 0.05) should be dark, got {valley}")
+    return out
+
+
 # No _check_slope_blur / PIXEL_CHECKS entry: see build_swatch_slope_blur's
 # docstring. Its render fails headless (a `buffer`/compute-shader pipeline
 # limitation, not a wiring bug in this swatch), so an intermediate-grey
@@ -650,6 +760,9 @@ PIXEL_CHECKS = {
     "warp2": ("albedo", _check_warp2),
     "directional_warp": ("albedo", _check_directional_warp),
     # "slope_blur" intentionally absent -- see build_swatch_slope_blur's docstring.
+    "colorize": ("albedo", _check_colorize),
+    "normal_map": ("normal", _check_normal_map_relief),
+    "pattern": ("albedo", _check_pattern),
 }
 
 
@@ -670,6 +783,9 @@ BUILDERS = {
     "warp2": build_swatch_warp2,
     "directional_warp": build_swatch_directional_warp,
     "slope_blur": build_swatch_slope_blur,
+    "colorize": build_swatch_colorize,
+    "normal_map": build_swatch_normal_map,
+    "pattern": build_swatch_pattern,
 }
 
 
