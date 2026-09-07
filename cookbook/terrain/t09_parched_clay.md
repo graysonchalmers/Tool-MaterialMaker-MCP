@@ -6,20 +6,22 @@ Sun-baked cracked ground: a single connected network of cracks splitting a warm 
 
 ## Recipe
 
-Same donor and technique as `t07_forest_floor` (`crocodile_skin`, `voronoi_0` retyped to `fbm`), but a deliberately different `noise` basis. t07 uses Cellular 4 (`noise=5`) for scattered, disconnected clumps of leaf litter. Parched clay needs the opposite topology: one continuous crack network, not isolated cells, the look plain `voronoi` cannot give at this scale. `docs/AUTHORING.md`'s own fbm-basis table names `noise=3` (Cellular 2) as exactly this case, "cracked-plate network, dry earth, marble veining, crazing," so that table entry is the deciding reason for the pick, not a render (this material was authored and validated only; the controller renders and judges the look). Scale is held coarse (5) so the plates read large and the crack lines stay continuous rather than breaking up into small isolated cells, with iterations left at 5 for a couple of octaves of edge detail without turning the plates busy.
+Revised after visual review: the first version fed the raw `fbm` field straight into the albedo colorize, and the soft cell edges of a continuous noise field read as mottled blobs, not distinct crack lines. This version keeps the `fbm` base (still `crocodile_skin`, `voronoi_0` retyped to `fbm`, Cellular 2 via `noise=3`, the connected crack-plate network `docs/AUTHORING.md`'s fbm table documents for "dry earth, marble veining, crazing") but adds a hard-threshold step and composites the result the way the `dry_earth` voronoi-plate family does, even though this material does not use that donor.
 
-Palette is warm ochre/tan, dry and sun-bleached, distinct from the wetter earth browns used for t04 soil and t07 leaf litter: deep shadow in the crack floors rising through mid ochre and dry tan to a sun-bleached highlight on the plate tops. Roughness is pushed high and matte (bone-dry ground has no sheen). `normal_map param4=0` is the standing proactive flat-normal fix used on every terrain material in this set, with `param1` set to a medium value: clay cracks are real fissures and should read as ground-level relief, not canyon walls.
+`CrackMask` is a new colorize node reading the raw `fbm` field through a near-step gradient: flat black from 0.0 to 0.42, flat white from 0.48 to 1.0, a 0.06-wide ramp between. That turns the soft grayscale cell boundary into a crisp binary mask, thin dark lines instead of a blur. Albedo is then composited with a `blend` (`AlbedoComposite`, `blend_type=0`, `amount=1`): the dark `CrackColor` (a `uniform`) on port 0 (shown where the mask is 1, the minority crack lines), the ochre/tan `ClayColor` plate gradient on port 1 (shown where the mask is 0, the majority plate faces), `CrackMask` as the port-2 mask. `ClayColor` itself no longer carries a dark "crack shadow" gradient stop, that job now belongs entirely to the hard mask and the separate `CrackColor` node.
+
+The same `CrackMask` also drives relief: `ClayHeight` reads it through an INVERTED ramp (white at input 0, black at input 1), so plates land high and the crack lines drop out as recessed grooves once fed through `ClayNormal` (`normal_map`, `param4=0` proactive flat-normal fix, medium `param1`). This is where the sharp cracks show up in 3D relief, not just in color. `ClayRoughness` is untouched, it still reads the raw `fbm` field directly for a soft high-matte roughness ramp (bone-dry ground has no sheen); cracks don't need extra gloss or extra matte of their own. Scale is held coarse (5) so the plates read large and the crack lines stay continuous rather than breaking up into small isolated cells, with iterations left at 5.
 
 ## Subgraph structure
 
-Grouped per the "Grouping into subgraphs" lever in `docs/AUTHORING.md`, the exact `t07_forest_floor` template (same `crocodile_skin` donor):
+Grouped per the "Grouping into subgraphs" lever in `docs/AUTHORING.md`:
 
-- **Crack Pattern** -- `ClayColor`, `ClayCracks` (retyped to `fbm`, Cellular 2). Exposed: `Plate scale` (`ClayCracks.scale_x`), `Clay color` (`ClayColor.gradient`).
-- **Surface Finish** -- `ClayRoughness`, `ClayHeight`, `ClayNormal`. Exposed: `Roughness` (`ClayRoughness.gradient`), `Crack relief` (`ClayNormal.param1`).
+- **Crack Pattern** -- `ClayCells` (`fbm`, retyped from `voronoi_0`, Cellular 2), `CrackMask` (hard-threshold colorize), `ClayColor` (plate-tone colorize), `CrackColor` (dark crack-shadow uniform), `AlbedoComposite` (the crack-over-plate blend). Exposed: `Plate scale` (`ClayCells.scale_x`), `Clay color` (`ClayColor.gradient`), `Crack color` (`CrackColor.color`).
+- **Surface Finish** -- `ClayRoughness`, `ClayHeight` (now the inverted crack mask, crossing the subgraph boundary from Crack Pattern), `ClayNormal`. Exposed: `Roughness` (`ClayRoughness.gradient`), `Crack relief` (`ClayNormal.param1`).
 
 `NonMetallic` (the untouched metallic-0 scalar, feeding Material port 1 directly) stays top-level, matching the same precedent used for `t07_forest_floor` and `o05_coral`.
 
-Not rendered as part of authoring this material: the controller runs the headless render and 3D preview and sends them to Grayson for the visual verdict, per the noise-vocabulary task's flow change.
+Not rendered as part of this revision: the controller runs the headless render and 3D preview and sends them to Grayson for the visual verdict.
 
 ## See also
 
@@ -37,7 +39,10 @@ do not edit by hand. Open the `.ptex` and look for these names.
 | (top level) | crack_pattern | graph |
 | (top level) | surface_finish | graph |
 | crack_pattern | ClayColor | colorize |
-| crack_pattern | ClayCracks | fbm |
+| crack_pattern | ClayCells | fbm |
+| crack_pattern | CrackMask | colorize |
+| crack_pattern | CrackColor | uniform |
+| crack_pattern | AlbedoComposite | blend |
 | surface_finish | ClayRoughness | colorize |
 | surface_finish | ClayHeight | colorize |
 | surface_finish | ClayNormal | normal_map |

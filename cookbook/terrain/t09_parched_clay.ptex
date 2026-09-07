@@ -92,8 +92,8 @@
    "label": "Crack Pattern",
    "type": "graph",
    "node_position": {
-    "x": 227.5,
-    "y": 176.5
+    "x": 91.0,
+    "y": 70.6
    },
    "parameters": {
     "param0": 5,
@@ -102,34 +102,34 @@
      "points": [
       {
        "a": 1,
-       "r": 0.16,
-       "g": 0.1,
-       "b": 0.05,
+       "r": 0.38,
+       "g": 0.25,
+       "b": 0.13,
        "pos": 0.0
       },
       {
        "a": 1,
-       "r": 0.42,
-       "g": 0.27,
-       "b": 0.14,
-       "pos": 0.35
+       "r": 0.52,
+       "g": 0.36,
+       "b": 0.2,
+       "pos": 0.5
       },
       {
        "a": 1,
-       "r": 0.58,
-       "g": 0.4,
-       "b": 0.22,
-       "pos": 0.65
-      },
-      {
-       "a": 1,
-       "r": 0.68,
-       "g": 0.5,
-       "b": 0.3,
+       "r": 0.64,
+       "g": 0.48,
+       "b": 0.28,
        "pos": 1.0
       }
      ],
      "type": "Gradient"
+    },
+    "param2": {
+     "type": "Color",
+     "r": 0.08,
+     "g": 0.05,
+     "b": 0.03,
+     "a": 1
     }
    },
    "seed_int": 0,
@@ -138,8 +138,8 @@
      "name": "gen_inputs",
      "type": "ios",
      "node_position": {
-      "x": -172.5,
-      "y": 176.5
+      "x": -309.0,
+      "y": 70.6
      },
      "parameters": {},
      "ports": [],
@@ -150,14 +150,14 @@
      "name": "gen_outputs",
      "type": "ios",
      "node_position": {
-      "x": 627.5,
-      "y": 176.5
+      "x": 491.0,
+      "y": 70.6
      },
      "parameters": {},
      "ports": [
       {
        "name": "out0",
-       "type": "f",
+       "type": "rgba",
        "group_size": 0
       },
       {
@@ -177,8 +177,8 @@
      "name": "gen_parameters",
      "type": "remote",
      "node_position": {
-      "x": -172.5,
-      "y": 376.5
+      "x": -309.0,
+      "y": 270.6
      },
      "parameters": {
       "param0": 5,
@@ -187,34 +187,34 @@
        "points": [
         {
          "a": 1,
-         "r": 0.16,
-         "g": 0.1,
-         "b": 0.05,
+         "r": 0.38,
+         "g": 0.25,
+         "b": 0.13,
          "pos": 0.0
         },
         {
          "a": 1,
-         "r": 0.42,
-         "g": 0.27,
-         "b": 0.14,
-         "pos": 0.35
+         "r": 0.52,
+         "g": 0.36,
+         "b": 0.2,
+         "pos": 0.5
         },
         {
          "a": 1,
-         "r": 0.58,
-         "g": 0.4,
-         "b": 0.22,
-         "pos": 0.65
-        },
-        {
-         "a": 1,
-         "r": 0.68,
-         "g": 0.5,
-         "b": 0.3,
+         "r": 0.64,
+         "g": 0.48,
+         "b": 0.28,
          "pos": 1.0
         }
        ],
        "type": "Gradient"
+      },
+      "param2": {
+       "type": "Color",
+       "r": 0.08,
+       "g": 0.05,
+       "b": 0.03,
+       "a": 1
       }
      },
      "seed": 0,
@@ -226,7 +226,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "ClayCracks",
+         "node": "ClayCells",
          "widget": "scale_x"
         }
        ]
@@ -240,6 +240,18 @@
         {
          "node": "ClayColor",
          "widget": "gradient"
+        }
+       ]
+      },
+      {
+       "name": "param2",
+       "shortdesc": "Crack color",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "CrackColor",
+         "widget": "color"
         }
        ]
       }
@@ -257,30 +269,23 @@
        "points": [
         {
          "a": 1,
-         "r": 0.16,
-         "g": 0.1,
-         "b": 0.05,
+         "r": 0.38,
+         "g": 0.25,
+         "b": 0.13,
          "pos": 0.0
         },
         {
          "a": 1,
-         "r": 0.42,
-         "g": 0.27,
-         "b": 0.14,
-         "pos": 0.35
+         "r": 0.52,
+         "g": 0.36,
+         "b": 0.2,
+         "pos": 0.5
         },
         {
          "a": 1,
-         "r": 0.58,
-         "g": 0.4,
-         "b": 0.22,
-         "pos": 0.65
-        },
-        {
-         "a": 1,
-         "r": 0.68,
-         "g": 0.5,
-         "b": 0.3,
+         "r": 0.64,
+         "g": 0.48,
+         "b": 0.28,
          "pos": 1.0
         }
        ],
@@ -290,7 +295,7 @@
      "type": "colorize"
     },
     {
-     "name": "ClayCracks",
+     "name": "ClayCells",
      "node_position": {
       "x": 71,
       "y": 216
@@ -304,29 +309,126 @@
       "persistence": 0.5
      },
      "type": "fbm"
+    },
+    {
+     "name": "CrackMask",
+     "type": "colorize",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0,
+         "g": 0,
+         "b": 0,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0,
+         "g": 0,
+         "b": 0,
+         "pos": 0.42
+        },
+        {
+         "a": 1,
+         "r": 1,
+         "g": 1,
+         "b": 1,
+         "pos": 0.48
+        },
+        {
+         "a": 1,
+         "r": 1,
+         "g": 1,
+         "b": 1,
+         "pos": 1.0
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "CrackColor",
+     "type": "uniform",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "color": {
+       "type": "Color",
+       "r": 0.08,
+       "g": 0.05,
+       "b": 0.03,
+       "a": 1
+      }
+     }
+    },
+    {
+     "name": "AlbedoComposite",
+     "type": "blend",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "blend_type": 0,
+      "amount": 1
+     }
     }
    ],
    "connections": [
     {
-     "from": "ClayCracks",
+     "from": "ClayCells",
      "from_port": 0,
      "to": "ClayColor",
      "to_port": 0
     },
     {
-     "from": "ClayCracks",
+     "from": "ClayCells",
      "from_port": 0,
-     "to": "gen_outputs",
+     "to": "CrackMask",
+     "to_port": 0
+    },
+    {
+     "from": "CrackColor",
+     "from_port": 0,
+     "to": "AlbedoComposite",
      "to_port": 0
     },
     {
      "from": "ClayColor",
      "from_port": 0,
+     "to": "AlbedoComposite",
+     "to_port": 1
+    },
+    {
+     "from": "CrackMask",
+     "from_port": 0,
+     "to": "AlbedoComposite",
+     "to_port": 2
+    },
+    {
+     "from": "CrackMask",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    },
+    {
+     "from": "AlbedoComposite",
+     "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1
     },
     {
-     "from": "ClayCracks",
+     "from": "ClayCells",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 2
@@ -511,16 +613,16 @@
        "points": [
         {
          "a": 1,
-         "r": 0,
-         "g": 0,
-         "b": 0,
+         "r": 1,
+         "g": 1,
+         "b": 1,
          "pos": 0.0
         },
         {
          "a": 1,
-         "r": 1,
-         "g": 1,
-         "b": 1,
+         "r": 0,
+         "g": 0,
+         "b": 0,
          "pos": 1.0
         }
        ],
