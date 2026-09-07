@@ -103,7 +103,9 @@ map from the shipped names to their types.
    is close: it already encodes a recipe that rendered well.
 2. Draft 2-3 variant graphs using the catalog (`list_node_types`,
    `describe_node`, or the `catalog://nodes` resource) for exact ports/params.
-3. `validate` each variant; fix every error-severity problem.
+3. `validate` each variant; fix every error-severity problem. `validate`
+   descends into subgraph nodes, so an inner problem is reported with a
+   path-prefixed `where` (e.g. `sub/inner`).
 4. Render via `render_graph` (or `python -m quality.render_one` for an authored variant).
 5. **Judge in 3D, not off the flat albedo.** Feed the render's output paths
    into `render_preview(albedo_path, normal_path, orm_path)` to composite the

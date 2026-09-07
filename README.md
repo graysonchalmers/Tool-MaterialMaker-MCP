@@ -243,7 +243,7 @@ The server exposes 10 batch-mode tools and two resources (plus 7 more in Live mo
 |---|---|
 | `list_node_types` | List catalog node types, optionally filtered by a name substring |
 | `describe_node` | Full typed inputs/outputs/parameters for one node type |
-| `validate` | Validate a `.ptex` graph against the catalog; returns problems as data |
+| `validate` | Validate a `.ptex` graph against the catalog; returns problems as data. Descends into subgraph (`graph`-typed) nodes, path-prefixing inner problems (e.g. `sub/inner`) |
 | `render_graph` | Render a `.ptex` to PBR maps at a given size |
 | `render_node_output` | Render one node's output in isolation, without editing the real graph |
 | `render_preview` | Composite already-rendered maps onto a sphere/cube/cutaway-ball preview scene |

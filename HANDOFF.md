@@ -145,9 +145,14 @@ one of the moratorium's three) has NOT happened. Nothing is in flight.
   commit subject: search the commons by filename, not `git log --grep`. It
   also committed a `docs:` correction (`868d16a`) to THIS file. `git fetch`
   and re-read before editing shared files.
-- **The user-scope `mm-mcp.exe` runs the INSTALLED package, not the working
-  tree.** The `577592f` validator change is live in local pytest but NOT in
-  the MCP `validate` tool until a reinstall/restart of that server.
+- **The user-scope `mm-mcp.exe` is an EDITABLE install** (`pip show mm-mcp` ->
+  `Editable project location: C:\Projects-local\Tool-MaterialMaker-MCP`), so
+  on-disk source == what the server imports; no reinstall is ever needed for a
+  code change. Only a server process already running from BEFORE a change holds
+  stale code in memory. Fix = restart that process (idle-exit retires it, or
+  `/mcp` reconnect, or session restart), not `pip install`. Verified 2026-09-06:
+  the `577592f` subgraph-descent fix is live in the MCP `validate` tool this
+  session (probe returned `where: sub1/inner`).
 
 ## 🕓 Session log
 
