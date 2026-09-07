@@ -13,10 +13,11 @@ If a render doesn't match its legend, a node is miswired -- that's the whole
 point (the inverted voronoi-port-0 grain that bit the leather cookbook would
 have been obvious here on sight).
 
-Phase 2 (deferred, Grayson's "both, phased" call): turn each legend line into a
-headless pixel assertion (sample a cell center vs a border, assert the channel
-ordering) so these run as a real automated regression smoke test. Not built yet
--- see docs/DEBUG_SWATCHES.md for the intended shape.
+Phase 2 (built): pixel assertions in tests/test_debug_swatches.py render each
+swatch and assert known-answer pixels (sample a cell center vs a border, assert
+channel ordering). The swatch set covers noise-diagnostic nodes, warp/distortion
+family (warp, warp2, directional_warp, slope_blur), and the workhorses (colorize,
+normal_map, pattern).
 
 Run: python -m quality.debug_swatches
 Then: python -m quality.render_cookbook debug-swatches
