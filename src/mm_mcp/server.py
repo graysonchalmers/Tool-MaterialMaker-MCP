@@ -176,6 +176,7 @@ def render_preview(albedo_path: str, normal_path: str, orm_path: str,
 
 
 def save_graph(ptex: dict, path: str) -> dict:
+    _touch_idle()
     try:
         path = ensure_within_roots(path, load_config().allowed_roots)
     except PathNotAllowed as exc:
@@ -191,6 +192,7 @@ def inspect_project(path: str) -> dict:
     connection counts, a node-type histogram, and the material-output node
     names. For inspecting a hand-edited graph coming back through the round
     trip. Bounded by MM_ALLOWED_ROOTS when set."""
+    _touch_idle()
     try:
         path = ensure_within_roots(path, load_config().allowed_roots)
     except PathNotAllowed as exc:
@@ -577,6 +579,19 @@ def authoring_guide_resource() -> str:
     return read_authoring_guide()
 
 
+def _idle_exit(idle_s: float) -> None:
+    """on_expire callback for the server's watchdog. Unlike
+    IdleWatchdog._default_exit, this closes a live session THIS server may
+    have launched before exiting, so an idle exit during a live session does
+    not orphan the Godot overlay process (the failure mode
+    _close_live_session_atexit exists to prevent). os._exit(0) skips atexit
+    handlers, so that cleanup has to run explicitly here, before the exit."""
+    print(f"mm-mcp: no tool activity for {idle_s / 60:.0f} min; exiting.",
+          file=sys.stderr, flush=True)
+    _close_live_session_atexit()
+    os._exit(0)
+
+
 _USAGE = (
     "usage: mm-mcp [--check | --version | --help]\n"
     "  (no args)   start the MCP server over stdio\n"
@@ -613,7 +628,7 @@ def main(argv: list | None = None) -> int:
     global _idle
     cfg, _ = _ensure_ready()
     if cfg.idle_exit_minutes > 0:
-        _idle = IdleWatchdog(cfg.idle_exit_minutes * 60)
+        _idle = IdleWatchdog(cfg.idle_exit_minutes * 60, on_expire=_idle_exit)
         _idle.start()
         print(f"mm-mcp: idle exit after {cfg.idle_exit_minutes} min without tool calls",
               file=sys.stderr)
