@@ -848,18 +848,31 @@ def build_s13_polished_marble(catalog: dict) -> str:
     Changes from `t09_marbled_silt`, all pointed at "polished stone" rather
     than "dry ground":
 
-    - `folds` 3 -> 2, `scale_x`/`scale_y` 4 -> 3: fewer, larger, more
-      meandering veins. t09's own values leaned toward tight, closely-spaced
-      folds that a first look at this scale reads as onion-ring banding
-      rather than marble veining -- dropping both a step widens the vein
-      spacing and softens the fold count so individual veins read as long
-      sweeping strokes.
+    - **Vein-retune fix (this pass)**: Grayson's verdict on the first stone
+      render was TERRAZZO/speckled granite, not flowing Carrara veins. Root
+      cause 1: `scale_x`/`scale_y` at 3 still made many small folded features
+      per unit surface, not a handful of large meandering ones -- dropped to
+      1.8 (a smaller MM scale number means larger features) so only a few
+      major ridges span the sphere. `folds` bumped 2 -> 3 to make the fold
+      geometry itself meander more (a different lever from feature count),
+      while `iterations` dropped 5 -> 4 to hold fine-octave graininess down
+      rather than let the extra fold complexity reintroduce speckle.
+      Root cause 2: the albedo gradient's dark/transition region ate roughly
+      56% of the fbm value range (0.0-0.28 and 0.72-1.0), so a wide swath of
+      the field rendered as some shade of gray, reading as many small dark
+      flecks instead of a few thin lines. Narrowed the vein-plus-transition
+      band to 12% on each end (0.0-0.12, 0.88-1.0) and widened the near-white
+      plateau to 76% of the range (0.12-0.88) so only the sparse fold
+      extremes go dark.
     - Palette: classic white/gray Carrara, not t09's warm tan/rust. Base
-      plateau near-white (~0.85-0.90), veins a cool neutral gray (~0.32-0.35)
-      confined to narrow bands at the extremes of the gradient (0.0-0.10 and
-      0.90-1.0) so the veins stay thin and sparse against a wide light
-      plateau (0.28-0.72) -- not a 50/50 split, which is what made the prior
-      warm-toned pass at this shape read as burl wood rather than stone.
+      plateau near-white (~0.86-0.90) now spans the wide 0.12-0.88 middle of
+      the gradient, with the vein core a charcoal grey (~0.16-0.17, darker
+      than the prior cool-gray 0.32-0.35 so the thin lines read as crisp dark
+      strokes) confined to a narrow band at each extreme (0.0-0.05, 0.95-1.0)
+      with a short transition (0.05-0.12, 0.88-0.95) -- not a 50/50 split,
+      which is what made the prior warm-toned pass at this shape read as burl
+      wood rather than stone, and not the too-broad transition that made the
+      first Carrara pass read as terrazzo.
     - Roughness: `MarbleRoughness` now reads the SAME raw fbm field as the
       albedo (this donor's shape feeds `colorize_0`/`colorize_1`/`colorize_3`
       all straight from `voronoi_0` port 0, so no rewiring is needed), with a
@@ -868,6 +881,8 @@ def build_s13_polished_marble(catalog: dict) -> str:
       TEXTURE, not a bare scalar, so an ORM map still exports; the veins read
       a touch rougher than the polished field, matching real ground-and-
       polished stone where the veins take the polish slightly differently.
+      Its gradient breakpoints (0.05/0.12/0.88/0.95) mirror the retuned
+      albedo gradient's so the rougher band lines up with the vein band.
     - Metallic: `NonMetallic` (`uniform_0`) left at its untouched 0 -- marble
       is a dielectric, verified via the ORM metallic channel approach if a
       render is taken.
@@ -877,22 +892,22 @@ def build_s13_polished_marble(catalog: dict) -> str:
       terrain's gentle swell."""
     g = load_example("crocodile_skin")
     retype(g, "voronoi_0", "fbm",
-           {"noise": 1, "scale_x": 3, "scale_y": 3, "folds": 2,
-            "iterations": 5, "persistence": 0.5})
+           {"noise": 1, "scale_x": 1.8, "scale_y": 1.8, "folds": 3,
+            "iterations": 4, "persistence": 0.5})
     set_gradient(g, "colorize_1", [    # classic white/gray Carrara: thin sparse veins
-        (0.0,  0.32, 0.33, 0.36),   # cool gray vein core
-        (0.10, 0.55, 0.56, 0.58),   # vein edge, softening toward the field
-        (0.28, 0.85, 0.85, 0.83),   # near-white base plateau begins
-        (0.72, 0.90, 0.90, 0.88),   # near-white base plateau (light variation)
-        (0.90, 0.55, 0.56, 0.58),   # vein edge
-        (1.0,  0.32, 0.33, 0.36),   # cool gray vein core
+        (0.0,  0.16, 0.16, 0.17),   # charcoal vein core
+        (0.05, 0.55, 0.55, 0.56),   # quick vein-edge transition
+        (0.12, 0.88, 0.88, 0.86),   # near-white base plateau begins
+        (0.88, 0.90, 0.90, 0.88),   # near-white base plateau (light variation)
+        (0.95, 0.55, 0.55, 0.56),   # quick vein-edge transition
+        (1.0,  0.16, 0.16, 0.17),   # charcoal vein core
     ])
     set_gradient(g, "colorize_3", [    # polished sheen, veins a touch rougher
         (0.0,  0.30, 0.30, 0.30),
-        (0.10, 0.26, 0.26, 0.26),
-        (0.28, 0.20, 0.20, 0.20),
-        (0.72, 0.22, 0.22, 0.22),
-        (0.90, 0.26, 0.26, 0.26),
+        (0.05, 0.26, 0.26, 0.26),
+        (0.12, 0.20, 0.20, 0.20),
+        (0.88, 0.20, 0.20, 0.20),
+        (0.95, 0.26, 0.26, 0.26),
         (1.0,  0.30, 0.30, 0.30),
     ])
     set_gradient(g, "colorize_0", [(0.0, 0, 0, 0), (1.0, 1, 1, 1)])
