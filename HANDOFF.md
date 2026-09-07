@@ -1,6 +1,6 @@
 # 🧭 Session Handoff: Tool-MaterialMaker-MCP
 
-_Last updated: 2026-09-06 (idle-exit watchdog shipped; validate() descends into subgraphs; crate round-trip prep) CT (America/Chicago)_
+_Last updated: 2026-09-06 (cross-project detour: backup-ops nightly-backup truncation root-caused + wake-lock fix; no MM-MCP code changed) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up. **Shape rule (2026-09-05,
 teardown #3):** "Current state" describes the latest session only; anything
@@ -9,6 +9,13 @@ gotchas (drop an entry once a mechanism makes it moot). Git history is the
 archive; there is no separate archive file.
 
 ## 🎯 Current state
+
+**Latest session (2026-09-06) was a cross-project detour started from a `pickup`
+here: no MM-MCP code changed.** Grayson picked next-step #2 (the backup abort);
+it was root-caused and fixed in `backup-ops` (wake-lock, see next-step #2 and
+the session log). That commit is local (`f7e809d`) and PUSH-PENDING because the
+ssh-agent was not loaded in the spawned session. The MM-MCP repo itself is
+unchanged from the prior session:
 
 `main` at `ebba5b6` plus the idle-exit merge `f669f8c` and this docs commit, pushed, in sync (0/0). Two sessions ran on this checkout in parallel today; this file merges both. Fast suite **993 passed, 1
 flaked** (the one flake was `test_live.py::test_load_graph_round_trips_a_cookbook_material`,
@@ -57,7 +64,12 @@ one of the moratorium's three) has NOT happened. Nothing is in flight.
    `saved_graphs/crate_pine_mcp_authored.ptex` in Material Maker, edit it,
    save as `saved_graphs/crate_pine_grayson_edit.ptex`, note what was hard to
    read. This is use-session one of the three the moratorium asks for.
-2. **`backup-ops`: the 2026-09-05 nightly abort** is still unexamined.
+2. **`backup-ops`: the 2026-09-05 nightly truncation is FIXED (2026-09-06).**
+   Root cause was idle-sleep mid-run, not the `git diff` `NativeCommandError`
+   (that is a handled CRLF warning the run sails past). `Backup-All.ps1` now
+   holds a `SetThreadExecutionState` wake-lock for the run. Commit `f7e809d`,
+   **push pending** (push from a terminal with the ssh-agent loaded). Watch the
+   next nightly log for the new "Wake lock acquired / released" lines.
 3. **Unreal UE5 export** (backlogged: memory pressure with a live Unreal
    Editor + bridge; run a `stop-node-hogs` sweep first).
 4. More cookbook materials only after a consumer project asks for one.
@@ -80,10 +92,15 @@ one of the moratorium's three) has NOT happened. Nothing is in flight.
 
 ## ⚠️ Heads-up for the next agent
 
-- **The 2026-09-05 nightly backup aborted** (`backup-ops\logs\Backup-All_2026-09-05_210003.log`,
-  ends at `OK: Skills`, no summary). Plausible cause: a `NativeCommandError`
-  from `git diff HEAD --binary` at `Backup.Common.ps1:229`. Needs a
-  `backup-ops` session.
+- **The 2026-09-05 nightly backup truncation is FIXED (2026-09-06).** The cause
+  was NOT the `git diff HEAD --binary` `NativeCommandError` at
+  `Backup.Common.ps1:229` (that is a benign CRLF warning already handled by the
+  EAP relax at lines 217-232). The powershell process was idle-slept mid-run
+  before the top-level `finally { Stop-Transcript }`. `Backup-All.ps1` now holds
+  a `SetThreadExecutionState(ES_SYSTEM_REQUIRED)` wake-lock for the run's
+  duration (commit `f7e809d`, push pending). The true truncation signature is a
+  missing `transcript end` footer, not the git error. A forced sleep (lid close)
+  or `StopIfGoingOnBatteries` can still truncate, far more rarely.
 - **Run quality scripts as `python -m quality.<module>` from the repo root**
   (`pip install -e .` is a prerequisite; running from inside `quality/`
   breaks `.env` lookup). Never launch a Godot render from `python -c`.
@@ -159,6 +176,7 @@ one of the moratorium's three) has NOT happened. Nothing is in flight.
 Newest first. Keep at most 8 entries; older ones are in `git log` (search the
 commit subjects, every session ends with a `docs:` wrap-up commit).
 
+### 2026-09-06 (backup-ops wake-lock, cross-project): `pickup` here, Grayson picked next-step #2. Root-caused the 09-05 nightly truncation as idle-sleep mid-run (the git `NativeCommandError` is a handled CRLF warning; true signature is a missing `transcript end` footer, not a code bug), and added a `SetThreadExecutionState` wake-lock to `backup-ops\Backup-All.ps1` (acquire in try, release in finally). Verified compile + parse; commit `f7e809d` local, PUSH PENDING (ssh-agent not loaded this session). Commons log written. No MM-MCP code changed.
 ### 2026-09-06 (idle-exit watchdog): `MM_IDLE_EXIT_MINUTES` opt-in idle exit, 17/17 tools touch it, live session closed on exit; review found and fixed the two untouched tools and the atexit skip; merged `--no-ff` as `f669f8c`, suite 989; registration set to 120.
 ### 2026-09-06 (validate subgraph descent + crate round-trip prep)
 - `pickup`; Grayson picked options 1 + 2 ("automate most of 1 for me").
