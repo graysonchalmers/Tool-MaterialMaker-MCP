@@ -602,6 +602,72 @@ def build_t08_riverbed_pebbles(catalog: dict) -> str:
     return save_variant(g, _LABEL, "t08_riverbed_pebbles", 1)
 
 
+def build_t09_parched_clay(catalog: dict) -> str:
+    """Parched clay / sun-baked cracked ground -- same crocodile_skin donor and
+    retype-to-fbm technique as t07_forest_floor, but a DELIBERATELY different
+    `noise` basis: t07 uses Cellular 4 (noise=5, "crystalline shard mesh" per
+    AUTHORING.md's fbm table) for scattered clumpy debris, which has no
+    connected edges. Parched clay needs the opposite topology -- a single
+    connected network of cracks splitting the surface into irregular plates,
+    the look voronoi's single-octave cells cannot give at this scale (see
+    AUTHORING.md's noise vocabulary section). AUTHORING.md's own fbm table
+    names `noise=3` (Cellular 2) as exactly this: "cracked-plate network --
+    dry earth, marble veining, crazing." That table entry is the deciding
+    reason for the pick here, not a render (this task authors and validates
+    only; the controller renders and judges). Scale is coarse (5, vs t07's 6)
+    so the plates read large and the crack lines stay continuous instead of
+    breaking into isolated cells; iterations held at t07's 5 for a couple of
+    octaves of edge detail without turning the plates busy.
+
+    Warm ochre/tan clay albedo (dry, sun-bleached, not the wet-earth browns of
+    t04 soil or t07 leaf litter), high matte roughness (bone-dry ground has no
+    sheen), and `normal_map param4=0` (proactive flat-normal fix, same as
+    every other terrain material) with a MEDIUM `param1` -- clay cracks are
+    real fissures, not a fine bump texture, but they should read as
+    ground-level relief, not canyon walls."""
+    g = load_example("crocodile_skin")
+    retype(g, "voronoi_0", "fbm",
+           {"noise": 3, "scale_x": 5, "scale_y": 5, "folds": 0,
+            "iterations": 5, "persistence": 0.5})
+    set_gradient(g, "colorize_1", [    # warm ochre/tan sun-baked clay
+        (0.0,  0.16, 0.10, 0.05),   # deep crack shadow
+        (0.35, 0.42, 0.27, 0.14),   # mid ochre
+        (0.65, 0.58, 0.40, 0.22),   # dry tan clay
+        (1.0,  0.68, 0.50, 0.30),   # sun-bleached highlight
+    ])
+    set_gradient(g, "colorize_3", [    # high matte roughness, bone-dry
+        (0.0, 0.88, 0.88, 0.88),
+        (1.0, 0.97, 0.97, 0.97),
+    ])
+    set_gradient(g, "colorize_0", [(0.0, 0, 0, 0), (1.0, 1, 1, 1)])
+    node(g, "normal_map_0")["parameters"] = {
+        "param0": 11, "param1": 0.45, "param2": 0, "param4": 0}
+
+    # Subgraph grouping -- the exact t07_forest_floor template (same donor,
+    # same retyped-node + albedo-colorize "pattern" group, same
+    # roughness/relief-consumer "finish" group). `uniform_0` (Material's
+    # untouched metallic-0 scalar) stays top-level, same precedent as t07/o05.
+    group_into_subgraph(g, ["voronoi_0", "colorize_1"],
+                         "crack_pattern", "Crack Pattern",
+                         [("voronoi_0", "scale_x", "param0", "Plate scale"),
+                          ("colorize_1", "gradient", "param1", "Clay color")],
+                         catalog)
+    group_into_subgraph(g, ["colorize_0", "colorize_3", "normal_map_0"],
+                         "surface_finish", "Surface Finish",
+                         [("colorize_3", "gradient", "param0", "Roughness"),
+                          ("normal_map_0", "param1", "param1", "Crack relief")],
+                         catalog)
+    rename_nodes(g, {
+        "voronoi_0": "ClayCracks",      # fbm Cellular 2: connected crack-plate network
+        "colorize_1": "ClayColor",
+        "colorize_3": "ClayRoughness",
+        "colorize_0": "ClayHeight",
+        "normal_map_0": "ClayNormal",
+        "uniform_0": "NonMetallic",
+    })
+    return save_variant(g, _LABEL, "t09_parched_clay", 1)
+
+
 BUILDERS = {
     "t01_sand_dunes": build_t01_sand_dunes,
     "t02_fresh_snow": build_t02_fresh_snow,
@@ -611,6 +677,7 @@ BUILDERS = {
     "t06_cooled_lava": build_t06_cooled_lava,
     "t07_forest_floor": build_t07_forest_floor,
     "t08_riverbed_pebbles": build_t08_riverbed_pebbles,
+    "t09_parched_clay": build_t09_parched_clay,
 }
 
 
