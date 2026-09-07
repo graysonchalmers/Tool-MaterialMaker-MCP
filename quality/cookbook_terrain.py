@@ -38,14 +38,17 @@ _DUNE_NAMES = {
     "colorize_0": "DuneRoughness",   # matte sand roughness
 }
 
-# t05_cracked_ice, t08_riverbed_pebbles, and t09_parched_clay all clone
-# `dry_earth`'s voronoi-plate structure via `_dry_earth_plates`/
-# `_group_dry_earth_plate` below -- the same donor shape as the stone paving
-# family (quality/cookbook_stone.py's `_DRY_EARTH_NAMES`, Task 10). Copied
-# here with ice wording for t05, clay wording for t09; t08 (pebbles) and t06
-# (lava, which regroups `warp_0` away from the plain crack composite into its
-# own glow chain) get their own bespoke mappings below since their node roles
-# genuinely differ.
+# t05_cracked_ice and t08_riverbed_pebbles clone `dry_earth`'s voronoi-plate
+# structure via `_dry_earth_plates`/`_group_dry_earth_plate` below -- the same
+# donor shape as the stone paving family (quality/cookbook_stone.py's
+# `_DRY_EARTH_NAMES`, Task 10). Copied here with ice wording for t05; t08
+# (pebbles) and t06 (lava, which regroups `warp_0` away from the plain crack
+# composite into its own glow chain) get their own bespoke mappings below
+# since their node roles genuinely differ. t09 does NOT join this family
+# (see build_t09_marbled_silt): it is a flowing fbm-turbulence material with
+# no plate/crack topology at all, kept deliberately off the voronoi-plate donor
+# so the cookbook has at least one flow-based counterexample to the "everything
+# is cells or plates" rut.
 _ICE_PLATE_NAMES = {
     "voronoi_0": "IcePlates",
     "colorize_1": "CrackLines",
@@ -59,25 +62,6 @@ _ICE_PLATE_NAMES = {
     "blend_1": "ReliefComposite",
     "colorize": "CrackNormalSource",   # crack-only signal feeding the normal map
     "normal_map_0": "IceNormal",
-}
-
-# t09_parched_clay keeps dry_earth's DEFAULT relief chain (grainy plate faces,
-# not t05's smooth-plate crack-only rewire), so its `colorize` node still
-# reads `blend_1`'s grainy height signal rather than the crack-only network --
-# named `ClayHeight` rather than `CrackNormalSource` to reflect that.
-_CLAY_PLATE_NAMES = {
-    "voronoi_0": "ClayPlates",
-    "colorize_1": "CrackLines",
-    "warp_0": "CrackWarp",
-    "blend_0": "CrackComposite",
-    "perlin_1": "ReliefNoiseCoarse",
-    "colorize_3": "ReliefContrast",
-    "perlin_0": "ReliefNoiseFine",
-    "colorize_0": "ReliefFineUnused",
-    "colorize_4": "ReliefRamp",
-    "blend_1": "ReliefComposite",
-    "colorize": "ClayHeight",
-    "normal_map_0": "ClayNormal",
 }
 
 
@@ -622,56 +606,85 @@ def build_t08_riverbed_pebbles(catalog: dict) -> str:
     return save_variant(g, _LABEL, "t08_riverbed_pebbles", 1)
 
 
-def build_t09_parched_clay(catalog: dict) -> str:
-    """Parched clay / sun-baked lakebed -- RE-BASED after two failed fbm
-    passes (Grayson's call, not a render-driven tune this time): pass 1 (soft
-    fbm) read as mottled blobs, pass 2 (hard-thresholded fbm Cellular) read as
-    scattered dark pits, not a connected crack network. Root cause:
-    thresholding an fbm-Cellular VALUE field isolates cell AREAS, not the thin
-    cell-BORDER ridges a crack network needs. `dry_earth`'s voronoi
-    distance-to-edge signal is the right tool for that -- it is exactly what
-    t05_cracked_ice and t08_riverbed_pebbles already use for the same reason.
-    fbm-Cellular coverage in this cookbook is preserved by t07_forest_floor
-    (scattered clumps, not cracks), so re-basing here loses no coverage.
+def build_t09_marbled_silt(catalog: dict) -> str:
+    """Marbled silt / dried mineral wash -- REPURPOSED slot after the third
+    t09 pass (dry_earth voronoi plates, crisp cracks) still read as "another
+    voronoi-plate material", the same rut as t05 ice, t08 pebbles, and the
+    masonry family (s07-s11). Grayson's call: drop plates/cracks entirely and
+    give the cookbook the one thing it has zero of, a FLOWING fbm-turbulence
+    look -- soft marbled veins and swirls, no cells, no plates, no crack
+    network.
 
-    Same `_dry_earth_plates`/`_group_dry_earth_plate` template as t05/t08,
-    tuned for the dry, matte, monochrome-warm sibling of that pair:
+    Structural template is `build_t07_forest_floor`'s (same `crocodile_skin`
+    donor, `retype` `voronoi_0` to `fbm`, recolor, `group_into_subgraph`,
+    `rename_nodes`), but the `fbm` basis and params are chosen for turbulence
+    instead of clumps:
 
-    - `scale=7`: medium-large plates, between t05's 5 (big ice sheets) and
-      t08's 8 (tight-packed pebbles) -- a sun-baked lakebed plate is bigger
-      than a river stone but not as vast as a lake-ice sheet.
-    - Palette: warm ochre/tan monochrome only (light tan -> mid ochre -> a
-      slightly darker earthy brown), never blue (t05) and never multicolor
-      (t08) -- clay is one dried mineral, not glassy ice or tumbled river
-      stone.
-    - `blend_amount=0.7`: matches t05's deep crack-darkening value so the
-      inter-plate gaps read as distinct dark cracks, not the shallow contact
-      joints t08 uses for packed pebbles (0.6).
-    - `warp=0.12`: t05's clean-crack value -- crisp lines, not smeared haze.
-      t08 uses near-zero (0.02) for rounded contact gaps instead of cracks.
-    - `roughness=0.85`: bone-dry matte, the highest of the three siblings
-      (t05 ice 0.12 glossy, t08 wet pebbles 0.2 damp sheen). No sheen at all.
-    - Relief: KEEPS dry_earth's default grainy-plate-face chain (does NOT do
-      t05's smooth-plate rewire that feeds the crack-only signal into the
-      normal). Parched clay has a textured, sun-cracked surface, not a
-      glassy-smooth one -- the plate faces should carry grain, not be flat."""
-    g = _dry_earth_plates(
-        scale=7,
-        plate_grad=[            # warm ochre/tan, dry and monochrome
-            (0.0,  0.62, 0.50, 0.34),   # light sun-bleached tan
-            (0.4,  0.55, 0.40, 0.24),   # mid ochre
-            (0.7,  0.46, 0.32, 0.18),   # deeper ochre
-            (1.0,  0.34, 0.23, 0.13),   # darker earthy brown
-        ],
-        blend_amount=0.7, warp=0.12, roughness=0.85)
-    _group_dry_earth_plate(g, catalog, plate_label="Clay Plate & Cracks",
-                            color_label="Clay color", gap_label="Crack depth")
+    - `noise=1` (Perlin): a smooth continuous basis, not a Cellular one --
+      Cellular bases (2-7) all read as cells/networks/weaves (see
+      docs/AUTHORING.md's fbm table), which is exactly the topology this
+      material must NOT have. Perlin has no cell edges to begin with.
+    - `folds=3`: the turbulence/ridge lever. Folding the noise back on itself
+      is what turns plain soft blobs into flowing, marbled veins -- `folds=0`
+      (t07's own setting) would just be another soft-blob field. Kept in the
+      brief's 2-4 range, mid-value so the veins fold visibly without going
+      fully crystalline/sharp (that direction is `shard_fbm` territory).
+    - `iterations=5`, `persistence=0.5`: moderate octave count and rolloff,
+      matching t07's own values -- enough detail for fine vein texture over
+      the broad swirl without adding high-frequency noise that would compete
+      with the folds.
+    - `scale_x=4, scale_y=4`: lower than t07's 6 so individual veins read as
+      broad, room-scale swirls rather than tight repeating clumps -- flowing
+      marble veining needs long, unbroken runs.
+
+    Palette: warm tan/sand base (majority of the surface) with darker
+    umber/rust mineral staining picked out where the folded fbm value swings
+    low or high. All gradient stops are spaced at least 0.15 apart with
+    smooth linear interpolation between them (no hard 0/1 thresholds anywhere
+    in this material) so the veins read as soft flowing stains, not cracks.
+    Roughness is matte with only subtle variation (a narrow band near the
+    top of the 0-1 range). `normal_map_0`: `param4=0` (flat-normal fix, same
+    as every terrain material in this set) with a modest `param1` so the
+    veins swell gently rather than carving sharp ridges."""
+    g = load_example("crocodile_skin")
+    retype(g, "voronoi_0", "fbm",
+           {"noise": 1, "scale_x": 4, "scale_y": 4, "folds": 3,
+            "iterations": 5, "persistence": 0.5})
+    set_gradient(g, "colorize_1", [    # warm tan silt with soft rust/umber veins
+        (0.0,  0.30, 0.19, 0.11),   # dark umber vein core
+        (0.18, 0.46, 0.30, 0.17),   # rust vein edge
+        (0.4,  0.62, 0.50, 0.34),   # warm sand tan (majority)
+        (0.62, 0.68, 0.56, 0.39),   # light sand highlight
+        (0.82, 0.50, 0.36, 0.21),   # soft ochre return
+        (1.0,  0.34, 0.22, 0.13),   # dark umber vein core
+    ])
+    set_gradient(g, "colorize_3", [    # matte with subtle variation, not flat
+        (0.0, 0.72, 0.72, 0.72),
+        (1.0, 0.82, 0.82, 0.82),
+    ])
+    set_gradient(g, "colorize_0", [(0.0, 0, 0, 0), (1.0, 1, 1, 1)])
+    node(g, "normal_map_0")["parameters"] = {
+        "param0": 11, "param1": 0.25, "param2": 0, "param4": 0}
+
+    group_into_subgraph(g, ["voronoi_0", "colorize_1"],
+                         "silt_pattern", "Silt Pattern",
+                         [("voronoi_0", "scale_x", "param0", "Vein scale"),
+                          ("colorize_1", "gradient", "param1", "Vein color")],
+                         catalog)
+    group_into_subgraph(g, ["colorize_0", "colorize_3", "normal_map_0"],
+                         "surface_finish", "Surface Finish",
+                         [("colorize_3", "gradient", "param0", "Roughness"),
+                          ("normal_map_0", "param1", "param1", "Vein relief")],
+                         catalog)
     rename_nodes(g, {
-        **_CLAY_PLATE_NAMES,
-        "colorize_plate": "ClayColor",
-        "rough_const": "ClayRoughness",
+        "voronoi_0": "SiltVeins",       # fbm Perlin+folds: flowing turbulence
+        "colorize_1": "VeinColor",
+        "colorize_3": "SiltRoughness",
+        "colorize_0": "SiltHeight",
+        "normal_map_0": "SiltNormal",
+        "uniform_0": "NonMetallic",
     })
-    return save_variant(g, _LABEL, "t09_parched_clay", 1)
+    return save_variant(g, _LABEL, "t09_marbled_silt", 1)
 
 
 BUILDERS = {
@@ -683,7 +696,7 @@ BUILDERS = {
     "t06_cooled_lava": build_t06_cooled_lava,
     "t07_forest_floor": build_t07_forest_floor,
     "t08_riverbed_pebbles": build_t08_riverbed_pebbles,
-    "t09_parched_clay": build_t09_parched_clay,
+    "t09_marbled_silt": build_t09_marbled_silt,
 }
 
 

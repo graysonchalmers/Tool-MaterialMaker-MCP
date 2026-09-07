@@ -1,0 +1,625 @@
+{
+ "connections": [
+  {
+   "from": "NonMetallic",
+   "from_port": 0,
+   "to": "Material",
+   "to_port": 1
+  },
+  {
+   "from": "silt_pattern",
+   "from_port": 1,
+   "to": "Material",
+   "to_port": 0
+  },
+  {
+   "from": "silt_pattern",
+   "from_port": 0,
+   "to": "surface_finish",
+   "to_port": 0
+  },
+  {
+   "from": "silt_pattern",
+   "from_port": 2,
+   "to": "surface_finish",
+   "to_port": 1
+  },
+  {
+   "from": "surface_finish",
+   "from_port": 0,
+   "to": "Material",
+   "to_port": 4
+  },
+  {
+   "from": "surface_finish",
+   "from_port": 1,
+   "to": "Material",
+   "to_port": 2
+  }
+ ],
+ "label": "Graph",
+ "name": "240",
+ "node_position": {
+  "x": 0,
+  "y": 0
+ },
+ "nodes": [
+  {
+   "name": "Material",
+   "node_position": {
+    "x": 674,
+    "y": 164
+   },
+   "parameters": {
+    "albedo_color": {
+     "a": 1,
+     "b": 1,
+     "g": 1,
+     "r": 1,
+     "type": "Color"
+    },
+    "ao_light_affect": 1,
+    "depth_scale": 1,
+    "emission_energy": 1,
+    "metallic": 1,
+    "normal_scale": 1,
+    "resolution": 1,
+    "roughness": 1,
+    "size": 11,
+    "subsurf_scatter_strength": 0
+   },
+   "type": "material"
+  },
+  {
+   "name": "NonMetallic",
+   "node_position": {
+    "x": 413,
+    "y": 208
+   },
+   "parameters": {
+    "color": {
+     "a": 1,
+     "b": 0,
+     "g": 0,
+     "r": 0,
+     "type": "Color"
+    }
+   },
+   "type": "uniform"
+  },
+  {
+   "name": "silt_pattern",
+   "label": "Silt Pattern",
+   "type": "graph",
+   "node_position": {
+    "x": 227.5,
+    "y": 176.5
+   },
+   "parameters": {
+    "param0": 4,
+    "param1": {
+     "interpolation": 1,
+     "points": [
+      {
+       "a": 1,
+       "r": 0.3,
+       "g": 0.19,
+       "b": 0.11,
+       "pos": 0.0
+      },
+      {
+       "a": 1,
+       "r": 0.46,
+       "g": 0.3,
+       "b": 0.17,
+       "pos": 0.18
+      },
+      {
+       "a": 1,
+       "r": 0.62,
+       "g": 0.5,
+       "b": 0.34,
+       "pos": 0.4
+      },
+      {
+       "a": 1,
+       "r": 0.68,
+       "g": 0.56,
+       "b": 0.39,
+       "pos": 0.62
+      },
+      {
+       "a": 1,
+       "r": 0.5,
+       "g": 0.36,
+       "b": 0.21,
+       "pos": 0.82
+      },
+      {
+       "a": 1,
+       "r": 0.34,
+       "g": 0.22,
+       "b": 0.13,
+       "pos": 1.0
+      }
+     ],
+     "type": "Gradient"
+    }
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": -172.5,
+      "y": 176.5
+     },
+     "parameters": {},
+     "ports": [],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 627.5,
+      "y": 176.5
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "out0",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "out1",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "out2",
+       "type": "f",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -172.5,
+      "y": 376.5
+     },
+     "parameters": {
+      "param0": 4,
+      "param1": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0.3,
+         "g": 0.19,
+         "b": 0.11,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.46,
+         "g": 0.3,
+         "b": 0.17,
+         "pos": 0.18
+        },
+        {
+         "a": 1,
+         "r": 0.62,
+         "g": 0.5,
+         "b": 0.34,
+         "pos": 0.4
+        },
+        {
+         "a": 1,
+         "r": 0.68,
+         "g": 0.56,
+         "b": 0.39,
+         "pos": 0.62
+        },
+        {
+         "a": 1,
+         "r": 0.5,
+         "g": 0.36,
+         "b": 0.21,
+         "pos": 0.82
+        },
+        {
+         "a": 1,
+         "r": 0.34,
+         "g": 0.22,
+         "b": 0.13,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      }
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Vein scale",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "SiltVeins",
+         "widget": "scale_x"
+        }
+       ]
+      },
+      {
+       "name": "param1",
+       "shortdesc": "Vein color",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "VeinColor",
+         "widget": "gradient"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "VeinColor",
+     "node_position": {
+      "x": 384,
+      "y": 137
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0.3,
+         "g": 0.19,
+         "b": 0.11,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.46,
+         "g": 0.3,
+         "b": 0.17,
+         "pos": 0.18
+        },
+        {
+         "a": 1,
+         "r": 0.62,
+         "g": 0.5,
+         "b": 0.34,
+         "pos": 0.4
+        },
+        {
+         "a": 1,
+         "r": 0.68,
+         "g": 0.56,
+         "b": 0.39,
+         "pos": 0.62
+        },
+        {
+         "a": 1,
+         "r": 0.5,
+         "g": 0.36,
+         "b": 0.21,
+         "pos": 0.82
+        },
+        {
+         "a": 1,
+         "r": 0.34,
+         "g": 0.22,
+         "b": 0.13,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      }
+     },
+     "type": "colorize"
+    },
+    {
+     "name": "SiltVeins",
+     "node_position": {
+      "x": 71,
+      "y": 216
+     },
+     "parameters": {
+      "noise": 1,
+      "scale_x": 4,
+      "scale_y": 4,
+      "folds": 3,
+      "iterations": 5,
+      "persistence": 0.5
+     },
+     "type": "fbm"
+    }
+   ],
+   "connections": [
+    {
+     "from": "SiltVeins",
+     "from_port": 0,
+     "to": "VeinColor",
+     "to_port": 0
+    },
+    {
+     "from": "SiltVeins",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    },
+    {
+     "from": "VeinColor",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 1
+    },
+    {
+     "from": "SiltVeins",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 2
+    }
+   ]
+  },
+  {
+   "name": "surface_finish",
+   "label": "Surface Finish",
+   "type": "graph",
+   "node_position": {
+    "x": 375.6666666666667,
+    "y": 307.6666666666667
+   },
+   "parameters": {
+    "param0": {
+     "interpolation": 1,
+     "points": [
+      {
+       "a": 1,
+       "r": 0.72,
+       "g": 0.72,
+       "b": 0.72,
+       "pos": 0.0
+      },
+      {
+       "a": 1,
+       "r": 0.82,
+       "g": 0.82,
+       "b": 0.82,
+       "pos": 1.0
+      }
+     ],
+     "type": "Gradient"
+    },
+    "param1": 0.25
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": -24.333333333333314,
+      "y": 307.6666666666667
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "in0",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "in1",
+       "type": "f",
+       "group_size": 0
+      }
+     ],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 775.6666666666667,
+      "y": 307.6666666666667
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "out0",
+       "type": "rgb",
+       "group_size": 0
+      },
+      {
+       "name": "out1",
+       "type": "rgba",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -24.333333333333314,
+      "y": 507.6666666666667
+     },
+     "parameters": {
+      "param0": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0.72,
+         "g": 0.72,
+         "b": 0.72,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.82,
+         "g": 0.82,
+         "b": 0.82,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      },
+      "param1": 0.25
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Roughness",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "SiltRoughness",
+         "widget": "gradient"
+        }
+       ]
+      },
+      {
+       "name": "param1",
+       "shortdesc": "Vein relief",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "SiltNormal",
+         "widget": "param1"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "SiltRoughness",
+     "node_position": {
+      "x": 384,
+      "y": 258
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0.72,
+         "g": 0.72,
+         "b": 0.72,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.82,
+         "g": 0.82,
+         "b": 0.82,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      }
+     },
+     "type": "colorize"
+    },
+    {
+     "name": "SiltHeight",
+     "node_position": {
+      "x": 264,
+      "y": 331
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0,
+         "g": 0,
+         "b": 0,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 1,
+         "g": 1,
+         "b": 1,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      }
+     },
+     "type": "colorize"
+    },
+    {
+     "name": "SiltNormal",
+     "node_position": {
+      "x": 479,
+      "y": 334
+     },
+     "parameters": {
+      "param0": 11,
+      "param1": 0.25,
+      "param2": 0,
+      "param4": 0
+     },
+     "type": "normal_map"
+    }
+   ],
+   "connections": [
+    {
+     "from": "SiltHeight",
+     "from_port": 0,
+     "to": "SiltNormal",
+     "to_port": 0
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 0,
+     "to": "SiltHeight",
+     "to_port": 0
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 1,
+     "to": "SiltRoughness",
+     "to_port": 0
+    },
+    {
+     "from": "SiltNormal",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    },
+    {
+     "from": "SiltRoughness",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 1
+    }
+   ]
+  }
+ ],
+ "parameters": {},
+ "type": "graph"
+}
