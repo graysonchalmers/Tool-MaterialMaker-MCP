@@ -12,7 +12,7 @@ Then `python -m quality.render_cookbook` renders each variant for inspection.
 import sys
 
 from quality.author_helpers import (load_example, set_gradient, set_param, save_variant,
-                             add_node, rewire, _grad, group_into_subgraph,
+                             add_node, rewire, retype, node, _grad, group_into_subgraph,
                              take_variant, rename_nodes)
 from quality import author  # shared builder base; regression guard is promote_cookbook --check
 
@@ -826,6 +826,100 @@ def build_s02_gray_granite(catalog: dict) -> str:
     return save_variant(g, _LABEL, "s02_gray_granite", 1)
 
 
+def build_s13_polished_marble(catalog: dict) -> str:
+    """Polished Carrara-style marble, MOVED IN from the terrain category
+    (was `t09_marbled_silt`, quality/cookbook_terrain.py). Grayson's verdict
+    on that material's render: the fbm-turbulence swirl reads as marble, so
+    embrace it -- keep the exact same base (`crocodile_skin` donor, `voronoi_0`
+    retyped to `fbm` with a Perlin+folds turbulence basis) and rework it into
+    a proper polished stone: classic white/gray Carrara palette, low glossy
+    roughness, zero metallic, and a near-flat relief, instead of terrain's
+    warm tan/sand "dried mineral wash" read.
+
+    This is deliberately a DIFFERENT technique from `s11_marble` (which warps
+    `dry_earth`'s voronoi crack network hard, per that builder's docstring,
+    "the flow IS the look"). s11's veins come from a distance-field crack
+    network pushed through heavy warp; s13's veins come from a folded fbm
+    turbulence field with no voronoi cells anywhere in the graph. Keeping
+    both gives the stone category two structurally distinct marble recipes,
+    which is the point of preserving this fbm-turbulence proof rather than
+    discarding it once the terrain slot moved on.
+
+    Changes from `t09_marbled_silt`, all pointed at "polished stone" rather
+    than "dry ground":
+
+    - `folds` 3 -> 2, `scale_x`/`scale_y` 4 -> 3: fewer, larger, more
+      meandering veins. t09's own values leaned toward tight, closely-spaced
+      folds that a first look at this scale reads as onion-ring banding
+      rather than marble veining -- dropping both a step widens the vein
+      spacing and softens the fold count so individual veins read as long
+      sweeping strokes.
+    - Palette: classic white/gray Carrara, not t09's warm tan/rust. Base
+      plateau near-white (~0.85-0.90), veins a cool neutral gray (~0.32-0.35)
+      confined to narrow bands at the extremes of the gradient (0.0-0.10 and
+      0.90-1.0) so the veins stay thin and sparse against a wide light
+      plateau (0.28-0.72) -- not a 50/50 split, which is what made the prior
+      warm-toned pass at this shape read as burl wood rather than stone.
+    - Roughness: `MarbleRoughness` now reads the SAME raw fbm field as the
+      albedo (this donor's shape feeds `colorize_0`/`colorize_1`/`colorize_3`
+      all straight from `voronoi_0` port 0, so no rewiring is needed), with a
+      narrow polished-marble band (0.20 field / 0.30 at the vein bands) in
+      place of t09's flat near-white matte ramp -- a genuine roughness
+      TEXTURE, not a bare scalar, so an ORM map still exports; the veins read
+      a touch rougher than the polished field, matching real ground-and-
+      polished stone where the veins take the polish slightly differently.
+    - Metallic: `NonMetallic` (`uniform_0`) left at its untouched 0 -- marble
+      is a dielectric, verified via the ORM metallic channel approach if a
+      render is taken.
+    - Relief: `MarbleNormal`'s `param1` dropped 0.25 -> 0.08 (`param4=0`
+      unchanged, the standing flat-normal fix) -- polished marble is nearly
+      flat, so the veins should be the faintest whisper of relief, not
+      terrain's gentle swell."""
+    g = load_example("crocodile_skin")
+    retype(g, "voronoi_0", "fbm",
+           {"noise": 1, "scale_x": 3, "scale_y": 3, "folds": 2,
+            "iterations": 5, "persistence": 0.5})
+    set_gradient(g, "colorize_1", [    # classic white/gray Carrara: thin sparse veins
+        (0.0,  0.32, 0.33, 0.36),   # cool gray vein core
+        (0.10, 0.55, 0.56, 0.58),   # vein edge, softening toward the field
+        (0.28, 0.85, 0.85, 0.83),   # near-white base plateau begins
+        (0.72, 0.90, 0.90, 0.88),   # near-white base plateau (light variation)
+        (0.90, 0.55, 0.56, 0.58),   # vein edge
+        (1.0,  0.32, 0.33, 0.36),   # cool gray vein core
+    ])
+    set_gradient(g, "colorize_3", [    # polished sheen, veins a touch rougher
+        (0.0,  0.30, 0.30, 0.30),
+        (0.10, 0.26, 0.26, 0.26),
+        (0.28, 0.20, 0.20, 0.20),
+        (0.72, 0.22, 0.22, 0.22),
+        (0.90, 0.26, 0.26, 0.26),
+        (1.0,  0.30, 0.30, 0.30),
+    ])
+    set_gradient(g, "colorize_0", [(0.0, 0, 0, 0), (1.0, 1, 1, 1)])
+    node(g, "normal_map_0")["parameters"] = {
+        "param0": 11, "param1": 0.08, "param2": 0, "param4": 0}
+
+    group_into_subgraph(g, ["voronoi_0", "colorize_1"],
+                         "marble_veins", "Marble Veins",
+                         [("voronoi_0", "scale_x", "param0", "Vein scale"),
+                          ("colorize_1", "gradient", "param1", "Vein color")],
+                         catalog)
+    group_into_subgraph(g, ["colorize_0", "colorize_3", "normal_map_0"],
+                         "polished_finish", "Polished Finish",
+                         [("colorize_3", "gradient", "param0", "Roughness"),
+                          ("normal_map_0", "param1", "param1", "Vein relief")],
+                         catalog)
+    rename_nodes(g, {
+        "voronoi_0": "MarbleVeins",     # fbm Perlin+folds turbulence, retuned from t09
+        "colorize_1": "VeinColor",
+        "colorize_3": "MarbleRoughness",
+        "colorize_0": "MarbleHeight",
+        "normal_map_0": "MarbleNormal",
+        "uniform_0": "NonMetallic",
+    })
+    return save_variant(g, _LABEL, "s13_polished_marble", 1)
+
+
 BUILDERS = {
     "s02_gray_granite": build_s02_gray_granite,
     "s04_scattered_river_stones": build_s04_scattered_river_stones,
@@ -836,6 +930,7 @@ BUILDERS = {
     "s09_ashlar_wall": build_s09_ashlar_wall,
     "s10_flagstone": build_s10_flagstone,
     "s11_marble": build_s11_marble,
+    "s13_polished_marble": build_s13_polished_marble,
 }
 
 

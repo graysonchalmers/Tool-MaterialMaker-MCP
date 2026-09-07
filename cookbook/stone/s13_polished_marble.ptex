@@ -7,31 +7,31 @@
    "to_port": 1
   },
   {
-   "from": "silt_pattern",
+   "from": "marble_veins",
    "from_port": 1,
    "to": "Material",
    "to_port": 0
   },
   {
-   "from": "silt_pattern",
+   "from": "marble_veins",
    "from_port": 0,
-   "to": "surface_finish",
+   "to": "polished_finish",
    "to_port": 0
   },
   {
-   "from": "silt_pattern",
+   "from": "marble_veins",
    "from_port": 2,
-   "to": "surface_finish",
+   "to": "polished_finish",
    "to_port": 1
   },
   {
-   "from": "surface_finish",
+   "from": "polished_finish",
    "from_port": 0,
    "to": "Material",
    "to_port": 4
   },
   {
-   "from": "surface_finish",
+   "from": "polished_finish",
    "from_port": 1,
    "to": "Material",
    "to_port": 2
@@ -88,58 +88,58 @@
    "type": "uniform"
   },
   {
-   "name": "silt_pattern",
-   "label": "Silt Pattern",
+   "name": "marble_veins",
+   "label": "Marble Veins",
    "type": "graph",
    "node_position": {
     "x": 227.5,
     "y": 176.5
    },
    "parameters": {
-    "param0": 4,
+    "param0": 3,
     "param1": {
      "interpolation": 1,
      "points": [
       {
        "a": 1,
-       "r": 0.3,
-       "g": 0.19,
-       "b": 0.11,
+       "r": 0.32,
+       "g": 0.33,
+       "b": 0.36,
        "pos": 0.0
       },
       {
        "a": 1,
-       "r": 0.46,
-       "g": 0.3,
-       "b": 0.17,
-       "pos": 0.18
-      },
-      {
-       "a": 1,
-       "r": 0.62,
-       "g": 0.5,
-       "b": 0.34,
-       "pos": 0.4
-      },
-      {
-       "a": 1,
-       "r": 0.68,
+       "r": 0.55,
        "g": 0.56,
-       "b": 0.39,
-       "pos": 0.62
+       "b": 0.58,
+       "pos": 0.1
       },
       {
        "a": 1,
-       "r": 0.5,
-       "g": 0.36,
-       "b": 0.21,
-       "pos": 0.82
+       "r": 0.85,
+       "g": 0.85,
+       "b": 0.83,
+       "pos": 0.28
       },
       {
        "a": 1,
-       "r": 0.34,
-       "g": 0.22,
-       "b": 0.13,
+       "r": 0.9,
+       "g": 0.9,
+       "b": 0.88,
+       "pos": 0.72
+      },
+      {
+       "a": 1,
+       "r": 0.55,
+       "g": 0.56,
+       "b": 0.58,
+       "pos": 0.9
+      },
+      {
+       "a": 1,
+       "r": 0.32,
+       "g": 0.33,
+       "b": 0.36,
        "pos": 1.0
       }
      ],
@@ -195,50 +195,50 @@
       "y": 376.5
      },
      "parameters": {
-      "param0": 4,
+      "param0": 3,
       "param1": {
        "interpolation": 1,
        "points": [
         {
          "a": 1,
-         "r": 0.3,
-         "g": 0.19,
-         "b": 0.11,
+         "r": 0.32,
+         "g": 0.33,
+         "b": 0.36,
          "pos": 0.0
         },
         {
          "a": 1,
-         "r": 0.46,
-         "g": 0.3,
-         "b": 0.17,
-         "pos": 0.18
-        },
-        {
-         "a": 1,
-         "r": 0.62,
-         "g": 0.5,
-         "b": 0.34,
-         "pos": 0.4
-        },
-        {
-         "a": 1,
-         "r": 0.68,
+         "r": 0.55,
          "g": 0.56,
-         "b": 0.39,
-         "pos": 0.62
+         "b": 0.58,
+         "pos": 0.1
         },
         {
          "a": 1,
-         "r": 0.5,
-         "g": 0.36,
-         "b": 0.21,
-         "pos": 0.82
+         "r": 0.85,
+         "g": 0.85,
+         "b": 0.83,
+         "pos": 0.28
         },
         {
          "a": 1,
-         "r": 0.34,
-         "g": 0.22,
-         "b": 0.13,
+         "r": 0.9,
+         "g": 0.9,
+         "b": 0.88,
+         "pos": 0.72
+        },
+        {
+         "a": 1,
+         "r": 0.55,
+         "g": 0.56,
+         "b": 0.58,
+         "pos": 0.9
+        },
+        {
+         "a": 1,
+         "r": 0.32,
+         "g": 0.33,
+         "b": 0.36,
          "pos": 1.0
         }
        ],
@@ -254,7 +254,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "SiltVeins",
+         "node": "MarbleVeins",
          "widget": "scale_x"
         }
        ]
@@ -285,44 +285,44 @@
        "points": [
         {
          "a": 1,
-         "r": 0.3,
-         "g": 0.19,
-         "b": 0.11,
+         "r": 0.32,
+         "g": 0.33,
+         "b": 0.36,
          "pos": 0.0
         },
         {
          "a": 1,
-         "r": 0.46,
-         "g": 0.3,
-         "b": 0.17,
-         "pos": 0.18
-        },
-        {
-         "a": 1,
-         "r": 0.62,
-         "g": 0.5,
-         "b": 0.34,
-         "pos": 0.4
-        },
-        {
-         "a": 1,
-         "r": 0.68,
+         "r": 0.55,
          "g": 0.56,
-         "b": 0.39,
-         "pos": 0.62
+         "b": 0.58,
+         "pos": 0.1
         },
         {
          "a": 1,
-         "r": 0.5,
-         "g": 0.36,
-         "b": 0.21,
-         "pos": 0.82
+         "r": 0.85,
+         "g": 0.85,
+         "b": 0.83,
+         "pos": 0.28
         },
         {
          "a": 1,
-         "r": 0.34,
-         "g": 0.22,
-         "b": 0.13,
+         "r": 0.9,
+         "g": 0.9,
+         "b": 0.88,
+         "pos": 0.72
+        },
+        {
+         "a": 1,
+         "r": 0.55,
+         "g": 0.56,
+         "b": 0.58,
+         "pos": 0.9
+        },
+        {
+         "a": 1,
+         "r": 0.32,
+         "g": 0.33,
+         "b": 0.36,
          "pos": 1.0
         }
        ],
@@ -332,16 +332,16 @@
      "type": "colorize"
     },
     {
-     "name": "SiltVeins",
+     "name": "MarbleVeins",
      "node_position": {
       "x": 71,
       "y": 216
      },
      "parameters": {
       "noise": 1,
-      "scale_x": 4,
-      "scale_y": 4,
-      "folds": 3,
+      "scale_x": 3,
+      "scale_y": 3,
+      "folds": 2,
       "iterations": 5,
       "persistence": 0.5
      },
@@ -350,13 +350,13 @@
    ],
    "connections": [
     {
-     "from": "SiltVeins",
+     "from": "MarbleVeins",
      "from_port": 0,
      "to": "VeinColor",
      "to_port": 0
     },
     {
-     "from": "SiltVeins",
+     "from": "MarbleVeins",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
@@ -368,7 +368,7 @@
      "to_port": 1
     },
     {
-     "from": "SiltVeins",
+     "from": "MarbleVeins",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 2
@@ -376,8 +376,8 @@
    ]
   },
   {
-   "name": "surface_finish",
-   "label": "Surface Finish",
+   "name": "polished_finish",
+   "label": "Polished Finish",
    "type": "graph",
    "node_position": {
     "x": 375.6666666666667,
@@ -389,22 +389,50 @@
      "points": [
       {
        "a": 1,
-       "r": 0.72,
-       "g": 0.72,
-       "b": 0.72,
+       "r": 0.3,
+       "g": 0.3,
+       "b": 0.3,
        "pos": 0.0
       },
       {
        "a": 1,
-       "r": 0.82,
-       "g": 0.82,
-       "b": 0.82,
+       "r": 0.26,
+       "g": 0.26,
+       "b": 0.26,
+       "pos": 0.1
+      },
+      {
+       "a": 1,
+       "r": 0.2,
+       "g": 0.2,
+       "b": 0.2,
+       "pos": 0.28
+      },
+      {
+       "a": 1,
+       "r": 0.22,
+       "g": 0.22,
+       "b": 0.22,
+       "pos": 0.72
+      },
+      {
+       "a": 1,
+       "r": 0.26,
+       "g": 0.26,
+       "b": 0.26,
+       "pos": 0.9
+      },
+      {
+       "a": 1,
+       "r": 0.3,
+       "g": 0.3,
+       "b": 0.3,
        "pos": 1.0
       }
      ],
      "type": "Gradient"
     },
-    "param1": 0.25
+    "param1": 0.08
    },
    "seed_int": 0,
    "nodes": [
@@ -466,22 +494,50 @@
        "points": [
         {
          "a": 1,
-         "r": 0.72,
-         "g": 0.72,
-         "b": 0.72,
+         "r": 0.3,
+         "g": 0.3,
+         "b": 0.3,
          "pos": 0.0
         },
         {
          "a": 1,
-         "r": 0.82,
-         "g": 0.82,
-         "b": 0.82,
+         "r": 0.26,
+         "g": 0.26,
+         "b": 0.26,
+         "pos": 0.1
+        },
+        {
+         "a": 1,
+         "r": 0.2,
+         "g": 0.2,
+         "b": 0.2,
+         "pos": 0.28
+        },
+        {
+         "a": 1,
+         "r": 0.22,
+         "g": 0.22,
+         "b": 0.22,
+         "pos": 0.72
+        },
+        {
+         "a": 1,
+         "r": 0.26,
+         "g": 0.26,
+         "b": 0.26,
+         "pos": 0.9
+        },
+        {
+         "a": 1,
+         "r": 0.3,
+         "g": 0.3,
+         "b": 0.3,
          "pos": 1.0
         }
        ],
        "type": "Gradient"
       },
-      "param1": 0.25
+      "param1": 0.08
      },
      "seed": 0,
      "widgets": [
@@ -492,7 +548,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "SiltRoughness",
+         "node": "MarbleRoughness",
          "widget": "gradient"
         }
        ]
@@ -504,7 +560,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "SiltNormal",
+         "node": "MarbleNormal",
          "widget": "param1"
         }
        ]
@@ -512,7 +568,7 @@
      ]
     },
     {
-     "name": "SiltRoughness",
+     "name": "MarbleRoughness",
      "node_position": {
       "x": 384,
       "y": 258
@@ -523,16 +579,44 @@
        "points": [
         {
          "a": 1,
-         "r": 0.72,
-         "g": 0.72,
-         "b": 0.72,
+         "r": 0.3,
+         "g": 0.3,
+         "b": 0.3,
          "pos": 0.0
         },
         {
          "a": 1,
-         "r": 0.82,
-         "g": 0.82,
-         "b": 0.82,
+         "r": 0.26,
+         "g": 0.26,
+         "b": 0.26,
+         "pos": 0.1
+        },
+        {
+         "a": 1,
+         "r": 0.2,
+         "g": 0.2,
+         "b": 0.2,
+         "pos": 0.28
+        },
+        {
+         "a": 1,
+         "r": 0.22,
+         "g": 0.22,
+         "b": 0.22,
+         "pos": 0.72
+        },
+        {
+         "a": 1,
+         "r": 0.26,
+         "g": 0.26,
+         "b": 0.26,
+         "pos": 0.9
+        },
+        {
+         "a": 1,
+         "r": 0.3,
+         "g": 0.3,
+         "b": 0.3,
          "pos": 1.0
         }
        ],
@@ -542,7 +626,7 @@
      "type": "colorize"
     },
     {
-     "name": "SiltHeight",
+     "name": "MarbleHeight",
      "node_position": {
       "x": 264,
       "y": 331
@@ -572,14 +656,14 @@
      "type": "colorize"
     },
     {
-     "name": "SiltNormal",
+     "name": "MarbleNormal",
      "node_position": {
       "x": 479,
       "y": 334
      },
      "parameters": {
       "param0": 11,
-      "param1": 0.25,
+      "param1": 0.08,
       "param2": 0,
       "param4": 0
      },
@@ -588,31 +672,31 @@
    ],
    "connections": [
     {
-     "from": "SiltHeight",
+     "from": "MarbleHeight",
      "from_port": 0,
-     "to": "SiltNormal",
+     "to": "MarbleNormal",
      "to_port": 0
     },
     {
      "from": "gen_inputs",
      "from_port": 0,
-     "to": "SiltHeight",
+     "to": "MarbleHeight",
      "to_port": 0
     },
     {
      "from": "gen_inputs",
      "from_port": 1,
-     "to": "SiltRoughness",
+     "to": "MarbleRoughness",
      "to_port": 0
     },
     {
-     "from": "SiltNormal",
+     "from": "MarbleNormal",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
-     "from": "SiltRoughness",
+     "from": "MarbleRoughness",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1
