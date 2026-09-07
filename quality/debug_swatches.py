@@ -314,6 +314,139 @@ def build_blend_opacity_ramp() -> str:
                          [(0.0, 0, 0, 0), (1.0, 1, 1, 1)], amount=0.5)
 
 
+# ---- 6. warp / distortion family -------------------------------------------
+# Distortion nodes are assertable because they DISPLACE a KNOWN reference
+# field. Each swatch below shares one reference: `ref_grad` is a raw 0->1
+# horizontal ramp (rotate=0, repeat=1, so it spans the full width once);
+# `ref_mask` thresholds it into a hard black-left / white-right split via
+# colorize. ref_grad is fed to the distortion node a SECOND time as its
+# control/displacement input (the height/angle map), the same "one node feeds
+# two consumers" pattern the relief family already uses for normal_map. Ports
+# were confirmed against describe_node before wiring (see task-1-report.md).
+
+_REF_SPLIT = [(0.499, 0, 0, 0), (0.5, 1, 1, 1)]
+
+
+def _ref_field():
+    """A raw 0->1 horizontal ramp (`ref_grad`) plus its hard-thresholded
+    black-left / white-right reference (`ref_mask`). ref_grad doubles as the
+    displacement/control input for the distortion node under test, so the
+    distortion has a known, constant direction instead of noise."""
+    nodes = [
+        {"name": "ref_grad", "type": "gradient", "node_position": {"x": 0, "y": 0},
+         "parameters": {"repeat": 1, "rotate": 0, "mirror": False,
+                        "gradient": _grad([(0.0, 0, 0, 0), (1.0, 1, 1, 1)])}},
+        {"name": "ref_mask", "type": "colorize", "node_position": {"x": 260, "y": 0},
+         "parameters": {"gradient": _grad(_REF_SPLIT)}},
+    ]
+    conns = [{"from": "ref_grad", "from_port": 0, "to": "ref_mask", "to_port": 0}]
+    return nodes, conns
+
+
+def build_swatch_warp() -> str:
+    """`warp` displaces `ref_mask` using the slope of `ref_grad` (mode=Slope).
+    ref_grad's slope is a constant (2*eps, 0), so the output is ref_mask
+    shifted right by exactly 2*amount*eps in x. amount=1.0, eps=0.1 gives a
+    0.2 shift: at x=0.45 (black in the undistorted reference, left of the 0.5
+    boundary), the warped output now samples x=0.65 (white), so the pixel
+    flips from black to white. That flip IS the proof of displacement."""
+    ref_nodes, ref_conns = _ref_field()
+    nodes = ref_nodes + [
+        {"name": "warp_0", "type": "warp", "node_position": {"x": 520, "y": 0},
+         "parameters": {"mode": 0, "amount": 1.0, "eps": 0.1}},
+    ]
+    conns = ref_conns + [
+        {"from": "ref_mask", "from_port": 0, "to": "warp_0", "to_port": 0},  # in# (image to distort)
+        {"from": "ref_grad", "from_port": 0, "to": "warp_0", "to_port": 1},  # d (height/displacement map)
+        {"from": "warp_0", "from_port": 0, "to": "Material", "to_port": 0},
+    ]
+    return save_variant(_graph(nodes, conns), _LABEL, "warp", 1)
+
+
+def build_swatch_warp2() -> str:
+    """`warp2` is warp's simpler sibling: no eps parameter, and its slope
+    function evaluates to an exact unit vector for a linear ramp, so the
+    shift is simply (amount, 0). amount=0.3 shifts ref_mask right by 0.3: at
+    x=0.35 (black, left of the 0.5 boundary) the output now samples x=0.65
+    (white), flipping the pixel."""
+    ref_nodes, ref_conns = _ref_field()
+    nodes = ref_nodes + [
+        {"name": "warp2_0", "type": "warp2", "node_position": {"x": 520, "y": 0},
+         "parameters": {"mode": 0, "amount": 0.3}},
+    ]
+    conns = ref_conns + [
+        {"from": "ref_mask", "from_port": 0, "to": "warp2_0", "to_port": 0},  # in (image to distort)
+        {"from": "ref_grad", "from_port": 0, "to": "warp2_0", "to_port": 1},  # d (height/displacement map)
+        {"from": "warp2_0", "from_port": 0, "to": "Material", "to_port": 0},
+    ]
+    return save_variant(_graph(nodes, conns), _LABEL, "warp2", 1)
+
+
+def build_swatch_directional_warp() -> str:
+    """`directional_warp` displaces uniformly along a fixed `angle` by a
+    constant `strength`, using its own default constant angle/strength maps
+    when those optional inputs are left unconnected (anglemap defaults to
+    1.0, strengthmap defaults to 0.0 per directional_warp.mmg) -- so only
+    `ref_mask` needs to be wired, into port 0 (in#). With angle=0 and
+    strength=1.0, the unconnected-input formula reduces to a constant -0.5
+    shift in x: at x=0.45 (black) the output now samples x=-0.05 == 0.95
+    (white), flipping the pixel."""
+    ref_nodes, ref_conns = _ref_field()
+    nodes = ref_nodes + [
+        {"name": "directional_warp_0", "type": "directional_warp",
+         "node_position": {"x": 520, "y": 0},
+         "parameters": {"angle": 0.0, "strength": 1.0}},
+    ]
+    conns = ref_conns + [
+        {"from": "ref_mask", "from_port": 0, "to": "directional_warp_0", "to_port": 0},  # in#
+        {"from": "directional_warp_0", "from_port": 0, "to": "Material", "to_port": 0},
+    ]
+    return save_variant(_graph(nodes, conns), _LABEL, "directional_warp", 1)
+
+
+def build_swatch_slope_blur() -> str:
+    """`slope_blur` smears its input along the slope of a height map, so a
+    hard edge would become a gradient ramp instead of moving intact. Feeding
+    ref_grad as the heightmap gives a constant slope everywhere (not just at
+    the boundary), so the blur would run along x across the whole image.
+
+    CONCERN (verified 2026-09-06): this swatch's .ptex is valid (validate_graph
+    reports no errors) but does NOT render in this project's headless
+    `--export-material` pipeline. slope_blur.mmg's compound graph is built
+    ENTIRELY from two `buffer`-type nodes sandwiching an edge_detect shader
+    (buffer -> edge_detect_3_3_2 -> buffer_2, no unbuffered bypass), and
+    `buffer` nodes compile a compute shader in gen_buffer.gd's `_ready()`
+    (MMShaderCompute -> compute_shader.gd -> pipeline.gd's
+    do_compile_shader). That compile fails headless with "SCRIPT ERROR:
+    Cannot call method 'shader_compile_spirv_from_source' on a null value",
+    producing an all-black render (confirmed even for a completely bare,
+    unwired slope_blur node with no reference graph at all -- not a wiring
+    mistake here). The relief swatches' `normal_map` ALSO contains an
+    internal `buffer` node and hits the exact same SCRIPT ERROR every render
+    (confirmed by direct log inspection), but normal_map has a `switch` node
+    that selects the UNBUFFERED branch at param4=0, so the failed buffer
+    output is simply never used and the relief renders fine anyway.
+    slope_blur has no such bypass, so it cannot produce any image here. This
+    reads as a genuine `buffer`/compute-shader limitation of the headless
+    export pipeline, not a defect in this swatch's wiring -- see
+    task-1-report.md for the full investigation. The builder and its .ptex
+    are still shipped (useful once/if the pipeline gap is fixed, or for
+    interactive-editor use where compute shaders do initialize), but no
+    pixel assertion is registered for it (see PIXEL_CHECKS below)."""
+    ref_nodes, ref_conns = _ref_field()
+    nodes = ref_nodes + [
+        {"name": "slope_blur_0", "type": "slope_blur",
+         "node_position": {"x": 520, "y": 0},
+         "parameters": {"param0": 10, "param1": 30}},
+    ]
+    conns = ref_conns + [
+        {"from": "ref_mask", "from_port": 0, "to": "slope_blur_0", "to_port": 0},       # in
+        {"from": "ref_grad", "from_port": 0, "to": "slope_blur_0", "to_port": 1},       # heightmap
+        {"from": "slope_blur_0", "from_port": 0, "to": "Material", "to_port": 0},
+    ]
+    return save_variant(_graph(nodes, conns), _LABEL, "slope_blur", 1)
+
+
 # ---- phase 2: known-answer pixel checks -----------------------------------
 # Each entry: swatch name -> (which rendered map to sample, check function). A
 # check takes a pngread.Sampler (0-255 rgb, v points down) and returns a list of
@@ -455,6 +588,34 @@ def _check_blend_opacity(s):
     return out
 
 
+def _check_displaced_to_white(x: float):
+    """Builds a check for a distortion swatch whose known displacement moves
+    the reference boundary so that a pixel black in the UNDISTORTED reference
+    (x < 0.5) reads white at sample coordinate `x` after the warp. A pixel
+    still reading black means the node did not displace anything."""
+    def check(s):
+        px = s.at(x, 0.5)
+        if not (px[0] > 140 and px[1] > 140 and px[2] > 140):
+            return [f"expected the displaced boundary pixel at x={x} to read "
+                    f"white (proving displacement), got {px}"]
+        return []
+    return check
+
+
+_check_warp = _check_displaced_to_white(0.45)
+_check_warp2 = _check_displaced_to_white(0.35)
+_check_directional_warp = _check_displaced_to_white(0.45)
+
+
+# No _check_slope_blur / PIXEL_CHECKS entry: see build_swatch_slope_blur's
+# docstring. Its render fails headless (a `buffer`/compute-shader pipeline
+# limitation, not a wiring bug in this swatch), so an intermediate-grey
+# assertion would either always fail here for a reason unrelated to
+# correctness, or (worse) silently pass against a black image if written
+# loosely. tests/test_debug_swatches.py instead asserts the graph itself
+# validates cleanly, which is the honest, currently-provable claim.
+
+
 PIXEL_CHECKS = {
     "blend_mask_polarity": ("albedo", _check_blend_polarity),
     "blend_opacity_ramp": ("albedo", _check_blend_opacity),
@@ -468,6 +629,10 @@ PIXEL_CHECKS = {
     "relief_star": ("normal", _check_relief_present),
     "relief_rays": ("normal", _check_relief_present),
     "relief_glyph": ("normal", _check_relief_present),
+    "warp": ("albedo", _check_warp),
+    "warp2": ("albedo", _check_warp2),
+    "directional_warp": ("albedo", _check_directional_warp),
+    # "slope_blur" intentionally absent -- see build_swatch_slope_blur's docstring.
 }
 
 
@@ -484,6 +649,10 @@ BUILDERS = {
     "relief_star": build_relief_star,
     "relief_rays": build_relief_rays,
     "relief_glyph": build_relief_glyph,
+    "warp": build_swatch_warp,
+    "warp2": build_swatch_warp2,
+    "directional_warp": build_swatch_directional_warp,
+    "slope_blur": build_swatch_slope_blur,
 }
 
 

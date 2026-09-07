@@ -15,8 +15,10 @@ import pytest
 
 from quality.pngread import read_png, Sampler
 from quality import debug_swatches as D
+from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.config import load_config
 from mm_mcp.render import render
+from mm_mcp.validator import validate_graph
 
 cfg = load_config()
 _AUTHORED = os.path.join(os.path.dirname(__file__), "..", "quality",
@@ -89,6 +91,28 @@ def test_debug_swatch_matches_known_answer(name, tmp_path):
     assert map_kind in imgs, f"{name} produced no {map_kind} map: {sorted(imgs)}"
     fails = check(Sampler.load(imgs[map_kind]))
     assert not fails, f"{name}: " + " | ".join(fails)
+
+
+def test_slope_blur_graph_validates_but_does_not_render_here():
+    """slope_blur is registered in BUILDERS (its .ptex is authored and
+    structurally valid) but NOT in PIXEL_CHECKS: its compound graph is built
+    entirely from `buffer`-type compute-shader nodes with no unbuffered
+    bypass, and that compute-shader compile fails headless in this project's
+    `--export-material` pipeline ("Cannot call method
+    'shader_compile_spirv_from_source' on a null value"), producing an
+    all-black image regardless of wiring (confirmed even for a bare, unwired
+    slope_blur node -- see build_swatch_slope_blur's docstring and
+    task-1-report.md). This test asserts the one claim that IS honestly
+    provable here: the authored graph itself is well-formed."""
+    path = D.build_swatch_slope_blur()
+    graph = json.load(open(path, encoding="utf-8"))
+    cfg = load_config()
+    problems = validate_graph(graph, build_catalog(cfg.nodes_dir))
+    errors = [p for p in problems if p["severity"] == "error"]
+    assert not errors, errors
+    assert "slope_blur" not in D.PIXEL_CHECKS, (
+        "slope_blur should stay out of PIXEL_CHECKS until the headless "
+        "buffer/compute-shader render limitation is fixed")
 
 
 @pytest.mark.integration
