@@ -15,6 +15,7 @@ from mm_mcp.render import render
 from mm_mcp.preview import render_preview as _render_preview
 from mm_mcp.doctor import run_check
 from mm_mcp.inspect import inspect_ptex
+from mm_mcp.idle import IdleWatchdog
 
 # Startup is lazy: importing this module must NOT validate config or build the
 # catalog, so `mm-mcp --check` / `--version` work even when config is broken
@@ -23,9 +24,19 @@ from mm_mcp.inspect import inspect_ptex
 _cfg = None
 _CATALOG = None
 
+# Set in main() when MM_IDLE_EXIT_MINUTES > 0; stays None (opt-in feature is
+# off by default). _touch_idle() is a no-op when it's None.
+_idle: IdleWatchdog | None = None
+
+
+def _touch_idle() -> None:
+    if _idle is not None:
+        _idle.touch()
+
 
 def _ensure_ready():
     global _cfg, _CATALOG
+    _touch_idle()
     if _CATALOG is None:
         _cfg = load_config()
         require_valid(_cfg)
@@ -599,7 +610,13 @@ def main(argv: list | None = None) -> int:
         print(f"mm-mcp: unrecognized argument(s): {' '.join(args)}", file=sys.stderr)
         print(_USAGE, file=sys.stderr)
         return 2
-    _ensure_ready()
+    global _idle
+    cfg, _ = _ensure_ready()
+    if cfg.idle_exit_minutes > 0:
+        _idle = IdleWatchdog(cfg.idle_exit_minutes * 60)
+        _idle.start()
+        print(f"mm-mcp: idle exit after {cfg.idle_exit_minutes} min without tool calls",
+              file=sys.stderr)
     mcp.run()
     return 0
 

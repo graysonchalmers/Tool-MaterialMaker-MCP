@@ -17,6 +17,7 @@ _DEFAULTS = {
     "MM_ALLOWED_ROOTS": "",
     "MM_COOKBOOK_DIR": "",
     "MM_PLAY_PORT": "8788",
+    "MM_IDLE_EXIT_MINUTES": "0",
 }
 
 
@@ -39,6 +40,7 @@ class Config:
     allowed_roots: list[str]
     cookbook_dir: str = ""
     play_port: int = 8788
+    idle_exit_minutes: int = 0
 
 
 def _resolve_console(godot_binary: str) -> str:
@@ -90,6 +92,20 @@ def require_valid(cfg: "Config") -> None:
         )
 
 
+def _parse_idle_exit_minutes(raw: str) -> int:
+    try:
+        value = int(raw)
+    except ValueError:
+        raise ValueError(
+            f"MM_IDLE_EXIT_MINUTES must be a non-negative integer, got '{raw}'"
+        )
+    if value < 0:
+        raise ValueError(
+            f"MM_IDLE_EXIT_MINUTES must be a non-negative integer, got '{raw}'"
+        )
+    return value
+
+
 def load_config(overrides: dict | None = None) -> Config:
     env = dict(_DEFAULTS)
     env.update({k: v for k, v in dotenv_values(_dotenv_path()).items() if v})
@@ -102,6 +118,7 @@ def load_config(overrides: dict | None = None) -> Config:
     allowed_roots = [p for p in env["MM_ALLOWED_ROOTS"].split(os.pathsep) if p]
     cookbook_dir = env["MM_COOKBOOK_DIR"] or _default_cookbook_dir()
     play_port = int(env["MM_PLAY_PORT"] or 8788)
+    idle_exit_minutes = _parse_idle_exit_minutes(env["MM_IDLE_EXIT_MINUTES"] or "0")
     return Config(
         godot_binary=env["MM_GODOT_BINARY"],
         console_binary=_resolve_console(env["MM_GODOT_BINARY"]),
@@ -113,4 +130,5 @@ def load_config(overrides: dict | None = None) -> Config:
         allowed_roots=allowed_roots,
         cookbook_dir=cookbook_dir,
         play_port=play_port,
+        idle_exit_minutes=idle_exit_minutes,
     )
