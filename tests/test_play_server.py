@@ -1,11 +1,14 @@
 import json
+import io
 import os
 import socket
 import threading
 import urllib.error
 import urllib.request
+import zipfile
 from dataclasses import replace
 from http.server import HTTPServer
+from pathlib import Path
 
 import pytest
 from mm_mcp.config import load_config
@@ -57,11 +60,43 @@ def test_static_assets_served(running_server, name):
     assert len(body) > 0
 
 
-def test_export_returns_zip(running_server):
-    url = running_server + "/api/export?material_id=t01_sand_dunes"
+def test_export_returns_completed_render_zip(running_server, monkeypatch):
+    real_render_request = api.render_request
+
+    def fake_render(graph, changes, size, cfg, outdir, **kw):
+        path = Path(outdir) / "play_albedo.png"
+        path.write_bytes(b"rendered-map")
+        return {"ok": True, "path": "headless", "images": [str(path)]}
+
+    def render_request(*args):
+        return real_render_request(*args, render_fn=fake_render)
+
+    monkeypatch.setattr(api, "render_request", render_request)
+    req = urllib.request.Request(running_server + "/api/render", method="POST",
+        data=json.dumps({"material_id": "t01_sand_dunes", "values": {
+            "dune_ripples/param0": 12.0}}).encode(),
+        headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req) as r:
+        rendered = json.load(r)
+    assert rendered.get("preview_id"), rendered
+    query = "?preview_id=" + rendered["preview_id"]
+    status, image = _get(running_server + "/api/maps/play_albedo.png" + query)
+    assert status == 200 and image == b"rendered-map"
+    with pytest.raises(urllib.error.HTTPError) as exc:
+        _get(running_server + "/api/maps/unlisted.png" + query)
+    assert exc.value.code == 404
+    with pytest.raises(urllib.error.HTTPError) as exc:
+        _get(running_server + "/api/maps/play_albedo.png")
+    assert exc.value.code == 404
+
+    url = running_server + "/api/export" + query
     with urllib.request.urlopen(url) as r:
         assert r.headers.get("Content-Type") == "application/zip"
-        assert r.read()  # non-empty (contains at least the .ptex)
+        with zipfile.ZipFile(io.BytesIO(r.read())) as z:
+            assert z.read("play_albedo.png") == image
+            graph = json.loads(z.read("t01_sand_dunes.ptex"))
+            sub = next(n for n in graph["nodes"] if n["name"] == "dune_ripples")
+            assert sub["parameters"]["param0"] == 12.0
 
 
 def test_serve_fails_fast_on_missing_godot_binary(capsys):
@@ -118,7 +153,8 @@ def test_render_endpoint_produces_maps(running_server):
     assert data["maps"], "expected rendered maps"
     # each map is fetchable and non-empty
     for name in data["maps"]:
-        with urllib.request.urlopen(running_server + "/api/maps/" + name) as r:
+        with urllib.request.urlopen(running_server + "/api/maps/" + name
+                                    + "?preview_id=" + data["preview_id"]) as r:
             body = r.read()
         assert len(body) > 0
 
