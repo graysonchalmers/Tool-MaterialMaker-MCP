@@ -306,6 +306,14 @@ instead and you can watch the parameter changes land in the GUI. Downloading
 a result includes the real editable `.ptex`, so the play surface still hands
 you a graph you can open in Material Maker, not just a flattened image.
 
+Download becomes available after a successful render and includes that render's
+maps and applied slider values in the `.ptex`. Editing a slider or selecting a
+different material disables Download until the new render completes. The HTTP
+map and export endpoints require the `preview_id` returned by `/api/render`.
+Completed previews are saved under `MM_OUTPUT_DIR/play/previews`; with `mm-play`
+stopped, you can remove that directory to reclaim space. Old preview links will
+then require a new render.
+
 ## Notes and gotchas
 
 Learned while getting headless rendering to work reliably (all verified on this

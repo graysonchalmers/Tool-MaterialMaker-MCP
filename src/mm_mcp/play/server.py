@@ -8,6 +8,7 @@ import socket
 import subprocess
 import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from urllib.parse import parse_qs, unquote, urlsplit
 
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.config import load_config, require_valid
@@ -53,32 +54,32 @@ def make_handler(cfg, catalog, outdir, static_dir):
                 self._send_bytes(fh.read(), ctype)
 
         def _dispatch_get(self):
-            path = self.path.split("?", 1)[0]
+            request = urlsplit(self.path)
+            path = request.path
+            query = parse_qs(request.query)
             if path == "/":
                 return self._serve_static("index.html")
             if path == "/api/materials":
                 return self._send_json(api.list_materials(cfg))
             if path.startswith("/api/material/"):
-                name = path[len("/api/material/"):]
+                name = unquote(path[len("/api/material/"):])
                 out = api.get_material(cfg, catalog, name)
                 return self._send_json(out, 200 if out["ok"] else 404)
             if path.startswith("/api/maps/"):
-                name = path[len("/api/maps/"):]
+                name = unquote(path[len("/api/maps/"):])
                 try:
                     reject_path_fragment(name)
                 except PathNotAllowed:
                     return self._send_json({"ok": False, "error": "bad path"}, 400)
-                fp = os.path.join(outdir, name)
-                if not os.path.isfile(fp):
+                preview_id = (query.get("preview_id") or [""])[0]
+                data = api.map_bytes(outdir, preview_id, name)
+                if data is None:
                     return self._send_json({"ok": False, "error": "not found"}, 404)
-                with open(fp, "rb") as fh:
-                    return self._send_bytes(fh.read(), "image/png")
+                return self._send_bytes(data, "image/png")
             if path == "/api/export":
-                from urllib.parse import parse_qs, urlparse
-                q = parse_qs(urlparse(self.path).query)
-                name = (q.get("material_id") or [""])[0]
+                preview_id = (query.get("preview_id") or [""])[0]
                 data, fname = api.export(cfg, catalog,
-                                         {"material_id": name, "values": {}}, outdir)
+                                         {"preview_id": preview_id}, outdir)
                 if data is None:
                     return self._send_json({"ok": False, "error": fname}, 404)
                 self.send_response(200)
