@@ -308,6 +308,12 @@ you a graph you can open in Material Maker, not just a flattened image.
 
 ## Notes and gotchas
 
+Batch and sphere-preview renders validate PNG structure and pixels before
+publishing. A failed process, missing output or invalid PNG leaves the previous
+files intact. Baked maps must match the requested resolution; dynamic-material
+texture buffers retain their source dimensions. Existing engine materials and
+texture metadata retain Material Maker's native overwrite policy.
+
 Learned while getting headless rendering to work reliably (all verified on this
 project's setup):
 

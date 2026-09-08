@@ -25,6 +25,7 @@ classifiers = [
 dependencies = [
     "mcp>=2,<3",
     "python-dotenv>=1.0.0",
+    "Pillow>=10.4,<13",
 ]
 
 [project.optional-dependencies]
