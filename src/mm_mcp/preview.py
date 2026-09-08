@@ -1,7 +1,10 @@
 import os
+import tempfile
 from dataclasses import dataclass
+from PIL import Image
 from mm_mcp.config import Config, load_config
-from mm_mcp.render import _run_godot, _log_tail, _GodotTimeout
+from mm_mcp.paths import PathNotAllowed, reject_path_fragment
+from mm_mcp.render import _run_godot, _log_tail, _GodotTimeout, _clear_staging, _validate_png
 
 _PREVIEW_PROJECT = os.path.join(os.path.dirname(__file__), "preview_project")
 
@@ -48,22 +51,30 @@ def render_preview(albedo_path: str, normal_path: str, orm_path: str,
     orm_path = os.path.abspath(orm_path)
 
     cfg = cfg or load_config()
-    outdir = outdir or cfg.output_dir
-    os.makedirs(outdir, exist_ok=True)
-
-    out_path = os.path.abspath(os.path.join(outdir, basename + "_preview.png"))
-    if os.path.exists(out_path):
-        os.remove(out_path)
-
-    cmd = _build_command(cfg, albedo_path, normal_path, orm_path, out_path, tile)
-
+    outdir = os.path.abspath(outdir or cfg.output_dir)
+    out_path = os.path.join(outdir, basename + "_preview.png")
+    log_tail = ""
     try:
-        proc = _run_godot(cmd, 60)
+        reject_path_fragment(basename)
+        if not basename or basename == ".":
+            raise ValueError("basename must be a nonempty file name")
+        os.makedirs(outdir, exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix=".preview-", dir=outdir) as stage:
+            staged_image = os.path.join(stage, basename + "_preview.png")
+            cmd = _build_command(cfg, albedo_path, normal_path, orm_path, staged_image, tile)
+            proc = _run_godot(cmd, 60, before_attempt=lambda: _clear_staging(stage))
+            log_tail = _log_tail(proc)
+            if proc.returncode != 0:
+                return PreviewResult(ok=False, log_tail=log_tail,
+                                     error=f"Godot exited {proc.returncode}")
+            if not os.path.isfile(staged_image):
+                return PreviewResult(ok=False, log_tail=log_tail, error="no PNG output produced")
+            if os.path.islink(staged_image):
+                raise ValueError("renderer produced a symbolic link")
+            _validate_png(staged_image)
+            os.replace(staged_image, out_path)
+        return PreviewResult(ok=True, image=out_path, log_tail=log_tail)
     except _GodotTimeout:
         return PreviewResult(ok=False, error="preview render timed out after 60s")
-    log_tail = _log_tail(proc)
-
-    if not os.path.isfile(out_path) or os.path.getsize(out_path) <= 0:
-        error = f"Godot exited {proc.returncode}" if proc.returncode != 0 else "no PNG output produced"
-        return PreviewResult(ok=False, log_tail=log_tail, error=error)
-    return PreviewResult(ok=True, image=out_path, log_tail=log_tail)
+    except (OSError, ValueError, SyntaxError, Image.DecompressionBombError, PathNotAllowed) as exc:
+        return PreviewResult(ok=False, log_tail=log_tail, error=str(exc))

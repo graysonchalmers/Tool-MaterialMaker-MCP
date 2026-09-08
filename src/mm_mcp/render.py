@@ -1,9 +1,16 @@
+import hashlib
 import json
 import os
+from pathlib import Path
+import re
+import shutil
 import subprocess
 import tempfile
+from typing import Callable
 from dataclasses import dataclass, field
+from PIL import Image
 from mm_mcp.config import Config, load_config
+from mm_mcp.paths import PathNotAllowed, reject_path_fragment
 
 
 @dataclass
@@ -54,7 +61,8 @@ def _kill_tree(process) -> None:
         pass
 
 
-def _run_godot(cmd: list, timeout: int) -> subprocess.CompletedProcess:
+def _run_godot(cmd: list, timeout: int, *,
+               before_attempt: Callable[[], None] | None = None) -> subprocess.CompletedProcess:
     """Run a Godot command with capture, retrying up to 3x around the
     transient Windows crash codes above. Raises _GodotTimeout on timeout.
     Shared by render() and preview.render_preview(), which otherwise each had
@@ -76,6 +84,9 @@ def _run_godot(cmd: list, timeout: int) -> subprocess.CompletedProcess:
     harmlessly. This is what the working raw-console path always did."""
     proc = None
     for _ in range(3):
+        # A successful retry must not inherit partial files from a crash.
+        if before_attempt is not None:
+            before_attempt()
         with tempfile.TemporaryFile() as out_f, tempfile.TemporaryFile() as err_f:
             process = subprocess.Popen(cmd, stdout=out_f, stderr=err_f)
             try:
@@ -161,34 +172,139 @@ def _build_command(cfg: Config, ptex_path: str, target: str, outdir: str, size: 
     ]
 
 
+def _clear_staging(directory: str) -> None:
+    """Reset only the private directory owned by this render attempt."""
+    for path in Path(directory).iterdir():
+        if path.is_dir() and not path.is_symlink():
+            shutil.rmtree(path)
+        else:
+            path.unlink()
+
+
+def _validate_png(path: str, size: int | None = None) -> None:
+    """Check PNG structure and decode pixels; headers alone miss truncated data.
+
+    Accept PNG's native color modes, including 16-bit grayscale height maps.
+    This checks file integrity and dimensions, not PBR channel semantics.
+    """
+    with Image.open(path) as image:
+        if image.format != "PNG":
+            raise ValueError(f"not a PNG: {os.path.basename(path)}")
+        if size is not None and image.size != (size, size):
+            raise ValueError(f"{os.path.basename(path)} has size {image.size}, expected {size}x{size}")
+        image.verify()
+    with Image.open(path) as image:
+        image.load()
+
+
+def _seed_export_products(outdir: str, stage: str, basename: str) -> dict[str, bytes]:
+    """Let native prompt_overwrite rules see this material's existing products.
+
+    Never seed PNGs: they must come from the current successful attempt. Native
+    profiles protect engine materials/metadata but overwrite textures and scripts.
+    Remember copied bytes so preserved files are not republished over human edits.
+    """
+    seeded = {}
+    for path in Path(outdir).iterdir():
+        if (path.is_file() and path.name.startswith((basename + ".", basename + "_"))
+                and path.suffix.lower() not in {".png", ".ptex"}):
+            copied = Path(stage) / path.name
+            shutil.copy2(path, copied)
+            seeded[path.name] = hashlib.sha256(copied.read_bytes()).digest()
+    return seeded
+
+
+def _rebase_export_paths(path: Path, stage: str, outdir: str) -> None:
+    """Keep native text exports usable after moving them out of staging.
+
+    In particular, Material Maker's UE5 Python template embeds absolute texture
+    paths. Preserve binary products and relative references byte-for-byte.
+    """
+    if path.suffix.lower() not in {
+        ".py", ".tres", ".tscn", ".mat", ".meta", ".json", ".gltf",
+        ".mm2ue", ".gd", ".gdshader", ".shader",
+    }:
+        return
+    raw = path.read_bytes()
+    try:
+        content = raw.decode("utf-8")
+    except UnicodeDecodeError:
+        return
+    pairs = {(stage, outdir), (Path(stage).as_posix(), Path(outdir).as_posix())}
+    pairs.update((json.dumps(old, ensure_ascii=False)[1:-1],
+                  json.dumps(new, ensure_ascii=False)[1:-1]) for old, new in list(pairs))
+    for old, new in sorted(pairs, key=lambda pair: len(pair[0]), reverse=True):
+        content = content.replace(old, new)
+    if content.encode("utf-8") != raw:
+        path.write_bytes(content.encode("utf-8"))
+
+
 def render(ptex: dict, size: int = 512, outdir: str | None = None,
            basename: str = "material", target: str = "Godot/Godot 4 Standard",
            cfg: Config | None = None) -> RenderResult:
     cfg = cfg or load_config()
-    outdir = outdir or cfg.output_dir
-    os.makedirs(outdir, exist_ok=True)
-
-    # Snapshot existing output files before render to detect fresh outputs
-    before = _snapshot_pngs(outdir, basename)
-
-    ptex_path = os.path.join(outdir, basename + ".ptex")
-    with open(ptex_path, "w", encoding="utf-8") as fh:
-        json.dump(ptex, fh)
-
-    cmd = _build_command(cfg, ptex_path, target, outdir, size)
-
+    outdir = os.path.abspath(outdir or cfg.output_dir)
+    log_tail = ""
     try:
-        proc = _run_godot(cmd, 180)
+        reject_path_fragment(basename)
+        if not basename or basename == ".":
+            raise ValueError("basename must be a nonempty file name")
+        os.makedirs(outdir, exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix=".render-", dir=outdir) as stage:
+            ptex_path = os.path.join(stage, basename + ".ptex")
+            original_json = json.dumps(ptex)
+            # Native image nodes expand this token against the loaded .ptex's
+            # directory. Resolve it for staging, but keep the editable source
+            # relative to its original output location when publishing below.
+            render_json = original_json.replace(
+                "%PROJECT_PATH%", json.dumps(Path(outdir).as_posix())[1:-1])
+            seeded = {}
+
+            def prepare_attempt():
+                nonlocal seeded
+                _clear_staging(stage)
+                seeded = _seed_export_products(outdir, stage, basename)
+                with open(ptex_path, "w", encoding="utf-8") as fh:
+                    fh.write(render_json)
+
+            cmd = _build_command(cfg, ptex_path, target, stage, size)
+            proc = _run_godot(cmd, 180, before_attempt=prepare_attempt)
+            log_tail = _log_tail(proc)
+            if proc.returncode != 0:
+                return RenderResult(ok=False, log_tail=log_tail,
+                                    error=f"Godot exited {proc.returncode}")
+
+            # Include empty candidates too, so a valid albedo cannot hide a
+            # corrupt or zero-byte second channel. Old output files are absent.
+            images = [p for p in sorted(Path(stage).iterdir())
+                      if p.name.startswith(basename + "_") and p.suffix.lower() == ".png"]
+            if not images:
+                return RenderResult(ok=False, log_tail=log_tail, error="no PNG output produced")
+            # Keep every native exporter product, including .tres/.mat files,
+            # import metadata and engine helper scripts, alongside the .ptex.
+            products = list(Path(stage).rglob("*"))
+            if any(p.is_symlink() for p in products):
+                raise ValueError("renderer produced a symbolic link")
+            for path in images:
+                # Dynamic native exporters copy source buffers at their own
+                # dimensions; only baked maps use the requested square size.
+                is_buffer = re.fullmatch(re.escape(basename) + r"_texture_\d+\.png",
+                                         path.name, flags=re.IGNORECASE)
+                expected_size = size if size > 0 and not is_buffer else None
+                _validate_png(str(path), size=expected_size)
+            Path(ptex_path).write_text(original_json, encoding="utf-8")
+            for path in (p for p in products if p.is_file()):
+                _rebase_export_paths(path, stage, outdir)
+            for path in sorted(p for p in products if p.is_file()):
+                previous = seeded.get(path.relative_to(stage).as_posix())
+                if previous is not None and hashlib.sha256(path.read_bytes()).digest() == previous:
+                    continue
+                destination = Path(outdir) / path.relative_to(stage)
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                os.replace(path, destination)
+            return RenderResult(ok=True, images=[str(Path(outdir) / p.name) for p in images],
+                                log_tail=log_tail)
     except _GodotTimeout:
         return RenderResult(ok=False, error="Godot render timed out after 180s")
-    log_tail = _log_tail(proc)
-
-    images = _collect_fresh_images(outdir, basename, before)
-
-    if proc.returncode != 0 and not images:
-        return RenderResult(ok=False, log_tail=log_tail,
-                            error=f"Godot exited {proc.returncode}")
-    if not images:
-        return RenderResult(ok=False, log_tail=log_tail,
-                            error="no PNG output produced")
-    return RenderResult(ok=True, images=images, log_tail=log_tail)
+    except (OSError, ValueError, SyntaxError, Image.DecompressionBombError, PathNotAllowed) as exc:
+        return RenderResult(ok=False, log_tail=log_tail, error=str(exc))
