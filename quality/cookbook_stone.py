@@ -961,12 +961,13 @@ def build_s12_eroded_sandstone(catalog: dict) -> str:
     more, thinner, clearly separated bands; raised back up from the
     de-wood pass's 9, which had softened the strata into a mottle), 3
     iterations and `persistence=0.62`. `SedimentBands` colorizes it through
-    a 10-stop palette built as five flat COLOR PLATEAUS joined by hard
-    (~0.02-wide) transitions -- pale buff / pale tan / muted rust / light
-    warm grey / pale sandy highlight -- instead of a smoothly interpolated
-    ramp, so each stratum reads as a distinct banded color step, not a blur
-    between neighbors. Still lower-saturation/higher-value than a wood
-    palette (pale, cool, dry), per the de-wood fix.
+    a 10-stop palette built as five flat COLOR PLATEAUS joined by soft
+    (~0.08-wide) transitions -- pale buff / pale tan / muted rust / light
+    warm grey / pale sandy highlight -- instead of a hard step or a fully
+    smooth ramp, so each stratum still reads as a distinct band but fades
+    gradually into its neighbor (round 3 fix, see below). Still
+    lower-saturation/higher-value than a wood palette (pale, cool, dry),
+    per the de-wood fix.
 
     **Fix (round 1: controller render read as polished wood, not
     sandstone).** The first pass's fine high-frequency bands + saturated
@@ -990,6 +991,22 @@ def build_s12_eroded_sandstone(catalog: dict) -> str:
     layers get smeared into legible erosion runs rather than dissolved back
     into a mottle. The matte roughness, grit, and pale/cool palette from
     round 1 are all kept unchanged.
+
+    **Fix (round 3: controller read the band edges as too hard-edged /
+    posterized, like topographic contour lines).** Round 2's 10-stop
+    gradient joined its five color plateaus with hard ~0.02-wide cuts,
+    which read as crisp, almost cartographic steps rather than natural
+    geology. Softened by widening each of the four transition zones from
+    ~0.02 to ~0.08 (the four paired near-coincident stops moved apart:
+    0.19/0.21 -> 0.16/0.24, 0.40/0.42 -> 0.37/0.45, 0.61/0.63 -> 0.58/0.66,
+    0.82/0.84 -> 0.79/0.87), so each layer now fades gradually into the
+    next instead of stepping. All 5 colors, their order, and their
+    approximate plateau centers are unchanged; only the transition width
+    moved, trading round 2's "5 flat plateaus / hard cuts" look for
+    "5 distinct layers / soft edges" -- still clearly banded, not washed
+    back into round 1's smooth mottle. `SedimentNoise.scale_y`,
+    `ErosionWarp.strength`/`angle`, the matte roughness, and the grit are
+    all unchanged from round 2.
 
     **Directional erosion.** `ErosionWarp` (`directional_warp`) takes
     `SedimentBands`' RGBA output directly on its `in#` port (port 0) --
@@ -1052,14 +1069,14 @@ def build_s12_eroded_sandstone(catalog: dict) -> str:
              "node_position": {"x": 260, "y": 0},
              "parameters": {"gradient": _grad([
                  (0.00, 0.74, 0.68, 0.58),   # pale buff (plateau)
-                 (0.19, 0.74, 0.68, 0.58),   # pale buff (plateau end)
-                 (0.21, 0.80, 0.74, 0.64),   # -> pale tan, hard cut
-                 (0.40, 0.80, 0.74, 0.64),   # pale tan (plateau)
-                 (0.42, 0.60, 0.48, 0.38),   # -> muted rust, hard cut
-                 (0.61, 0.60, 0.48, 0.38),   # muted rust (plateau)
-                 (0.63, 0.70, 0.64, 0.55),   # -> light warm grey, hard cut
-                 (0.82, 0.70, 0.64, 0.55),   # light warm grey (plateau)
-                 (0.84, 0.84, 0.78, 0.68),   # -> pale sandy highlight, hard cut
+                 (0.16, 0.74, 0.68, 0.58),   # pale buff (plateau end)
+                 (0.24, 0.80, 0.74, 0.64),   # -> pale tan, soft transition
+                 (0.37, 0.80, 0.74, 0.64),   # pale tan (plateau)
+                 (0.45, 0.60, 0.48, 0.38),   # -> muted rust, soft transition
+                 (0.58, 0.60, 0.48, 0.38),   # muted rust (plateau)
+                 (0.66, 0.70, 0.64, 0.55),   # -> light warm grey, soft transition
+                 (0.79, 0.70, 0.64, 0.55),   # light warm grey (plateau)
+                 (0.87, 0.84, 0.78, 0.68),   # -> pale sandy highlight, soft transition
                  (1.00, 0.84, 0.78, 0.68),   # pale sandy highlight (plateau)
              ])}},
             {"name": "directional_warp_0", "type": "directional_warp",
