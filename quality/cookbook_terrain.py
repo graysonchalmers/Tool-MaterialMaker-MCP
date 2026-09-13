@@ -624,43 +624,75 @@ def build_t09_rippled_wet_sand(catalog: dict) -> str:
     move `t07_forest_floor` uses to swap in `fbm` -- output port 0 is a
     plain `f` scalar on both node types, so the swap is connection-safe.
 
-    IMPORTANT finding from `docs/images/noise-gallery/cross-family.png` (the
-    actual rendered `wavelet_banded` swatch at the brief's exact starting
-    params: type=4, scale=4/4, iterations=3, persistence=0.5, frequency=1):
-    the real render is NOT parallel ripple lines -- it is a fine, dense,
-    dappled mottle, closer to sea-foam or wet-sand grain than literal
-    banding. `noise_gallery.py`'s "banded wavelet -> ripple/interference"
-    label is the node's aspirational cross-family framing, not a promise
-    this exact param combo draws visible bands. Leaning into what the
-    swatch actually shows (fine, tight, foam-like dappling) fits wet sand's
-    real surface at least as well as forcing a false "ripple lines" claim,
-    so this builder tunes only `scale`/`frequency` (as the brief permits)
-    for a TIGHTER, denser version of that same dappled character --
-    `type`, `iterations`, `persistence`, `offset` are left at the brief's
-    exact starting values. `scale_x`/`scale_y` are kept EQUAL (isotropic):
-    the swatch gives no evidence this node's scale_x/scale_y pair controls
-    directionality the way `noise_anisotropic` (a different node) does, so
-    an anisotropic guess would be an unproven extra lever stacked on top of
-    an already-unrendered material.
+    RETUNE (round 2, controller self-screen at 512): round 1 used isotropic
+    `scale_x == scale_y` and read as a dark, dense, muddy mottle -- no
+    banding at all, and too dark/chocolate-brown for wet sand. Two root
+    causes, both fixed here:
+
+    1. Isotropic scale can't produce bands. Reading `wavelet_noise.mmg`'s
+       actual GLSL (`z-Git/material-maker/addons/material_maker/nodes/
+       wavelet_noise.mmg`): `size = vec2(scale_x, scale_y)` tiles the field
+       per-axis independently, so equal scale tiles equally in both
+       directions -> isotropic blobs, never bands, no matter what `type` or
+       `iterations` is. Fixed with STRONG anisotropy: `scale_x=2` (few
+       tiles -> the field barely varies along x, so each feature stretches
+       long across it) and `scale_y=24` (many tiles -> tight repetition
+       along y), producing elongated near-parallel streaks running along x,
+       stacked along y -- the near-parallel-ripple-band look wet sand
+       actually has, distinct from `t01_sand_dunes`' broad ISOTROPIC-ish
+       perlin rolls (which vary smoothly in both axes, never band) and from
+       every voronoi-plate sibling (cellular, not banded, at all).
+    2. `type` was numerically out of spec. `describe_node`/this project's
+       catalog reports `type` as an ordinal enum index 0-4 ("Add 1".."Mult
+       3"), but `catalog_builder.py`'s enum handling only derives min/max
+       from the ordinal POSITION of the `values` names list -- it never
+       reads each option's real underlying `value` string. Reading the
+       `.mmg` source directly shows the real literal values are
+       non-contiguous: Add 1/2/3 = `1`/`2`/`3`, Mult 2/3 = `-2`/`-3` (the
+       shader does `if (type > 0.0) { ... additive domain shift ... } else
+       { local_uv *= -type; size *= -type; ... }` -- Mult really does
+       multiply the domain by `-type` each octave, which is where the sharp
+       interference-fringe character comes from). Round 1's literal `4` hit
+       the `type > 0.0` (Add) branch as an out-of-spec "Add 4", not the
+       "Mult 3" the brief's label implied. Fixed to the REAL "Mult 3"
+       literal, `-3`, for the sharpest interference fringes. This value is
+       outside the catalog's 0-4 ordinal range, so `validate_graph` reports
+       a WARNING ("outside enum index range") on this node -- expected and
+       accepted, since the catalog's enum range is simply wrong for this
+       node's non-contiguous `value` set, not a sign `-3` is actually
+       invalid (confirmed against the node's own shader source). Also
+       dropped `iterations` 3 -> 2 (fewer octaves -> cleaner, less busy
+       bands, the other lever the round-2 brief flagged), kept `frequency`
+       at round 1's 1.6 (pairs with the Mult type for tighter interference
+       fringes) and `persistence`/`offset` at their original 0.5/0.
+
+    Palette also lightened and cooled per the round-2 brief: wet sand is a
+    damp mid-tone khaki/tan (round 1 was too dark and too saturated warm-
+    brown, reading as mud/coffee grounds). New gradient averages ~0.35-0.48
+    luminance with a narrow, mostly-grey R/G/B spread (khaki, not chocolate
+    brown) -- see `WetSandColor` below.
 
     Distinct from `t01_sand_dunes` (broad, organic, wood-donor perlin rolls,
-    warm tan, high roughness) on every axis: fine dense grain instead of
-    broad rolls, a darker/cooler damp palette instead of warm tan, and LOW
-    roughness for a wet sheen instead of dune's high matte roughness. Not
-    based on any voronoi-plate/`dry_earth` donor, so it does not add to
-    that already-overused family either.
+    warm tan, high roughness) on every axis: tight anisotropic bands
+    instead of broad isotropic rolls, a cooler/greyer damp khaki instead of
+    warm tan, and LOW roughness for a wet sheen instead of dune's high matte
+    roughness. Not based on any voronoi-plate/`dry_earth` donor, so it does
+    not add to that already-overused family either.
 
     Roughness is fed as a flat texture (`rough_const`) rather than left as
     a Material-node scalar only -- the same lesson `_dry_earth_plates` and
     `p01_glossy_plastic` (`cookbook_plastics.py`) already established -- so
     an ORM map exports for the wet-sheen preview instead of silently having
-    none."""
+    none. This, the low-roughness wet sheen, and feeding the ripple field
+    into the normal for corrugation are all unchanged from round 1 -- the
+    round-2 brief flagged only the base-field anisotropy/type and the
+    palette."""
     g = _from_scratch_noise_material(
         {"scale_x": 4, "scale_y": 4},   # placeholder; retyped to wavelet_noise below
-        [(0.0, 0.16, 0.14, 0.12), (0.5, 0.24, 0.21, 0.17), (1.0, 0.34, 0.30, 0.24)],
+        [(0.0, 0.33, 0.32, 0.30), (0.5, 0.42, 0.40, 0.37), (1.0, 0.50, 0.48, 0.44)],
         metallic=0.0, roughness=0.15, normal_amount=0.4)
     retype(g, "perlin_0", "wavelet_noise", {
-        "type": 4, "scale_x": 10, "scale_y": 10, "iterations": 3,
+        "type": -3, "scale_x": 2, "scale_y": 24, "iterations": 2,
         "persistence": 0.5, "frequency": 1.6, "offset": 0})
     set_param(g, "normal_map_0", "param4", 0)
     add_node(g, "rough_const", "colorize",
