@@ -53,7 +53,9 @@ done and approved (all 4 code-reviewed clean, including s12 at wrap). Nothing
 in flight. Next up is Task 8. The branch is pushed as WIP; `test_readme_counts`
 is INTENTIONALLY RED (tree has 57 materials, README still says 53) until Phase C
 Task 10 fixes the counts, so branch CI will fail on that until then. Do NOT
-merge to main until the plan finishes.
+merge to main until the plan finishes. **Grayson explicitly chose to HOLD the
+merge (2026-09-13)**: finish the remaining 2 materials + Core toolbox + Phase C
+counts + final review, get the branch green, THEN merge. Do not merge red.
 
 ## ▶️ Next concrete step
 
