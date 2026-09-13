@@ -78,6 +78,21 @@ _SF04_NAMES = {
     "normal_map_0": "GrilleNormal",
 }
 
+# from-scratch mapping for sf07 (truchet conduit panel). *Mask names the
+# hard 0/1 relief mask fed to normal_map, split off from the albedo
+# colorize the same way sf03's trace/chip masks are split off from their
+# albedo colorizes -- here there is no `blend` (a single truchet field
+# drives both albedo and relief directly), but normal_map still needs its
+# own dedicated hard-threshold node so a future edit to the albedo gradient
+# can never also change the relief shape.
+_SF07_NAMES = {
+    "truchet_0": "ConduitLayout",
+    "colorize_albedo": "ConduitColor",
+    "colorize_relief_mask": "ConduitMask",
+    "colorize_rgh": "PanelRoughness",
+    "normal_map_0": "ConduitNormal",
+}
+
 
 def _new_graph() -> dict:
     """Minimal valid .ptex shape for a from-scratch graph (no donor to clone).
@@ -390,11 +405,84 @@ def build_sf04_vent_grille_panel(catalog: dict) -> str:
     return save_variant(g, _LABEL, "sf04_vent_grille_panel", 1)
 
 
+def build_sf07_conduit_panel(catalog: dict) -> str:
+    """Interlocking pipe/conduit panel: a topology voronoi and perlin cannot
+    make. The `truchet` node's Circle shape (shape=1) tiles quarter-circle
+    arcs that always meet edge-to-edge, so its output field reads as a
+    single continuous network of curved pipes threading across the panel --
+    distinct from sf03's circuit board, which is flat etched traces (a
+    `pattern` Square wave, no tile-based curve topology) with zero relief
+    beyond the shared flat-normal fix. Here the conduit is RAISED: a hard
+    0/1 threshold of the same truchet field drives normal_map so the pipes
+    read as tubes standing proud of the panel, not an etched groove.
+
+    Only one noise field (the truchet layout) drives both albedo and
+    relief, so unlike sf03's multi-layer composite this needs no `blend` --
+    colorize_albedo thresholds it directly into dark-panel/bright-pipe
+    color. The relief mask is still a SEPARATE colorize from the albedo one
+    (colorize_relief_mask), matching the split-mask lesson from sf03: never
+    let one colorize double as both a color source and another node's
+    opacity/height driver, even when a blend isn't in the picture, so a
+    future edit to the pipe color's gradient can't accidentally reshape the
+    relief."""
+    g = _new_graph()
+    add_node(g, "truchet_0", "truchet", {"shape": 1, "size": 4})
+    add_node(g, "colorize_albedo", "colorize", {})
+    set_gradient(g, "colorize_albedo", [    # dark gunmetal panel, bright copper pipe
+        (0.0, 0.05, 0.06, 0.07), (0.46, 0.05, 0.06, 0.07),
+        (0.50, 0.62, 0.42, 0.22), (1.0, 0.66, 0.46, 0.24),
+    ])
+    add_node(g, "colorize_relief_mask", "colorize", {})
+    set_gradient(g, "colorize_relief_mask", [    # hard 0/1, same threshold as albedo
+        (0.0, 0, 0, 0), (0.48, 0, 0, 0),
+        (0.52, 1, 1, 1), (1.0, 1, 1, 1),
+    ])
+    add_node(g, "colorize_rgh", "colorize", {})
+    set_gradient(g, "colorize_rgh", [    # polished pipe glossier than matte panel
+        (0.0, 0.60, 0.60, 0.60),
+        (1.0, 0.30, 0.30, 0.30),
+    ])
+    add_node(g, "normal_map_0", "normal_map",
+             {"param0": 10, "param1": 0.7, "param2": 0, "param4": 0})
+    add_node(g, "Material", "material", {"metallic": 0.6})
+    g["connections"] += [
+        {"from": "truchet_0", "from_port": 0, "to": "colorize_albedo", "to_port": 0},
+        {"from": "truchet_0", "from_port": 0, "to": "colorize_relief_mask", "to_port": 0},
+        {"from": "truchet_0", "from_port": 0, "to": "colorize_rgh", "to_port": 0},
+        {"from": "colorize_albedo", "from_port": 0, "to": "Material", "to_port": 0},
+        {"from": "colorize_rgh", "from_port": 0, "to": "Material", "to_port": 2},
+        {"from": "colorize_relief_mask", "from_port": 0, "to": "normal_map_0", "to_port": 0},
+        {"from": "normal_map_0", "from_port": 0, "to": "Material", "to_port": 4},
+    ]
+
+    # Built from scratch; truchet_0 feeds all three colorize nodes directly
+    # (the single-upstream-node-feeds-multiple-groups case already used in
+    # sf01/sf03/sf04), producing extra boundary output ports on truchet_0
+    # once conduit_pattern and surface_finish are split into separate
+    # groups below, which is expected.
+    group_into_subgraph(
+        g, ["truchet_0", "colorize_albedo", "colorize_relief_mask"],
+        "conduit_pattern", "Conduit Pattern",
+        [("truchet_0", "size", "param0", "Conduit density"),
+         ("colorize_albedo", "gradient", "param1", "Conduit color")],
+        catalog,
+    )
+    group_into_subgraph(
+        g, ["colorize_rgh", "normal_map_0"], "surface_finish", "Surface Finish",
+        [("colorize_rgh", "gradient", "param0", "Surface sheen"),
+         ("normal_map_0", "param1", "param1", "Relief strength")],
+        catalog,
+    )
+    rename_nodes(g, _SF07_NAMES)
+    return save_variant(g, _LABEL, "sf07_conduit_panel", 1)
+
+
 BUILDERS = {
     "sf01_hull_plating": build_sf01_hull_plating,
     "sf02_hazard_stripe_panel": build_sf02_hazard_stripe_panel,
     "sf03_circuit_board": build_sf03_circuit_board,
     "sf04_vent_grille_panel": build_sf04_vent_grille_panel,
+    "sf07_conduit_panel": build_sf07_conduit_panel,
 }
 
 
