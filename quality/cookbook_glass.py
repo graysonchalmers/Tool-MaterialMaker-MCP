@@ -114,32 +114,36 @@ def build_gl01_frosted_glass(catalog: dict) -> str:
     return save_variant(g, _LABEL, "gl01_frosted_glass", 1)
 
 
-# `dry_earth` donor mapping for gl02, cloned from the SAME donor as gl01 but
-# with `voronoi_0` retyped from square `voronoi` to `voronoi_triangle` (zero
-# prior cookbook use). Port semantics verified via describe_node + the MM
-# source (.mmg): both node types share port 0 (Nodes, f, distance to cell
-# centers), port 1 (Border/Borders, f, distance to cell borders) and port 2
-# (Random color, rgb, flat per-cell random) -- voronoi_triangle just adds two
-# extra ports (3: UV Map, 4: a precomputed analytic Normal Map) that this
-# recipe doesn't use. The existing voronoi_0(port1)->CrackRamp connection
-# keeps its role (border distance -> edge mask) unchanged by the retype.
-# colorize_0 is REWIRED here (gl01 fed it from the shared perlin_0 for a
-# uniform frosted tone; gl02 feeds it from voronoi_0's port 2 instead, so
-# each triangular facet gets its own flat jewel-tone shade -- the whole point
-# of this material). colorize_3/metallic-drop follow the same dead-node
-# precedent as gl01.
+def _drop_nodes(graph: dict, names: list) -> None:
+    """Remove named top-level nodes and every connection touching them.
+    Local to this module -- the first cookbook builder that needs to
+    actually excise donor nodes rather than just rewire or leave them dead,
+    since gl02's v1 kept gl01's whole frost/relief chain around it (art
+    direction fix, see build_gl02_cut_gem's docstring)."""
+    drop = set(names)
+    graph["nodes"] = [n for n in graph["nodes"] if n["name"] not in drop]
+    graph["connections"] = [c for c in graph["connections"]
+                            if c["from"] not in drop and c["to"] not in drop]
+
+
+# gl02 clones the SAME dry_earth donor as gl01 (voronoi_0 retyped to
+# voronoi_triangle, zero prior cookbook use; port semantics verified via
+# describe_node + the node's own .mmg: both share port 0 Nodes/f, port 1
+# Border/f, port 2 Random color/rgb), but keeps only the four nodes that
+# still serve a cut-gem look. Everything else in the donor -- warp_0's
+# organic jointing, the perlin_0/perlin_1 noise feeding the blend/relief
+# chain, the crack-composite blend, colorize_3/4, the second relief blend
+# and its ramp -- was gl01's SANDBLASTED-FROST machinery (fine speckle +
+# soft, wide, noise-blurred bevels) and got dropped wholesale: a v1
+# self-screen came back reading as a matte grainy hex-tile floor, not a
+# glossy gem, traced to exactly that inherited chain. What's left is
+# voronoi_triangle facets -> per-facet tint (albedo) straight to Material,
+# and the border-distance signal straight into normal_map for sharp,
+# UN-warped facet-edge relief, plus a flat low-roughness texture.
 _GL02_NAMES = {
     "voronoi_0": "FacetCells",
     "colorize_1": "EdgeRamp",
-    "warp_0": "EdgeWarp",
     "colorize_0": "FacetTint",
-    "blend_0": "FacetComposite",
-    "colorize_3": "ColorizeUnused",     # dead: its Material connection is dropped, forced metallic=0
-    "perlin_0": "AmbientNoise",         # shared: feeds relief composite
-    "perlin_1": "EdgeWarpNoise",        # shared: feeds EdgeWarp's amount and the dead ColorizeUnused
-    "colorize_4": "ReliefContrast",
-    "blend_1": "ReliefComposite",
-    "colorize": "ReliefRamp",
     "normal_map_0": "FacetNormal",
     "rough_const": "RoughnessConst",
 }
@@ -147,39 +151,60 @@ _GL02_NAMES = {
 
 def build_gl02_cut_gem(catalog: dict) -> str:
     """Faceted cut gem: proves the `voronoi_triangle` base (triangular cells
-    square voronoi cannot produce) for a hard-edged crystal / cut-gem look.
-    Clones the same `dry_earth` donor gl01 uses (topology match: a
-    voronoi-cell network with an edge/crack ramp, warp, and blend into an
-    albedo, plus a parallel relief chain into a normal map), then RETYPES
-    `voronoi_0` from square `voronoi` to `voronoi_triangle` at the exact
-    starting params from the noise gallery (`scale_x`/`scale_y`=4,
-    `stretch_x`/`stretch_y`=1, `randomness`=0.85) -- connection-safe because
-    both node types expose the same port 0 (Nodes)/port 1 (Border)/port 2
-    (Random color) signature (verified via describe_node + the node's own
-    .mmg shader_model), so the existing port1->EdgeRamp wire keeps its role.
+    square voronoi cannot produce) for a hard-edged, GLOSSY crystal / cut-gem
+    look. Clones the `dry_earth` donor gl01 uses and RETYPES `voronoi_0` from
+    square `voronoi` to `voronoi_triangle` at the noise gallery's starting
+    params (`stretch_x`/`stretch_y`=1, `randomness`=0.85), but at a higher
+    `scale_x`/`scale_y`=10 (vs the gallery's 4) for MORE, smaller, sharper
+    facets -- v1 at scale 4 read as a few large, round-ish hex-like cells,
+    too close to `s05_hex_stone_tile`'s tiled-mosaic look. Connection-safe
+    because both node types expose the same port 0 (Nodes)/port 1
+    (Border)/port 2 (Random color) signature (verified via describe_node +
+    the node's own .mmg shader_model), so the existing port1->EdgeRamp wire
+    keeps its role.
 
-    Distinct from `gl01_frosted_glass` in every lever that matters: warp is
-    pushed to near zero (0.02, vs gl01's already-low 0.05) so the naturally
-    hard triangular edges stay crisp facets rather than smearing into round
-    blobs or a connected-crack plate look; roughness is pushed LOW (0.1, vs
-    gl01's matte 0.88) for a glassy/gem surface; and -- the key move -- the
-    per-facet flat random color (`voronoi_triangle` port 2, the same idiom
-    already proven in `cookbook_stone.py`'s `s04`/`s09` and
-    `cookbook_scifi.py`'s chip mask) drives `FacetTint`'s gradient instead of
-    gl01's uniform ambient-perlin tone, so each triangular facet gets its own
-    shade from a single coherent emerald-green family (deep shadowed facets
-    to a bright emerald highlight) rather than one flat color. `FacetNormal`
-    keeps gl01's `param4=0` flat-normal fix but with much more relief
-    strength (`param1`=0.65 vs gl01's subtle 0.15) for pronounced hard
-    crystalline facet relief. Same ORM gap as gl01/dry_earth (the donor's
-    roughness input is unconnected), fixed the same way with a flat
-    `RoughnessConst` texture wired into Material's roughness port."""
+    v1 cloned gl01's whole donor tangle (warp, blend, dual noise sources,
+    a second relief-composite blend) and just retuned it. A self-screen
+    render came back as a matte, grainy, greenish HEX TILE floor, not a
+    glossy gem -- that texture-grain and the soft, wide bevels both traced
+    to gl01's frost/relief chain: mixing a high-iteration ambient perlin
+    into the height signal (via blend_1/colorize_4/colorize in the old v1)
+    is exactly gl01's sandblasted-frost effect, wrong for a gem's CLEAN FLAT
+    facet faces. v2 drops that whole chain (`_drop_nodes`) down to four
+    nodes plus Material: `FacetCells` -> `FacetTint` (the per-facet random
+    color, port 2, straight to albedo -- no darkening blend on top, so each
+    facet is a flat, clean color, exactly the "clean flat facet faces" a cut
+    gem needs) and `FacetCells` -> `EdgeRamp` (the border-distance edge
+    signal, port 1, UN-warped -- v1's `warp_0` is gone entirely, so the
+    facet seams stay geometrically sharp) -> `FacetNormal` directly (no
+    intermediate contrast/blend/ramp -- the fewer processing steps between
+    the edge signal and the normal map, the crisper the seam reads instead
+    of a soft wide bevel).
+
+    Kept from v1: the single coherent emerald-green `FacetTint` gradient
+    (deep shadowed facets to a bright highlight, the same "per-cell random
+    -> colorize gradient" idiom already proven in `cookbook_stone.py`'s
+    `s04`/`s09` and `cookbook_scifi.py`'s chip mask), and the flat
+    `RoughnessConst` texture that makes an ORM map export (same gap
+    gl01/dry_earth has: the donor's roughness input is unconnected).
+    Roughness itself is now pushed LOW (0.08, down from v1's already-lower-
+    than-gl01 0.1) for an actually glossy gem surface -- v1's grain read as
+    matte regardless of the roughness number because the height-channel
+    noise was doing the visual work, not the roughness value; with that
+    noise gone, a low roughness should finally read as shiny.
+    `FacetNormal`'s `param4=0` flat-normal fix stays; `param1` (relief
+    strength) is 0.6, still pronounced but slightly down from v1's 0.65
+    now that the whole signal feeding it is a clean, sharp edge (no
+    softening blend behind it, so less strength is needed for the same
+    visual punch)."""
     g = load_example("dry_earth")
     retype(g, "voronoi_0", "voronoi_triangle",
-           {"scale_x": 4, "scale_y": 4, "stretch_x": 1, "stretch_y": 1, "randomness": 0.85})
-    # Facet tint: replace the ambient-perlin feed with the per-facet random
-    # color (port 2) so each triangular cell gets its own flat jewel shade.
-    drop_conn(g, "colorize_0", 0)
+           {"scale_x": 10, "scale_y": 10, "stretch_x": 1, "stretch_y": 1, "randomness": 0.85})
+    _drop_nodes(g, ["warp_0", "perlin_0", "perlin_1", "colorize_3", "blend_0",
+                    "colorize_4", "blend_1", "colorize"])
+
+    # Facet tint (albedo): straight from the per-facet random color (port 2),
+    # no darkening blend on top -- a clean flat color per facet.
     g["connections"].append(
         {"from": "voronoi_0", "from_port": 2, "to": "colorize_0", "to_port": 0})
     set_gradient(g, "colorize_0", [    # one coherent emerald family, dark->bright per facet
@@ -188,42 +213,54 @@ def build_gl02_cut_gem(catalog: dict) -> str:
         (0.7, 0.06, 0.55, 0.27),
         (1.0, 0.12, 0.75, 0.40),
     ])
-    # colorize_1 (EdgeRamp) gradient is left at the dry_earth DONOR's own
-    # untouched default (thin dark line at pos 0-0.0636, white beyond) --
-    # that default was already tuned for scale_x=scale_y=4, the exact scale
-    # this recipe uses (gl01 had to retune it because it cranked scale to
-    # 60; gl02 doesn't change scale at all, so the untouched threshold
-    # already reads as a thin edge line at this facet density).
-    set_param(g, "warp_0", "amount", 0.02)     # near zero: keep facets crisp, no organic smear
-    set_param(g, "blend_0", "amount", 0.6)     # crisper facet-edge contrast than gl01's 0.5
+    g["connections"].append(
+        {"from": "colorize_0", "from_port": 0, "to": "Material", "to_port": 0})
+
+    # Facet edges (normal): the border-distance signal (port 1, already
+    # wired to colorize_1/EdgeRamp by the donor) straight into normal_map,
+    # no warp/blend/second-ramp detour -- a sharp, un-softened edge signal.
+    # EdgeRamp's gradient is left at the dry_earth DONOR's own untouched
+    # default (thin dark line at pos 0-0.0636, white beyond); that default
+    # is a per-cell-normalized threshold so it stays a thin proportional
+    # edge line at any voronoi scale, this recipe's scale=10 included.
+    g["connections"].append(
+        {"from": "colorize_1", "from_port": 0, "to": "normal_map_0", "to_port": 0})
+    set_param(g, "normal_map_0", "param4", 0)     # flat-normal fix (docs/AUTHORING.md)
+    set_param(g, "normal_map_0", "param1", 0.6)   # sharp facet-edge relief
+
     drop_conn(g, "Material", 1)
     set_param(g, "Material", "metallic", 0)
-    set_param(g, "Material", "roughness", 0.1)   # low: glassy/gem surface, not matte
-    set_param(g, "normal_map_0", "param4", 0)
-    set_param(g, "normal_map_0", "param1", 0.65)  # pronounced hard-crystalline relief
-    # Same ORM gap as gl01: dry_earth leaves the roughness INPUT unconnected,
-    # so a scalar-only roughness exports no ORM map. Flat low-roughness texture.
+    set_param(g, "Material", "roughness", 0.08)   # low: actually glossy, not matte
+
+    # Same ORM gap as gl01: dry_earth leaves the roughness INPUT
+    # unconnected, so a scalar-only roughness exports no ORM map. Flat
+    # low-roughness texture; its own input source doesn't matter (the
+    # gradient is a flat constant either way) so it reuses FacetCells' port
+    # 0 rather than keeping a noise node alive just to feed it.
     add_node(g, "rough_const", "colorize",
-             {"gradient": _grad([(0.0, 0.1, 0.1, 0.1), (1.0, 0.1, 0.1, 0.1)])})
+             {"gradient": _grad([(0.0, 0.08, 0.08, 0.08), (1.0, 0.08, 0.08, 0.08)])})
     g["connections"].append(
-        {"from": "perlin_0", "from_port": 0, "to": "rough_const", "to_port": 0})
+        {"from": "voronoi_0", "from_port": 0, "to": "rough_const", "to_port": 0})
     g["connections"].append(
         {"from": "rough_const", "from_port": 0, "to": "Material", "to_port": 2})
 
-    # Grouping mirrors gl01 exactly: same member sets, same shared top-level
-    # noise sources (perlin_0/perlin_1 each feed into both groups via
-    # EdgeWarp's cross-group output), only the exposed-param labels change.
+    # Group the now-minimal graph into two named subgraphs, same convention
+    # every other cookbook recipe follows (docs/AUTHORING.md, "Grouping into
+    # subgraphs") even at this small a node count (see p01_glossy_plastic in
+    # cookbook_plastics.py for the same call at a similar size). FacetCells
+    # is the sole generator feeding both groups (color via port 2, and both
+    # the edge signal and the roughness carrier via ports 1/0), so -- same
+    # reasoning as p01 -- it's folded into facet_color rather than left
+    # top-level as a single-purpose shared node would be; facet_finish
+    # receives its two inputs as plain boundary ports.
     group_into_subgraph(
-        g, ["voronoi_0", "colorize_1", "warp_0", "colorize_0", "blend_0", "colorize_3"],
-        "base_color", "Base Color",
+        g, ["voronoi_0", "colorize_0"], "facet_color", "Facet Color",
         [("voronoi_0", "scale_x", "param0", "Facet size"),
-         ("colorize_0", "gradient", "param1", "Facet color"),
-         ("blend_0", "amount", "param2", "Edge contrast")],
+         ("colorize_0", "gradient", "param1", "Facet color")],
         catalog,
     )
     group_into_subgraph(
-        g, ["colorize_4", "blend_1", "colorize", "normal_map_0", "rough_const"],
-        "surface_detail", "Surface Detail",
+        g, ["colorize_1", "normal_map_0", "rough_const"], "facet_finish", "Facet Finish",
         [("rough_const", "gradient", "param0", "Roughness"),
          ("normal_map_0", "param1", "param1", "Surface relief")],
         catalog,
