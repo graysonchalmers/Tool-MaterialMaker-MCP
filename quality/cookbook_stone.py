@@ -955,13 +955,27 @@ def build_s12_eroded_sandstone(catalog: dict) -> str:
     constant direction" effect real water erosion needs, so it is a better
     fit for this material, not just a workaround.
 
-    **Banded sediment base.** `SedimentNoise` is a `perlin` with `scale_x=3`
-    (low -- few large horizontal-ish features) and `scale_y=16` (high --
-    many stacked features vertically), so the field reads as horizontal
-    sediment strata rather than a blobby cloud. `SedimentBands` colorizes it
-    through a 6-stop warm sandstone gradient (tan / pale ochre / rust-brown,
-    alternating) so each stratum gets a distinct tonal band, not a single
-    dyed noise field.
+    **Banded sediment base.** `SedimentNoise` is a `perlin` with `scale_x=4`
+    (low -- few large horizontal-ish features) and `scale_y=9` (moderate --
+    fewer, broader stacked features than a fine grain field), 3 iterations
+    and `persistence=0.62` for chunkier, more irregular band steps (varied
+    thickness, occasional sharp breaks) rather than the fine, even, nearly-
+    continuous banding a high-frequency/high-iteration field gives -- fine
+    continuous banding is what read as wood grain once smeared. `SedimentBands`
+    colorizes it through a 6-stop palette of pale buff / pale tan / light
+    warm grey with two thin, desaturated rust-accent bands (not a dominant
+    saturated brown), lower saturation and higher value than a wood palette,
+    so the base reads as dry pale rock before any warp is applied.
+
+    **Fix (controller render read as polished wood, not sandstone).** The
+    first pass's fine high-frequency bands + saturated warm-brown palette +
+    glossy mid roughness, once smeared by `directional_warp`, read exactly
+    like continuous wood grain. Fixed by: (1) matte roughness -- see below;
+    (2) a fine `GritNoise` perlin multiplied subtly over the albedo (see
+    below) so the surface reads as gritty stone, not smooth grain; (3) the
+    paler/cooler/desaturated palette above; (4) chunkier, more irregular
+    strata (this paragraph) so the base has broad irregular bands for the
+    warp to smear, not fine continuous lines.
 
     **Directional erosion.** `ErosionWarp` (`directional_warp`) takes
     `SedimentBands`' RGBA output directly on its `in#` port (port 0) --
@@ -977,19 +991,33 @@ def build_s12_eroded_sandstone(catalog: dict) -> str:
 
     **Relief and roughness both read the eroded field, not the pre-warp
     one** -- `ErosionWarp`'s output feeds both `ReliefHeight` (a plain 0->1
-    ramp) and `SandstoneRoughness` (a narrow matte-to-slightly-rough band,
-    0.52-0.70), the same "RGBA warp output straight into an f-typed
-    `colorize` input" pattern `dry_earth` uses for `warp_0 -> colorize_4`.
-    So the bump map and the roughness variation both carry the erosion
-    streaks, not just the albedo -- a stone face that has been eroded reads
-    that erosion in its surface relief and finish, not only its color.
-    `SandstoneNormal` (`normal_map`) keeps `param4=0` (the project's
-    standing flat-normal fix for a directly-fed analytic source) with a
-    moderate `param1=0.3` -- gentle relief, not a deep bulge; this is a worn
-    stone face, not chunky cobbles. Non-metal: `Material.metallic` is set to
-    0 as a plain scalar (port 1 left unconnected), the same convention
+    ramp) and `SandstoneRoughness` (a narrow MATTE band, 0.80-0.88 -- raised
+    substantially from the first pass's 0.52-0.70 glossy-leaning band, which
+    was a big part of the wood-sheen misread; sandstone is not glossy), the
+    same "RGBA warp output straight into an f-typed `colorize` input"
+    pattern `dry_earth` uses for `warp_0 -> colorize_4`. So the bump map and
+    the roughness variation both carry the erosion streaks, not just the
+    albedo -- a stone face that has been eroded reads that erosion in its
+    surface relief and finish, not only its color. `SandstoneNormal`
+    (`normal_map`) keeps `param4=0` (the project's standing flat-normal fix
+    for a directly-fed analytic source) with a moderate `param1=0.3` --
+    gentle relief, not a deep bulge; this is a worn stone face, not chunky
+    cobbles. Non-metal: `Material.metallic` is set to 0 as a plain scalar
+    (port 1 left unconnected), the same convention
     `_from_scratch_noise_material` and `s11_marble`'s roughness use when no
     texture is wired to a port -- the scalar applies directly.
+
+    **Surface grit.** `GritNoise` is a fine perlin (`scale_x=42`,
+    `scale_y=42`, 5 iterations -- the same fine-grain idiom `s05`/`s06`/
+    `s07`/`s08`/`s10` already use in this file for per-stone surface grain),
+    `GritContrast` colorizes it to a narrow, subtle multiply band
+    (0.88-1.0), and `AlbedoGrit` (`blend`, `blend_type=2` Multiply,
+    `amount=1`, port 2 mask left unconnected so the opacity defaults to a
+    uniform 1.0 -- no threshold/speckle risk) multiplies it over
+    `ErosionWarp`'s eroded albedo before `Material` port 0. Continuous smooth
+    grain reads as wood; a fine gritty micro-texture reads as stone, so this
+    is the second (with the matte roughness) biggest lever against the wood
+    misread.
 
     **How this differs from the rest of the stone category.** Every other
     stone recipe differentiates through a spatial CELL pattern (voronoi
@@ -1004,17 +1032,17 @@ def build_s12_eroded_sandstone(catalog: dict) -> str:
         "nodes": [
             {"name": "perlin_bands", "type": "perlin",
              "node_position": {"x": 0, "y": 0},
-             "parameters": {"scale_x": 3, "scale_y": 16, "iterations": 4,
-                            "persistence": 0.55}},
+             "parameters": {"scale_x": 4, "scale_y": 9, "iterations": 3,
+                            "persistence": 0.62}},
             {"name": "colorize_bands", "type": "colorize",
              "node_position": {"x": 260, "y": 0},
              "parameters": {"gradient": _grad([
-                 (0.00, 0.58, 0.42, 0.24),   # warm tan
-                 (0.18, 0.47, 0.30, 0.16),   # rust-brown band
-                 (0.36, 0.62, 0.48, 0.28),   # pale ochre
-                 (0.54, 0.40, 0.24, 0.14),   # dark rust band
-                 (0.74, 0.56, 0.40, 0.22),   # warm tan
-                 (1.00, 0.65, 0.52, 0.32),   # pale sandy highlight
+                 (0.00, 0.74, 0.68, 0.58),   # pale buff
+                 (0.18, 0.62, 0.50, 0.40),   # muted rust accent (thin, desaturated)
+                 (0.36, 0.78, 0.72, 0.62),   # pale tan
+                 (0.54, 0.58, 0.46, 0.36),   # muted rust accent (thin)
+                 (0.74, 0.70, 0.64, 0.55),   # light warm grey
+                 (1.00, 0.82, 0.76, 0.66),   # pale sandy highlight
              ])}},
             {"name": "directional_warp_0", "type": "directional_warp",
              "node_position": {"x": 520, "y": 0},
@@ -1028,9 +1056,19 @@ def build_s12_eroded_sandstone(catalog: dict) -> str:
             {"name": "colorize_rough", "type": "colorize",
              "node_position": {"x": 780, "y": 140},
              "parameters": {"gradient": _grad([
-                 (0.0, 0.52, 0.52, 0.52), (1.0, 0.70, 0.70, 0.70)])}},
+                 (0.0, 0.80, 0.80, 0.80), (1.0, 0.88, 0.88, 0.88)])}},
+            {"name": "perlin_grit", "type": "perlin",
+             "node_position": {"x": 780, "y": 320},
+             "parameters": {"scale_x": 42, "scale_y": 42, "iterations": 5}},
+            {"name": "colorize_grit", "type": "colorize",
+             "node_position": {"x": 1040, "y": 320},
+             "parameters": {"gradient": _grad([
+                 (0.0, 0.88, 0.88, 0.88), (1.0, 1.0, 1.0, 1.0)])}},
+            {"name": "blend_grit", "type": "blend",
+             "node_position": {"x": 1300, "y": 160},
+             "parameters": {"blend_type": 2, "amount": 1}},   # Multiply
             {"name": "Material", "type": "material",
-             "node_position": {"x": 1300, "y": 0},
+             "node_position": {"x": 1560, "y": 0},
              "export_paths": {},
              "parameters": {
                  "albedo_color": {"a": 1, "r": 1, "g": 1, "b": 1, "type": "Color"},
@@ -1042,12 +1080,15 @@ def build_s12_eroded_sandstone(catalog: dict) -> str:
     g["connections"] = [
         {"from": "perlin_bands", "from_port": 0, "to": "colorize_bands", "to_port": 0},
         {"from": "colorize_bands", "from_port": 0, "to": "directional_warp_0", "to_port": 0},
-        {"from": "directional_warp_0", "from_port": 0, "to": "Material", "to_port": 0},
         {"from": "directional_warp_0", "from_port": 0, "to": "colorize_relief", "to_port": 0},
         {"from": "colorize_relief", "from_port": 0, "to": "normal_map_0", "to_port": 0},
         {"from": "normal_map_0", "from_port": 0, "to": "Material", "to_port": 4},
         {"from": "directional_warp_0", "from_port": 0, "to": "colorize_rough", "to_port": 0},
         {"from": "colorize_rough", "from_port": 0, "to": "Material", "to_port": 2},
+        {"from": "perlin_grit", "from_port": 0, "to": "colorize_grit", "to_port": 0},
+        {"from": "directional_warp_0", "from_port": 0, "to": "blend_grit", "to_port": 0},
+        {"from": "colorize_grit", "from_port": 0, "to": "blend_grit", "to_port": 1},
+        {"from": "blend_grit", "from_port": 0, "to": "Material", "to_port": 0},
     ]
 
     group_into_subgraph(g, ["perlin_bands", "colorize_bands"],
@@ -1063,6 +1104,10 @@ def build_s12_eroded_sandstone(catalog: dict) -> str:
                           ("normal_map_0", "param1", "param2", "Relief strength"),
                           ("colorize_rough", "gradient", "param3", "Roughness")],
                          catalog)
+    group_into_subgraph(g, ["perlin_grit", "colorize_grit", "blend_grit"],
+                         "surface_grit", "Surface Grit",
+                         [("perlin_grit", "scale_x", "param0", "Grit scale")],
+                         catalog)
     rename_nodes(g, {
         "perlin_bands": "SedimentNoise",
         "colorize_bands": "SedimentBands",
@@ -1070,6 +1115,9 @@ def build_s12_eroded_sandstone(catalog: dict) -> str:
         "colorize_relief": "ReliefHeight",
         "normal_map_0": "SandstoneNormal",
         "colorize_rough": "SandstoneRoughness",
+        "perlin_grit": "GritNoise",
+        "colorize_grit": "GritContrast",
+        "blend_grit": "AlbedoGrit",
     })
     return save_variant(g, _LABEL, "s12_eroded_sandstone", 1)
 

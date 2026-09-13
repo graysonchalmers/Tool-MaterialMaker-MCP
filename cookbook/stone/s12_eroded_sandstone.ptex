@@ -10,19 +10,25 @@
    "from": "erosion_relief",
    "from_port": 0,
    "to": "Material",
-   "to_port": 0
+   "to_port": 4
   },
   {
    "from": "erosion_relief",
    "from_port": 1,
    "to": "Material",
-   "to_port": 4
+   "to_port": 2
   },
   {
    "from": "erosion_relief",
    "from_port": 2,
+   "to": "surface_grit",
+   "to_port": 0
+  },
+  {
+   "from": "surface_grit",
+   "from_port": 0,
    "to": "Material",
-   "to_port": 2
+   "to_port": 0
   }
  ],
  "nodes": [
@@ -30,7 +36,7 @@
    "name": "Material",
    "type": "material",
    "node_position": {
-    "x": 1300,
+    "x": 1560,
     "y": 0
    },
    "export_paths": {},
@@ -61,51 +67,51 @@
     "y": 0.0
    },
    "parameters": {
-    "param0": 16,
+    "param0": 9,
     "param1": {
      "interpolation": 1,
      "type": "Gradient",
      "points": [
       {
        "a": 1,
-       "r": 0.58,
-       "g": 0.42,
-       "b": 0.24,
+       "r": 0.74,
+       "g": 0.68,
+       "b": 0.58,
        "pos": 0.0
       },
       {
        "a": 1,
-       "r": 0.47,
-       "g": 0.3,
-       "b": 0.16,
+       "r": 0.62,
+       "g": 0.5,
+       "b": 0.4,
        "pos": 0.18
       },
       {
        "a": 1,
-       "r": 0.62,
-       "g": 0.48,
-       "b": 0.28,
+       "r": 0.78,
+       "g": 0.72,
+       "b": 0.62,
        "pos": 0.36
       },
       {
        "a": 1,
-       "r": 0.4,
-       "g": 0.24,
-       "b": 0.14,
+       "r": 0.58,
+       "g": 0.46,
+       "b": 0.36,
        "pos": 0.54
       },
       {
        "a": 1,
-       "r": 0.56,
-       "g": 0.4,
-       "b": 0.22,
+       "r": 0.7,
+       "g": 0.64,
+       "b": 0.55,
        "pos": 0.74
       },
       {
        "a": 1,
-       "r": 0.65,
-       "g": 0.52,
-       "b": 0.32,
+       "r": 0.82,
+       "g": 0.76,
+       "b": 0.66,
        "pos": 1.0
       }
      ]
@@ -150,51 +156,51 @@
       "y": 200.0
      },
      "parameters": {
-      "param0": 16,
+      "param0": 9,
       "param1": {
        "interpolation": 1,
        "type": "Gradient",
        "points": [
         {
          "a": 1,
-         "r": 0.58,
-         "g": 0.42,
-         "b": 0.24,
+         "r": 0.74,
+         "g": 0.68,
+         "b": 0.58,
          "pos": 0.0
         },
         {
          "a": 1,
-         "r": 0.47,
-         "g": 0.3,
-         "b": 0.16,
+         "r": 0.62,
+         "g": 0.5,
+         "b": 0.4,
          "pos": 0.18
         },
         {
          "a": 1,
-         "r": 0.62,
-         "g": 0.48,
-         "b": 0.28,
+         "r": 0.78,
+         "g": 0.72,
+         "b": 0.62,
          "pos": 0.36
         },
         {
          "a": 1,
-         "r": 0.4,
-         "g": 0.24,
-         "b": 0.14,
+         "r": 0.58,
+         "g": 0.46,
+         "b": 0.36,
          "pos": 0.54
         },
         {
          "a": 1,
-         "r": 0.56,
-         "g": 0.4,
-         "b": 0.22,
+         "r": 0.7,
+         "g": 0.64,
+         "b": 0.55,
          "pos": 0.74
         },
         {
          "a": 1,
-         "r": 0.65,
-         "g": 0.52,
-         "b": 0.32,
+         "r": 0.82,
+         "g": 0.76,
+         "b": 0.66,
          "pos": 1.0
         }
        ]
@@ -236,10 +242,10 @@
       "y": 0
      },
      "parameters": {
-      "scale_x": 3,
-      "scale_y": 16,
-      "iterations": 4,
-      "persistence": 0.55
+      "scale_x": 4,
+      "scale_y": 9,
+      "iterations": 3,
+      "persistence": 0.62
      }
     },
     {
@@ -256,44 +262,44 @@
        "points": [
         {
          "a": 1,
-         "r": 0.58,
-         "g": 0.42,
-         "b": 0.24,
+         "r": 0.74,
+         "g": 0.68,
+         "b": 0.58,
          "pos": 0.0
         },
         {
          "a": 1,
-         "r": 0.47,
-         "g": 0.3,
-         "b": 0.16,
+         "r": 0.62,
+         "g": 0.5,
+         "b": 0.4,
          "pos": 0.18
         },
         {
          "a": 1,
-         "r": 0.62,
-         "g": 0.48,
-         "b": 0.28,
+         "r": 0.78,
+         "g": 0.72,
+         "b": 0.62,
          "pos": 0.36
         },
         {
          "a": 1,
-         "r": 0.4,
-         "g": 0.24,
-         "b": 0.14,
+         "r": 0.58,
+         "g": 0.46,
+         "b": 0.36,
          "pos": 0.54
         },
         {
          "a": 1,
-         "r": 0.56,
-         "g": 0.4,
-         "b": 0.22,
+         "r": 0.7,
+         "g": 0.64,
+         "b": 0.55,
          "pos": 0.74
         },
         {
          "a": 1,
-         "r": 0.65,
-         "g": 0.52,
-         "b": 0.32,
+         "r": 0.82,
+         "g": 0.76,
+         "b": 0.66,
          "pos": 1.0
         }
        ]
@@ -334,16 +340,16 @@
      "points": [
       {
        "a": 1,
-       "r": 0.52,
-       "g": 0.52,
-       "b": 0.52,
+       "r": 0.8,
+       "g": 0.8,
+       "b": 0.8,
        "pos": 0.0
       },
       {
        "a": 1,
-       "r": 0.7,
-       "g": 0.7,
-       "b": 0.7,
+       "r": 0.88,
+       "g": 0.88,
+       "b": 0.88,
        "pos": 1.0
       }
      ]
@@ -380,12 +386,12 @@
      "ports": [
       {
        "name": "out0",
-       "type": "rgba",
+       "type": "rgb",
        "group_size": 0
       },
       {
        "name": "out1",
-       "type": "rgb",
+       "type": "rgba",
        "group_size": 0
       },
       {
@@ -413,16 +419,16 @@
        "points": [
         {
          "a": 1,
-         "r": 0.52,
-         "g": 0.52,
-         "b": 0.52,
+         "r": 0.8,
+         "g": 0.8,
+         "b": 0.8,
          "pos": 0.0
         },
         {
          "a": 1,
-         "r": 0.7,
-         "g": 0.7,
-         "b": 0.7,
+         "r": 0.88,
+         "g": 0.88,
+         "b": 0.88,
          "pos": 1.0
         }
        ]
@@ -550,16 +556,16 @@
        "points": [
         {
          "a": 1,
-         "r": 0.52,
-         "g": 0.52,
-         "b": 0.52,
+         "r": 0.8,
+         "g": 0.8,
+         "b": 0.8,
          "pos": 0.0
         },
         {
          "a": 1,
-         "r": 0.7,
-         "g": 0.7,
-         "b": 0.7,
+         "r": 0.88,
+         "g": 0.88,
+         "b": 0.88,
          "pos": 1.0
         }
        ]
@@ -593,22 +599,179 @@
      "to_port": 0
     },
     {
-     "from": "ErosionWarp",
+     "from": "SandstoneNormal",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
-     "from": "SandstoneNormal",
+     "from": "SandstoneRoughness",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1
     },
     {
-     "from": "SandstoneRoughness",
+     "from": "ErosionWarp",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 2
+    }
+   ]
+  },
+  {
+   "name": "surface_grit",
+   "label": "Surface Grit",
+   "type": "graph",
+   "node_position": {
+    "x": 1040.0,
+    "y": 266.6666666666667
+   },
+   "parameters": {
+    "param0": 42
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": 640.0,
+      "y": 266.6666666666667
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "in0",
+       "type": "rgba",
+       "group_size": 0
+      }
+     ],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 1440.0,
+      "y": 266.6666666666667
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "out0",
+       "type": "rgba",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": 640.0,
+      "y": 466.6666666666667
+     },
+     "parameters": {
+      "param0": 42
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Grit scale",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "GritNoise",
+         "widget": "scale_x"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "GritNoise",
+     "type": "perlin",
+     "node_position": {
+      "x": 780,
+      "y": 320
+     },
+     "parameters": {
+      "scale_x": 42,
+      "scale_y": 42,
+      "iterations": 5
+     }
+    },
+    {
+     "name": "GritContrast",
+     "type": "colorize",
+     "node_position": {
+      "x": 1040,
+      "y": 320
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.88,
+         "g": 0.88,
+         "b": 0.88,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 1.0,
+         "g": 1.0,
+         "b": 1.0,
+         "pos": 1.0
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "AlbedoGrit",
+     "type": "blend",
+     "node_position": {
+      "x": 1300,
+      "y": 160
+     },
+     "parameters": {
+      "blend_type": 2,
+      "amount": 1
+     }
+    }
+   ],
+   "connections": [
+    {
+     "from": "GritNoise",
+     "from_port": 0,
+     "to": "GritContrast",
+     "to_port": 0
+    },
+    {
+     "from": "GritContrast",
+     "from_port": 0,
+     "to": "AlbedoGrit",
+     "to_port": 1
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 0,
+     "to": "AlbedoGrit",
+     "to_port": 0
+    },
+    {
+     "from": "AlbedoGrit",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
     }
    ]
   }
