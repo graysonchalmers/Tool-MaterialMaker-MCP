@@ -11,7 +11,7 @@ import sys
 
 from quality.author_helpers import (load_example, node, set_gradient, set_param, retype,
                      rewire, drop_conn, add_node, save_variant, _grad,
-                     group_into_subgraph, rename_nodes)
+                     group_into_subgraph, rename_nodes, _from_scratch_noise_material)
 
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.config import load_config
@@ -606,6 +606,92 @@ def build_t08_riverbed_pebbles(catalog: dict) -> str:
     return save_variant(g, _LABEL, "t08_riverbed_pebbles", 1)
 
 
+_T09_NAMES = {
+    "perlin_0": "RippleField",       # placeholder perlin, retyped to wavelet_noise below
+    "colorize_0": "WetSandColor",
+    "normal_map_0": "RippleNormal",
+    "rough_const": "WetSandRoughness",  # flat colorize; feeds Material's roughness port so ORM exports
+}
+
+
+def build_t09_rippled_wet_sand(catalog: dict) -> str:
+    """Rippled wet sand: the first cookbook material to use `wavelet_noise`
+    (zero prior use anywhere in the cookbook per the 2026-09-01 noise-vocab
+    audit -- `noise_gallery.py`'s own `wavelet_banded` swatch is the only
+    place this node had appeared before). Built from scratch via
+    `_from_scratch_noise_material` (no donor has this topology) then
+    `retype()`d from its placeholder `perlin_0` to `wavelet_noise`, the same
+    move `t07_forest_floor` uses to swap in `fbm` -- output port 0 is a
+    plain `f` scalar on both node types, so the swap is connection-safe.
+
+    IMPORTANT finding from `docs/images/noise-gallery/cross-family.png` (the
+    actual rendered `wavelet_banded` swatch at the brief's exact starting
+    params: type=4, scale=4/4, iterations=3, persistence=0.5, frequency=1):
+    the real render is NOT parallel ripple lines -- it is a fine, dense,
+    dappled mottle, closer to sea-foam or wet-sand grain than literal
+    banding. `noise_gallery.py`'s "banded wavelet -> ripple/interference"
+    label is the node's aspirational cross-family framing, not a promise
+    this exact param combo draws visible bands. Leaning into what the
+    swatch actually shows (fine, tight, foam-like dappling) fits wet sand's
+    real surface at least as well as forcing a false "ripple lines" claim,
+    so this builder tunes only `scale`/`frequency` (as the brief permits)
+    for a TIGHTER, denser version of that same dappled character --
+    `type`, `iterations`, `persistence`, `offset` are left at the brief's
+    exact starting values. `scale_x`/`scale_y` are kept EQUAL (isotropic):
+    the swatch gives no evidence this node's scale_x/scale_y pair controls
+    directionality the way `noise_anisotropic` (a different node) does, so
+    an anisotropic guess would be an unproven extra lever stacked on top of
+    an already-unrendered material.
+
+    Distinct from `t01_sand_dunes` (broad, organic, wood-donor perlin rolls,
+    warm tan, high roughness) on every axis: fine dense grain instead of
+    broad rolls, a darker/cooler damp palette instead of warm tan, and LOW
+    roughness for a wet sheen instead of dune's high matte roughness. Not
+    based on any voronoi-plate/`dry_earth` donor, so it does not add to
+    that already-overused family either.
+
+    Roughness is fed as a flat texture (`rough_const`) rather than left as
+    a Material-node scalar only -- the same lesson `_dry_earth_plates` and
+    `p01_glossy_plastic` (`cookbook_plastics.py`) already established -- so
+    an ORM map exports for the wet-sheen preview instead of silently having
+    none."""
+    g = _from_scratch_noise_material(
+        {"scale_x": 4, "scale_y": 4},   # placeholder; retyped to wavelet_noise below
+        [(0.0, 0.16, 0.14, 0.12), (0.5, 0.24, 0.21, 0.17), (1.0, 0.34, 0.30, 0.24)],
+        metallic=0.0, roughness=0.15, normal_amount=0.4)
+    retype(g, "perlin_0", "wavelet_noise", {
+        "type": 4, "scale_x": 10, "scale_y": 10, "iterations": 3,
+        "persistence": 0.5, "frequency": 1.6, "offset": 0})
+    set_param(g, "normal_map_0", "param4", 0)
+    add_node(g, "rough_const", "colorize",
+             {"gradient": _grad([(0.0, 0.15, 0.15, 0.15), (1.0, 0.15, 0.15, 0.15)])})
+    g["connections"].append(
+        {"from": "perlin_0", "from_port": 0, "to": "rough_const", "to_port": 0})
+    g["connections"].append(
+        {"from": "rough_const", "from_port": 0, "to": "Material", "to_port": 2})
+
+    # Subgraph grouping -- the exact p01_glossy_plastic template (the other
+    # from-scratch, no-donor cookbook material): perlin_0 (retyped to
+    # wavelet_noise) feeds all three downstream nodes (colorize_0,
+    # normal_map_0, rough_const), so it has to live in one of the two
+    # groups; folding it into the color group (rather than leaving it
+    # top-level) avoids a degenerate single-node "finish" group.
+    group_into_subgraph(
+        g, ["perlin_0", "colorize_0"], "ripple_color", "Ripple Color",
+        [("colorize_0", "gradient", "param0", "Sand color"),
+         ("perlin_0", "scale_x", "param1", "Ripple scale")],
+        catalog,
+    )
+    group_into_subgraph(
+        g, ["normal_map_0", "rough_const"], "wet_sand_finish", "Wet Sand Finish",
+        [("rough_const", "gradient", "param0", "Roughness"),
+         ("normal_map_0", "param1", "param1", "Ripple relief")],
+        catalog,
+    )
+    rename_nodes(g, _T09_NAMES)
+    return save_variant(g, _LABEL, "t09_rippled_wet_sand", 1)
+
+
 BUILDERS = {
     "t01_sand_dunes": build_t01_sand_dunes,
     "t02_fresh_snow": build_t02_fresh_snow,
@@ -615,6 +701,7 @@ BUILDERS = {
     "t06_cooled_lava": build_t06_cooled_lava,
     "t07_forest_floor": build_t07_forest_floor,
     "t08_riverbed_pebbles": build_t08_riverbed_pebbles,
+    "t09_rippled_wet_sand": build_t09_rippled_wet_sand,
 }
 
 
