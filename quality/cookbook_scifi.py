@@ -412,9 +412,9 @@ def build_sf07_conduit_panel(catalog: dict) -> str:
     single continuous network of curved pipes threading across the panel --
     distinct from sf03's circuit board, which is flat etched traces (a
     `pattern` Square wave, no tile-based curve topology) with zero relief
-    beyond the shared flat-normal fix. Here the conduit is RAISED: a hard
-    0/1 threshold of the same truchet field drives normal_map so the pipes
-    read as tubes standing proud of the panel, not an etched groove.
+    beyond the shared flat-normal fix. Here the conduit is RAISED: the raw
+    truchet distance field feeds normal_map directly, so the pipes read as
+    rounded tubes standing proud of the panel.
 
     Only one noise field (the truchet layout) drives both albedo and
     relief, so unlike sf03's multi-layer composite this needs no `blend`.
