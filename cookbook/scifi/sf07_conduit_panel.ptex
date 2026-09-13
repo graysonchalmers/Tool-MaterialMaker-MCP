@@ -10,7 +10,7 @@
  "connections": [
   {
    "from": "conduit_pattern",
-   "from_port": 1,
+   "from_port": 2,
    "to": "Material",
    "to_port": 0
   },
@@ -22,7 +22,7 @@
   },
   {
    "from": "conduit_pattern",
-   "from_port": 2,
+   "from_port": 1,
    "to": "surface_finish",
    "to_port": 1
   },
@@ -76,14 +76,14 @@
        "r": 0.05,
        "g": 0.06,
        "b": 0.07,
-       "pos": 0.46
+       "pos": 0.68
       },
       {
        "a": 1,
        "r": 0.62,
        "g": 0.42,
        "b": 0.22,
-       "pos": 0.5
+       "pos": 0.72
       },
       {
        "a": 1,
@@ -126,7 +126,7 @@
       },
       {
        "name": "out1",
-       "type": "rgba",
+       "type": "f",
        "group_size": 0
       },
       {
@@ -161,14 +161,14 @@
          "r": 0.05,
          "g": 0.06,
          "b": 0.07,
-         "pos": 0.46
+         "pos": 0.68
         },
         {
          "a": 1,
          "r": 0.62,
          "g": 0.42,
          "b": 0.22,
-         "pos": 0.5
+         "pos": 0.72
         },
         {
          "a": 1,
@@ -244,64 +244,20 @@
          "r": 0.05,
          "g": 0.06,
          "b": 0.07,
-         "pos": 0.46
+         "pos": 0.68
         },
         {
          "a": 1,
          "r": 0.62,
          "g": 0.42,
          "b": 0.22,
-         "pos": 0.5
+         "pos": 0.72
         },
         {
          "a": 1,
          "r": 0.66,
          "g": 0.46,
          "b": 0.24,
-         "pos": 1.0
-        }
-       ],
-       "type": "Gradient"
-      }
-     }
-    },
-    {
-     "name": "ConduitMask",
-     "type": "colorize",
-     "node_position": {
-      "x": 0,
-      "y": 0
-     },
-     "parameters": {
-      "gradient": {
-       "interpolation": 1,
-       "points": [
-        {
-         "a": 1,
-         "r": 0,
-         "g": 0,
-         "b": 0,
-         "pos": 0.0
-        },
-        {
-         "a": 1,
-         "r": 0,
-         "g": 0,
-         "b": 0,
-         "pos": 0.48
-        },
-        {
-         "a": 1,
-         "r": 1,
-         "g": 1,
-         "b": 1,
-         "pos": 0.52
-        },
-        {
-         "a": 1,
-         "r": 1,
-         "g": 1,
-         "b": 1,
          "pos": 1.0
         }
        ],
@@ -320,23 +276,17 @@
     {
      "from": "ConduitLayout",
      "from_port": 0,
-     "to": "ConduitMask",
+     "to": "gen_outputs",
      "to_port": 0
     },
     {
      "from": "ConduitLayout",
      "from_port": 0,
      "to": "gen_outputs",
-     "to_port": 0
-    },
-    {
-     "from": "ConduitColor",
-     "from_port": 0,
-     "to": "gen_outputs",
      "to_port": 1
     },
     {
-     "from": "ConduitMask",
+     "from": "ConduitColor",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 2
@@ -372,7 +322,7 @@
      ],
      "type": "Gradient"
     },
-    "param1": 0.7
+    "param1": 0.9
    },
    "seed_int": 0,
    "nodes": [
@@ -449,7 +399,7 @@
        ],
        "type": "Gradient"
       },
-      "param1": 0.7
+      "param1": 0.9
      },
      "seed": 0,
      "widgets": [
@@ -518,7 +468,7 @@
      },
      "parameters": {
       "param0": 10,
-      "param1": 0.7,
+      "param1": 0.9,
       "param2": 0,
       "param4": 0
      }

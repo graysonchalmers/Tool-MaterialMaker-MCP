@@ -78,17 +78,17 @@ _SF04_NAMES = {
     "normal_map_0": "GrilleNormal",
 }
 
-# from-scratch mapping for sf07 (truchet conduit panel). *Mask names the
-# hard 0/1 relief mask fed to normal_map, split off from the albedo
-# colorize the same way sf03's trace/chip masks are split off from their
-# albedo colorizes -- here there is no `blend` (a single truchet field
-# drives both albedo and relief directly), but normal_map still needs its
-# own dedicated hard-threshold node so a future edit to the albedo gradient
-# can never also change the relief shape.
+# from-scratch mapping for sf07 (truchet conduit panel). Fixed 2026-09-13:
+# the truchet (shape=1 Circle) output is a SMOOTH distance field measured
+# at approximately 0.50-0.95 (mean ~0.82), not a 0/1 binary and not
+# centered at 0.5 -- the original 0.46-0.52 threshold band sat entirely
+# below the real range and caught almost nothing, rendering as a flat tan
+# surface. normal_map now takes the RAW truchet field directly (no
+# threshold node at all -- the smooth distance field IS the rounded-tube
+# relief), so there is no separate mask node to name here.
 _SF07_NAMES = {
     "truchet_0": "ConduitLayout",
     "colorize_albedo": "ConduitColor",
-    "colorize_relief_mask": "ConduitMask",
     "colorize_rgh": "PanelRoughness",
     "normal_map_0": "ConduitNormal",
 }
@@ -417,25 +417,27 @@ def build_sf07_conduit_panel(catalog: dict) -> str:
     read as tubes standing proud of the panel, not an etched groove.
 
     Only one noise field (the truchet layout) drives both albedo and
-    relief, so unlike sf03's multi-layer composite this needs no `blend` --
-    colorize_albedo thresholds it directly into dark-panel/bright-pipe
-    color. The relief mask is still a SEPARATE colorize from the albedo one
-    (colorize_relief_mask), matching the split-mask lesson from sf03: never
-    let one colorize double as both a color source and another node's
-    opacity/height driver, even when a blend isn't in the picture, so a
-    future edit to the pipe color's gradient can't accidentally reshape the
-    relief."""
+    relief, so unlike sf03's multi-layer composite this needs no `blend`.
+
+    Fixed 2026-09-13: an isolated render of truchet (shape=1) measured its
+    real output range at approximately 0.50-0.95 (mean ~0.82), a SMOOTH
+    distance field (dark ~0.5 at tube seams, bright ~0.95 on tube bodies),
+    not a 0/1 binary and not centered at 0.5. The original 0.46-0.52
+    threshold band sat entirely below that range and caught almost
+    nothing, rendering as a flat tan surface with a few specks. Two
+    changes: (1) colorize_albedo's threshold moved to 0.68-0.72, the
+    midpoint of the real 0.5-0.95 range, splitting dark recessed panel
+    (low/seam side) from bright metal pipe (high/tube-body side); (2)
+    normal_map now takes the RAW truchet field directly with no
+    intermediate threshold node at all -- the smooth distance field IS the
+    rounded-tube relief shape, so feeding it raw gives naturally rounded
+    raised pipes instead of a hard stair-stepped bump."""
     g = _new_graph()
     add_node(g, "truchet_0", "truchet", {"shape": 1, "size": 4})
     add_node(g, "colorize_albedo", "colorize", {})
-    set_gradient(g, "colorize_albedo", [    # dark gunmetal panel, bright copper pipe
-        (0.0, 0.05, 0.06, 0.07), (0.46, 0.05, 0.06, 0.07),
-        (0.50, 0.62, 0.42, 0.22), (1.0, 0.66, 0.46, 0.24),
-    ])
-    add_node(g, "colorize_relief_mask", "colorize", {})
-    set_gradient(g, "colorize_relief_mask", [    # hard 0/1, same threshold as albedo
-        (0.0, 0, 0, 0), (0.48, 0, 0, 0),
-        (0.52, 1, 1, 1), (1.0, 1, 1, 1),
+    set_gradient(g, "colorize_albedo", [    # dark recessed panel (~0.5 seams), bright metal pipe (~0.9 tube bodies)
+        (0.0, 0.05, 0.06, 0.07), (0.68, 0.05, 0.06, 0.07),
+        (0.72, 0.62, 0.42, 0.22), (1.0, 0.66, 0.46, 0.24),
     ])
     add_node(g, "colorize_rgh", "colorize", {})
     set_gradient(g, "colorize_rgh", [    # polished pipe glossier than matte panel
@@ -443,25 +445,26 @@ def build_sf07_conduit_panel(catalog: dict) -> str:
         (1.0, 0.30, 0.30, 0.30),
     ])
     add_node(g, "normal_map_0", "normal_map",
-             {"param0": 10, "param1": 0.7, "param2": 0, "param4": 0})
+             {"param0": 10, "param1": 0.9, "param2": 0, "param4": 0})
     add_node(g, "Material", "material", {"metallic": 0.6})
     g["connections"] += [
         {"from": "truchet_0", "from_port": 0, "to": "colorize_albedo", "to_port": 0},
-        {"from": "truchet_0", "from_port": 0, "to": "colorize_relief_mask", "to_port": 0},
         {"from": "truchet_0", "from_port": 0, "to": "colorize_rgh", "to_port": 0},
+        {"from": "truchet_0", "from_port": 0, "to": "normal_map_0", "to_port": 0},
         {"from": "colorize_albedo", "from_port": 0, "to": "Material", "to_port": 0},
         {"from": "colorize_rgh", "from_port": 0, "to": "Material", "to_port": 2},
-        {"from": "colorize_relief_mask", "from_port": 0, "to": "normal_map_0", "to_port": 0},
         {"from": "normal_map_0", "from_port": 0, "to": "Material", "to_port": 4},
     ]
 
-    # Built from scratch; truchet_0 feeds all three colorize nodes directly
-    # (the single-upstream-node-feeds-multiple-groups case already used in
-    # sf01/sf03/sf04), producing extra boundary output ports on truchet_0
-    # once conduit_pattern and surface_finish are split into separate
-    # groups below, which is expected.
+    # Built from scratch; truchet_0 feeds all three downstream nodes
+    # directly (the single-upstream-node-feeds-multiple-groups case already
+    # used in sf01/sf03/sf04), producing extra boundary output ports on
+    # truchet_0 once conduit_pattern and surface_finish are split into
+    # separate groups below, which is expected. normal_map_0 takes the RAW
+    # truchet_0 field (no intermediate threshold node) since the smooth
+    # 0.5-0.95 distance field is itself the rounded-tube relief shape.
     group_into_subgraph(
-        g, ["truchet_0", "colorize_albedo", "colorize_relief_mask"],
+        g, ["truchet_0", "colorize_albedo"],
         "conduit_pattern", "Conduit Pattern",
         [("truchet_0", "size", "param0", "Conduit density"),
          ("colorize_albedo", "gradient", "param1", "Conduit color")],
