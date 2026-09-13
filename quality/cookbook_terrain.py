@@ -624,6 +624,19 @@ def build_t09_rippled_wet_sand(catalog: dict) -> str:
     move `t07_forest_floor` uses to swap in `fbm` -- output port 0 is a
     plain `f` scalar on both node types, so the swap is connection-safe.
 
+    RETUNE (round 3, controller self-screen): round 2 locked in the correct
+    ripple STRUCTURE (anisotropic scale 2/24, `type=-3`, `iterations=2`, the
+    ripple->normal relief -- all left untouched here) but overcorrected the
+    palette all the way to a flat neutral grey, reading as brushed metal or
+    stone rather than sand. Palette-only fix: `WetSandColor`'s gradient
+    shifted warm again -- a muted warm khaki/tan (more red+green than blue)
+    -- while keeping round 2's mid-tone luminance (still ~0.35-0.5 average,
+    not round 1's dark ~0.2). Landed between the two prior attempts: warmer
+    (higher saturation, clear R>G>B warmth) than round 2's grey, lighter and
+    less saturated than round 1's dark chocolate-brown. Nothing else in
+    this builder changed for round 3 -- see the round-2 note below for the
+    ripple-structure reasoning, which is now locked.
+
     RETUNE (round 2, controller self-screen at 512): round 1 used isotropic
     `scale_x == scale_y` and read as a dark, dense, muddy mottle -- no
     banding at all, and too dark/chocolate-brown for wet sand. Two root
@@ -689,7 +702,7 @@ def build_t09_rippled_wet_sand(catalog: dict) -> str:
     palette."""
     g = _from_scratch_noise_material(
         {"scale_x": 4, "scale_y": 4},   # placeholder; retyped to wavelet_noise below
-        [(0.0, 0.33, 0.32, 0.30), (0.5, 0.42, 0.40, 0.37), (1.0, 0.50, 0.48, 0.44)],
+        [(0.0, 0.34, 0.29, 0.21), (0.5, 0.44, 0.38, 0.28), (1.0, 0.53, 0.46, 0.35)],
         metallic=0.0, roughness=0.15, normal_amount=0.4)
     retype(g, "perlin_0", "wavelet_noise", {
         "type": -3, "scale_x": 2, "scale_y": 24, "iterations": 2,
