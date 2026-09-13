@@ -23,7 +23,7 @@ Built from scratch (no donor topology to clone) via
 0, so every downstream connection (albedo, roughness, normal) stays valid
 across the swap:
 
-- cool, darker titanium albedo with a faint violet cast (both R and G lean
+- mid-light, cool titanium albedo with a faint violet cast (both R and G lean
   toward B) instead of aluminum's neutral bright silver, so the two metals
   read as different alloys, not different lighting on the same one;
 - whole surface is metal, so `metallic=1` is a scalar (same reasoning as

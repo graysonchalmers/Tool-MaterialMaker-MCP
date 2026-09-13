@@ -79,10 +79,10 @@ def build_m03_brushed_titanium(catalog: dict) -> str:
     `m02_brushed_aluminum`'s warp-stretched streak, built from the
     `noise_anisotropic` node (scale_y:scale_x = 48:4, the anisotropic
     stretch ratio itself is the directional grain -- no warp node needed).
-    Titanium reads cooler and darker than aluminum with a faint violet
-    cast (m02's albedo is neutral bright silver; here the gradient leans
-    violet-gray, R and B both above G) so the two brushed metals are never
-    a recolor of each other. The whole surface is metal (metallic=1
+    Titanium reads as a mid-light cool gray, slightly cooler than aluminum
+    and with a faint violet cast (m02's albedo is neutral bright silver;
+    here the gradient leans violet-gray, R and B both above G), so the two
+    brushed metals are never a recolor of each other. The whole surface is metal (metallic=1
     scalar, same reasoning as m02: no paint layer to mask off). Roughness
     is a texture (not m02's scalar) fed by the same anisotropic noise so
     the sheen varies faintly along the brush direction. The hairline noise
@@ -91,7 +91,7 @@ def build_m03_brushed_titanium(catalog: dict) -> str:
     dead-flat default the analytic generator would otherwise produce."""
     g = _from_scratch_noise_material(
         {"scale_x": 4, "scale_y": 48},
-        [(0.0, 0.32, 0.33, 0.38), (1.0, 0.54, 0.52, 0.60)],
+        [(0.0, 0.58, 0.56, 0.62), (1.0, 0.66, 0.64, 0.70)],
         metallic=1.0, roughness=0.3, normal_amount=0.35)
     retype(g, "perlin_0", "noise_anisotropic",
            {"scale_x": 4, "scale_y": 48, "smoothness": 1, "interpolation": 1})
