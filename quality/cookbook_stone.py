@@ -955,27 +955,41 @@ def build_s12_eroded_sandstone(catalog: dict) -> str:
     constant direction" effect real water erosion needs, so it is a better
     fit for this material, not just a workaround.
 
-    **Banded sediment base.** `SedimentNoise` is a `perlin` with `scale_x=4`
-    (low -- few large horizontal-ish features) and `scale_y=9` (moderate --
-    fewer, broader stacked features than a fine grain field), 3 iterations
-    and `persistence=0.62` for chunkier, more irregular band steps (varied
-    thickness, occasional sharp breaks) rather than the fine, even, nearly-
-    continuous banding a high-frequency/high-iteration field gives -- fine
-    continuous banding is what read as wood grain once smeared. `SedimentBands`
-    colorizes it through a 6-stop palette of pale buff / pale tan / light
-    warm grey with two thin, desaturated rust-accent bands (not a dominant
-    saturated brown), lower saturation and higher value than a wood palette,
-    so the base reads as dry pale rock before any warp is applied.
+    **Banded sediment base -- restored to distinct, legible strata (round
+    2 fix, see below).** `SedimentNoise` is a `perlin` with `scale_x=4` (low
+    -- few large horizontal-ish features) and `scale_y=14` (high again --
+    more, thinner, clearly separated bands; raised back up from the
+    de-wood pass's 9, which had softened the strata into a mottle), 3
+    iterations and `persistence=0.62`. `SedimentBands` colorizes it through
+    a 10-stop palette built as five flat COLOR PLATEAUS joined by hard
+    (~0.02-wide) transitions -- pale buff / pale tan / muted rust / light
+    warm grey / pale sandy highlight -- instead of a smoothly interpolated
+    ramp, so each stratum reads as a distinct banded color step, not a blur
+    between neighbors. Still lower-saturation/higher-value than a wood
+    palette (pale, cool, dry), per the de-wood fix.
 
-    **Fix (controller render read as polished wood, not sandstone).** The
-    first pass's fine high-frequency bands + saturated warm-brown palette +
-    glossy mid roughness, once smeared by `directional_warp`, read exactly
-    like continuous wood grain. Fixed by: (1) matte roughness -- see below;
-    (2) a fine `GritNoise` perlin multiplied subtly over the albedo (see
-    below) so the surface reads as gritty stone, not smooth grain; (3) the
-    paler/cooler/desaturated palette above; (4) chunkier, more irregular
-    strata (this paragraph) so the base has broad irregular bands for the
-    warp to smear, not fine continuous lines.
+    **Fix (round 1: controller render read as polished wood, not
+    sandstone).** The first pass's fine high-frequency bands + saturated
+    warm-brown palette + glossy mid roughness, once smeared by
+    `directional_warp`, read exactly like continuous wood grain. Fixed by:
+    (1) matte roughness -- see below; (2) a fine `GritNoise` perlin
+    multiplied subtly over the albedo (see below) so the surface reads as
+    gritty stone, not smooth grain; (3) a paler/cooler/desaturated palette;
+    (4) chunkier bands (`scale_y` dropped 16->9) so the base had broad
+    bands for the warp to smear, not fine continuous lines.
+
+    **Fix (round 2: controller render read as travertine/limestone mottle,
+    strata washed out).** Pulling the banding down in round 1 overcorrected
+    -- the sediment layers stopped reading as distinct strata at all. Fixed
+    by (1) raising `SedimentNoise.scale_y` back up (9 -> 14, more/thinner
+    bands) while keeping `scale_x` low (still 4, stretched horizontal
+    bands); (2) replacing `SedimentBands`' smooth 6-stop ramp with the
+    10-stop hard-plateau gradient above, so individual layers are visible as
+    distinct color bands rather than a soft gradient; (3) trimming
+    `ErosionWarp.strength` 0.62 -> 0.5 so the now-thinner, higher-contrast
+    layers get smeared into legible erosion runs rather than dissolved back
+    into a mottle. The matte roughness, grit, and pale/cool palette from
+    round 1 are all kept unchanged.
 
     **Directional erosion.** `ErosionWarp` (`directional_warp`) takes
     `SedimentBands`' RGBA output directly on its `in#` port (port 0) --
@@ -984,10 +998,10 @@ def build_s12_eroded_sandstone(catalog: dict) -> str:
     so the node uses its own constant defaults, giving a clean, repeatable
     displacement from `angle`/`strength` alone (per `describe_node` and the
     task brief). `angle=-58` (a steep diagonal, not the swatch's horizontal
-    0) and `strength=0.62` (upper-middle of the -1..1 range) smear the
-    horizontal bands into diagonal streaks -- the strata read as if water
-    ran down the face and dragged the layers with it, without erasing the
-    banding entirely.
+    0) and `strength=0.5` (moderate -- trimmed from round 1's 0.62 per the
+    round-2 fix above) smear the horizontal bands into diagonal streaks --
+    the strata read as if water ran down the face and dragged the layers
+    with it, smeared but still legible as layers, not erased.
 
     **Relief and roughness both read the eroded field, not the pre-warp
     one** -- `ErosionWarp`'s output feeds both `ReliefHeight` (a plain 0->1
@@ -1032,21 +1046,25 @@ def build_s12_eroded_sandstone(catalog: dict) -> str:
         "nodes": [
             {"name": "perlin_bands", "type": "perlin",
              "node_position": {"x": 0, "y": 0},
-             "parameters": {"scale_x": 4, "scale_y": 9, "iterations": 3,
+             "parameters": {"scale_x": 4, "scale_y": 14, "iterations": 3,
                             "persistence": 0.62}},
             {"name": "colorize_bands", "type": "colorize",
              "node_position": {"x": 260, "y": 0},
              "parameters": {"gradient": _grad([
-                 (0.00, 0.74, 0.68, 0.58),   # pale buff
-                 (0.18, 0.62, 0.50, 0.40),   # muted rust accent (thin, desaturated)
-                 (0.36, 0.78, 0.72, 0.62),   # pale tan
-                 (0.54, 0.58, 0.46, 0.36),   # muted rust accent (thin)
-                 (0.74, 0.70, 0.64, 0.55),   # light warm grey
-                 (1.00, 0.82, 0.76, 0.66),   # pale sandy highlight
+                 (0.00, 0.74, 0.68, 0.58),   # pale buff (plateau)
+                 (0.19, 0.74, 0.68, 0.58),   # pale buff (plateau end)
+                 (0.21, 0.80, 0.74, 0.64),   # -> pale tan, hard cut
+                 (0.40, 0.80, 0.74, 0.64),   # pale tan (plateau)
+                 (0.42, 0.60, 0.48, 0.38),   # -> muted rust, hard cut
+                 (0.61, 0.60, 0.48, 0.38),   # muted rust (plateau)
+                 (0.63, 0.70, 0.64, 0.55),   # -> light warm grey, hard cut
+                 (0.82, 0.70, 0.64, 0.55),   # light warm grey (plateau)
+                 (0.84, 0.84, 0.78, 0.68),   # -> pale sandy highlight, hard cut
+                 (1.00, 0.84, 0.78, 0.68),   # pale sandy highlight (plateau)
              ])}},
             {"name": "directional_warp_0", "type": "directional_warp",
              "node_position": {"x": 520, "y": 0},
-             "parameters": {"angle": -58, "strength": 0.62}},
+             "parameters": {"angle": -58, "strength": 0.5}},
             {"name": "colorize_relief", "type": "colorize",
              "node_position": {"x": 780, "y": -140},
              "parameters": {"gradient": _grad([(0.0, 0, 0, 0), (1.0, 1, 1, 1)])}},
