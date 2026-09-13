@@ -178,17 +178,31 @@ Each material is one task. Shared shape for every material task (do not restate 
 
 - [ ] **Step 1-6:** Shared material shape, category `scifi`. Commit `feat(cookbook): sf07_conduit_panel (truchet interlocking pipes)`.
 
-### Task 7: `s12_eroded_sandstone` (slope_blur, stone)
+### Task 7: `s12_eroded_sandstone` (directional_warp, stone) — DONE 2026-09-13
 
 **Files:**
 - Modify: `quality/cookbook_stone.py`
 - Create: `cookbook/stone/s12_eroded_sandstone.{md,ptex}`
 
-**Technique:** Water-eroded sedimentary streaking, the one distortion the cookbook has never used. `slope_blur` (from Task 1's swatch, now proven wired) smears a layered noise along its slope to give directional erosion runs. Base: a horizontally-banded sediment (a `colorize` on a vertical gradient, or perlin with high `scale_y`), then `slope_blur` to erode. Warm sandstone palette (tan/ochre/rust bands), matte-to-slightly-rough. Confirm `slope_blur` input ports with `describe_node` (input to blur plus a slope/control input).
+**REVISED + DONE (2026-09-13):** originally slope_blur, but slope_blur is a
+buffer/compute-shader node that CANNOT render headless (see Task 1 finding), so
+this shipped on `directional_warp` instead (renders headless, was zero-use).
+Built as banded sediment (stretched perlin, scale_y ~14, 5 softened tonal
+bands) smeared by directional_warp, matte + granular grit, pale sandstone
+palette. Visually approved by Grayson + code-reviewed clean (commit `1c5512c`
+and preceding). Took several passes: first read as wood (too warm/glossy), then
+as mottle (bands washed out), then dialed to layered painted-desert sandstone.
+Lesson recorded: a "new base" material can still drift into an existing look.
 
 - [ ] **Step 1-6:** Shared material shape, category `stone`. Commit `feat(cookbook): s12_eroded_sandstone (slope_blur erosion)`.
 
-### Task 8: `t10_rippled_wet_sand` (wavelet_noise, terrain)
+### Task 8: `t09_rippled_wet_sand` (wavelet_noise, terrain)
+
+**ID RULING (2026-09-13):** build this as id `t09` (NOT `t10`). The original
+t09 slot was repurposed to `s13_polished_marble` (moved to stone), leaving the
+terrain t09 number free; using it keeps terrain contiguous.
+
+_(original heading: t10_rippled_wet_sand)_
 
 **Files:**
 - Modify: `quality/cookbook_terrain.py`
@@ -348,7 +362,7 @@ Expected: both clean.
 
 - [ ] **Step 3: Add the AUTHORING distortion note (+ optional SDF ruling)**
 
-In `docs/AUTHORING.md`, add a short "Distortion vocabulary" paragraph mirroring the "Noise vocabulary" one: `warp` is the workhorse but `warp2`/`directional_warp`/`slope_blur` give displacement characters it cannot, with the swatch names as the reference. Optionally add a one-line ruling that the SDF family (43 nodes, 0 use) is out of scope as shape-SDL, not texture authoring. No em dashes.
+In `docs/AUTHORING.md`, add a short "Distortion vocabulary" paragraph mirroring the "Noise vocabulary" one: `warp` is the workhorse but `warp2` and `directional_warp` give displacement characters it cannot (with the swatch names as the reference). Record the Task 1 finding: `buffer`-type compound nodes (`slope_blur`, the `warp_dilation` family) do NOT render in the headless `--export-material` pipeline (compute-shader compile fails on null), so they are unusable for cookbook materials even though they validate; `normal_map` only survives because its `switch` bypasses its buffer at `param4=0`. Optionally add a one-line ruling that the SDF family (43 nodes, 0 use) is out of scope as shape-SDL, not texture authoring. No em dashes.
 
 - [ ] **Step 4: Commit**
 
