@@ -1,0 +1,616 @@
+{
+ "connections": [
+  {
+   "from": "sediment_layers",
+   "from_port": 0,
+   "to": "erosion_relief",
+   "to_port": 0
+  },
+  {
+   "from": "erosion_relief",
+   "from_port": 0,
+   "to": "Material",
+   "to_port": 0
+  },
+  {
+   "from": "erosion_relief",
+   "from_port": 1,
+   "to": "Material",
+   "to_port": 4
+  },
+  {
+   "from": "erosion_relief",
+   "from_port": 2,
+   "to": "Material",
+   "to_port": 2
+  }
+ ],
+ "nodes": [
+  {
+   "name": "Material",
+   "type": "material",
+   "node_position": {
+    "x": 1300,
+    "y": 0
+   },
+   "export_paths": {},
+   "parameters": {
+    "albedo_color": {
+     "a": 1,
+     "r": 1,
+     "g": 1,
+     "b": 1,
+     "type": "Color"
+    },
+    "ao": 1,
+    "depth_scale": 1,
+    "emission_energy": 1,
+    "metallic": 0,
+    "normal": 1,
+    "roughness": 1,
+    "size": 11,
+    "sss": 0
+   }
+  },
+  {
+   "name": "sediment_layers",
+   "label": "Sediment Layers",
+   "type": "graph",
+   "node_position": {
+    "x": 130.0,
+    "y": 0.0
+   },
+   "parameters": {
+    "param0": 16,
+    "param1": {
+     "interpolation": 1,
+     "type": "Gradient",
+     "points": [
+      {
+       "a": 1,
+       "r": 0.58,
+       "g": 0.42,
+       "b": 0.24,
+       "pos": 0.0
+      },
+      {
+       "a": 1,
+       "r": 0.47,
+       "g": 0.3,
+       "b": 0.16,
+       "pos": 0.18
+      },
+      {
+       "a": 1,
+       "r": 0.62,
+       "g": 0.48,
+       "b": 0.28,
+       "pos": 0.36
+      },
+      {
+       "a": 1,
+       "r": 0.4,
+       "g": 0.24,
+       "b": 0.14,
+       "pos": 0.54
+      },
+      {
+       "a": 1,
+       "r": 0.56,
+       "g": 0.4,
+       "b": 0.22,
+       "pos": 0.74
+      },
+      {
+       "a": 1,
+       "r": 0.65,
+       "g": 0.52,
+       "b": 0.32,
+       "pos": 1.0
+      }
+     ]
+    }
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": -270.0,
+      "y": 0.0
+     },
+     "parameters": {},
+     "ports": [],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 530.0,
+      "y": 0.0
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "out0",
+       "type": "rgba",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -270.0,
+      "y": 200.0
+     },
+     "parameters": {
+      "param0": 16,
+      "param1": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.58,
+         "g": 0.42,
+         "b": 0.24,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.47,
+         "g": 0.3,
+         "b": 0.16,
+         "pos": 0.18
+        },
+        {
+         "a": 1,
+         "r": 0.62,
+         "g": 0.48,
+         "b": 0.28,
+         "pos": 0.36
+        },
+        {
+         "a": 1,
+         "r": 0.4,
+         "g": 0.24,
+         "b": 0.14,
+         "pos": 0.54
+        },
+        {
+         "a": 1,
+         "r": 0.56,
+         "g": 0.4,
+         "b": 0.22,
+         "pos": 0.74
+        },
+        {
+         "a": 1,
+         "r": 0.65,
+         "g": 0.52,
+         "b": 0.32,
+         "pos": 1.0
+        }
+       ]
+      }
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Layer frequency",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "SedimentNoise",
+         "widget": "scale_y"
+        }
+       ]
+      },
+      {
+       "name": "param1",
+       "shortdesc": "Sediment color",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "SedimentBands",
+         "widget": "gradient"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "SedimentNoise",
+     "type": "perlin",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "scale_x": 3,
+      "scale_y": 16,
+      "iterations": 4,
+      "persistence": 0.55
+     }
+    },
+    {
+     "name": "SedimentBands",
+     "type": "colorize",
+     "node_position": {
+      "x": 260,
+      "y": 0
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.58,
+         "g": 0.42,
+         "b": 0.24,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.47,
+         "g": 0.3,
+         "b": 0.16,
+         "pos": 0.18
+        },
+        {
+         "a": 1,
+         "r": 0.62,
+         "g": 0.48,
+         "b": 0.28,
+         "pos": 0.36
+        },
+        {
+         "a": 1,
+         "r": 0.4,
+         "g": 0.24,
+         "b": 0.14,
+         "pos": 0.54
+        },
+        {
+         "a": 1,
+         "r": 0.56,
+         "g": 0.4,
+         "b": 0.22,
+         "pos": 0.74
+        },
+        {
+         "a": 1,
+         "r": 0.65,
+         "g": 0.52,
+         "b": 0.32,
+         "pos": 1.0
+        }
+       ]
+      }
+     }
+    }
+   ],
+   "connections": [
+    {
+     "from": "SedimentNoise",
+     "from_port": 0,
+     "to": "SedimentBands",
+     "to_port": 0
+    },
+    {
+     "from": "SedimentBands",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    }
+   ]
+  },
+  {
+   "name": "erosion_relief",
+   "label": "Erosion & Relief",
+   "type": "graph",
+   "node_position": {
+    "x": 780.0,
+    "y": -35.0
+   },
+   "parameters": {
+    "param0": -58,
+    "param1": 0.62,
+    "param2": 0.3,
+    "param3": {
+     "interpolation": 1,
+     "type": "Gradient",
+     "points": [
+      {
+       "a": 1,
+       "r": 0.52,
+       "g": 0.52,
+       "b": 0.52,
+       "pos": 0.0
+      },
+      {
+       "a": 1,
+       "r": 0.7,
+       "g": 0.7,
+       "b": 0.7,
+       "pos": 1.0
+      }
+     ]
+    }
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": 380.0,
+      "y": -35.0
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "in0",
+       "type": "rgba",
+       "group_size": 0
+      }
+     ],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 1180.0,
+      "y": -35.0
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "out0",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "out1",
+       "type": "rgb",
+       "group_size": 0
+      },
+      {
+       "name": "out2",
+       "type": "rgba",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": 380.0,
+      "y": 165.0
+     },
+     "parameters": {
+      "param0": -58,
+      "param1": 0.62,
+      "param2": 0.3,
+      "param3": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.52,
+         "g": 0.52,
+         "b": 0.52,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.7,
+         "g": 0.7,
+         "b": 0.7,
+         "pos": 1.0
+        }
+       ]
+      }
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Erosion angle",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "ErosionWarp",
+         "widget": "angle"
+        }
+       ]
+      },
+      {
+       "name": "param1",
+       "shortdesc": "Erosion strength",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "ErosionWarp",
+         "widget": "strength"
+        }
+       ]
+      },
+      {
+       "name": "param2",
+       "shortdesc": "Relief strength",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "SandstoneNormal",
+         "widget": "param1"
+        }
+       ]
+      },
+      {
+       "name": "param3",
+       "shortdesc": "Roughness",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "SandstoneRoughness",
+         "widget": "gradient"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "ErosionWarp",
+     "type": "directional_warp",
+     "node_position": {
+      "x": 520,
+      "y": 0
+     },
+     "parameters": {
+      "angle": -58,
+      "strength": 0.62
+     }
+    },
+    {
+     "name": "ReliefHeight",
+     "type": "colorize",
+     "node_position": {
+      "x": 780,
+      "y": -140
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0,
+         "g": 0,
+         "b": 0,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 1,
+         "g": 1,
+         "b": 1,
+         "pos": 1.0
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "SandstoneNormal",
+     "type": "normal_map",
+     "node_position": {
+      "x": 1040,
+      "y": -140
+     },
+     "parameters": {
+      "param0": 10,
+      "param1": 0.3,
+      "param2": 0,
+      "param4": 0
+     }
+    },
+    {
+     "name": "SandstoneRoughness",
+     "type": "colorize",
+     "node_position": {
+      "x": 780,
+      "y": 140
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.52,
+         "g": 0.52,
+         "b": 0.52,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.7,
+         "g": 0.7,
+         "b": 0.7,
+         "pos": 1.0
+        }
+       ]
+      }
+     }
+    }
+   ],
+   "connections": [
+    {
+     "from": "ErosionWarp",
+     "from_port": 0,
+     "to": "ReliefHeight",
+     "to_port": 0
+    },
+    {
+     "from": "ReliefHeight",
+     "from_port": 0,
+     "to": "SandstoneNormal",
+     "to_port": 0
+    },
+    {
+     "from": "ErosionWarp",
+     "from_port": 0,
+     "to": "SandstoneRoughness",
+     "to_port": 0
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 0,
+     "to": "ErosionWarp",
+     "to_port": 0
+    },
+    {
+     "from": "ErosionWarp",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    },
+    {
+     "from": "SandstoneNormal",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 1
+    },
+    {
+     "from": "SandstoneRoughness",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 2
+    }
+   ]
+  }
+ ]
+}

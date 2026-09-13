@@ -935,6 +935,145 @@ def build_s13_polished_marble(catalog: dict) -> str:
     return save_variant(g, _LABEL, "s13_polished_marble", 1)
 
 
+def build_s12_eroded_sandstone(catalog: dict) -> str:
+    """Water-eroded sandstone: horizontal sediment strata smeared into
+    diagonal erosion runs, built FROM SCRATCH (no donor -- nothing else in
+    the cookbook has this topology, and it needs its own).
+
+    **Why `directional_warp`, not `slope_blur`.** The phase plan originally
+    named `slope_blur` for this recipe. `slope_blur.mmg` is a compound graph
+    built entirely from two `buffer` nodes sandwiching an `edge_detect`
+    shader (`buffer -> edge_detect_3_3_2 -> buffer_2`, no unbuffered
+    bypass), and `buffer` nodes compile a compute shader at load time --
+    this project's headless `--export-material` pipeline cannot drive that
+    (see `build_swatch_slope_blur`'s docstring in `quality/debug_swatches.py`
+    for the proof: valid graph, all-black render). `directional_warp` has no
+    such trap -- it is a plain per-pixel UV offset by a constant
+    `angle`/`strength` (no map inputs needed, verified with `describe_node`
+    and pixel-checked in `build_swatch_directional_warp`) -- and its
+    displacement behavior is exactly the "smear a layered field along a
+    constant direction" effect real water erosion needs, so it is a better
+    fit for this material, not just a workaround.
+
+    **Banded sediment base.** `SedimentNoise` is a `perlin` with `scale_x=3`
+    (low -- few large horizontal-ish features) and `scale_y=16` (high --
+    many stacked features vertically), so the field reads as horizontal
+    sediment strata rather than a blobby cloud. `SedimentBands` colorizes it
+    through a 6-stop warm sandstone gradient (tan / pale ochre / rust-brown,
+    alternating) so each stratum gets a distinct tonal band, not a single
+    dyed noise field.
+
+    **Directional erosion.** `ErosionWarp` (`directional_warp`) takes
+    `SedimentBands`' RGBA output directly on its `in#` port (port 0) --
+    proven valid by `dry_earth`'s own `warp_0`, which reads an RGBA colorize
+    the same way. `anglemap`/`strengthmap` (ports 1/2) are left unconnected
+    so the node uses its own constant defaults, giving a clean, repeatable
+    displacement from `angle`/`strength` alone (per `describe_node` and the
+    task brief). `angle=-58` (a steep diagonal, not the swatch's horizontal
+    0) and `strength=0.62` (upper-middle of the -1..1 range) smear the
+    horizontal bands into diagonal streaks -- the strata read as if water
+    ran down the face and dragged the layers with it, without erasing the
+    banding entirely.
+
+    **Relief and roughness both read the eroded field, not the pre-warp
+    one** -- `ErosionWarp`'s output feeds both `ReliefHeight` (a plain 0->1
+    ramp) and `SandstoneRoughness` (a narrow matte-to-slightly-rough band,
+    0.52-0.70), the same "RGBA warp output straight into an f-typed
+    `colorize` input" pattern `dry_earth` uses for `warp_0 -> colorize_4`.
+    So the bump map and the roughness variation both carry the erosion
+    streaks, not just the albedo -- a stone face that has been eroded reads
+    that erosion in its surface relief and finish, not only its color.
+    `SandstoneNormal` (`normal_map`) keeps `param4=0` (the project's
+    standing flat-normal fix for a directly-fed analytic source) with a
+    moderate `param1=0.3` -- gentle relief, not a deep bulge; this is a worn
+    stone face, not chunky cobbles. Non-metal: `Material.metallic` is set to
+    0 as a plain scalar (port 1 left unconnected), the same convention
+    `_from_scratch_noise_material` and `s11_marble`'s roughness use when no
+    texture is wired to a port -- the scalar applies directly.
+
+    **How this differs from the rest of the stone category.** Every other
+    stone recipe differentiates through a spatial CELL pattern (voronoi
+    plates/cracks for s07/s08/s10/s11, a hex grid for s05, Bricks courses
+    for s09) or per-cell/per-fleck random color (s02, s04, s06). This one has
+    no cells at all -- its structure is a directional smear of horizontal
+    layers, the one distortion technique (`directional_warp`) nothing else
+    in the cookbook uses. That keeps it visually and structurally distinct
+    rather than reading as another rocky-blob variant."""
+    g = {
+        "connections": [],
+        "nodes": [
+            {"name": "perlin_bands", "type": "perlin",
+             "node_position": {"x": 0, "y": 0},
+             "parameters": {"scale_x": 3, "scale_y": 16, "iterations": 4,
+                            "persistence": 0.55}},
+            {"name": "colorize_bands", "type": "colorize",
+             "node_position": {"x": 260, "y": 0},
+             "parameters": {"gradient": _grad([
+                 (0.00, 0.58, 0.42, 0.24),   # warm tan
+                 (0.18, 0.47, 0.30, 0.16),   # rust-brown band
+                 (0.36, 0.62, 0.48, 0.28),   # pale ochre
+                 (0.54, 0.40, 0.24, 0.14),   # dark rust band
+                 (0.74, 0.56, 0.40, 0.22),   # warm tan
+                 (1.00, 0.65, 0.52, 0.32),   # pale sandy highlight
+             ])}},
+            {"name": "directional_warp_0", "type": "directional_warp",
+             "node_position": {"x": 520, "y": 0},
+             "parameters": {"angle": -58, "strength": 0.62}},
+            {"name": "colorize_relief", "type": "colorize",
+             "node_position": {"x": 780, "y": -140},
+             "parameters": {"gradient": _grad([(0.0, 0, 0, 0), (1.0, 1, 1, 1)])}},
+            {"name": "normal_map_0", "type": "normal_map",
+             "node_position": {"x": 1040, "y": -140},
+             "parameters": {"param0": 10, "param1": 0.3, "param2": 0, "param4": 0}},
+            {"name": "colorize_rough", "type": "colorize",
+             "node_position": {"x": 780, "y": 140},
+             "parameters": {"gradient": _grad([
+                 (0.0, 0.52, 0.52, 0.52), (1.0, 0.70, 0.70, 0.70)])}},
+            {"name": "Material", "type": "material",
+             "node_position": {"x": 1300, "y": 0},
+             "export_paths": {},
+             "parameters": {
+                 "albedo_color": {"a": 1, "r": 1, "g": 1, "b": 1, "type": "Color"},
+                 "ao": 1, "depth_scale": 1, "emission_energy": 1,
+                 "metallic": 0, "normal": 1, "roughness": 1,
+                 "size": 11, "sss": 0}},
+        ],
+    }
+    g["connections"] = [
+        {"from": "perlin_bands", "from_port": 0, "to": "colorize_bands", "to_port": 0},
+        {"from": "colorize_bands", "from_port": 0, "to": "directional_warp_0", "to_port": 0},
+        {"from": "directional_warp_0", "from_port": 0, "to": "Material", "to_port": 0},
+        {"from": "directional_warp_0", "from_port": 0, "to": "colorize_relief", "to_port": 0},
+        {"from": "colorize_relief", "from_port": 0, "to": "normal_map_0", "to_port": 0},
+        {"from": "normal_map_0", "from_port": 0, "to": "Material", "to_port": 4},
+        {"from": "directional_warp_0", "from_port": 0, "to": "colorize_rough", "to_port": 0},
+        {"from": "colorize_rough", "from_port": 0, "to": "Material", "to_port": 2},
+    ]
+
+    group_into_subgraph(g, ["perlin_bands", "colorize_bands"],
+                         "sediment_layers", "Sediment Layers",
+                         [("perlin_bands", "scale_y", "param0", "Layer frequency"),
+                          ("colorize_bands", "gradient", "param1", "Sediment color")],
+                         catalog)
+    group_into_subgraph(g, ["directional_warp_0", "colorize_relief", "normal_map_0",
+                             "colorize_rough"],
+                         "erosion_relief", "Erosion & Relief",
+                         [("directional_warp_0", "angle", "param0", "Erosion angle"),
+                          ("directional_warp_0", "strength", "param1", "Erosion strength"),
+                          ("normal_map_0", "param1", "param2", "Relief strength"),
+                          ("colorize_rough", "gradient", "param3", "Roughness")],
+                         catalog)
+    rename_nodes(g, {
+        "perlin_bands": "SedimentNoise",
+        "colorize_bands": "SedimentBands",
+        "directional_warp_0": "ErosionWarp",
+        "colorize_relief": "ReliefHeight",
+        "normal_map_0": "SandstoneNormal",
+        "colorize_rough": "SandstoneRoughness",
+    })
+    return save_variant(g, _LABEL, "s12_eroded_sandstone", 1)
+
+
 BUILDERS = {
     "s02_gray_granite": build_s02_gray_granite,
     "s04_scattered_river_stones": build_s04_scattered_river_stones,
@@ -945,6 +1084,7 @@ BUILDERS = {
     "s09_ashlar_wall": build_s09_ashlar_wall,
     "s10_flagstone": build_s10_flagstone,
     "s11_marble": build_s11_marble,
+    "s12_eroded_sandstone": build_s12_eroded_sandstone,
     "s13_polished_marble": build_s13_polished_marble,
 }
 
