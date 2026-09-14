@@ -1,6 +1,6 @@
 # 🧭 Session Handoff: Tool-MaterialMaker-MCP
 
-_Last updated: 2026-09-14 (round 2 of the noise-vocabulary expansion in progress on branch `noise-vocabulary-round-2`, paused mid-session awaiting Grayson's visual approval) CT (America/Chicago)_
+_Last updated: 2026-09-14 (round 2 of the noise-vocabulary expansion FINISHED on branch `noise-vocabulary-round-2`, all 11 tasks landed and reviewed clean, not yet merged to `main`) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up. **Shape rule (2026-09-05,
 teardown #3):** "Current state" describes the latest session only; anything
@@ -10,62 +10,79 @@ archive; there is no separate archive file.
 
 ## 🎯 Current state
 
-**Round 2 of the noise-vocabulary expansion is in progress on branch
-`noise-vocabulary-round-2`** (cut from `main` @ `cbf3c8b`, which already had
-round 1's enum-validation fix merged and pushed). Same shape as round 1:
-Grayson noticed the README/tool-usage picture during a `pickup` session,
-brainstorm -> writing-plans -> subagent-driven-development, plan at
-`docs/superpowers/plans/2026-09-13-noise-vocabulary-round-2.md`, SDD ledger at
-`.superpowers/sdd/2026-09-13-noise-vocabulary-round-2/progress.md` (the
-authoritative task-by-task record, read it first on resume).
+**Round 2 of the noise-vocabulary expansion is FINISHED on branch
+`noise-vocabulary-round-2`** (cut from `main` @ `cbf3c8b`). This session
+resumed at Task 5's pending approval (the prior session had paused mid-task
+awaiting Grayson's reply) and drove `subagent-driven-development` through
+to the end of the plan: Tasks 5-11 all complete, reviewed clean, and
+committed. Plan at
+`docs/superpowers/plans/2026-09-13-noise-vocabulary-round-2.md`, SDD ledger
+at `.superpowers/sdd/2026-09-13-noise-vocabulary-round-2/progress.md` (the
+authoritative task-by-task record).
 
-Landed and reviewed clean:
-- **Phase A** (`quality/node_usage_audit.py` + AUTHORING.md's live coverage
-  line): a reusable script that recurses cookbook subgraphs and reports real
-  noise/pattern node usage, replacing the 2026-09-01 one-time manual
-  histogram that had already gone stale by this session. Currently 13 of 52
-  curated noise/pattern node types are in cookbook use.
-- **Task 3** `l07_pebbled_leather` (fbm Cellular 1, leather) — approved
-  first pass, committed `94f419e`.
-- **Task 4** `f09_plaid_flannel` (fbm Cellular 3, fabrics) — approved after
-  one relief iteration (Grayson: the first pass "looks pretty flat";
-  `normal_map param1` raised 0.15 -> 0.42), committed `f312a1f`.
+Landed and reviewed clean this session:
+- **Task 5** `f10_boucle_upholstery` (fbm Cellular 5, fabrics): Grayson
+  approved the carried-over preview with no iteration ("go"); resumed from
+  the prior session's WIP checkpoint (`a3728df`) to finish the recipe card,
+  promote, and gates as a new commit `094da06`.
+- **Task 6** `sf05_circuit_maze_panel` (truchet Line, scifi): truchet's
+  real output range measured fresh (0.498-1.000, thresholded at the
+  statistical midpoint 0.73-0.77) rather than assumed from the Circle-mode
+  precedent; approved first pass, committed `d5f0319`.
+- **Task 7** `gl03_shattered_crystal` (shard_fbm pushed crystalline, glass):
+  two shard_fbm-specific gotchas fixed (single output port vs the donor's
+  port-1 wire; its broad-bell field needed an S-curve, not the gl01/gl02
+  near-zero threshold convention); approved first pass, committed `27f824f`.
+- **Task 8** `w06_burled_wood` (warp2 burl figure, wood): donor's dead
+  voronoi ring chain removed, low-freq perlin displacement + `warp2`
+  (mode 0, amount 0.65) for swirling knotted burl, visually distinct from
+  w05's straight grain; approved first pass, committed `f4fe79e`. Review
+  found a real bug (below, parked, not fixed in this task).
+- **Task 9** README material counts 59 -> 65 + regenerated contact sheet,
+  committed `75a7d4f`.
+- **Task 10** AUTHORING.md names all six round-2 materials and refreshes the
+  live coverage line 13 -> 14 of 52 (only `shard_fbm` is a genuinely new
+  node type this round), committed `af3e687`.
+- **Task 11** (this wrap): fast suite 1103 passed, `promote_cookbook --check`
+  and `naming --cookbook` both clean, em-dash scan of the six new recipe
+  cards + README + AUTHORING.md clean (AUTHORING.md's two pre-existing
+  em dashes at lines 48/65 are legacy, out of this round's scope per Task
+  10's reviewer), HANDOFF/STATUS updated, wrap-up commit made.
 
-In flight, paused: **Task 5** `f10_boucle_upholstery` (fbm Cellular 5,
-fabrics) — builder written, renders clean, preview sent to Grayson via
-SendUserFile, **no reply landed before the session ended**. Committed as a
-WIP checkpoint (`a3728df`, message says so explicitly) so the work isn't
-lost, but it is NOT approved, NOT promoted, NOT a finished material.
+All six materials this round got a rendered 3D preview sent to Grayson via
+SendUserFile and his live "go" approval before being finished (matching
+round 1's pattern); none needed an iteration this round (unlike Task 4's
+relief fix, done in the prior session before the pause). Cookbook is now 65
+materials across 12 categories, up from 59 at the start of round 2.
 
-Not started: Task 6 `sf05_circuit_maze_panel` (truchet Line, scifi), Task 7
-`gl03_shattered_crystal` (shard_fbm, glass), Task 8 `w06_burled_wood`
-(warp2, wood), Phase C (README/AUTHORING count integration, 59 -> 65 on
-this branch once all six land), Phase D (wrap).
+**One finding was deliberately parked, not fixed:** Task 8's review found
+the shared `wood` donor (used by w04, w05, and the new w06) wires its
+GrainMask blend straight into Material's metallic port, producing a
+spatially-varying metallic channel (~0.04-0.58) instead of near-zero.
+Confirmed identical and pre-existing in already-shipped w04/w05, not
+introduced or worsened by w06. Fixing only w06 would leave w04/w05
+inconsistent, so this was ruled out of Task 8's scope and a follow-up was
+spawned instead (`task_21359777`, "Fix wood-donor metallic bleed in
+w04/w05/w06"); see Open questions.
 
-Also mid-session: Grayson asked whether a rotating-key-light GIF preview
-would show relief depth better than the static composite (prompted by f09's
-flatness). Deliberately NOT built this session, flagged as a spawn_task
-follow-up (`task_6bcbe3ca`, "Add rotating-light preview GIF for cookbook
-materials") rather than expanding round 2's scope.
+Merge to `main` is Grayson's call, same rule round 1 followed. The branch is
+ready: all 11 tasks landed with clean per-task reviews, full suite and
+cookbook gates green.
 
 ## 📌 Where we stopped
 
-`f10_boucle_upholstery`'s preview (`output/f10_boucle_upholstery_preview_preview.png`,
-may need a fresh render if stale) is awaiting Grayson's approval or change
-request. The implementer agent that rendered it was `a680841f7c479246e`
-(session-local id, likely not resumable across a session boundary; treat
-this as "re-show the preview and get a decision" rather than assuming the
-same agent can be resumed).
+The plan is done. Branch `noise-vocabulary-round-2` has all 11 tasks landed,
+each with a clean per-task review, and this wrap (Task 11) leaves the fast
+suite (1103 passed), `promote_cookbook --check`, and `naming --cookbook` all
+green. Nothing is in flight and nothing is awaiting Grayson mid-task.
 
 ## ▶️ Next concrete step
 
-Resume the `noise-vocabulary-round-2` plan via `subagent-driven-development`,
-starting from Task 5's pending approval: show Grayson the f10 preview again
-(or re-render if anything's changed), get a real approval or iteration
-request, then continue task-by-task through Tasks 6-11 exactly as the plan
-and SDD ledger describe. Do not merge to `main` without Grayson's explicit
-go-ahead once the branch is done and its final review is clean (same rule
-round 1 followed).
+Show Grayson the branch is ready and get his explicit go-ahead to merge to
+`main` (same rule round 1 followed: merge is his call, not automatic on a
+clean plan). Once merged and pushed, update STATUS.md's cookbook row and
+component rows off the round-2-specific language (currently phrased as
+"in progress on branch") to reflect `main`.
 
 ## ❓ Open questions
 
@@ -82,6 +99,12 @@ round 1 followed).
   the render baseline).
 - Whether a rotating-key-light GIF preview mode is worth building (spawn_task
   `task_6bcbe3ca`); Grayson asked mid-round-2, deferred as a follow-up.
+- The shared `wood` donor (w04/w05/w06) wires its GrainMask blend straight
+  into Material's metallic port, producing a spatially-varying 0.04-0.58
+  metallic channel instead of near-zero; identical bug in all three, not
+  worth fixing piecemeal. Follow-up spawned: `task_21359777`, "Fix
+  wood-donor metallic bleed in w04/w05/w06" (found during Task 8's review,
+  2026-09-14).
 
 ## ⚠️ Heads-up for the next agent
 
@@ -201,7 +224,8 @@ round 1 followed).
 Newest first. Keep at most 8 entries; older ones are in `git log` (search the
 commit subjects, every session ends with a `docs:` wrap-up commit).
 
-### 2026-09-14 (noise-vocabulary round 2, IN PROGRESS on branch `noise-vocabulary-round-2`): `pickup` answered Grayson's two questions (README current, tool usage still shallow: 9 of the catalog's noise/warp bases in use across 59 materials), brainstorm -> `writing-plans` -> `subagent-driven-development` for a round-2 scope Grayson approved (6 more materials + a reusable `quality/node_usage_audit.py` audit script). Phase A landed clean (13/52 curated noise nodes now live-tracked). `l07_pebbled_leather` and `f09_plaid_flannel` landed and approved (f09 took one relief-strength iteration on Grayson's feedback). Caught and corrected a dispatch bug mid-session: an implementer subagent was wrongly told to SendUserFile-and-wait-for-approval itself, when only the controller session has a live chat channel to Grayson; fixed for all subsequent material dispatches. Session ended mid-Task-5 (`f10_boucle_upholstery`): preview sent, no reply yet, builder committed as an explicit WIP checkpoint (`a3728df`) so nothing is lost. Grayson also asked about a rotating-light preview GIF; deferred to a spawn_task follow-up rather than scope-creeping this round. Tasks 6-11 not started.
+### 2026-09-14 (noise-vocabulary round 2, FINISHED on branch `noise-vocabulary-round-2`, not yet merged): `pickup` resumed at Task 5's pending approval (prior session paused mid-task). Grayson approved the carried-over f10_boucle_upholstery preview, then approved five more previews with no iterations needed (f10 finish, sf05_circuit_maze_panel, gl03_shattered_crystal, w06_burled_wood) before `subagent-driven-development` drove Tasks 5-11 through to completion: cookbook 59 -> 65 materials across 12 categories, README/AUTHORING count integration (13 -> 14 of 52 curated noise nodes live), and this wrap (fast suite 1103, `promote_cookbook --check` + `naming --cookbook` clean, em-dash scan clean). Task 8's review found a real pre-existing bug (the shared `wood` donor bleeds GrainMask into Material's metallic port, identical in w04/w05/w06) and deliberately parked it rather than fixing piecemeal; spawned follow-up `task_21359777`. Branch ready; merge to `main` is Grayson's call, not yet given.
+### 2026-09-14 (noise-vocabulary round 2 kickoff, IN PROGRESS): `pickup` answered Grayson's two questions (README current, tool usage still shallow: 9 of the catalog's noise/warp bases in use across 59 materials), brainstorm -> `writing-plans` -> `subagent-driven-development` for a round-2 scope Grayson approved (6 more materials + a reusable `quality/node_usage_audit.py` audit script). Phase A landed clean (13/52 curated noise nodes now live-tracked). `l07_pebbled_leather` and `f09_plaid_flannel` landed and approved (f09 took one relief-strength iteration on Grayson's feedback). Caught and corrected a dispatch bug mid-session: an implementer subagent was wrongly told to SendUserFile-and-wait-for-approval itself, when only the controller session has a live chat channel to Grayson; fixed for all subsequent material dispatches. Session ended mid-Task-5 (`f10_boucle_upholstery`): preview sent, no reply yet, builder committed as an explicit WIP checkpoint (`a3728df`) so nothing is lost. Grayson also asked about a rotating-light preview GIF; deferred to a spawn_task follow-up rather than scope-creeping this round. Tasks 6-11 not started.
 ### 2026-09-13 (enum-index validation enforcement, MERGED to main): `pickup` (caught baton drift: noise branch already merged `0169446`/pushed, baton said unmerged), Grayson picked the deferred enum follow-up. Advisor-prompted investigation flipped the premise: detection already worked (`validate_graph` flags t09's `type=-3` int, even in-subgraph); the hole was ENFORCEMENT (out-of-range enum was a `warning`, all gates filter to errors / promote never validates). Fix: out-of-range enum index -> `error`; message explains the clamp and either names the intended index via `_enum_literal_hint` (literal match) or lists all valid options; `catalog_builder` captures `value_literals` for numeric index-mismatched enums only; ratchet test in `test_cookbook_gate`. Wrap-up surfaced a sibling branch `claude/zealous-ritchie-cb051a` (2 commits, unmerged) fixing the same thing as a warning-with-options-list; Grayson said reconcile, so its options-list message + wavelet range-pin test were folded into this branch (sibling now superseded). TDD red->green, fast suite 1039->1045. Ruled out: string-literal guard hole (left; t09 was int) and the stale gitignored `catalog/catalog.json` artifact (not a bug). Commons log written.
 ### 2026-09-13 (noise/distortion vocabulary + core toolbox, MERGED `0169446` + pushed): `pickup` -> `subagent-driven-development` resumed at Task 8, finished the plan (all 14 tasks, per-task + final opus review clean). Shipped 6 proof materials on unused bases (s13 marble/fbm, m03 titanium/anisotropic, sf07 conduit/truchet, s12 sandstone/directional_warp, t09 wet sand/wavelet, gl02 cut gem/voronoi_triangle; cookbook 53->59), 19 diagnostic swatches, README un-collapse + count-gated "Core toolbox" section, AUTHORING distortion note. Fast suite 1039; final fix `4905d37` (gl02 card node count). Merged next session; a follow-up t09 enum fix `4d1187f` landed post-merge.
 ### 2026-09-06 (backup-ops wake-lock, cross-project): `pickup` here, Grayson picked next-step #2. Root-caused the 09-05 nightly truncation as idle-sleep mid-run (the git `NativeCommandError` is a handled CRLF warning; true signature is a missing `transcript end` footer, not a code bug), and added a `SetThreadExecutionState` wake-lock to `backup-ops\Backup-All.ps1` (acquire in try, release in finally). Verified compile + parse; commit `f7e809d` local, PUSH PENDING (ssh-agent not loaded this session). Commons log written. No MM-MCP code changed.
@@ -230,5 +254,5 @@ commit subjects, every session ends with a `docs:` wrap-up commit).
   holds (heightmaps, m01 no normal); per-category compares as the whole-tree
   proof. Final opus review found three ratchets (subgraph-rename guard,
   card-table gate, the HANDOFF heads-up); all landed. Merged `dbf66fc`,
-  pushed. Suite 809 -> 964.
-### 2026-09-05 (teardown #4 executed): hygiene sweep (CI pinned to the MM sha), `quality/` packaged, Phase-3 harness archived (`6e4568f`, `c5d473c`). (Older entries: see `git log`, search commit subjects, every session ends with a `docs:` wrap-up commit.)
+  pushed. Suite 809 -> 964. (Older entries: see `git log`, search commit
+  subjects, every session ends with a `docs:` wrap-up commit.)

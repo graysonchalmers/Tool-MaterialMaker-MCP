@@ -6,22 +6,23 @@
 
 Gate ledger. Three states only: ✅ verified · 🔌 wired · ⬜ not started.
 
-_Last updated: 2026-09-14 (round 1's noise/distortion vocabulary + core-toolbox plan MERGED to `main` and pushed 2026-09-13 (`0169446`); round 2 IN PROGRESS on branch `noise-vocabulary-round-2`, paused mid-session awaiting Grayson's visual approval on the fourth of six new materials)._
+_Last updated: 2026-09-14 (round 1's noise/distortion vocabulary + core-toolbox plan MERGED to `main` and pushed 2026-09-13 (`0169446`); round 2 FINISHED on branch `noise-vocabulary-round-2`, all 11 tasks landed and reviewed clean, not yet merged)._
 
-> 🔌 **In progress on branch `noise-vocabulary-round-2`:** a reusable
-> `quality/node_usage_audit.py` script (live noise/pattern coverage reporting,
-> replaces the old one-time manual histogram) plus six more proof materials on
-> still-unused catalog nodes. Landed + approved: `l07_pebbled_leather` (fbm
-> Cellular 1), `f09_plaid_flannel` (fbm Cellular 3). In flight, builder
-> committed as WIP pending Grayson's approval: `f10_boucle_upholstery` (fbm
-> Cellular 5). Not started: `sf05_circuit_maze_panel` (truchet Line),
-> `gl03_shattered_crystal` (shard_fbm), `w06_burled_wood` (warp2), plus the
-> README/AUTHORING count integration. See
-> `.superpowers/sdd/2026-09-13-noise-vocabulary-round-2/progress.md` for the
-> exact task-by-task ledger. Plan:
-> `docs/superpowers/plans/2026-09-13-noise-vocabulary-round-2.md`. Merge to
-> `main` is Grayson's call, same as round 1, and won't happen until the plan
-> finishes and the final branch review is clean.
+> 🔌 **Finished on branch `noise-vocabulary-round-2`, not yet merged:** a
+> reusable `quality/node_usage_audit.py` script (live noise/pattern coverage
+> reporting, replaces the old one-time manual histogram) plus six more proof
+> materials on previously-unused catalog nodes, all landed and approved:
+> `l07_pebbled_leather` (fbm Cellular 1), `f09_plaid_flannel` (fbm Cellular 3),
+> `f10_boucle_upholstery` (fbm Cellular 5), `sf05_circuit_maze_panel` (truchet
+> Line), `gl03_shattered_crystal` (shard_fbm), `w06_burled_wood` (warp2).
+> README/AUTHORING count integration done (65 materials, 14/52 live noise
+> nodes). See `.superpowers/sdd/2026-09-13-noise-vocabulary-round-2/progress.md`
+> for the exact task-by-task ledger. Plan:
+> `docs/superpowers/plans/2026-09-13-noise-vocabulary-round-2.md`. One finding
+> parked, not fixed: the shared `wood` donor bleeds GrainMask into Material's
+> metallic port (w04/w05/w06 alike); follow-up spawned as `task_21359777`, see
+> `HANDOFF.md`'s Open questions. Merge to `main` is Grayson's call, same as
+> round 1, and has not happened yet.
 
 **How to read this file (rule adopted 2026-09-05, teardown #3):** each cell holds
 the state, one line of what it is, and a pointer to where the evidence lives
@@ -53,7 +54,7 @@ row points at.
 | `src/mm_mcp/preview.py` + `preview_project/` | ✅ | `render_preview` 3D composite (sphere/cube/cutaway). `tests/test_preview.py` |
 | `src/mm_mcp/overlay.py` + `addons/mm_live/` + `src/mm_mcp/live.py` | ✅ | Disposable MM overlay with a GDScript socket addon (port 8765); client with `connect_or_launch`, 8 commands incl. `load_graph`. `tests/test_overlay.py`, `tests/test_live.py` |
 | `src/mm_mcp/play/` (`mm-play`, `play.bat`) | ✅ | Slider web page over cookbook subgraph params with a WebGL sphere; Grayson ran `play.bat` hands-on 2026-09-05. Refuses to start beside a stale listener and names the PID (2026-09-05). `tests/test_play_*.py`; `docs/superpowers/specs/2026-09-04-play-surface-design.md` |
-| `cookbook/` + `quality/cookbook_*.py` + `promote_cookbook.py` | ✅ | 59 tracked materials on `main`, 12 categories; 61 on branch `noise-vocabulary-round-2` (`l07_pebbled_leather`, `f09_plaid_flannel` landed; `f10_boucle_upholstery` WIP pending approval; 3 more planned), subgraph-grouped, every node role-named (2026-09-06, render-identical), each card carrying a generated node table; builders are the source, `--check` is the regression baseline for graphs and card tables. `tests/test_cookbook*.py` incl. `test_cookbook_naming_gate.py`, `test_cookbook_card_table_gate.py`; `cookbook/README.md` |
+| `cookbook/` + `quality/cookbook_*.py` + `promote_cookbook.py` | ✅ | 59 tracked materials on `main`, 12 categories; 65 on branch `noise-vocabulary-round-2` (all six round-2 materials landed and reviewed clean; branch not yet merged), subgraph-grouped, every node role-named (2026-09-06, render-identical), each card carrying a generated node table; builders are the source, `--check` is the regression baseline for graphs and card tables. `tests/test_cookbook*.py` incl. `test_cookbook_naming_gate.py`, `test_cookbook_card_table_gate.py`; `cookbook/README.md` |
 | `docs/AUTHORING.md` + `guide://authoring` | ✅ | Invariant authoring guide served as an MCP resource; per-material recipes are cards beside each `.ptex`. `tests/test_guide_resource.py` |
 | `quality/debug_swatches.py` | ✅ | 19 single-node diagnostic swatches with pixel assertions (merged to `main` with round 1; slope_blur structural-only, buffer node cannot render headless). Surfaced in README's "Core toolbox" section as a swatch contact sheet. `tests/test_debug_swatches.py`; `docs/DEBUG_SWATCHES.md` |
 | `quality/` package (builders, helpers, naming checker, render_tracked, promote/check, swatches) | ✅ | Importable package, `python -m quality.<module>`; `author.py` is the shared builder base, guarded by `--check`. `tests/test_quality_package.py`, `tests/test_cookbook_builders_signature.py`; `quality/README.md` |
