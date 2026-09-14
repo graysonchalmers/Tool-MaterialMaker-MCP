@@ -67,7 +67,7 @@ graphs live in the cookbook below (`s02_gray_granite`, `f01_woven_denim`,
 
 ## Material cookbook
 
-The cookbook is 53 materials across 12 categories (the gallery above is
+The cookbook is 59 materials across 12 categories (the gallery above is
 drawn from it), each one a real graph this server authored and then locked
 after a 3D-preview pass. Every one ships as a tracked `.ptex` under
 [`cookbook/`](cookbook/): open `cookbook/<category>/<id>.ptex` in Material
@@ -78,14 +78,45 @@ materials are in [docs/AUTHORING.md](docs/AUTHORING.md), also served as the
 its graph as `cookbook/<category>/<id>.md`. The builders that regenerate the
 graphs live in [`quality/`](quality/).
 
-<details>
-<summary><b>Show the cookbook contact sheet</b> (53 materials: ceramic, fabrics, glass, leather, metal, organics, painted metal, plastics, sci-fi, stone, terrain, wood)</summary>
+**The full cookbook (59 materials:** ceramic, fabrics, glass, leather, metal, organics, painted metal, plastics, sci-fi, stone, terrain, wood)
 
 <p align="center">
-  <img src="docs/images/cookbook-contact-sheet.png" alt="Contact sheet of all 53 cookbook materials across 12 categories" width="100%">
+  <img src="docs/images/cookbook-contact-sheet.png" alt="Contact sheet of all 59 cookbook materials across 12 categories" width="100%">
 </p>
 
-</details>
+## Core toolbox
+
+Below the finished cookbook materials sit the single-node building blocks
+they are made from: two galleries that isolate ONE node at a time so you see
+its raw, unmixed behavior before it gets composited into anything.
+
+**Debug swatches.** 19 single-node debug swatches, each wiring exactly one
+node straight into a Material so what you see IS that node's behavior, no
+recipe, no blend, nothing to misread. Every swatch also doubles as a live
+pixel-assertion regression test (`tests/test_debug_swatches.py` renders it
+fresh and checks known-answer pixels), so a wiring regression fails a test
+instead of waiting for a human to notice a material looks wrong. One swatch,
+`slope_blur`, ships structure-only: it is a buffer/compute-shader node that
+cannot render headless, so its tile is black by design, not broken. Legend
+and known-answers for every swatch are in
+[docs/DEBUG_SWATCHES.md](docs/DEBUG_SWATCHES.md).
+
+<p align="center">
+  <img src="docs/images/core-toolbox/swatches.png" alt="Contact sheet of the 19 debug swatches, one node isolated per tile" width="100%">
+</p>
+
+**Noise vocabulary.** A gallery of base noise/pattern nodes beyond the two
+(`perlin`, `voronoi`) the cookbook leaned on early: `fbm`'s 8 base functions
+side by side, plus a cross-family row (anisotropic, truchet, voronoi
+triangle, wavelet, and more) showing how differently they read. Full
+writeup, including the "the catalog carries 47 noise nodes, the cookbook
+effectively used two" problem this was built to fix, is in the
+[Noise vocabulary](docs/AUTHORING.md#noise-vocabulary-reach-past-voronoi--perlin)
+section of `docs/AUTHORING.md`.
+
+<p align="center">
+  <img src="docs/images/noise-gallery/fbm-bases.png" alt="fbm noise node's 8 base functions rendered side by side" width="100%">
+</p>
 
 ## How it works
 
@@ -284,7 +315,7 @@ for the full design.
 ## Play surface (optional)
 
 `mm-play` is a small local web page for a non-technical person who wants to
-tweak a cookbook material without touching a node graph: a gallery of the 53
+tweak a cookbook material without touching a node graph: a gallery of the 59
 cookbook materials, each opening to friendly sliders (derived from the
 material's author-chosen subgraph parameters) with a WebGL sphere preview
 that re-renders as you drag. It deliberately hides the node graph; it is a

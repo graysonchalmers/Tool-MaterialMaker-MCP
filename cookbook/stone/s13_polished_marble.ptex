@@ -1,0 +1,709 @@
+{
+ "connections": [
+  {
+   "from": "NonMetallic",
+   "from_port": 0,
+   "to": "Material",
+   "to_port": 1
+  },
+  {
+   "from": "marble_veins",
+   "from_port": 1,
+   "to": "Material",
+   "to_port": 0
+  },
+  {
+   "from": "marble_veins",
+   "from_port": 0,
+   "to": "polished_finish",
+   "to_port": 0
+  },
+  {
+   "from": "marble_veins",
+   "from_port": 2,
+   "to": "polished_finish",
+   "to_port": 1
+  },
+  {
+   "from": "polished_finish",
+   "from_port": 0,
+   "to": "Material",
+   "to_port": 4
+  },
+  {
+   "from": "polished_finish",
+   "from_port": 1,
+   "to": "Material",
+   "to_port": 2
+  }
+ ],
+ "label": "Graph",
+ "name": "240",
+ "node_position": {
+  "x": 0,
+  "y": 0
+ },
+ "nodes": [
+  {
+   "name": "Material",
+   "node_position": {
+    "x": 674,
+    "y": 164
+   },
+   "parameters": {
+    "albedo_color": {
+     "a": 1,
+     "b": 1,
+     "g": 1,
+     "r": 1,
+     "type": "Color"
+    },
+    "ao_light_affect": 1,
+    "depth_scale": 1,
+    "emission_energy": 1,
+    "metallic": 1,
+    "normal_scale": 1,
+    "resolution": 1,
+    "roughness": 1,
+    "size": 11,
+    "subsurf_scatter_strength": 0
+   },
+   "type": "material"
+  },
+  {
+   "name": "NonMetallic",
+   "node_position": {
+    "x": 413,
+    "y": 208
+   },
+   "parameters": {
+    "color": {
+     "a": 1,
+     "b": 0,
+     "g": 0,
+     "r": 0,
+     "type": "Color"
+    }
+   },
+   "type": "uniform"
+  },
+  {
+   "name": "marble_veins",
+   "label": "Marble Veins",
+   "type": "graph",
+   "node_position": {
+    "x": 227.5,
+    "y": 176.5
+   },
+   "parameters": {
+    "param0": 1.8,
+    "param1": {
+     "interpolation": 1,
+     "points": [
+      {
+       "a": 1,
+       "r": 0.16,
+       "g": 0.16,
+       "b": 0.17,
+       "pos": 0.0
+      },
+      {
+       "a": 1,
+       "r": 0.55,
+       "g": 0.55,
+       "b": 0.56,
+       "pos": 0.05
+      },
+      {
+       "a": 1,
+       "r": 0.88,
+       "g": 0.88,
+       "b": 0.86,
+       "pos": 0.12
+      },
+      {
+       "a": 1,
+       "r": 0.9,
+       "g": 0.9,
+       "b": 0.88,
+       "pos": 0.88
+      },
+      {
+       "a": 1,
+       "r": 0.55,
+       "g": 0.55,
+       "b": 0.56,
+       "pos": 0.95
+      },
+      {
+       "a": 1,
+       "r": 0.16,
+       "g": 0.16,
+       "b": 0.17,
+       "pos": 1.0
+      }
+     ],
+     "type": "Gradient"
+    }
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": -172.5,
+      "y": 176.5
+     },
+     "parameters": {},
+     "ports": [],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 627.5,
+      "y": 176.5
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "out0",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "out1",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "out2",
+       "type": "f",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -172.5,
+      "y": 376.5
+     },
+     "parameters": {
+      "param0": 1.8,
+      "param1": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0.16,
+         "g": 0.16,
+         "b": 0.17,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.55,
+         "g": 0.55,
+         "b": 0.56,
+         "pos": 0.05
+        },
+        {
+         "a": 1,
+         "r": 0.88,
+         "g": 0.88,
+         "b": 0.86,
+         "pos": 0.12
+        },
+        {
+         "a": 1,
+         "r": 0.9,
+         "g": 0.9,
+         "b": 0.88,
+         "pos": 0.88
+        },
+        {
+         "a": 1,
+         "r": 0.55,
+         "g": 0.55,
+         "b": 0.56,
+         "pos": 0.95
+        },
+        {
+         "a": 1,
+         "r": 0.16,
+         "g": 0.16,
+         "b": 0.17,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      }
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Vein scale",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "MarbleVeins",
+         "widget": "scale_x"
+        }
+       ]
+      },
+      {
+       "name": "param1",
+       "shortdesc": "Vein color",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "VeinColor",
+         "widget": "gradient"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "VeinColor",
+     "node_position": {
+      "x": 384,
+      "y": 137
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0.16,
+         "g": 0.16,
+         "b": 0.17,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.55,
+         "g": 0.55,
+         "b": 0.56,
+         "pos": 0.05
+        },
+        {
+         "a": 1,
+         "r": 0.88,
+         "g": 0.88,
+         "b": 0.86,
+         "pos": 0.12
+        },
+        {
+         "a": 1,
+         "r": 0.9,
+         "g": 0.9,
+         "b": 0.88,
+         "pos": 0.88
+        },
+        {
+         "a": 1,
+         "r": 0.55,
+         "g": 0.55,
+         "b": 0.56,
+         "pos": 0.95
+        },
+        {
+         "a": 1,
+         "r": 0.16,
+         "g": 0.16,
+         "b": 0.17,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      }
+     },
+     "type": "colorize"
+    },
+    {
+     "name": "MarbleVeins",
+     "node_position": {
+      "x": 71,
+      "y": 216
+     },
+     "parameters": {
+      "noise": 1,
+      "scale_x": 1.8,
+      "scale_y": 1.8,
+      "folds": 3,
+      "iterations": 4,
+      "persistence": 0.5
+     },
+     "type": "fbm"
+    }
+   ],
+   "connections": [
+    {
+     "from": "MarbleVeins",
+     "from_port": 0,
+     "to": "VeinColor",
+     "to_port": 0
+    },
+    {
+     "from": "MarbleVeins",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    },
+    {
+     "from": "VeinColor",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 1
+    },
+    {
+     "from": "MarbleVeins",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 2
+    }
+   ]
+  },
+  {
+   "name": "polished_finish",
+   "label": "Polished Finish",
+   "type": "graph",
+   "node_position": {
+    "x": 375.6666666666667,
+    "y": 307.6666666666667
+   },
+   "parameters": {
+    "param0": {
+     "interpolation": 1,
+     "points": [
+      {
+       "a": 1,
+       "r": 0.3,
+       "g": 0.3,
+       "b": 0.3,
+       "pos": 0.0
+      },
+      {
+       "a": 1,
+       "r": 0.26,
+       "g": 0.26,
+       "b": 0.26,
+       "pos": 0.05
+      },
+      {
+       "a": 1,
+       "r": 0.2,
+       "g": 0.2,
+       "b": 0.2,
+       "pos": 0.12
+      },
+      {
+       "a": 1,
+       "r": 0.2,
+       "g": 0.2,
+       "b": 0.2,
+       "pos": 0.88
+      },
+      {
+       "a": 1,
+       "r": 0.26,
+       "g": 0.26,
+       "b": 0.26,
+       "pos": 0.95
+      },
+      {
+       "a": 1,
+       "r": 0.3,
+       "g": 0.3,
+       "b": 0.3,
+       "pos": 1.0
+      }
+     ],
+     "type": "Gradient"
+    },
+    "param1": 0.08
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": -24.333333333333314,
+      "y": 307.6666666666667
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "in0",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "in1",
+       "type": "f",
+       "group_size": 0
+      }
+     ],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 775.6666666666667,
+      "y": 307.6666666666667
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "out0",
+       "type": "rgb",
+       "group_size": 0
+      },
+      {
+       "name": "out1",
+       "type": "rgba",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -24.333333333333314,
+      "y": 507.6666666666667
+     },
+     "parameters": {
+      "param0": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0.3,
+         "g": 0.3,
+         "b": 0.3,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.26,
+         "g": 0.26,
+         "b": 0.26,
+         "pos": 0.05
+        },
+        {
+         "a": 1,
+         "r": 0.2,
+         "g": 0.2,
+         "b": 0.2,
+         "pos": 0.12
+        },
+        {
+         "a": 1,
+         "r": 0.2,
+         "g": 0.2,
+         "b": 0.2,
+         "pos": 0.88
+        },
+        {
+         "a": 1,
+         "r": 0.26,
+         "g": 0.26,
+         "b": 0.26,
+         "pos": 0.95
+        },
+        {
+         "a": 1,
+         "r": 0.3,
+         "g": 0.3,
+         "b": 0.3,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      },
+      "param1": 0.08
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Roughness",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "MarbleRoughness",
+         "widget": "gradient"
+        }
+       ]
+      },
+      {
+       "name": "param1",
+       "shortdesc": "Vein relief",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "MarbleNormal",
+         "widget": "param1"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "MarbleRoughness",
+     "node_position": {
+      "x": 384,
+      "y": 258
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0.3,
+         "g": 0.3,
+         "b": 0.3,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.26,
+         "g": 0.26,
+         "b": 0.26,
+         "pos": 0.05
+        },
+        {
+         "a": 1,
+         "r": 0.2,
+         "g": 0.2,
+         "b": 0.2,
+         "pos": 0.12
+        },
+        {
+         "a": 1,
+         "r": 0.2,
+         "g": 0.2,
+         "b": 0.2,
+         "pos": 0.88
+        },
+        {
+         "a": 1,
+         "r": 0.26,
+         "g": 0.26,
+         "b": 0.26,
+         "pos": 0.95
+        },
+        {
+         "a": 1,
+         "r": 0.3,
+         "g": 0.3,
+         "b": 0.3,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      }
+     },
+     "type": "colorize"
+    },
+    {
+     "name": "MarbleHeight",
+     "node_position": {
+      "x": 264,
+      "y": 331
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0,
+         "g": 0,
+         "b": 0,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 1,
+         "g": 1,
+         "b": 1,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      }
+     },
+     "type": "colorize"
+    },
+    {
+     "name": "MarbleNormal",
+     "node_position": {
+      "x": 479,
+      "y": 334
+     },
+     "parameters": {
+      "param0": 11,
+      "param1": 0.08,
+      "param2": 0,
+      "param4": 0
+     },
+     "type": "normal_map"
+    }
+   ],
+   "connections": [
+    {
+     "from": "MarbleHeight",
+     "from_port": 0,
+     "to": "MarbleNormal",
+     "to_port": 0
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 0,
+     "to": "MarbleHeight",
+     "to_port": 0
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 1,
+     "to": "MarbleRoughness",
+     "to_port": 0
+    },
+    {
+     "from": "MarbleNormal",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    },
+    {
+     "from": "MarbleRoughness",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 1
+    }
+   ]
+  }
+ ],
+ "parameters": {},
+ "type": "graph"
+}
