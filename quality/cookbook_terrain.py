@@ -625,7 +625,7 @@ def build_t09_rippled_wet_sand(catalog: dict) -> str:
     plain `f` scalar on both node types, so the swap is connection-safe.
 
     RETUNE (round 3, controller self-screen): round 2 locked in the correct
-    ripple STRUCTURE (anisotropic scale 2/24, `type=-3`, `iterations=2`, the
+    ripple STRUCTURE (anisotropic scale 2/24, `type=4` = "Mult 3", `iterations=2`, the
     ripple->normal relief -- all left untouched here) but overcorrected the
     palette all the way to a flat neutral grey, reading as brushed metal or
     stone rather than sand. Palette-only fix: `WetSandColor`'s gradient
@@ -655,29 +655,27 @@ def build_t09_rippled_wet_sand(catalog: dict) -> str:
        actually has, distinct from `t01_sand_dunes`' broad ISOTROPIC-ish
        perlin rolls (which vary smoothly in both axes, never band) and from
        every voronoi-plate sibling (cellular, not banded, at all).
-    2. `type` was numerically out of spec. `describe_node`/this project's
-       catalog reports `type` as an ordinal enum index 0-4 ("Add 1".."Mult
-       3"), but `catalog_builder.py`'s enum handling only derives min/max
-       from the ordinal POSITION of the `values` names list -- it never
-       reads each option's real underlying `value` string. Reading the
-       `.mmg` source directly shows the real literal values are
-       non-contiguous: Add 1/2/3 = `1`/`2`/`3`, Mult 2/3 = `-2`/`-3` (the
-       shader does `if (type > 0.0) { ... additive domain shift ... } else
-       { local_uv *= -type; size *= -type; ... }` -- Mult really does
-       multiply the domain by `-type` each octave, which is where the sharp
-       interference-fringe character comes from). Round 1's literal `4` hit
-       the `type > 0.0` (Add) branch as an out-of-spec "Add 4", not the
-       "Mult 3" the brief's label implied. Fixed to the REAL "Mult 3"
-       literal, `-3`, for the sharpest interference fringes. This value is
-       outside the catalog's 0-4 ordinal range, so `validate_graph` reports
-       a WARNING ("outside enum index range") on this node -- expected and
-       accepted, since the catalog's enum range is simply wrong for this
-       node's non-contiguous `value` set, not a sign `-3` is actually
-       invalid (confirmed against the node's own shader source). Also
-       dropped `iterations` 3 -> 2 (fewer octaves -> cleaner, less busy
-       bands, the other lever the round-2 brief flagged), kept `frequency`
-       at round 1's 1.6 (pairs with the Mult type for tighter interference
-       fringes) and `persistence`/`offset` at their original 0.5/0.
+    2. `type` must be the enum INDEX, not the option's underlying value.
+       Material Maker stores an enum parameter as the ordinal index into the
+       option list; at shader-gen time it substitutes `values[index].value`
+       into `$type`, clamping any index < 0 or >= len to 0 (see
+       `z-Git/material-maker/addons/material_maker/engine/nodes/gen_shader.gd`
+       lines 527-529). The options are Add 1/2/3 (underlying values
+       `1`/`2`/`3`, indices 0/1/2) and Mult 2/3 (underlying values `-2`/`-3`,
+       indices 3/4). The shader does `if (type > 0.0) { ... additive domain
+       shift ... } else { local_uv *= -type; size *= -type; ... }`, so the
+       Mult branch multiplies the domain each octave, which is where the
+       sharp interference-fringe character comes from. "Mult 3" is therefore
+       INDEX 4: storing `4` makes MM substitute `values[4].value` = `-3`
+       into the shader (the Mult branch) for the sharpest fringes -- so the
+       catalog's 0-4 index range is CORRECT and `validate_graph` passes with
+       no warning. (History: round 1 used the right index `4`; a round-2
+       detour changed it to the literal `-3` believing that was "Mult 3",
+       but `-3 < 0` clamps to index 0 = "Add 1", a silent wrong render.
+       Reverted to `4` on 2026-09-13.) Also kept `iterations` at 2 (round 1
+       used 3; fewer octaves -> cleaner, less busy bands), `frequency` 1.6
+       (pairs with the Mult type for tighter interference fringes) and
+       `persistence`/`offset` at 0.5/0.
 
     Palette also lightened and cooled per the round-2 brief: wet sand is a
     damp mid-tone khaki/tan (round 1 was too dark and too saturated warm-
@@ -705,7 +703,7 @@ def build_t09_rippled_wet_sand(catalog: dict) -> str:
         [(0.0, 0.34, 0.29, 0.21), (0.5, 0.44, 0.38, 0.28), (1.0, 0.53, 0.46, 0.35)],
         metallic=0.0, roughness=0.15, normal_amount=0.4)
     retype(g, "perlin_0", "wavelet_noise", {
-        "type": -3, "scale_x": 2, "scale_y": 24, "iterations": 2,
+        "type": 4, "scale_x": 2, "scale_y": 24, "iterations": 2,
         "persistence": 0.5, "frequency": 1.6, "offset": 0})
     set_param(g, "normal_map_0", "param4", 0)
     add_node(g, "rough_const", "colorize",
