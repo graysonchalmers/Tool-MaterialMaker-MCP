@@ -12,7 +12,7 @@ import sys
 
 from quality.author_helpers import (load_example, node, set_gradient, set_param, retype,
                     rewire, add_node, save_variant, group_into_subgraph,
-                    take_variant, rename_nodes)
+                    take_variant, rename_nodes, _from_scratch_noise_material, _grad)
 from quality import author  # shared builder base; regression guard is promote_cookbook --check
 
 from mm_mcp.catalog_builder import build_catalog
@@ -608,6 +608,92 @@ def build_f10_boucle_upholstery(catalog: dict) -> str:
     return save_variant(g, _LABEL, "f10_boucle_upholstery", 1)
 
 
+# Directional-noise-derived: the generator IS the rib pattern (an anisotropic
+# composite noise, not a woven-donor stand-in), so it gets its own RibNoise
+# name per the naming convention f09/f10 established for fbm-generator
+# materials that use the generator's raw pattern directly.
+_F11_CORDUROY_NAMES = {
+    "perlin_0": "RibNoise",       # directional_noise, retyped from the placeholder perlin
+    "colorize_0": "CorduroyColor",
+    "normal_map_0": "RibNormal",
+    "rough_const": "RoughnessConst",
+}
+
+
+def build_f11_corduroy(catalog: dict) -> str:
+    """Corduroy: the first cookbook material to use `directional_noise`, a
+    compound node with an internal `switch` selecting one of three composite
+    sub-networks ("Noise 1"/"Noise 2"/"Noise 3" per `param0` 0/1/2). No
+    crocodile_skin donor has this topology, so this is built from scratch via
+    `_from_scratch_noise_material` (the same shape `t09_rippled_wet_sand`
+    uses in cookbook_terrain.py, the exact template for this whole builder),
+    then `retype()`d from the placeholder `perlin_0` to `directional_noise`
+    at its own defaults (`param0=0` "Noise 1", `n_scale=1`, `param1=11`,
+    read from `directional_noise.mmg`'s `gen_parameters` block). Output port
+    0 is a plain `f` scalar on both node types, so the swap is
+    connection-safe.
+
+    Verification render (required before trusting "Noise 1" reads as
+    ribbing, since the brief only describes it from the internal `fbm2`
+    scale parameters, not a rendered look): used the MCP
+    `render_node_output` tool directly on an isolated
+    directional_noise->colorize->Material graph (param0=0, n_scale=1,
+    param1=11, straight 0-black/1-white ramp), size 512. The render
+    (`output/f11_verify_mode0_albedo.png`) shows tight, clean, near-parallel
+    HORIZONTAL bands running the full width of the tile -- exactly the
+    tight parallel ribbing corduroy needs, not the irregular/blotchy look
+    the brief warned to watch for. Kept `param0=0` on that evidence; did not
+    need to try `param0=1`/`2` ("Noise 2"/"Noise 3"), since mode 0 already
+    reads as clean ribbing rather than blotchy.
+
+    `n_scale` (range 1-8) is exposed as the rib density knob -- it scales
+    every internal fbm2/perlin/tiler branch inside "Noise 1" together, so
+    raising it tightens the ribs without needing to touch any internal
+    sub-network directly.
+
+    Warm tan corduroy palette: dark umber in the rib grooves, warm tan
+    base, a lighter tan highlight on the rib crests -- a real 3-stop ramp
+    (not just 2 stops) so the ribbing itself carries the color variation,
+    matching the noise field's own light/dark banding rather than a flat
+    tint. Soft matte roughness (fabric, not shiny) fed as a flat texture via
+    `rough_const` so an ORM map exports, the same `t09`/`p01` lesson every
+    from-scratch cookbook material follows. `normal_map` `param4=0` is the
+    standing flat-normal fix for a directly-fed analytic generator.
+    `param1` (relief strength) set to 0.55 -- stronger than
+    `f09_plaid_flannel`'s final 0.42 (a woven-crosshatch nap) and well above
+    `f04_wool_knit`'s 0.3 (soft rounded ribs), because corduroy wales are a
+    real, pronounced physical ridge, not a soft brushed or knit surface."""
+    g = _from_scratch_noise_material(
+        {"scale_x": 4, "scale_y": 4},   # placeholder; retyped to directional_noise below
+        [(0.0, 0.22, 0.14, 0.08),   # dark umber shadow in the rib grooves
+         (0.5, 0.52, 0.36, 0.21),   # warm tan base
+         (1.0, 0.70, 0.54, 0.35)],  # light tan highlight on rib crests
+        metallic=0.0, roughness=0.85, normal_amount=0.55)
+    retype(g, "perlin_0", "directional_noise", {"param0": 0, "n_scale": 1, "param1": 11})
+    set_param(g, "normal_map_0", "param4", 0)
+    add_node(g, "rough_const", "colorize",
+             {"gradient": _grad([(0.0, 0.85, 0.85, 0.85), (1.0, 0.85, 0.85, 0.85)])})
+    g["connections"].append(
+        {"from": "perlin_0", "from_port": 0, "to": "rough_const", "to_port": 0})
+    g["connections"].append(
+        {"from": "rough_const", "from_port": 0, "to": "Material", "to_port": 2})
+
+    group_into_subgraph(
+        g, ["perlin_0", "colorize_0"], "corduroy_rib", "Corduroy Rib",
+        [("perlin_0", "n_scale", "param0", "Rib density"),
+         ("colorize_0", "gradient", "param1", "Corduroy color")],
+        catalog,
+    )
+    group_into_subgraph(
+        g, ["normal_map_0", "rough_const"], "corduroy_finish", "Corduroy Finish",
+        [("rough_const", "gradient", "param0", "Roughness"),
+         ("normal_map_0", "param1", "param1", "Relief strength")],
+        catalog,
+    )
+    rename_nodes(g, _F11_CORDUROY_NAMES)
+    return save_variant(g, _LABEL, "f11_corduroy", 1)
+
+
 def build_f01_woven_denim(catalog: dict) -> str:
     """Blue denim, folded in from the Phase-3 hero set (was
     examples/f01_woven_denim, iter1 variant 1). Graph unchanged from
@@ -647,6 +733,7 @@ BUILDERS = {
     "f08_donegal_tweed": build_f08_donegal_tweed,
     "f09_plaid_flannel": build_f09_plaid_flannel,
     "f10_boucle_upholstery": build_f10_boucle_upholstery,
+    "f11_corduroy": build_f11_corduroy,
 }
 
 
