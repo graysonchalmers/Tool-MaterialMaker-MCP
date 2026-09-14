@@ -11,7 +11,7 @@ import sys
 
 from quality.author_helpers import (load_example, node, set_gradient, set_param, retype,
                      rewire, drop_conn, add_node, save_variant, _grad,
-                     group_into_subgraph, rename_nodes)
+                     group_into_subgraph, rename_nodes, _from_scratch_noise_material)
 
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.config import load_config
@@ -38,13 +38,17 @@ _DUNE_NAMES = {
     "colorize_0": "DuneRoughness",   # matte sand roughness
 }
 
-# t05_cracked_ice and t08_riverbed_pebbles both clone `dry_earth`'s
-# voronoi-plate structure via `_dry_earth_plates`/`_group_dry_earth_plate`
-# below -- the same donor shape as the stone paving family
-# (quality/cookbook_stone.py's `_DRY_EARTH_NAMES`, Task 10). Copied here with
-# ice wording for t05; t08 (pebbles) and t06 (lava, which regroups `warp_0`
-# away from the plain crack composite into its own glow chain) get their own
-# bespoke mappings below since their node roles genuinely differ.
+# t05_cracked_ice and t08_riverbed_pebbles clone `dry_earth`'s voronoi-plate
+# structure via `_dry_earth_plates`/`_group_dry_earth_plate` below -- the same
+# donor shape as the stone paving family (quality/cookbook_stone.py's
+# `_DRY_EARTH_NAMES`, Task 10). Copied here with ice wording for t05; t08
+# (pebbles) and t06 (lava, which regroups `warp_0` away from the plain crack
+# composite into its own glow chain) get their own bespoke mappings below
+# since their node roles genuinely differ. The former t09 slot (flowing
+# fbm-turbulence, no plate/crack topology) has moved to the stone category as
+# `s13_polished_marble` (quality/cookbook_stone.py) -- Grayson's verdict on
+# the render was that it read as polished marble, so it was promoted out of
+# terrain into stone rather than kept as a terrain material.
 _ICE_PLATE_NAMES = {
     "voronoi_0": "IcePlates",
     "colorize_1": "CrackLines",
@@ -602,6 +606,137 @@ def build_t08_riverbed_pebbles(catalog: dict) -> str:
     return save_variant(g, _LABEL, "t08_riverbed_pebbles", 1)
 
 
+_T09_NAMES = {
+    "perlin_0": "RippleField",       # placeholder perlin, retyped to wavelet_noise below
+    "colorize_0": "WetSandColor",
+    "normal_map_0": "RippleNormal",
+    "rough_const": "WetSandRoughness",  # flat colorize; feeds Material's roughness port so ORM exports
+}
+
+
+def build_t09_rippled_wet_sand(catalog: dict) -> str:
+    """Rippled wet sand: the first cookbook material to use `wavelet_noise`
+    (zero prior use anywhere in the cookbook per the 2026-09-01 noise-vocab
+    audit -- `noise_gallery.py`'s own `wavelet_banded` swatch is the only
+    place this node had appeared before). Built from scratch via
+    `_from_scratch_noise_material` (no donor has this topology) then
+    `retype()`d from its placeholder `perlin_0` to `wavelet_noise`, the same
+    move `t07_forest_floor` uses to swap in `fbm` -- output port 0 is a
+    plain `f` scalar on both node types, so the swap is connection-safe.
+
+    RETUNE (round 3, controller self-screen): round 2 locked in the correct
+    ripple STRUCTURE (anisotropic scale 2/24, `type=-3`, `iterations=2`, the
+    ripple->normal relief -- all left untouched here) but overcorrected the
+    palette all the way to a flat neutral grey, reading as brushed metal or
+    stone rather than sand. Palette-only fix: `WetSandColor`'s gradient
+    shifted warm again -- a muted warm khaki/tan (more red+green than blue)
+    -- while keeping round 2's mid-tone luminance (still ~0.35-0.5 average,
+    not round 1's dark ~0.2). Landed between the two prior attempts: warmer
+    (higher saturation, clear R>G>B warmth) than round 2's grey, lighter and
+    less saturated than round 1's dark chocolate-brown. Nothing else in
+    this builder changed for round 3 -- see the round-2 note below for the
+    ripple-structure reasoning, which is now locked.
+
+    RETUNE (round 2, controller self-screen at 512): round 1 used isotropic
+    `scale_x == scale_y` and read as a dark, dense, muddy mottle -- no
+    banding at all, and too dark/chocolate-brown for wet sand. Two root
+    causes, both fixed here:
+
+    1. Isotropic scale can't produce bands. Reading `wavelet_noise.mmg`'s
+       actual GLSL (`z-Git/material-maker/addons/material_maker/nodes/
+       wavelet_noise.mmg`): `size = vec2(scale_x, scale_y)` tiles the field
+       per-axis independently, so equal scale tiles equally in both
+       directions -> isotropic blobs, never bands, no matter what `type` or
+       `iterations` is. Fixed with STRONG anisotropy: `scale_x=2` (few
+       tiles -> the field barely varies along x, so each feature stretches
+       long across it) and `scale_y=24` (many tiles -> tight repetition
+       along y), producing elongated near-parallel streaks running along x,
+       stacked along y -- the near-parallel-ripple-band look wet sand
+       actually has, distinct from `t01_sand_dunes`' broad ISOTROPIC-ish
+       perlin rolls (which vary smoothly in both axes, never band) and from
+       every voronoi-plate sibling (cellular, not banded, at all).
+    2. `type` was numerically out of spec. `describe_node`/this project's
+       catalog reports `type` as an ordinal enum index 0-4 ("Add 1".."Mult
+       3"), but `catalog_builder.py`'s enum handling only derives min/max
+       from the ordinal POSITION of the `values` names list -- it never
+       reads each option's real underlying `value` string. Reading the
+       `.mmg` source directly shows the real literal values are
+       non-contiguous: Add 1/2/3 = `1`/`2`/`3`, Mult 2/3 = `-2`/`-3` (the
+       shader does `if (type > 0.0) { ... additive domain shift ... } else
+       { local_uv *= -type; size *= -type; ... }` -- Mult really does
+       multiply the domain by `-type` each octave, which is where the sharp
+       interference-fringe character comes from). Round 1's literal `4` hit
+       the `type > 0.0` (Add) branch as an out-of-spec "Add 4", not the
+       "Mult 3" the brief's label implied. Fixed to the REAL "Mult 3"
+       literal, `-3`, for the sharpest interference fringes. This value is
+       outside the catalog's 0-4 ordinal range, so `validate_graph` reports
+       a WARNING ("outside enum index range") on this node -- expected and
+       accepted, since the catalog's enum range is simply wrong for this
+       node's non-contiguous `value` set, not a sign `-3` is actually
+       invalid (confirmed against the node's own shader source). Also
+       dropped `iterations` 3 -> 2 (fewer octaves -> cleaner, less busy
+       bands, the other lever the round-2 brief flagged), kept `frequency`
+       at round 1's 1.6 (pairs with the Mult type for tighter interference
+       fringes) and `persistence`/`offset` at their original 0.5/0.
+
+    Palette also lightened and cooled per the round-2 brief: wet sand is a
+    damp mid-tone khaki/tan (round 1 was too dark and too saturated warm-
+    brown, reading as mud/coffee grounds). New gradient averages ~0.35-0.48
+    luminance with a narrow, mostly-grey R/G/B spread (khaki, not chocolate
+    brown) -- see `WetSandColor` below.
+
+    Distinct from `t01_sand_dunes` (broad, organic, wood-donor perlin rolls,
+    warm tan, high roughness) on every axis: tight anisotropic bands
+    instead of broad isotropic rolls, a cooler/greyer damp khaki instead of
+    warm tan, and LOW roughness for a wet sheen instead of dune's high matte
+    roughness. Not based on any voronoi-plate/`dry_earth` donor, so it does
+    not add to that already-overused family either.
+
+    Roughness is fed as a flat texture (`rough_const`) rather than left as
+    a Material-node scalar only -- the same lesson `_dry_earth_plates` and
+    `p01_glossy_plastic` (`cookbook_plastics.py`) already established -- so
+    an ORM map exports for the wet-sheen preview instead of silently having
+    none. This, the low-roughness wet sheen, and feeding the ripple field
+    into the normal for corrugation are all unchanged from round 1 -- the
+    round-2 brief flagged only the base-field anisotropy/type and the
+    palette."""
+    g = _from_scratch_noise_material(
+        {"scale_x": 4, "scale_y": 4},   # placeholder; retyped to wavelet_noise below
+        [(0.0, 0.34, 0.29, 0.21), (0.5, 0.44, 0.38, 0.28), (1.0, 0.53, 0.46, 0.35)],
+        metallic=0.0, roughness=0.15, normal_amount=0.4)
+    retype(g, "perlin_0", "wavelet_noise", {
+        "type": -3, "scale_x": 2, "scale_y": 24, "iterations": 2,
+        "persistence": 0.5, "frequency": 1.6, "offset": 0})
+    set_param(g, "normal_map_0", "param4", 0)
+    add_node(g, "rough_const", "colorize",
+             {"gradient": _grad([(0.0, 0.15, 0.15, 0.15), (1.0, 0.15, 0.15, 0.15)])})
+    g["connections"].append(
+        {"from": "perlin_0", "from_port": 0, "to": "rough_const", "to_port": 0})
+    g["connections"].append(
+        {"from": "rough_const", "from_port": 0, "to": "Material", "to_port": 2})
+
+    # Subgraph grouping -- the exact p01_glossy_plastic template (the other
+    # from-scratch, no-donor cookbook material): perlin_0 (retyped to
+    # wavelet_noise) feeds all three downstream nodes (colorize_0,
+    # normal_map_0, rough_const), so it has to live in one of the two
+    # groups; folding it into the color group (rather than leaving it
+    # top-level) avoids a degenerate single-node "finish" group.
+    group_into_subgraph(
+        g, ["perlin_0", "colorize_0"], "ripple_color", "Ripple Color",
+        [("colorize_0", "gradient", "param0", "Sand color"),
+         ("perlin_0", "scale_x", "param1", "Ripple scale")],
+        catalog,
+    )
+    group_into_subgraph(
+        g, ["normal_map_0", "rough_const"], "wet_sand_finish", "Wet Sand Finish",
+        [("rough_const", "gradient", "param0", "Roughness"),
+         ("normal_map_0", "param1", "param1", "Ripple relief")],
+        catalog,
+    )
+    rename_nodes(g, _T09_NAMES)
+    return save_variant(g, _LABEL, "t09_rippled_wet_sand", 1)
+
+
 BUILDERS = {
     "t01_sand_dunes": build_t01_sand_dunes,
     "t02_fresh_snow": build_t02_fresh_snow,
@@ -611,6 +746,7 @@ BUILDERS = {
     "t06_cooled_lava": build_t06_cooled_lava,
     "t07_forest_floor": build_t07_forest_floor,
     "t08_riverbed_pebbles": build_t08_riverbed_pebbles,
+    "t09_rippled_wet_sand": build_t09_rippled_wet_sand,
 }
 
 

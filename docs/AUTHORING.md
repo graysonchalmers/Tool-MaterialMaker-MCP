@@ -242,6 +242,45 @@ For a soft, continuous material (velvet, felt, fog, skin), reach for
 hard-edged even when blurred at the color level, while perlin has no edges
 to begin with.
 
+## Distortion vocabulary (reach past warp)
+
+_Added 2026-09-13._
+
+`warp` is the workhorse displacement node and covers most cases, but `warp2`
+and `directional_warp` give displacement characters `warp` cannot reach on
+its own. See the `warp`, `warp2`, and `directional_warp` swatches in the
+debug-swatches Core toolbox for the visual reference: `warp` and `warp2`
+both displace along the SLOPE of a wired height map (`warp2` is the
+simpler, `eps`-free variant, same shift shape as `warp` when driven by a
+real map), while `directional_warp` ignores local slope entirely and pushes
+every pixel a constant amount along a fixed `angle`, even with no map
+wired at all. That makes `directional_warp` the pick when the material
+wants a uniform directional push rather than displacement that follows
+surface detail: streaked, combed, or wind-blown-ripple looks (the
+sand-ripple family). Six cookbook proof materials shipped on
+previously-zero-use bases this session, including `s12_eroded_sandstone`
+built on `directional_warp` and `t09_rippled_wet_sand` on `wavelet_noise`,
+alongside `s13_polished_marble` (fbm turbulence), `m03_brushed_titanium`
+(noise_anisotropic), `sf07_conduit_panel` (truchet), and `gl02_cut_gem`
+(voronoi_triangle).
+
+**`buffer`-type compound nodes do not render headless.** `slope_blur` and
+the `warp_dilation` family are `buffer`-type compound nodes, and they do
+NOT render in the headless `--export-material` pipeline: their internal
+compute shader fails to compile against the null rendering device the
+headless export uses, producing an all-black result. They pass `validate`
+cleanly (validation does not catch this), so the failure only shows up at
+render time. This makes them unusable for cookbook materials even though
+the catalog lists them as legitimate distortion nodes. `normal_map` is the
+one bundled compound node that survives this trap, and only because its
+internal `switch` bypasses its own buffer when `param4=0` (see "The
+flat-normal fix" below); any other buffer-type node hit the same way stays
+black.
+
+**SDF is out of scope.** The SDF family (43 nodes, 0 cookbook use) is shape
+and signed-distance-field authoring, not texture authoring, and is ruled
+out of scope for this project's cookbook.
+
 ## Node & pattern recipes
 
 _Filled during 3C from the bundled examples + the miss taxonomy. Each recipe

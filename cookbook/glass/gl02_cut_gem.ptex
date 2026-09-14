@@ -1,0 +1,562 @@
+{
+ "connections": [
+  {
+   "from": "facet_color",
+   "from_port": 1,
+   "to": "Material",
+   "to_port": 0
+  },
+  {
+   "from": "facet_color",
+   "from_port": 0,
+   "to": "facet_finish",
+   "to_port": 0
+  },
+  {
+   "from": "facet_color",
+   "from_port": 2,
+   "to": "facet_finish",
+   "to_port": 1
+  },
+  {
+   "from": "facet_finish",
+   "from_port": 0,
+   "to": "Material",
+   "to_port": 4
+  },
+  {
+   "from": "facet_finish",
+   "from_port": 1,
+   "to": "Material",
+   "to_port": 2
+  }
+ ],
+ "label": "Graph",
+ "name": "258",
+ "node_position": {
+  "x": 0,
+  "y": 0
+ },
+ "nodes": [
+  {
+   "name": "Material",
+   "node_position": {
+    "x": 944,
+    "y": -30
+   },
+   "parameters": {
+    "albedo_color": {
+     "a": 1,
+     "b": 1,
+     "g": 1,
+     "r": 1,
+     "type": "Color"
+    },
+    "ao_light_affect": 1,
+    "depth_scale": 0.1,
+    "emission_energy": 1,
+    "metallic": 0,
+    "normal_scale": 1,
+    "resolution": 1,
+    "roughness": 0.08,
+    "size": 11,
+    "subsurf_scatter_strength": 0
+   },
+   "type": "material"
+  },
+  {
+   "name": "facet_color",
+   "label": "Facet Color",
+   "type": "graph",
+   "node_position": {
+    "x": 86.5,
+    "y": -167.25
+   },
+   "parameters": {
+    "param0": 10,
+    "param1": {
+     "interpolation": 1,
+     "points": [
+      {
+       "a": 1,
+       "r": 0.02,
+       "g": 0.18,
+       "b": 0.09,
+       "pos": 0.0
+      },
+      {
+       "a": 1,
+       "r": 0.04,
+       "g": 0.35,
+       "b": 0.16,
+       "pos": 0.35
+      },
+      {
+       "a": 1,
+       "r": 0.06,
+       "g": 0.55,
+       "b": 0.27,
+       "pos": 0.7
+      },
+      {
+       "a": 1,
+       "r": 0.12,
+       "g": 0.75,
+       "b": 0.4,
+       "pos": 1.0
+      }
+     ],
+     "type": "Gradient"
+    }
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": -313.5,
+      "y": -167.25
+     },
+     "parameters": {},
+     "ports": [],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 486.5,
+      "y": -167.25
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "out0",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "out1",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "out2",
+       "type": "f",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -313.5,
+      "y": 32.75
+     },
+     "parameters": {
+      "param0": 10,
+      "param1": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0.02,
+         "g": 0.18,
+         "b": 0.09,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.04,
+         "g": 0.35,
+         "b": 0.16,
+         "pos": 0.35
+        },
+        {
+         "a": 1,
+         "r": 0.06,
+         "g": 0.55,
+         "b": 0.27,
+         "pos": 0.7
+        },
+        {
+         "a": 1,
+         "r": 0.12,
+         "g": 0.75,
+         "b": 0.4,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      }
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Facet size",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "FacetCells",
+         "widget": "scale_x"
+        }
+       ]
+      },
+      {
+       "name": "param1",
+       "shortdesc": "Facet color",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "FacetTint",
+         "widget": "gradient"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "FacetCells",
+     "node_position": {
+      "x": -165,
+      "y": -96.75
+     },
+     "parameters": {
+      "scale_x": 10,
+      "scale_y": 10,
+      "stretch_x": 1,
+      "stretch_y": 1,
+      "randomness": 0.85
+     },
+     "type": "voronoi_triangle"
+    },
+    {
+     "name": "FacetTint",
+     "node_position": {
+      "x": 338,
+      "y": -237.75
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0.02,
+         "g": 0.18,
+         "b": 0.09,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.04,
+         "g": 0.35,
+         "b": 0.16,
+         "pos": 0.35
+        },
+        {
+         "a": 1,
+         "r": 0.06,
+         "g": 0.55,
+         "b": 0.27,
+         "pos": 0.7
+        },
+        {
+         "a": 1,
+         "r": 0.12,
+         "g": 0.75,
+         "b": 0.4,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      }
+     },
+     "type": "colorize"
+    }
+   ],
+   "connections": [
+    {
+     "from": "FacetCells",
+     "from_port": 2,
+     "to": "FacetTint",
+     "to_port": 0
+    },
+    {
+     "from": "FacetCells",
+     "from_port": 1,
+     "to": "gen_outputs",
+     "to_port": 0
+    },
+    {
+     "from": "FacetTint",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 1
+    },
+    {
+     "from": "FacetCells",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 2
+    }
+   ]
+  },
+  {
+   "name": "facet_finish",
+   "label": "Facet Finish",
+   "type": "graph",
+   "node_position": {
+    "x": 266.3333333333333,
+    "y": -7.5
+   },
+   "parameters": {
+    "param0": {
+     "interpolation": 1,
+     "type": "Gradient",
+     "points": [
+      {
+       "a": 1,
+       "r": 0.08,
+       "g": 0.08,
+       "b": 0.08,
+       "pos": 0.0
+      },
+      {
+       "a": 1,
+       "r": 0.08,
+       "g": 0.08,
+       "b": 0.08,
+       "pos": 1.0
+      }
+     ]
+    },
+    "param1": 0.6
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": -133.66666666666669,
+      "y": -7.5
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "in0",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "in1",
+       "type": "f",
+       "group_size": 0
+      }
+     ],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 666.3333333333333,
+      "y": -7.5
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "out0",
+       "type": "rgb",
+       "group_size": 0
+      },
+      {
+       "name": "out1",
+       "type": "rgba",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -133.66666666666669,
+      "y": 192.5
+     },
+     "parameters": {
+      "param0": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.08,
+         "g": 0.08,
+         "b": 0.08,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.08,
+         "g": 0.08,
+         "b": 0.08,
+         "pos": 1.0
+        }
+       ]
+      },
+      "param1": 0.6
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Roughness",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "RoughnessConst",
+         "widget": "gradient"
+        }
+       ]
+      },
+      {
+       "name": "param1",
+       "shortdesc": "Surface relief",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "FacetNormal",
+         "widget": "param1"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "EdgeRamp",
+     "node_position": {
+      "x": 93,
+      "y": -117.75
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "b": 0,
+         "g": 0,
+         "pos": 0,
+         "r": 0
+        },
+        {
+         "a": 1,
+         "b": 1,
+         "g": 1,
+         "pos": 0.063636,
+         "r": 1
+        }
+       ],
+       "type": "Gradient"
+      }
+     },
+     "type": "colorize"
+    },
+    {
+     "name": "FacetNormal",
+     "node_position": {
+      "x": 706,
+      "y": 95.25
+     },
+     "parameters": {
+      "amount": 0.35,
+      "param0": 11,
+      "param1": 0.6,
+      "param2": 0,
+      "param3": 0,
+      "param4": 0,
+      "size": 2
+     },
+     "type": "normal_map"
+    },
+    {
+     "name": "RoughnessConst",
+     "type": "colorize",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.08,
+         "g": 0.08,
+         "b": 0.08,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.08,
+         "g": 0.08,
+         "b": 0.08,
+         "pos": 1.0
+        }
+       ]
+      }
+     }
+    }
+   ],
+   "connections": [
+    {
+     "from": "EdgeRamp",
+     "from_port": 0,
+     "to": "FacetNormal",
+     "to_port": 0
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 0,
+     "to": "EdgeRamp",
+     "to_port": 0
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 1,
+     "to": "RoughnessConst",
+     "to_port": 0
+    },
+    {
+     "from": "FacetNormal",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    },
+    {
+     "from": "RoughnessConst",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 1
+    }
+   ]
+  }
+ ],
+ "parameters": {},
+ "type": "graph"
+}
