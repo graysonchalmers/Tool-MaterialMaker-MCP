@@ -190,6 +190,10 @@ voronoi-cellular or wood-grain), and the only base noise ever ADDED by hand is
 the cookbook effectively used two. Same structural DNA recolored = materials
 that read alike. The fix is a wider base-noise vocabulary, not more recolors.
 
+**Live coverage.** `python -m quality.node_usage_audit` recounts this from the current cookbook instead of relying on a stale manual tally: as of this writing the cookbook uses 14 of 53 curated noise/pattern generator types (see the module's `_NOISE_PATTERN_NODES` list and its scope notes for exactly what counts, and what is deliberately excluded -- distortion nodes, the SDF family, and symbolic/glyph generators each have their own scope ruling).
+
+Six cookbook proof materials shipped on previously-zero-use bases in this round (the 2026-09-14 noise-vocabulary-round-2 session): `l07_pebbled_leather` (fbm Cellular 1), `f09_plaid_flannel` (fbm Cellular 3), `f10_boucle_upholstery` (fbm Cellular 5), `sf05_circuit_maze_panel` (truchet Line), and `gl03_shattered_crystal` (shard_fbm), plus `w06_burled_wood` (warp2, described under the Distortion vocabulary section) -- most of these are new enum *modes* on an already-counted node type, not new node types outright, which is why `shard_fbm` (a genuinely new type) is the only one that moves the coverage count above by +1.
+
 Gallery source: `quality/noise_gallery.py` (single node -> grey ramp -> albedo,
 so you see the raw field). Render with `python -m quality.render_cookbook
 noise-gallery`. Tracked contact sheets:

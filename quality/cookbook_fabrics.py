@@ -418,6 +418,196 @@ def build_f08_donegal_tweed(catalog: dict) -> str:
     return save_variant(g, _LABEL, "f08_donegal_tweed", 1)
 
 
+# fbm Cellular 3 crosshatch grid: the pattern node gets its own PlaidGrid
+# name (the fbm generator IS the plaid layout, not a stand-in weave), and
+# the roughness node is FlannelRoughness rather than the generic
+# *Roughness naming other builders use, since the material identity is
+# "flannel" specifically.
+_F09_PLAID_FLANNEL_NAMES = {
+    "voronoi_0": "PlaidGrid",
+    "colorize_1": "PlaidColor",
+    "colorize_3": "FlannelRoughness",
+    "colorize_0": "PlaidHeight",
+    "normal_map_0": "PlaidNormal",
+    "uniform_0": "NonMetallic",
+}
+
+
+def build_f09_plaid_flannel(catalog: dict) -> str:
+    """Plaid flannel: retype crocodile_skin's generator to `fbm` with
+    `noise=4` (Cellular 3, "woven crosshatch grid" per AUTHORING.md's noise
+    vocabulary table) instead of the raw voronoi cells every other
+    crocodile_skin-derived fabric in this file uses. This is a genuinely
+    different structural family from f07_herringbone_tweed/f08_donegal_tweed
+    (both built on `weave2`, plus f08's independent overlay voronoi for its
+    flecks): here the crosshatch grid the base generator itself produces IS
+    the plaid pattern, not a woven simulation recolored to look plaid.
+
+    Polarity and value distribution measured directly, not assumed: read
+    the tracked quality/cookbook/noise-gallery/fbm_4_cellular3 swatch (fbm
+    noise=4, scale 4, iterations=3, persistence=0.5, straight 0-black/1-
+    white ramp) with quality/pngread.py and histogrammed it. Two findings
+    drove the params below:
+    (1) The value distribution is a narrow BELL CURVE centered on ~0.5
+    (roughly 65% of pixels fall in 0.35-0.65, under 2% in either tail
+    below 0.15 or above 0.9), not spread evenly across 0..1. A naive
+    3-stop ramp at 0/0.5/1 therefore let the stripe color at pos 0.5 --
+    sitting right on the histogram's peak -- swallow the whole tile (first
+    pass measured red covering roughly 70% of the render, checked by eye).
+    A tight plateau at the opposite extreme (flat color bands narrower
+    than the bell curve's spread) was tried next and made the low-value
+    crossing regions read as isolated blob-shaped patches rather than a
+    connected grid (also checked by eye on a render, not assumed) --
+    because at the brief's starting scale_x/scale_y=4 each crosshatch
+    valley occupies a large fraction of its own coarse cell, so isolating
+    just that valley by value reads as "a spot per cell", not "a line
+    crossing the tile".
+    (2) Fix: scale_x/scale_y raised from the brief's diagnostic 4 to 10 --
+    more repeats means each crossing valley is a proportionally smaller
+    fraction of its cell, so thresholding it now reads as thin bands
+    connecting into a grid instead of a spot per cell (the same "raise the
+    noise-gallery diagnostic scale for the actual material" move l07 made
+    on its own fbm retype, for the same reason: a swatch tuned to keep one
+    basis legible per tile is not tuned for how that basis should read at
+    material scale).
+
+    Palette: colorize_1 keeps a plain 3-stop ramp (0.0 navy, 0.5 red, 1.0
+    cream) -- once the denser grid fixed the blobbing, the bell-curve
+    weighting toward 0.5 became a feature, not a bug: it is exactly what
+    keeps the crossing red stripe reading as a stripe rather than
+    vanishing into a hairline. Colors kept muted (desaturated brick-red
+    and deep navy, not saturated tartan colors) against a heather-cream
+    base so it reads as flannel, not a printed tartan. Soft, low-contrast matte
+    roughness throughout (no sheen split between grid and cell, unlike
+    f05's satin weave). Reused the donor's plain 0-black/1-white colorize_0
+    ramp for height (same convention as f03-f08) and normal_map_0
+    param4=0 (the standing flat-normal fix). param1 (relief strength)
+    started at the brief's suggested LOW value (0.15) for a soft brushed
+    nap, but Grayson reviewed the first preview and flagged it as reading
+    too flat -- the crosshatch grid barely showed under lighting. Raised
+    to 0.42 (moderate: enough that the grid reads clearly on lit
+    surfaces, comparable to f03_canvas_burlap's coarse-thread relief,
+    while staying well under a hard-relief material like stone) -- see
+    the task report's second iteration for the before/after render
+    comparison."""
+    g = load_example("crocodile_skin")
+    retype(g, "voronoi_0", "fbm",
+           {"noise": 4, "scale_x": 10, "scale_y": 10, "folds": 0,
+            "iterations": 3, "persistence": 0.5})
+    set_gradient(g, "colorize_1", [    # base/stripe/overcheck plaid read
+        (0.0, 0.14, 0.16, 0.28),   # crossing intersections: muted navy overcheck
+        (0.5, 0.50, 0.22, 0.18),   # single grid lines: muted brick-red stripe
+        (1.0, 0.80, 0.74, 0.62),   # cell interior: heather-cream base
+    ])
+    set_gradient(g, "colorize_3", [    # soft matte flannel, low contrast
+        (0.0, 0.82, 0.82, 0.82),
+        (1.0, 0.92, 0.92, 0.92),
+    ])
+    set_gradient(g, "colorize_0", [(0.0, 0, 0, 0), (1.0, 1, 1, 1)])
+    node(g, "normal_map_0")["parameters"] = {
+        "param0": 11, "param1": 0.42, "param2": 0, "param4": 0}
+
+    _group_weave_family(
+        g, catalog, pattern_name="plaid_pattern", pattern_label="Plaid Pattern",
+        color_label="Plaid color", density_param="scale_x",
+        density_label="Check size", finish_label="Roughness",
+    )
+    rename_nodes(g, _F09_PLAID_FLANNEL_NAMES)
+    return save_variant(g, _LABEL, "f09_plaid_flannel", 1)
+
+
+# fbm Cellular 5 soft diagonal weave: like f09, the fbm generator IS the
+# pattern here (a loop-blob basis, not a stand-in weave donor), so the
+# generator node gets its own BoucleLoop name rather than the generic
+# WeaveLayout other builders use.
+_F10_BOUCLE_UPHOLSTERY_NAMES = {
+    "voronoi_0": "BoucleLoop",
+    "colorize_1": "BoucleColor",
+    "colorize_3": "BoucleRoughness",
+    "colorize_0": "BoucleHeight",
+    "normal_map_0": "BoucleNormal",
+    "uniform_0": "NonMetallic",
+}
+
+
+def build_f10_boucle_upholstery(catalog: dict) -> str:
+    """Boucle upholstery: retype crocodile_skin's generator to `fbm` with
+    `noise=6` (Cellular 5, "soft diagonal weave" per AUTHORING.md's noise
+    vocabulary table -- "brushed cloth, quilted softness"). Same
+    donor/retype shape as f09_plaid_flannel's Cellular 3 (and l07's
+    Cellular 1 in cookbook_leather.py), a different Cellular index for a
+    structurally different family: Cellular 3 gives a hard crosshatch grid
+    (f09's plaid), Cellular 1 gives worley cells with dark centers (l07's
+    pebbles), Cellular 5 gives soft rounded blobs with mild diagonal
+    linking and no hard cell edges at all -- the closest basis in this
+    catalog to bouclé's tight, irregular nubby loop texture.
+
+    Viewed the tracked quality/cookbook/noise-gallery/fbm_6_cellular5
+    swatch (fbm noise=6, scale 4, iterations=3, persistence=0.5, straight
+    0-black/1-white ramp) directly before choosing params: at that
+    diagnostic scale it reads as a handful of large soft dark blobs on a
+    lighter mid-gray field, with faint diagonal connective haze between
+    them -- confirming the "soft diagonal weave" character, and confirming
+    (same polarity documented for Cellular 1 in l07's builder) that low
+    values sit at the blob centers, high values in the surrounding field.
+    scale_x/scale_y raised from the brief's diagnostic 4 to 28 -- higher
+    than f09's plaid fix (10) or l07's pebble fix (20) -- because bouclé
+    loops read as much tighter and more numerous than a plaid check or a
+    pebbled-leather grain; at 28 the blobs shrink to a dense field of small
+    nubs rather than a few large blotches, the same "raise the
+    noise-gallery diagnostic scale for the actual material" move both
+    those builders made.
+
+    Palette: cream/heathered-gray (per the brief, distinct from
+    f04_wool_knit's warmer oatmeal weave-donor ribs and from f09's navy/
+    brick-red plaid). Low value (blob/loop centers) gets a cream highlight
+    -- the loop tops catching light -- and high value (the field between
+    loops) shades to a cooler heather gray, with a mid heather-beige stop
+    for variation. High matte roughness throughout, no sheen (a nubby
+    upholstery weave has no glossy component, unlike f05's satin).
+
+    Relief: normal_map param1=0.25. The brief calls for LOW relief for a
+    "soft nubby bump rather than hard relief," but f09_plaid_flannel's
+    first pass at the brief's suggested-low 0.15 read as too flat on
+    review and needed a second iteration (raised to 0.42) to visibly read.
+    0.25 is chosen as a value that should read clearly on a first pass --
+    well above f09's flat-reading 0.15, close to f04_wool_knit's approved
+    0.3 for its rounded ribs -- while staying clearly softer than f09's
+    final hard-crosshatch 0.42, appropriate for bouclé's rounded, irregular
+    loops rather than f09's straight grid lines. param4=0 is the standing
+    flat-normal fix.
+
+    Distinct from f06_velvet (a continuous perlin fiber grain with no cell
+    structure at all -- smooth pile, not loops) and from f09_plaid_flannel
+    (a hard crosshatch GRID from the same fbm family, straight lines
+    crossing at right angles, vs this soft, irregular, diagonal cell
+    pattern with no straight edges)."""
+    g = load_example("crocodile_skin")
+    retype(g, "voronoi_0", "fbm",
+           {"noise": 6, "scale_x": 28, "scale_y": 28, "folds": 0,
+            "iterations": 3, "persistence": 0.5})
+    set_gradient(g, "colorize_1", [    # cream loop highlights, heather-gray field
+        (0.0, 0.80, 0.76, 0.68),   # loop tops (low value): cream highlight
+        (0.5, 0.64, 0.60, 0.55),   # mid heather-beige
+        (1.0, 0.44, 0.42, 0.40),   # field between loops (high value): cool gray
+    ])
+    set_gradient(g, "colorize_3", [    # very matte, no sheen
+        (0.0, 0.85, 0.85, 0.85),
+        (1.0, 0.95, 0.95, 0.95),
+    ])
+    set_gradient(g, "colorize_0", [(0.0, 0, 0, 0), (1.0, 1, 1, 1)])
+    node(g, "normal_map_0")["parameters"] = {
+        "param0": 11, "param1": 0.25, "param2": 0, "param4": 0}
+
+    _group_weave_family(
+        g, catalog, pattern_name="loop_pattern", pattern_label="Loop Pattern",
+        color_label="Boucle color", density_param="scale_x",
+        density_label="Loop density", finish_label="Roughness",
+    )
+    rename_nodes(g, _F10_BOUCLE_UPHOLSTERY_NAMES)
+    return save_variant(g, _LABEL, "f10_boucle_upholstery", 1)
+
+
 def build_f01_woven_denim(catalog: dict) -> str:
     """Blue denim, folded in from the Phase-3 hero set (was
     examples/f01_woven_denim, iter1 variant 1). Graph unchanged from
@@ -455,6 +645,8 @@ BUILDERS = {
     "f06_velvet": build_f06_velvet,
     "f07_herringbone_tweed": build_f07_herringbone_tweed,
     "f08_donegal_tweed": build_f08_donegal_tweed,
+    "f09_plaid_flannel": build_f09_plaid_flannel,
+    "f10_boucle_upholstery": build_f10_boucle_upholstery,
 }
 
 
