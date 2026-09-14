@@ -12,7 +12,7 @@ Then `python -m quality.render_cookbook` renders each variant for inspection.
 import sys
 
 from quality.author_helpers import (load_example, set_gradient, set_param, add_node, rewire,
-                             save_variant, _grad, group_into_subgraph, rename_nodes)
+                             save_variant, _grad, group_into_subgraph, rename_nodes, drop_conn)
 
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.config import load_config
@@ -168,16 +168,26 @@ def build_w04_driftwood_gray(catalog: dict) -> str:
     set_gradient(g, "colorize_0", [    # weather-smoothed, moderate roughness
         (0.0, 0.55, 0.55, 0.55), (1.0, 0.72, 0.72, 0.72)])
 
+    # Non-metallic fix (2026-09-14): the `wood` donor wires `blend_0` (the
+    # grain mask) straight into `Material` port 1 (metallic), same bug as
+    # t01_sand_dunes' donor. Drop the wire AND zero the scalar -- `Material`'s
+    # own `metallic` default is 1, so dropping alone would flip it fully
+    # metallic. Do this before grouping so blend_0's boundary connections
+    # into wood_grain no longer include the (now removed) Material wire.
+    drop_conn(g, "Material", 1)          # remove blend_0 -> metallic wire
+    set_param(g, "Material", "metallic", 0)
+
     # Group `wood`'s 11-node graph into two named subgraphs: the noise/
     # pattern generator that produces the grain mask (blend_0's output) plus
     # the albedo colorize that paints it (colorize_2 -- both this builder's
     # explicit gradient calls sit at a colorize node, so colorize_2's
     # "Wood color" knob lives with the generator that feeds it), and the two
     # remaining surface-mapping nodes (roughness ramp + relief). blend_0
-    # feeds 4 consumers (normal_map_0, colorize_0, colorize_2, and Material
-    # port 1 directly); colorize_2 rides along with it into wood_grain so
-    # that group carries a real knob rather than exposing nothing, while
-    # surface_finish keeps its own knob (colorize_0's roughness gradient).
+    # feeds 3 consumers (normal_map_0, colorize_0, colorize_2; the fourth,
+    # to Material's metallic port, was dropped above); colorize_2 rides
+    # along with it into wood_grain so that group carries a real knob rather
+    # than exposing nothing, while surface_finish keeps its own knob
+    # (colorize_0's roughness gradient).
     group_into_subgraph(
         g,
         ["perlin_0", "perlin_1", "perlin_2", "voronoi_0", "colorize_1",
@@ -210,6 +220,11 @@ def build_w05_dark_walnut(catalog: dict) -> str:
     ])
     set_gradient(g, "colorize_0", [    # semi-gloss, sealed finish
         (0.0, 0.18, 0.18, 0.18), (1.0, 0.34, 0.34, 0.34)])
+
+    # Non-metallic fix (2026-09-14): same donor bug as w04_driftwood_gray --
+    # see that function's comment. Drop before grouping.
+    drop_conn(g, "Material", 1)          # remove blend_0 -> metallic wire
+    set_param(g, "Material", "metallic", 0)
 
     # Same grouping as w04_driftwood_gray (both clone `wood`'s identical
     # 11-node graph, differing only in the two gradients this builder sets)
