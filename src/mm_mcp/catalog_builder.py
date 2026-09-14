@@ -79,6 +79,7 @@ def _parse_generic_node(data: dict, type_name: str,
     for n in child_nodes:
         if n.get("type") != "remote":
             continue
+        remote_defaults = n.get("parameters") or {}
         for w in n.get("widgets", []):
             pname = w.get("name")
             if pname is None:
@@ -95,6 +96,15 @@ def _parse_generic_node(data: dict, type_name: str,
                 for k, v in resolved.items():
                     if k not in ("name", "desc"):
                         param[k] = v
+            # The remote node's own 'parameters' block is the compound
+            # node's REAL default (what Material Maker actually uses when
+            # the node is dropped fresh into a graph) -- it can, and often
+            # does, differ from the linked inner node's default (e.g.
+            # crystal.param0's real default is 16, but the voronoi node it
+            # borrows its range from defaults scale_x to 4). Prefer it over
+            # whatever default `resolved` carried.
+            if pname in remote_defaults:
+                param["default"] = remote_defaults[pname]
             parameters.append(param)
     return {"type": type_name, "inputs": inputs,
             "outputs": outputs, "parameters": parameters}
