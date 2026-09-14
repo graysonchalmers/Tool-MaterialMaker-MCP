@@ -67,7 +67,7 @@ graphs live in the cookbook below (`s02_gray_granite`, `f01_woven_denim`,
 
 ## Material cookbook
 
-The cookbook is 65 materials across 12 categories (the gallery above is
+The cookbook is 71 materials across 12 categories (the gallery above is
 drawn from it), each one a real graph this server authored and then locked
 after a 3D-preview pass. Every one ships as a tracked `.ptex` under
 [`cookbook/`](cookbook/): open `cookbook/<category>/<id>.ptex` in Material
@@ -78,10 +78,10 @@ materials are in [docs/AUTHORING.md](docs/AUTHORING.md), also served as the
 its graph as `cookbook/<category>/<id>.md`. The builders that regenerate the
 graphs live in [`quality/`](quality/).
 
-**The full cookbook (65 materials:** ceramic, fabrics, glass, leather, metal, organics, painted metal, plastics, sci-fi, stone, terrain, wood)
+**The full cookbook (71 materials:** ceramic, fabrics, glass, leather, metal, organics, painted metal, plastics, sci-fi, stone, terrain, wood)
 
 <p align="center">
-  <img src="docs/images/cookbook-contact-sheet.png" alt="Contact sheet of all 65 cookbook materials across 12 categories" width="100%">
+  <img src="docs/images/cookbook-contact-sheet.png" alt="Contact sheet of all 71 cookbook materials across 12 categories" width="100%">
 </p>
 
 ## Core toolbox
@@ -316,7 +316,7 @@ for the full design.
 ## Play surface (optional)
 
 `mm-play` is a small local web page for a non-technical person who wants to
-tweak a cookbook material without touching a node graph: a gallery of the 65
+tweak a cookbook material without touching a node graph: a gallery of the 71
 cookbook materials, each opening to friendly sliders (derived from the
 material's author-chosen subgraph parameters) with a WebGL sphere preview
 that re-renders as you drag. It deliberately hides the node graph; it is a
