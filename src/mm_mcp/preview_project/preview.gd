@@ -5,11 +5,18 @@ extends Node3D
 # ground plane that runs off into a fogged distance, under raking key + rim
 # lighting with shadows and a touch of depth of field, screenshotted headfully
 # and quit.
-# Args (after --): --albedo=<path> --normal=<path> --orm=<path> --out=<path>
+# Args (after --): --albedo=<path> --normal=<path> --orm=<path>
 # --tile=<float, default 1.0>  UV repeat count on the sphere/cube/cutaway ball;
 #   the ground plane always tiles at 8x that so its own repeat is visible at a
 #   glance, and the cutaway ball's inner core tiles at CORE_RADIUS_FRACTION x
 #   that so its brick density visually matches the rest.
+#
+# Two output modes, same rig either way:
+# --out=<path>  Single static frame (render_preview).
+# --sweep-outdir=<path> --sweep-frames=<int>  Sweep the key light through a
+#   full 360-degree rotation (rim light stays fixed), writing one
+#   frame_NNN.png per step to sweep-outdir instead of a single --out
+#   (render_preview_sweep -- the caller assembles the frames into a GIF).
 
 const OBJECT_RADIUS := 0.85  # half-height of the cube / sphere radius, for ground placement
 const GROUND_TILE_MULTIPLIER := 8.0
@@ -34,8 +41,14 @@ func _ready() -> void:
 		if parts.size() == 2:
 			args[parts[0].trim_prefix("--")] = parts[1]
 
-	if not args.has("albedo") or not args.has("normal") or not args.has("orm") or not args.has("out"):
-		push_error("usage: --albedo=path --normal=path --orm=path --out=path [--tile=1.0]")
+	var sweep_mode := args.has("sweep-outdir") and args.has("sweep-frames")
+	var usage := "usage: --albedo=path --normal=path --orm=path --out=path [--tile=1.0] OR --albedo=path --normal=path --orm=path --sweep-outdir=path --sweep-frames=N [--tile=1.0]"
+	if not args.has("albedo") or not args.has("normal") or not args.has("orm"):
+		push_error(usage)
+		get_tree().quit(1)
+		return
+	if not sweep_mode and not args.has("out"):
+		push_error(usage)
 		get_tree().quit(1)
 		return
 
@@ -169,6 +182,27 @@ func _ready() -> void:
 
 	for i in range(6):
 		await get_tree().process_frame
+
+	if sweep_mode:
+		var frame_count: int = args["sweep-frames"].to_int()
+		var sweep_dir: String = args["sweep-outdir"]
+		DirAccess.make_dir_recursive_absolute(sweep_dir)
+		var key_elevation := key.rotation_degrees.x
+		for i in range(frame_count):
+			var azimuth := 360.0 * float(i) / float(frame_count)
+			key.rotation_degrees = Vector3(key_elevation, azimuth, 0)
+			for f in range(6):
+				await get_tree().process_frame
+			var frame_img := get_viewport().get_texture().get_image()
+			var frame_path := sweep_dir.path_join("frame_%03d.png" % i)
+			var frame_err := frame_img.save_png(frame_path)
+			if frame_err != OK:
+				push_error("save_png failed for frame %d: %s" % [i, frame_err])
+				get_tree().quit(1)
+				return
+		print("PREVIEW SWEEP OK: wrote %d frames to %s" % [frame_count, sweep_dir])
+		get_tree().quit(0)
+		return
 
 	var img := get_viewport().get_texture().get_image()
 	var err := img.save_png(args["out"])

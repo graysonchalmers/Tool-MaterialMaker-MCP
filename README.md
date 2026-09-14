@@ -268,7 +268,7 @@ but is not the right default for every client.
 
 ## Tools
 
-The server exposes 10 batch-mode tools and two resources (plus 7 more in Live mode, below):
+The server exposes 11 batch-mode tools and two resources (plus 7 more in Live mode, below):
 
 | Tool | What it does |
 |---|---|
@@ -278,6 +278,7 @@ The server exposes 10 batch-mode tools and two resources (plus 7 more in Live mo
 | `render_graph` | Render a `.ptex` to PBR maps at a given size |
 | `render_node_output` | Render one node's output in isolation, without editing the real graph |
 | `render_preview` | Composite already-rendered maps onto a sphere/cube/cutaway-ball preview scene |
+| `render_preview_sweep` | Optional: same preview scene, but sweeps the key light through a full 360-degree rotation and returns a looping GIF, for when a static preview leaves relief/normal-map depth ambiguous |
 | `save_graph` | Write a `.ptex` graph to a path |
 | `list_examples` | List starting graphs from both sources: Material Maker's bundled examples and this repo's `cookbook/` (filter with `source`) |
 | `load_example` | Load one starting graph by name as a `.ptex` (cookbook first, then bundled) |

@@ -96,6 +96,7 @@ _ALL_TOOL_NAMES = [
     "render_graph",
     "render_node_output",
     "render_preview",
+    "render_preview_sweep",
     "save_graph",
     "list_examples",
     "load_example",
@@ -152,6 +153,7 @@ def test_every_registered_tool_touches_idle_watchdog(monkeypatch, tmp_path):
     monkeypatch.setattr(server, "_ensure_live_session", raise_sentinel)
     monkeypatch.setattr(server, "render", raise_sentinel)
     monkeypatch.setattr(server, "_render_preview", raise_sentinel)
+    monkeypatch.setattr(server, "_render_preview_sweep", raise_sentinel)
 
     invalid_ptex = {"type": "graph",
                      "nodes": [{"name": "x", "type": "not_a_real_node_type", "parameters": {}}],
@@ -173,6 +175,9 @@ def test_every_registered_tool_touches_idle_watchdog(monkeypatch, tmp_path):
             empty_ptex, "not_a_real_node_name"),
         "render_preview": lambda: _expect_sentinel(
             server.render_preview,
+            str(tmp_path / "a.png"), str(tmp_path / "n.png"), str(tmp_path / "o.png")),
+        "render_preview_sweep": lambda: _expect_sentinel(
+            server.render_preview_sweep,
             str(tmp_path / "a.png"), str(tmp_path / "n.png"), str(tmp_path / "o.png")),
         "save_graph": lambda: server.save_graph(empty_ptex, save_path),
         "list_examples": lambda: server.list_examples(),
