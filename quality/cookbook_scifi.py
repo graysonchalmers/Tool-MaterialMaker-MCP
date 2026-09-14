@@ -480,11 +480,134 @@ def build_sf07_conduit_panel(catalog: dict) -> str:
     return save_variant(g, _LABEL, "sf07_conduit_panel", 1)
 
 
+# from-scratch mapping for sf05 (truchet Line maze panel). MazeLayout feeds
+# FOUR downstream nodes directly (MazeColor, PanelRoughness, LineMetallic,
+# MazeNormal) -- one more than sf07's three, since this recipe additionally
+# routes a per-pixel metallic texture (see build_sf05's docstring) rather
+# than sf07's single flat Material.metallic scalar.
+_SF05_NAMES = {
+    "truchet_0": "MazeLayout",
+    "colorize_albedo": "MazeColor",
+    "colorize_rgh": "PanelRoughness",
+    "colorize_metallic": "LineMetallic",
+    "normal_map_0": "MazeNormal",
+}
+
+
+def build_sf05_circuit_maze_panel(catalog: dict) -> str:
+    """Circuit maze panel: bold diagonal maze/chevron lines milled into a
+    steel panel. `truchet` Line mode (shape=0) draws pairs of diagonal
+    lines per tile that always connect edge to edge, producing a continuous
+    maze network -- distinct from `sf07`'s Circle mode (shape=1, rounded
+    interlocking pipe arcs) and from `sf03`'s flat etched-trace `pattern`
+    Square wave (no tile-based topology at all, and zero relief beyond the
+    shared flat-normal fix).
+
+    Measured (isolated render of the noise-gallery `truchet_line` case,
+    quality/noise_gallery.py `build_crossfamily_row`, sampled with
+    quality/pngread.py over the full 512x512 albedo, 4,194,304 pixels):
+    range 0.498-1.000 (not 0/1 binary, and NOT the same range as Circle
+    mode's measured 0.50-0.95). Unlike Circle's field -- which is
+    concentrated near its top (mean ~0.82, per sf07) -- Line mode's field
+    is close to UNIFORMLY distributed across its whole 0.5-1.0 span (a
+    25-bucket histogram put every 0.024-wide bucket at 4.5-5.5% of
+    pixels, no plateau, no spike): a smooth, roughly linear ramp per tile
+    rather than a flat-interior/sharp-edge shape. That ramp means there is
+    no natural "flat vs edge" split to exploit; the threshold band is
+    placed at the field's own midpoint (0.75, the mean/median of the
+    measured range, matching sf07's mid-of-measured-range convention),
+    giving a bold ~50/50 line/panel area split as the "bold maze" look
+    calls for (a thin-trace look would need to push the band toward the
+    low end instead).
+
+    Because the ramp is roughly linear rather than a rounded distance
+    field, feeding the RAW field to `normal_map` (same lesson as sf07: a
+    hard 0/1 mask on a *smooth* field throws away real shape information)
+    produces beveled/faceted diagonal ridges rather than sf07's rounded
+    tube bumps -- each maze tile reads as a sloped raised facet, meeting
+    neighboring tiles at ridge lines where the field's per-tile ramp
+    resets. That is a RAISED relief (the bright line channel sits at the
+    field's high end, same "dark below the band / bright above it"
+    polarity as sf07's colorize_albedo, so raised-and-bright stay
+    together instead of inverting one but not the other).
+
+    New for this material: a per-pixel metallic texture. Every prior
+    scifi recipe either left Material.metallic a single flat scalar
+    (sf01-sf04, sf07) or never routed one at all; here `colorize_metallic`
+    reads the SAME truchet field, hard-thresholded at the SAME 0.73-0.77
+    band as albedo (so the metal-look edge lines up with the color edge
+    exactly, unlike `colorize_rgh` below which uses a continuous ramp
+    since roughness has no visible edge to protect), into Material's
+    `metallic_tex` input (port 1, confirmed against
+    z-Git/material-maker/addons/material_maker/nodes/material.mmg's input
+    list: port0 albedo_tex, port1 metallic_tex, port2 roughness_tex, port3
+    emission_tex, port4 normal_tex). Panel low metallic (0.10, a painted
+    or anodized steel panel), line moderate metallic (0.50, an exposed raw
+    metal trace) -- "moderate," not sf07's fully-metal 0.6 flat scalar,
+    because here only the LINE channel is bare metal, not the whole
+    surface."""
+    g = _new_graph()
+    add_node(g, "truchet_0", "truchet", {"shape": 0, "size": 4})
+    add_node(g, "colorize_albedo", "colorize", {})
+    set_gradient(g, "colorize_albedo", [    # dark recessed panel (below the 0.75 midpoint), bright steel line (above)
+        (0.0, 0.05, 0.06, 0.07), (0.73, 0.05, 0.06, 0.07),
+        (0.77, 0.72, 0.74, 0.77), (1.0, 0.80, 0.82, 0.85),
+    ])
+    add_node(g, "colorize_rgh", "colorize", {})
+    set_gradient(g, "colorize_rgh", [    # continuous ramp: matte panel -> polished line, no edge to protect
+        (0.0, 0.55, 0.55, 0.55),
+        (1.0, 0.25, 0.25, 0.25),
+    ])
+    add_node(g, "colorize_metallic", "colorize", {})
+    set_gradient(g, "colorize_metallic", [    # hard-thresholded at the SAME band as albedo, so metal-look and color agree
+        (0.0, 0.10, 0.10, 0.10), (0.73, 0.10, 0.10, 0.10),
+        (0.77, 0.50, 0.50, 0.50), (1.0, 0.50, 0.50, 0.50),
+    ])
+    add_node(g, "normal_map_0", "normal_map",
+             {"param0": 10, "param1": 0.55, "param2": 0, "param4": 0})
+    add_node(g, "Material", "material", {"metallic": 0.3})
+    g["connections"] += [
+        {"from": "truchet_0", "from_port": 0, "to": "colorize_albedo", "to_port": 0},
+        {"from": "truchet_0", "from_port": 0, "to": "colorize_rgh", "to_port": 0},
+        {"from": "truchet_0", "from_port": 0, "to": "colorize_metallic", "to_port": 0},
+        {"from": "truchet_0", "from_port": 0, "to": "normal_map_0", "to_port": 0},
+        {"from": "colorize_albedo", "from_port": 0, "to": "Material", "to_port": 0},
+        {"from": "colorize_metallic", "from_port": 0, "to": "Material", "to_port": 1},
+        {"from": "colorize_rgh", "from_port": 0, "to": "Material", "to_port": 2},
+        {"from": "normal_map_0", "from_port": 0, "to": "Material", "to_port": 4},
+    ]
+
+    # Built from scratch; truchet_0 feeds all four downstream nodes directly
+    # (the single-upstream-node-feeds-multiple-groups case already used in
+    # sf01/sf03/sf04/sf07), producing extra boundary output ports on
+    # truchet_0 once maze_pattern and surface_finish are split into separate
+    # groups below, which is expected. normal_map_0 takes the RAW truchet_0
+    # field (no intermediate threshold node), same as sf07, since the
+    # per-tile ramp IS the beveled-facet relief shape.
+    group_into_subgraph(
+        g, ["truchet_0", "colorize_albedo"],
+        "maze_pattern", "Maze Pattern",
+        [("truchet_0", "size", "param0", "Maze density"),
+         ("colorize_albedo", "gradient", "param1", "Line color")],
+        catalog,
+    )
+    group_into_subgraph(
+        g, ["colorize_rgh", "colorize_metallic", "normal_map_0"], "surface_finish",
+        "Surface Finish",
+        [("colorize_rgh", "gradient", "param0", "Surface sheen"),
+         ("normal_map_0", "param1", "param1", "Relief strength")],
+        catalog,
+    )
+    rename_nodes(g, _SF05_NAMES)
+    return save_variant(g, _LABEL, "sf05_circuit_maze_panel", 1)
+
+
 BUILDERS = {
     "sf01_hull_plating": build_sf01_hull_plating,
     "sf02_hazard_stripe_panel": build_sf02_hazard_stripe_panel,
     "sf03_circuit_board": build_sf03_circuit_board,
     "sf04_vent_grille_panel": build_sf04_vent_grille_panel,
+    "sf05_circuit_maze_panel": build_sf05_circuit_maze_panel,
     "sf07_conduit_panel": build_sf07_conduit_panel,
 }
 
