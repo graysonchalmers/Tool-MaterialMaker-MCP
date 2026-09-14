@@ -2,8 +2,9 @@
 
 _Last updated: 2026-09-14 (round 3 of the noise-vocabulary expansion merged
 to `main`; the preview lighting rig overhaul merged earlier the same day
-from a concurrent session, `6ce84c6` -- both on `main`, not pushed) CT
-(America/Chicago)_
+from a concurrent session, `6ce84c6` -- both on `main`, not pushed; a
+separate housekeeping session then cleared a stuck worktree lock, no
+MM-MCP code changed) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up. **Shape rule (2026-09-05,
 teardown #3):** "Current state" describes the latest session only; anything
@@ -294,6 +295,24 @@ can pick up next:
 Newest first. Keep at most 8 entries; older ones are in `git log` (search the
 commit subjects, every session ends with a `docs:` wrap-up commit).
 
+### 2026-09-14 (worktree hygiene, no MM-MCP code changed): a prior session's
+`git worktree remove` on `.claude\worktrees\noise-vocabulary-round-3` had
+failed with a Windows "Device or resource busy" error; git had already
+forgotten the worktree (its `.git\worktrees\` admin entry was gone) but the
+directory was still on disk and locked. `handle.exe` isn't installed on this
+box, so root-caused it with a PEB-read scan across every running process
+(`NtQueryInformationProcess` + `ReadProcessMemory` on each process's
+`RTL_USER_PROCESS_PARAMETERS.CurrentDirectory`) rather than guessing from
+command lines. Found the lock wasn't Godot/Python at all: two orphaned
+`bash.exe` wrappers plus a hung `find /` filesystem search (parented from a
+`using-superpowers` sdd-workspace lookup) that had been running for hours
+with its own parent process already dead. Killed the `find.exe`, the two
+`bash.exe`s exited on their own, `rm -rf` + `git worktree prune` + `git
+branch -d worktree-noise-vocabulary-round-3` all then succeeded cleanly.
+Swept the rest of the repo for the same failure mode afterward (no
+locked/prunable worktrees, no other orphaned directories, no stray process
+handles beyond the two genuinely live sessions) -- clean. Commons log:
+`2026-09-14-claude-code-mm-mcp-worktree-lock-cleanup.md`.
 ### 2026-09-14 (noise-vocabulary round 3 + catalog fix, MERGED to `main`): `pickup` -> `writing-plans` -> `subagent-driven-development` for a 6-material round Grayson approved (scope-corrected before dispatch: `custom_tiles` swapped for `skewed_bricks`). Refined the implementer/controller split: implementer authors + validates + isolated verification renders only; controller renders all six, self-screens, batches one `SendUserFile`, gets Grayson's real approval before writing cards/promoting. All 6 materials + 2 README/AUTHORING tasks landed, only Task 2 (`f11_corduroy`) needed a fix round (an overstated "clean ribbing" claim caught by the task reviewer). Task 8 surfaced a real pre-existing `catalog_builder.py` bug (compound-node param range resolution) fixed as its own TDD'd task, itself needing one fix round (a fixpoint loop replacing an order-dependent two-pass sweep). Final whole-branch review (opus) came back "ready to merge with fixes": one fix wave (a fabricated-numbers card fix matching Task 2's own error class, catalog dead-code cleanup, an aliasing fix, a card tidy), re-reviewed clean. One finding spawned as a follow-up instead of fixed (`task_73027cd8`: catalog default-field accuracy for 17 params). Cookbook 65 -> 71 materials, 12 categories. Merged `main` into this branch first (a concurrent session had landed `6ce84c6`/`6051eed` on `main` after this branch forked), hand-reconciling HANDOFF.md/STATUS.md conflicts; then merged this branch into `main`. Full suite 1161+ passed throughout.
 ### 2026-09-14 (preview lighting overhaul, MERGED `6ce84c6`, NOT pushed): `pickup` on the lighting worktree; a long live visual-iteration session (advisor-guided). Prototyped soft-shadow/bounce/AO/precession options in a throwaway scratchpad Godot project + an interactive slider lab (`lab.bat`), sending PNG/GIF comparisons each pass; Grayson converged over ~10 rounds to: soft distance key shadow (angular 5.0), boosted rim (2.0) casting a soft shadow (load-bearing for contact grounding), cool bounce fill, procedural-sky ambient+reflections (fixes dark metals), SSAO contacts, and a precession-default sweep (cone 18, rim still). Landed into production `preview.gd` + `preview.py` + `server.py` + `tests/test_preview.py`. Fast suite 1112, preview integration 4. The planned 65-preview regen was found MOOT (tracked thumbnails are flat albedo, not lit renders). Merged `--ff-only` to `main`. Gotchas hit: Godot launcher hangs on raw-pipe/parse-error; `var x := a and b` Variant-inference failure.
 ### 2026-09-14 (pickup, render_preview_sweep verified): ran the sweep tool for real through the live MCP tool surface (`render_graph` on cookbook's `f01_woven_denim`, piped into `render_preview_sweep`), sent Grayson the resulting GIF, he confirmed it read fine. Promoted `render_preview_sweep` 🔌 -> ✅ in STATUS.md.
@@ -301,4 +320,3 @@ commit subjects, every session ends with a `docs:` wrap-up commit).
 ### 2026-09-14 (rotating-key-light preview mode, `render_preview_sweep`, MERGED `58e35ab`): brainstorming -> TDD. `preview.gd` azimuth sweep mode (one Godot process, N frames, 360 key-light rotation) + `render_preview_sweep()` (Pillow GIF assembly, runtime dep) + 11th MCP tool. Advisor review caught a thin test and the verified/wired state mismatch; added a real frames-differ assertion, measured a real brightness curve. Merged same session.
 ### 2026-09-13 (enum-index validation enforcement, MERGED to main): `pickup`; the hole was ENFORCEMENT (out-of-range enum was a `warning`). Fix: out-of-range enum index -> `error` with an intended-index hint; ratchet test. TDD red->green, fast suite 1039->1045. A sibling branch fixing the same thing was folded in.
 ### 2026-09-13 (noise/distortion vocabulary + core toolbox, MERGED `0169446`): `subagent-driven-development`, all 14 tasks. Shipped 6 proof materials on unused bases (cookbook 53->59), 19 diagnostic swatches, README "Core toolbox" section, AUTHORING distortion note. Fast suite 1039.
-### 2026-09-06 (backup-ops wake-lock, cross-project): root-caused the 09-05 nightly truncation as idle-sleep mid-run; added a `SetThreadExecutionState` wake-lock to `backup-ops\Backup-All.ps1`. Commit `f7e809d`. No MM-MCP code changed.
