@@ -550,6 +550,65 @@ def build_l06_topstitched_leather(catalog: dict) -> str:
     return save_variant(g, _LABEL, "l06_topstitched_leather", 1)
 
 
+def build_l07_pebbled_leather(catalog: dict) -> str:
+    """Pebbled / Saffiano-style leather: small dense rounded pebble bumps
+    across the surface instead of the sharp cellular scale edges every other
+    crocodile_skin clone uses. Donor-swap lever, same shape as l03's
+    voronoi_0 -> perlin retype, but here voronoi_0 -> `fbm` with `noise=2`
+    (Cellular 1, "worley cells, dark centers" per AUTHORING.md's noise
+    vocabulary table): a multi-octave worley basis whose cell interiors read
+    soft and rounded rather than voronoi's hard polygon edges, closer to a
+    pebbled/Saffiano grain than l04's bold scaled reptile look.
+
+    Polarity check (not assumed): rendered the existing
+    quality/cookbook/noise-gallery/fbm_2_cellular1 swatch (fbm noise=2,
+    scale 4, iterations=3, persistence=0.5, straight 0-black/1-white ramp)
+    and inspected it directly. The dark-blob-at-cell-center character
+    documented in AUTHORING.md survives fbm's 3-octave sum -- port 0 is
+    still LOW at cell centers and HIGH at the borders between them, the same
+    polarity `_dome_the_cells` assumes for voronoi_0. So the height ramp is
+    reused unmodified: centers (low) dome UP into small pebble bumps, the
+    network between them (high) recedes -- the correct read for pebbled
+    leather (rounded bumps), not the pore-as-hole reading the raw "pores"
+    language might suggest.
+
+    scale_x/scale_y raised from the noise-gallery swatch's coarse scale 4
+    (a handful of huge blobs, meant to keep one basis legible per swatch
+    tile) to 20 -- close to crocodile_skin's own donor default voronoi scale
+    (16), for a dense small-pebble grain rather than a few giant lumps.
+    Oxblood palette: lighter warm highlight on the raised pebble tops (low
+    value), darker wine shade in the recessed network between them (high
+    value) -- the same lit-highlight/shadowed-recess logic l04 used for its
+    bronze-green scales, so the relief reads under the preview lighting."""
+    g = load_example("crocodile_skin")
+    retype(g, "voronoi_0", "fbm",
+           {"noise": 2, "scale_x": 20, "scale_y": 20, "folds": 0,
+            "iterations": 3, "persistence": 0.5})
+    set_gradient(g, "colorize_1", [          # oxblood pebbled leather
+        (0.0, 0.42, 0.08, 0.10),   # pebble tops (low value): warm highlight
+        (0.5, 0.30, 0.06, 0.08),
+        (1.0, 0.14, 0.03, 0.04),   # recessed network (high value): dark wine
+    ])
+    set_gradient(g, "colorize_3", [          # matte-to-semigloss finish
+        (0.0, 0.38, 0.38, 0.38),   # pebble tops: slightly glossier
+        (1.0, 0.55, 0.55, 0.55),   # recesses: duller matte
+    ])
+    _dome_the_cells(g)                        # pebble bumps raised, network recessed
+    set_param(g, "normal_map_0", "param4", 0)  # raw grain -> real relief
+    set_param(g, "normal_map_0", "param1", 0.5)  # moderate pebble relief
+
+    # voronoi_0's scale_x IS explicitly tuned here (20, vs the donor default
+    # of 16), matching l04's precedent of exposing scale_x as the
+    # pattern-size knob whenever it is retuned from the donor default.
+    _group_leather_grain(
+        g, catalog, color_label="Pebble color",
+        sheen_label="Finish", relief_label="Pebble relief",
+        pattern_size_param="scale_x", pattern_size_label="Pebble size",
+    )
+    rename_nodes(g, dict(_CROCODILE_NAMES))
+    return save_variant(g, _LABEL, "l07_pebbled_leather", 1)
+
+
 BUILDERS = {
     "l01_black_oiled_leather": build_l01_black_oiled_leather,
     "l02_distressed_two_tone": build_l02_distressed_two_tone,
@@ -557,6 +616,7 @@ BUILDERS = {
     "l04_reptile_exotic": build_l04_reptile_exotic,
     "l05_quilted_leather": build_l05_quilted_leather,
     "l06_topstitched_leather": build_l06_topstitched_leather,
+    "l07_pebbled_leather": build_l07_pebbled_leather,
 }
 
 
