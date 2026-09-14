@@ -84,6 +84,40 @@ graphs live in [`quality/`](quality/).
   <img src="docs/images/cookbook-contact-sheet.png" alt="Contact sheet of all 59 cookbook materials across 12 categories" width="100%">
 </p>
 
+## Core toolbox
+
+Below the finished cookbook materials sit the single-node building blocks
+they are made from: two galleries that isolate ONE node at a time so you see
+its raw, unmixed behavior before it gets composited into anything.
+
+**Debug swatches.** 19 single-node debug swatches, each wiring exactly one
+node straight into a Material so what you see IS that node's behavior, no
+recipe, no blend, nothing to misread. Every swatch also doubles as a live
+pixel-assertion regression test (`tests/test_debug_swatches.py` renders it
+fresh and checks known-answer pixels), so a wiring regression fails a test
+instead of waiting for a human to notice a material looks wrong. One swatch,
+`slope_blur`, ships structure-only: it is a buffer/compute-shader node that
+cannot render headless, so its tile is black by design, not broken. Legend
+and known-answers for every swatch are in
+[docs/DEBUG_SWATCHES.md](docs/DEBUG_SWATCHES.md).
+
+<p align="center">
+  <img src="docs/images/core-toolbox/swatches.png" alt="Contact sheet of the 19 debug swatches, one node isolated per tile" width="100%">
+</p>
+
+**Noise vocabulary.** A gallery of base noise/pattern nodes beyond the two
+(`perlin`, `voronoi`) the cookbook leaned on early: `fbm`'s 8 base functions
+side by side, plus a cross-family row (anisotropic, truchet, voronoi
+triangle, wavelet, and more) showing how differently they read. Full
+writeup, including the "the catalog carries 47 noise nodes, the cookbook
+effectively used two" problem this was built to fix, is in the
+[Noise vocabulary](docs/AUTHORING.md#noise-vocabulary-reach-past-voronoi--perlin)
+section of `docs/AUTHORING.md`.
+
+<p align="center">
+  <img src="docs/images/noise-gallery/fbm-bases.png" alt="fbm noise node's 8 base functions rendered side by side" width="100%">
+</p>
+
 ## How it works
 
 Material Maker graphs are plain JSON (`.ptex`), and Material Maker ships a

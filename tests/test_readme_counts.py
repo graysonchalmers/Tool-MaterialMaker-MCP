@@ -8,6 +8,7 @@ import re
 
 from mm_mcp import server
 from mm_mcp.cookbook import list_cookbook
+from quality import debug_swatches
 
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 with open(os.path.join(_ROOT, "README.md"), encoding="utf-8") as fh:
@@ -49,3 +50,12 @@ def test_readme_live_tool_table_lists_every_live_tool():
     rows = set(re.findall(r"^\| `(live_\w+)` \|", README, flags=re.M))
     expected = _live_tool_names()
     assert rows == expected
+
+
+def test_readme_core_toolbox_swatch_count_matches_build():
+    matches = re.findall(r"(\d+)\s+single-node\s+debug\s+swatches", README)
+    assert len(matches) == 1, (
+        "Core toolbox section must state the swatch count exactly once as "
+        "'<N> single-node debug swatches'"
+    )
+    assert int(matches[0]) == len(debug_swatches.BUILDERS)
