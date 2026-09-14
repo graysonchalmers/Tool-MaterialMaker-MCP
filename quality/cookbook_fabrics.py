@@ -633,18 +633,52 @@ def build_f11_corduroy(catalog: dict) -> str:
     0 is a plain `f` scalar on both node types, so the swap is
     connection-safe.
 
-    Verification render (required before trusting "Noise 1" reads as
-    ribbing, since the brief only describes it from the internal `fbm2`
-    scale parameters, not a rendered look): used the MCP
+    Verification render (required before trusting any `param0` mode reads as
+    ribbing, since the brief only describes the modes from their internal
+    `fbm2` scale parameters, not a rendered look): used the MCP
     `render_node_output` tool directly on an isolated
-    directional_noise->colorize->Material graph (param0=0, n_scale=1,
-    param1=11, straight 0-black/1-white ramp), size 512. The render
-    (`output/f11_verify_mode0_albedo.png`) shows tight, clean, near-parallel
-    HORIZONTAL bands running the full width of the tile -- exactly the
-    tight parallel ribbing corduroy needs, not the irregular/blotchy look
-    the brief warned to watch for. Kept `param0=0` on that evidence; did not
-    need to try `param0=1`/`2` ("Noise 2"/"Noise 3"), since mode 0 already
-    reads as clean ribbing rather than blotchy.
+    directional_noise->colorize->Material graph (n_scale=1, param1=11,
+    straight 0-black/1-white ramp), size 512, rendered ALL THREE modes in
+    turn (one Godot process at a time) rather than stopping at the first.
+
+    Honest description of what each mode actually shows (this replaces an
+    earlier, overstated first-pass description that called mode 0 "clean,
+    regular ribbing" without having rendered the other two to compare --
+    caught in review):
+    - `param0=0` ("Noise 1", `f11_verify_mode0_albedo.png`): anisotropic
+      horizontal streaking, but genuinely IRREGULAR -- variable band width,
+      wandering/wobbling lines, uneven spacing. Not clean parallel ribbing.
+    - `param0=1` ("Noise 2", `f11_verify_mode1_albedo.png`): also
+      anisotropic horizontal streaking over a finer grain, but LESS regular
+      than mode 0, not more.
+    - `param0=2` ("Noise 3", `f11_verify_mode2_albedo.png`): smooth, blurry,
+      widely-spaced soft waves with no fine grain at all -- essentially a
+      single broad feature repeated across the tile, not a repeating rib
+      pattern, and visually the worst match of the three.
+
+    Measured, not just eyeballed, since "regular" is exactly the property
+    in question: wrote a one-off script (not committed, scratch-only) that
+    reads each PNG via `quality/pngread.py`, averages each row's brightness
+    across the full width, smooths that profile (25px moving average, to
+    separate macro-scale banding from per-pixel grain noise), thresholds
+    against the median to find band runs, and reports the coefficient of
+    variation (stdev/mean) of both the gap between band centers and the
+    band widths -- lower CoV means more regular/evenly-spaced. Results:
+    mode 0 gap CoV=0.436, width CoV=0.615 (15 bands); mode 1 gap CoV=0.542,
+    width CoV=0.625 (11 bands, both worse than mode 0); mode 2 found only 2
+    macro-bands across the whole 2048px tile (CoV near 0, but only because
+    there is no repeating structure to be irregular about -- confirming the
+    visual read that it isn't ribbing at all).
+
+    Verdict: kept `param0=0` as the best of three real options, not because
+    it matches an idealized "clean parallel ribbing" description. It is the
+    most regular of the two modes that show genuine repeating anisotropic
+    banding, and a structurally different family from the cellular/blotchy
+    fbm looks used elsewhere in this category (the brief's actual concern),
+    even though it does not read as tight, evenly-spaced corduroy wales the
+    way a literal photo reference would. This is a real limitation of this
+    material worth flagging in its eventual recipe card, not a claim that
+    the technique nails corduroy's regularity.
 
     `n_scale` (range 1-8) is exposed as the rib density knob -- it scales
     every internal fbm2/perlin/tiler branch inside "Noise 1" together, so
