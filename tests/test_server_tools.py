@@ -181,6 +181,16 @@ def test_render_preview_missing_map_returns_error_as_data(tmp_path):
     assert "normal" in result["error"]
 
 
+def test_render_preview_sweep_missing_map_returns_error_as_data(tmp_path):
+    albedo = tmp_path / "albedo.png"
+    albedo.write_text("x")
+    result = server.render_preview_sweep(str(albedo), str(tmp_path / "nope_normal.png"),
+                                          str(tmp_path / "nope_orm.png"))
+    assert result["ok"] is False
+    assert result["image"] is None
+    assert "normal" in result["error"]
+
+
 def _simple_ptex():
     return {"type": "graph", "connections": [
         {"from": "perlin_0", "from_port": 0, "to": "Material", "to_port": 0},
