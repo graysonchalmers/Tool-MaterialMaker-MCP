@@ -269,9 +269,161 @@ def build_gl02_cut_gem(catalog: dict) -> str:
     return save_variant(g, _LABEL, "gl02_cut_gem", 1)
 
 
+# gl03 clones the SAME dry_earth donor as gl01/gl02, but retypes voronoi_0 to
+# `shard_fbm` -- a node with only ONE output port (type f), unlike voronoi's
+# four-port signature (f, f, rgb, rgba) that gl02's voronoi_triangle swap
+# relied on for connection safety. The donor's only outgoing wire off
+# voronoi_0 uses from_port 1 (the "Border" output feeding CrackRamp), not
+# port 0, so retype() alone leaves that connection pointing at a port that
+# no longer exists; the builder repoints it to shard_fbm's sole port 0
+# right after the retype (inline, since this connection-repair need is
+# unique to this one donor swap).
+#
+# docs/AUTHORING.md's pinned finding: shard_fbm at its own defaults
+# (sharp=0.7, folds=0) reads as a soft turbulent CLOUD, not a crystalline
+# shatter. Isolated-node renders during authoring (render_node_output on
+# just this node, three params sweeps) confirmed that in person:
+#   - sharp=0.7 folds=0 (the raw default): soft cloud, no hard edges.
+#   - sharp=1.0 folds=4 iter=5 sx=10 sy=10: fine moire/ripple interference,
+#     too busy -- reads as scanline static, not clean fracture lines.
+#   - sharp=0.95 folds=3: sharp straight crack lines but with busy
+#     concentric ripple contours crowding the space between them.
+#   - sharp=0.9 folds=2 sx=7 sy=7 iter=4 per=0.5 off=0 (CHOSEN): clean
+#     angular straight fracture lines cutting across smoother panels --
+#     the clearest "shattered crystal" read of the four, so this is what
+#     ships. Well above the pinned defaults on both sharp and folds, per
+#     AUTHORING.md's own instruction.
+_GL03_NAMES = {
+    "voronoi_0": "ShardField",
+    "colorize_1": "CrackRamp",
+    "warp_0": "FractureWarp",
+    "colorize_0": "BaseTone",
+    "blend_0": "CrackComposite",
+    "colorize_3": "ColorizeUnused",     # dead: its Material connection is dropped, forced metallic=0
+    "perlin_0": "AmbientNoise",         # shared: feeds BaseTone and the relief composite
+    "perlin_1": "CrackWarpNoise",       # shared: feeds FractureWarp's amount and the dead ColorizeUnused
+    "colorize_4": "ReliefContrast",
+    "blend_1": "ReliefComposite",
+    "colorize": "ReliefRamp",
+    "normal_map_0": "CrystalNormal",
+    "rough_const": "RoughnessConst",
+}
+
+
+def build_gl03_shattered_crystal(catalog: dict) -> str:
+    """Shattered/cracked crystal glass: proves the `shard_fbm` base (zero
+    prior cookbook use) for a hard-edged fracture-network look, distinct
+    from both existing glass siblings. `gl01_frosted_glass` is a CONNECTED
+    SANDBLAST crack network off `voronoi` -- soft, diffuse, matte, cool
+    blue-gray. `gl02_cut_gem` is FACETED `voronoi_triangle` cells -- uniform
+    hex-ish cut facets, glossy emerald. `gl03` instead reads as a jewel-tone
+    slab of glass that has been SHATTERED: sharp straight crack lines
+    cutting across smoother panels (the `shard_fbm` field itself, pushed
+    well past its soft-cloud defaults -- see the module comment above for
+    the isolated-node sweep that picked sharp=0.9/folds=2), glossy and
+    saturated violet-blue rather than gl01's matte neutral or gl02's flat
+    emerald-per-facet.
+
+    `FractureWarp`'s amount is cut from the donor's 0.4 to 0.08 -- gl01
+    leans INTO that same warp to soften/organic-ify its crack joints (the
+    "connected sandblast" look); here the goal is the opposite, so the
+    warp is kept just large enough to avoid a perfectly computed/sterile
+    line (donor precedent: a warp node feeding a crack composite) without
+    smearing the shard field's hard angles into gl01's soft look.
+    `CrackComposite`'s amount is raised to 0.5 (up from the donor's 0.4)
+    for higher-contrast, more visible fracture lines against the jewel
+    base tone -- a first pass at 0.6 combined with a darker base gradient
+    read as an almost-black smudge in render_preview (shard_fbm's crack
+    signal covers the WHOLE surface, unlike voronoi's flat-cell-interior-
+    plus-thin-border signal gl01/gl02 multiply against, so the same
+    multiply-composite idiom darkens much more broadly here); the fix was
+    both this small amount trim AND brightening `BaseTone` below.
+    `ReliefComposite`'s amount is cut to 0.25 (down from the
+    donor's 0.5) so the ambient `AmbientNoise` mixed into the height
+    signal doesn't wash out the crack sharpness the way it subtly does in
+    gl01's frost -- this is a hard-edged crystal, not a soft-diffused
+    surface, so the height signal should stay dominated by the shard
+    field's own crack contrast."""
+    g = load_example("dry_earth")
+    retype(g, "voronoi_0", "shard_fbm",
+           {"sharp": 0.9, "sx": 7, "sy": 7, "folds": 2, "iter": 4, "per": 0.5, "off": 0})
+    # shard_fbm exposes only one output (port 0); the donor's wire off
+    # voronoi_0 used port 1 (voronoi's "Border" output). Repoint it.
+    for c in g["connections"]:
+        if c["from"] == "voronoi_0" and c["from_port"] == 1:
+            c["from_port"] = 0
+
+    # NOT a narrow near-zero threshold (gl01/gl02's convention for voronoi's
+    # "Border" output, which is near-zero only at cell edges and high
+    # everywhere else): shard_fbm has no such output, it's a continuous
+    # turbulent field whose crack-like structure IS its dark/light
+    # transitions across the WHOLE 0..1 range. A narrow (0, 0.1) threshold
+    # (v1's first attempt) crushed almost the entire field to flat white --
+    # confirmed by rendering CrackRamp in isolation, which came back as a
+    # blank page with a few stray specks. This mild S-curve instead keeps
+    # the field's own structure (verified by the same isolated-node render:
+    # a crisp b&w shattered-crystal pattern nearly identical to the raw
+    # field, just with slightly more contrast at the extremes).
+    set_gradient(g, "colorize_1", [(0.0, 0, 0, 0), (0.3, 0.15, 0.15, 0.15),
+                                    (0.7, 0.85, 0.85, 0.85), (1.0, 1, 1, 1)])
+    set_param(g, "warp_0", "amount", 0.08)     # keep the shard field's hard angles, minimal softening
+    set_param(g, "blend_0", "amount", 0.5)     # visible fracture lines without swallowing the base tone
+
+    # Jewel-tone violet-blue "crystal" base. Brighter than a first pass that
+    # matched gl01's darker earthy value range: since shard_fbm's crack
+    # signal covers the WHOLE surface (a dense turbulent field, not
+    # voronoi's flat cell interiors with occasional thin borders), the
+    # multiply composite below darkens broadly rather than at isolated
+    # seams -- confirmed by a first render_preview coming back nearly black
+    # and unreadable. This gradient is pushed brighter/more saturated so the
+    # final composited surface still reads as a lit gem, not a dark smudge.
+    set_gradient(g, "colorize_0", [
+        (0.0, 0.20, 0.12, 0.45),
+        (0.5, 0.38, 0.24, 0.72),
+        (1.0, 0.62, 0.48, 0.92),
+    ])
+
+    drop_conn(g, "Material", 1)
+    set_param(g, "Material", "metallic", 0)
+    set_param(g, "Material", "roughness", 0.07)   # glossy: clear/cut-crystal glass, not diffuse frost
+
+    set_param(g, "blend_1", "amount", 0.25)   # keep the height signal crack-dominated, not ambient-washed
+    set_param(g, "normal_map_0", "param4", 0)     # flat-normal fix (docs/AUTHORING.md)
+    set_param(g, "normal_map_0", "param1", 0.8)   # hard crystalline relief -- push past gl02's 0.6
+
+    # Same ORM gap as gl01/gl02: dry_earth's roughness input is unconnected,
+    # so a scalar-only roughness exports no ORM map. Flat low-roughness
+    # texture; input source doesn't matter (constant gradient either way).
+    add_node(g, "rough_const", "colorize",
+             {"gradient": _grad([(0.0, 0.07, 0.07, 0.07), (1.0, 0.07, 0.07, 0.07)])})
+    g["connections"].append(
+        {"from": "perlin_0", "from_port": 0, "to": "rough_const", "to_port": 0})
+    g["connections"].append(
+        {"from": "rough_const", "from_port": 0, "to": "Material", "to_port": 2})
+
+    group_into_subgraph(
+        g, ["voronoi_0", "colorize_1", "warp_0", "colorize_0", "blend_0", "colorize_3"],
+        "base_color", "Base Color",
+        [("voronoi_0", "sharp", "param0", "Shard sharpness"),
+         ("colorize_0", "gradient", "param1", "Base color"),
+         ("blend_0", "amount", "param2", "Crack contrast")],
+        catalog,
+    )
+    group_into_subgraph(
+        g, ["colorize_4", "blend_1", "colorize", "normal_map_0", "rough_const"],
+        "surface_detail", "Surface Detail",
+        [("rough_const", "gradient", "param0", "Roughness"),
+         ("normal_map_0", "param1", "param1", "Surface relief")],
+        catalog,
+    )
+    rename_nodes(g, _GL03_NAMES)
+    return save_variant(g, _LABEL, "gl03_shattered_crystal", 1)
+
+
 BUILDERS = {
     "gl01_frosted_glass": build_gl01_frosted_glass,
     "gl02_cut_gem": build_gl02_cut_gem,
+    "gl03_shattered_crystal": build_gl03_shattered_crystal,
 }
 
 
