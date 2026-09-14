@@ -190,6 +190,8 @@ voronoi-cellular or wood-grain), and the only base noise ever ADDED by hand is
 the cookbook effectively used two. Same structural DNA recolored = materials
 that read alike. The fix is a wider base-noise vocabulary, not more recolors.
 
+**Live coverage.** `python -m quality.node_usage_audit` recounts this from the current cookbook instead of relying on a stale manual tally: as of this writing the cookbook uses 13 of 52 curated noise/pattern generator types (see the module's `_NOISE_PATTERN_NODES` list and its scope notes for exactly what counts, and what is deliberately excluded -- distortion nodes, the SDF family, and symbolic/glyph generators each have their own scope ruling).
+
 Gallery source: `quality/noise_gallery.py` (single node -> grey ramp -> albedo,
 so you see the raw field). Render with `python -m quality.render_cookbook
 noise-gallery`. Tracked contact sheets:
