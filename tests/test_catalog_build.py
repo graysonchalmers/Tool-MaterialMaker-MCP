@@ -28,6 +28,33 @@ def test_special_types_present():
     assert "comment" in SPECIAL_TYPES
 
 
+def test_named_parameter_widget_resolves_its_own_inline_range():
+    """directional_noise.mmg's 'n_scale' widget is a bare 'named_parameter'
+    with no linked_widgets at all -- its min/max/step/default live directly
+    on the widget dict. dirt.mmg's 'd_scale' widget is the same shape. Both
+    must resolve to a real numeric range, not None."""
+    cat = build_catalog(cfg.nodes_dir)
+    n_scale = {p["name"]: p for p in cat["directional_noise"]["parameters"]}["n_scale"]
+    assert n_scale["min"] == 1
+    assert n_scale["max"] == 8
+
+    d_scale = {p["name"]: p for p in cat["dirt"]["parameters"]}["d_scale"]
+    assert d_scale["min"] == 1
+    assert d_scale["max"] == 8
+
+
+def test_linked_control_resolves_through_a_type_referenced_inner_node():
+    """crystal.mmg's 'param0' widget links to an inner node named 'voronoi'
+    whose 'type' is 'voronoi' -- a plain type reference, not an inline shader
+    node with its own embedded shader_model. Resolving it requires looking up
+    the separately-parsed 'voronoi' catalog entry's own 'scale_x' parameter,
+    whose real range (per voronoi.mmg) is min=1, max=32."""
+    cat = build_catalog(cfg.nodes_dir)
+    param0 = {p["name"]: p for p in cat["crystal"]["parameters"]}["param0"]
+    assert param0["min"] == 1
+    assert param0["max"] == 32
+
+
 def test_build_catalog_skips_malformed_files(capsys):
     """Verify that malformed .mmg files are skipped with a warning, and valid ones are included."""
     with tempfile.TemporaryDirectory() as tmpdir:

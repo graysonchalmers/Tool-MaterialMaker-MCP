@@ -46,11 +46,20 @@ def _parse_param(p: dict) -> dict:
     return out
 
 
-def _parse_generic_node(data: dict, type_name: str) -> dict | None:
+def _parse_generic_node(data: dict, type_name: str,
+                         full_catalog: dict | None = None) -> dict | None:
     """Parse a compound/"generic" node: no shader_model, but a nested graph
     whose external interface is defined by its 'gen_inputs'/'gen_outputs'
     ios children (each exposing a 'ports' list) and whose external
     parameters come from a 'remote' node's widgets.
+
+    `full_catalog` is the complete, already-built catalog (type_name ->
+    parsed_node), used by `_resolve_widget_range` to resolve a widget whose
+    linked inner node is a plain type reference (no inline shader_model of
+    its own) rather than an inline shader node. It is optional so this
+    function still works standalone (e.g. from `parse_node` on a single
+    file) -- in that case a link to a type-referenced inner node simply
+    can't be resolved and its range stays unset, same as before this fix.
     """
     child_nodes = data.get("nodes", [])
     gen_inputs = next((n for n in child_nodes
@@ -77,7 +86,7 @@ def _parse_generic_node(data: dict, type_name: str) -> dict | None:
                 "name": pname, "type": None, "default": None,
                 "desc": w.get("shortdesc") or w.get("longdesc") or "",
             }
-            resolved = _resolve_widget_range(child_nodes, w)
+            resolved = _resolve_widget_range(child_nodes, w, full_catalog)
             if resolved is not None:
                 # Keep this compound param's own name/desc; take the rest
                 # (type/default/min/max/step/values) from the resolved
@@ -90,19 +99,42 @@ def _parse_generic_node(data: dict, type_name: str) -> dict | None:
             "outputs": outputs, "parameters": parameters}
 
 
-def _resolve_widget_range(child_nodes: list, widget: dict) -> dict | None:
+def _resolve_widget_range(child_nodes: list, widget: dict,
+                           full_catalog: dict | None = None) -> dict | None:
     """A compound/"generic" node's `remote` widgets only carry `name`/`desc`;
-    the real range (type/min/max/step/default) lives on the inner node the
-    widget is wired to via `linked_widgets`. Follow the first linked widget
-    to that inner node and, if it is an inline `shader`-type node (i.e. it
-    carries its own `shader_model`), look up the matching shader parameter
-    and parse it the same way a leaf node's own parameters are parsed.
+    the real range (type/min/max/step/default) usually lives elsewhere and
+    has to be tracked down. There are three shapes, tried in this order:
 
-    Returns None (graceful fallback, never raises) when the widget has no
-    `linked_widgets`, the inner node can't be found, or the inner node has
-    no inline `shader_model` (e.g. it is itself a nested compound/type
-    reference) -- callers should leave the range fields unset in that case.
+    1. The widget carries its own range directly (a `named_parameter`-style
+       widget with `min`/`max`/`step`/`default` fields right on it, no
+       `linked_widgets` at all). Build the param dict straight from the
+       widget.
+    2. The widget has `linked_widgets` pointing at an inner node that is
+       itself an inline `shader`-type node (it carries its own embedded
+       `shader_model`). Look up the matching shader parameter there and
+       parse it the same way a leaf node's own parameters are parsed.
+    3. The widget's linked inner node has no inline `shader_model` -- it is
+       a plain type reference (e.g. `"type": "voronoi"` with no nested
+       shader block of its own). Its real parameters live in the
+       separately-parsed catalog entry for that type. When `full_catalog`
+       is supplied, look the type up there and search its own already-
+       resolved `parameters` list for a matching name.
+
+    Returns None (graceful fallback, never raises) when none of the above
+    resolves -- e.g. the widget has no range of its own and no usable
+    `linked_widgets`, the inner node can't be found, or (without
+    `full_catalog`) the inner node is a type reference that can't be looked
+    up here. Callers should leave the range fields unset in that case.
     """
+    if "min" in widget and "max" in widget:
+        return {
+            "type": "float",
+            "min": widget.get("min"),
+            "max": widget.get("max"),
+            "step": widget.get("step"),
+            "default": widget.get("default"),
+        }
+
     linked_widgets = widget.get("linked_widgets") or []
     if not linked_widgets:
         return None
@@ -115,11 +147,21 @@ def _resolve_widget_range(child_nodes: list, widget: dict) -> dict | None:
     if inner_node is None:
         return None
     inner_sm = inner_node.get("shader_model")
-    if not inner_sm:
+    if inner_sm:
+        for p in inner_sm.get("parameters", []):
+            if p.get("name") == inner_param_name:
+                return _parse_param(p)
         return None
-    for p in inner_sm.get("parameters", []):
+    # No inline shader_model: the inner node is a plain type reference.
+    # Its real parameters live in the full catalog entry for that type.
+    if full_catalog is None:
+        return None
+    referenced = full_catalog.get(inner_node.get("type"))
+    if referenced is None:
+        return None
+    for p in referenced.get("parameters", []):
         if p.get("name") == inner_param_name:
-            return _parse_param(p)
+            return dict(p)
     return None
 
 
@@ -127,10 +169,21 @@ def parse_node(mmg_path: str) -> dict | None:
     with open(mmg_path, encoding="utf-8") as fh:
         data = json.load(fh)
     type_name = os.path.splitext(os.path.basename(mmg_path))[0]
+    return _parse_node_data(data, type_name)
+
+
+def _parse_node_data(data: dict, type_name: str,
+                      full_catalog: dict | None = None) -> dict | None:
+    """The actual parsing logic behind `parse_node`, split out so
+    `build_catalog` can re-invoke it for a compound/generic node's second
+    pass without re-reading and re-parsing the file's JSON. `full_catalog`
+    is forwarded to `_parse_generic_node` (see its docstring); leaf nodes
+    (those with an inline `shader_model`) never need it.
+    """
     sm = data.get("shader_model")
     if not sm:
         if "nodes" in data:
-            return _parse_generic_node(data, type_name)
+            return _parse_generic_node(data, type_name, full_catalog)
         return None
     # "Generic" nodes repeat their '#'-suffixed input sockets generic_size
     # times (e.g. mwf_mix's 'h#'/'c#'/'orm#'/'em#'/'nm#' each repeat
@@ -160,15 +213,46 @@ SPECIAL_TYPES = {"graph", "comment", "remote", "shader",
 
 
 def build_catalog(nodes_dir: str) -> dict:
+    """Build the full node catalog in two passes.
+
+    Pass 1 parses every .mmg file, exactly as before this function grew a
+    second pass: each file's JSON is loaded once and parsed via
+    `_parse_node_data`, producing a complete type_name -> parsed_node
+    catalog. A leaf node's parameters already have their real ranges
+    resolved at this point (via `_parse_param`); a compound/"generic" node's
+    parameters are resolved as far as `_resolve_widget_range` can get
+    without seeing the rest of the catalog (its own widget range, or a link
+    to an inline shader node).
+
+    Pass 2 revisits every compound/generic node parsed in pass 1 (tracked
+    by keeping its already-loaded raw data) and re-resolves its parameters
+    now that the full catalog is available. This is what lets
+    `_resolve_widget_range` follow a `linked_widgets` link to an inner node
+    that is a plain type reference rather than an inline shader node (e.g.
+    crystal's 'voronoi' inner node has no shader_model of its own; its real
+    parameters live in the separately-parsed 'voronoi' catalog entry, which
+    may not exist yet -- or may not even be parsed yet -- during pass 1).
+    """
     catalog = {}
+    generic_raw_data = {}  # type_name -> raw .mmg JSON, for pass 2
     for path in glob.glob(os.path.join(nodes_dir, "*.mmg")):
+        type_name = os.path.splitext(os.path.basename(path))[0]
         try:
-            node = parse_node(path)
+            with open(path, encoding="utf-8") as fh:
+                data = json.load(fh)
+            node = _parse_node_data(data, type_name)
         except (ValueError, KeyError) as e:
             print(f"WARNING: skipping {os.path.basename(path)}: {e}", file=sys.stderr)
             node = None
         if node:
             catalog[node["type"]] = node
+            if not data.get("shader_model"):
+                generic_raw_data[node["type"]] = data
+
+    for type_name, data in generic_raw_data.items():
+        reparsed = _parse_generic_node(data, type_name, full_catalog=catalog)
+        if reparsed is not None:
+            catalog[type_name] = reparsed
     return catalog
 
 
