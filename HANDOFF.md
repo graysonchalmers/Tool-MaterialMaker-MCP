@@ -1,6 +1,6 @@
 # 🧭 Session Handoff: Tool-MaterialMaker-MCP
 
-_Last updated: 2026-09-14 (optional rotating-key-light preview mode, `render_preview_sweep`, built on branch `claude/vigorous-kepler-8c0148`; not yet merged) CT (America/Chicago)_
+_Last updated: 2026-09-14 (optional rotating-key-light preview mode, `render_preview_sweep`, merged to `main` via `58e35ab`, pushed) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up. **Shape rule (2026-09-05,
 teardown #3):** "Current state" describes the latest session only; anything
@@ -60,17 +60,20 @@ depth from one fixed light angle. New `render_preview_sweep()` tool.**
 
 ## 📌 Where we stopped
 
-Code, tests, and docs (README/STATUS/this file) are all written and green on
-branch `claude/vigorous-kepler-8c0148` (worktree `zealous-ritchie-cb051a`).
-**Not yet committed** -- brainstorming's bounded-task design was approved by
-Grayson but no commit/push/merge instruction has been given yet.
+Merged to `main` (`58e35ab`, `--no-ff` via a temp worktree, matching this
+repo's local-merge convention) and pushed. Fast suite re-verified green on
+`main` post-merge (1051 passed / 33 deselected). Branch
+`claude/vigorous-kepler-8c0148` can be deleted, local and remote, when
+convenient.
 
 ## ▶️ Next concrete step
 
-Grayson: confirm the GIF reads well and the backlit trough (see above) isn't a
-problem -- if it is, the fix is either a narrower azimuth arc or elevation
-that stays more front-facing, both easy changes -- then say whether to
-commit/push this branch (and whether to merge or leave it for review).
+Grayson: run `render_preview_sweep` yourself through the live MCP tool
+surface (once a session picks up the merged `main`) to promote STATUS.md's
+🔌 row to ✅, and confirm the backlit trough (66 front-lit down to 40
+backlit across a 24-frame sweep -- see above) isn't a problem. If it is, the
+fix is a narrower azimuth arc or an elevation that stays more front-facing,
+both easy changes.
 
 ## ❓ Open questions
 
@@ -86,7 +89,7 @@ commit/push this branch (and whether to merge or leave it for review).
   one count not test-enforced.
 - `m01_weathered_copper` ships without a normal map (content gap surfaced by
   the render baseline).
-- Sweep tuning (frame count 18, 80ms/frame, 2 settle-frames per step) is a
+- Sweep tuning (frame count 18, 80ms/frame, 6 settle-frames per step) is a
   first guess, not visually tuned against a range of materials -- revisit if
   the GIF reads too choppy/slow once Grayson has used it on a few more.
 
@@ -208,7 +211,7 @@ commit/push this branch (and whether to merge or leave it for review).
 Newest first. Keep at most 8 entries; older ones are in `git log` (search the
 commit subjects, every session ends with a `docs:` wrap-up commit).
 
-### 2026-09-14 (rotating-key-light preview mode, `render_preview_sweep`, NOT YET MERGED, 🔌 not ✅): brainstorming (bounded path) -> TDD. Follow-up from the noise-vocabulary-round-2 session (f09_plaid_flannel's static preview couldn't show relief depth). `preview.gd` sweep mode (one Godot process, N frames, full 360-degree key-light rotation) + `render_preview_sweep()` (Pillow GIF assembly, now a runtime dep) + 11th MCP tool. Advisor review caught a thin test (frame count alone doesn't prove the light moved) and the verified/wired state mismatch (implementer-run, not Grayson-run); added a real frames-differ assertion (proved it has teeth by watching it catch settle=0) and measured a real brightness curve (66 front-lit -> 40 backlit across a 24-frame sweep, not black -- flagged for Grayson, not silently fixed). Sent Grayson the GIF (`f01_woven_denim`). Full suite 1083 passed / 1 known live-overlay flake. Not committed yet.
+### 2026-09-14 (rotating-key-light preview mode, `render_preview_sweep`, MERGED `58e35ab`, still 🔌 not ✅ pending Grayson's own run): brainstorming (bounded path) -> TDD. Follow-up from the noise-vocabulary-round-2 session (f09_plaid_flannel's static preview couldn't show relief depth). `preview.gd` sweep mode (one Godot process, N frames, full 360-degree key-light rotation) + `render_preview_sweep()` (Pillow GIF assembly, now a runtime dep) + 11th MCP tool. Advisor review caught a thin test (frame count alone doesn't prove the light moved) and the verified/wired state mismatch (implementer-run, not Grayson-run); added a real frames-differ assertion (proved it has teeth by watching it catch settle=0) and measured a real brightness curve (66 front-lit -> 40 backlit across a 24-frame sweep, not black -- flagged for Grayson, not silently fixed). Sent Grayson the GIF (`f01_woven_denim`); he confirmed it looked fine. Full suite 1083 passed / 1 known live-overlay flake (passes alone). Committed, pushed, merged to `main` same session.
 ### 2026-09-13 (enum-index validation enforcement, MERGED to main): `pickup` (caught baton drift: noise branch already merged `0169446`/pushed, baton said unmerged), Grayson picked the deferred enum follow-up. Advisor-prompted investigation flipped the premise: detection already worked (`validate_graph` flags t09's `type=-3` int, even in-subgraph); the hole was ENFORCEMENT (out-of-range enum was a `warning`, all gates filter to errors / promote never validates). Fix: out-of-range enum index -> `error`; message explains the clamp and either names the intended index via `_enum_literal_hint` (literal match) or lists all valid options; `catalog_builder` captures `value_literals` for numeric index-mismatched enums only; ratchet test in `test_cookbook_gate`. Wrap-up surfaced a sibling branch `claude/zealous-ritchie-cb051a` (2 commits, unmerged) fixing the same thing as a warning-with-options-list; Grayson said reconcile, so its options-list message + wavelet range-pin test were folded into this branch (sibling now superseded). TDD red->green, fast suite 1039->1045. Ruled out: string-literal guard hole (left; t09 was int) and the stale gitignored `catalog/catalog.json` artifact (not a bug). Commons log written.
 ### 2026-09-13 (noise/distortion vocabulary + core toolbox, MERGED `0169446` + pushed): `pickup` -> `subagent-driven-development` resumed at Task 8, finished the plan (all 14 tasks, per-task + final opus review clean). Shipped 6 proof materials on unused bases (s13 marble/fbm, m03 titanium/anisotropic, sf07 conduit/truchet, s12 sandstone/directional_warp, t09 wet sand/wavelet, gl02 cut gem/voronoi_triangle; cookbook 53->59), 19 diagnostic swatches, README un-collapse + count-gated "Core toolbox" section, AUTHORING distortion note. Fast suite 1039; final fix `4905d37` (gl02 card node count). Merged next session; a follow-up t09 enum fix `4d1187f` landed post-merge.
 ### 2026-09-06 (backup-ops wake-lock, cross-project): `pickup` here, Grayson picked next-step #2. Root-caused the 09-05 nightly truncation as idle-sleep mid-run (the git `NativeCommandError` is a handled CRLF warning; true signature is a missing `transcript end` footer, not a code bug), and added a `SetThreadExecutionState` wake-lock to `backup-ops\Backup-All.ps1` (acquire in try, release in finally). Verified compile + parse; commit `f7e809d` local, PUSH PENDING (ssh-agent not loaded this session). Commons log written. No MM-MCP code changed.
