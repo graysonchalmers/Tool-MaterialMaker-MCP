@@ -55,19 +55,23 @@ round 1's pattern); none needed an iteration this round (unlike Task 4's
 relief fix, done in the prior session before the pause). Cookbook is now 65
 materials across 12 categories, up from 59 at the start of round 2.
 
-**One finding was deliberately parked, not fixed:** Task 8's review found
-the shared `wood` donor (used by w04, w05, and the new w06) wires its
-GrainMask blend straight into Material's metallic port, producing a
-spatially-varying metallic channel (~0.04-0.58) instead of near-zero.
-Confirmed identical and pre-existing in already-shipped w04/w05, not
-introduced or worsened by w06. Fixing only w06 would leave w04/w05
-inconsistent, so this was ruled out of Task 8's scope and a follow-up was
-spawned instead (`task_21359777`, "Fix wood-donor metallic bleed in
-w04/w05/w06"); see Open questions.
+**One finding was deliberately parked at Task 8's review, then closed before
+merge.** Task 8 found the shared `wood` donor (used by w04, w05, and the new
+w06) wires its GrainMask blend straight into Material's metallic port,
+producing a spatially-varying metallic channel (~0.04-0.58) instead of
+near-zero, identical and pre-existing in already-shipped w04/w05. Fixing
+only w06 there would have left w04/w05 inconsistent, so it was ruled out of
+Task 8's scope and a follow-up was spawned (`task_21359777`). That follow-up
+ran in a separate session and landed on its own branch
+(`claude/heuristic-bhaskara-551ae1`, commit `a984312`), fixing w04/w05 on
+`main`. Before merging this branch, the identical fix was applied to w06
+here too (commit `0997d6d`, verified via the exported ORM's metallic
+channel reading flat 0, not by eye), so all three wood materials are
+consistent and the issue is fully closed, not just deferred.
 
 Merge to `main` is Grayson's call, same rule round 1 followed. The branch is
 ready: all 11 tasks landed with clean per-task reviews, full suite and
-cookbook gates green.
+cookbook gates green, and the wood-metallic fix applied on top.
 
 ## 📌 Where we stopped
 
@@ -78,11 +82,11 @@ green. Nothing is in flight and nothing is awaiting Grayson mid-task.
 
 ## ▶️ Next concrete step
 
-Show Grayson the branch is ready and get his explicit go-ahead to merge to
-`main` (same rule round 1 followed: merge is his call, not automatic on a
-clean plan). Once merged and pushed, update STATUS.md's cookbook row and
-component rows off the round-2-specific language (currently phrased as
-"in progress on branch") to reflect `main`.
+Merge to `main` and push (Grayson gave the go-ahead; the wood-metallic fix
+landed on this branch first so the merge doesn't reintroduce it). Once
+merged and pushed, update STATUS.md's cookbook row and component rows off
+the round-2-specific language (currently phrased as "in progress on
+branch") to reflect `main`.
 
 ## ❓ Open questions
 
@@ -96,14 +100,10 @@ component rows off the round-2-specific language (currently phrased as
   fails partway; staleness check hashes only the addon.
 - `m01_weathered_copper` ships without a normal map (content gap surfaced by
   the render baseline).
-- Whether a rotating-key-light GIF preview mode is worth building (spawn_task
-  `task_6bcbe3ca`); Grayson asked mid-round-2, deferred as a follow-up.
-- The shared `wood` donor (w04/w05/w06) wires its GrainMask blend straight
-  into Material's metallic port, producing a spatially-varying 0.04-0.58
-  metallic channel instead of near-zero; identical bug in all three, not
-  worth fixing piecemeal. Follow-up spawned: `task_21359777`, "Fix
-  wood-donor metallic bleed in w04/w05/w06" (found during Task 8's review,
-  2026-09-14).
+- The rotating-key-light GIF preview mode asked about mid-round-2
+  (`task_6bcbe3ca`) was built and merged to `main` separately this same day
+  (`render_preview_sweep`, `58e35ab`); still 🔌 not ✅ pending Grayson's own
+  run, per STATUS.md.
 
 ## ⚠️ Heads-up for the next agent
 
@@ -223,7 +223,7 @@ component rows off the round-2-specific language (currently phrased as
 Newest first. Keep at most 8 entries; older ones are in `git log` (search the
 commit subjects, every session ends with a `docs:` wrap-up commit).
 
-### 2026-09-14 (noise-vocabulary round 2, FINISHED on branch `noise-vocabulary-round-2`, not yet merged): `pickup` resumed at Task 5's pending approval (prior session paused mid-task). Grayson approved four previews with no iterations needed this session (f10_boucle_upholstery, carried over from the paused prior session, plus sf05_circuit_maze_panel, gl03_shattered_crystal, and w06_burled_wood) before `subagent-driven-development` drove Tasks 5-11 through to completion: cookbook 59 -> 65 materials across 12 categories, README/AUTHORING count integration (13 -> 14 of 52 curated noise nodes live), and this wrap (fast suite 1103, `promote_cookbook --check` + `naming --cookbook` clean, em-dash scan clean). Task 8's review found a real pre-existing bug (the shared `wood` donor bleeds GrainMask into Material's metallic port, identical in w04/w05/w06) and deliberately parked it rather than fixing piecemeal; spawned follow-up `task_21359777`. Branch ready; merge to `main` is Grayson's call, not yet given.
+### 2026-09-14 (noise-vocabulary round 2, MERGED to `main`): `pickup` resumed at Task 5's pending approval (prior session paused mid-task). Grayson approved four previews with no iterations needed this session (f10_boucle_upholstery, carried over from the paused prior session, plus sf05_circuit_maze_panel, gl03_shattered_crystal, and w06_burled_wood) before `subagent-driven-development` drove Tasks 5-11 through to completion: cookbook 59 -> 65 materials across 12 categories, README/AUTHORING count integration, and a wrap commit. A final whole-branch review (opus) came back "ready to merge with fixes": one fix wave landed an AUTHORING.md clarity clause, a `_NOISE_PATTERN_NODES` catalog-subset guard test plus the missing `directional_noise` entry (52 -> 53), a softened w06 docstring, and two baton nits, all re-reviewed clean. Task 8's review had also found and parked a real pre-existing bug (the shared `wood` donor bleeds GrainMask into Material's metallic port, identical in w04/w05/w06) with a spawned follow-up (`task_21359777`); before merging, that follow-up's own session landed a fix for w04/w05 on a separate branch (`claude/heuristic-bhaskara-551ae1`), which was merged to `main` first, then the identical fix was applied to w06 on this branch (verified via the ORM's metallic channel, flat 0) so the issue closed fully rather than half-fixed. Merged to `main` with Grayson's explicit go-ahead, HANDOFF.md's conflicting session-log entries hand-reconciled (both this session and the same-day `render_preview_sweep` session's entries preserved) rather than resolved naively.
 ### 2026-09-14 (noise-vocabulary round 2 kickoff, IN PROGRESS): `pickup` answered Grayson's two questions (README current, tool usage still shallow: 9 of the catalog's noise/warp bases in use across 59 materials), brainstorm -> `writing-plans` -> `subagent-driven-development` for a round-2 scope Grayson approved (6 more materials + a reusable `quality/node_usage_audit.py` audit script). Phase A landed clean (13/52 curated noise nodes now live-tracked). `l07_pebbled_leather` and `f09_plaid_flannel` landed and approved (f09 took one relief-strength iteration on Grayson's feedback). Caught and corrected a dispatch bug mid-session: an implementer subagent was wrongly told to SendUserFile-and-wait-for-approval itself, when only the controller session has a live chat channel to Grayson; fixed for all subsequent material dispatches. Session ended mid-Task-5 (`f10_boucle_upholstery`): preview sent, no reply yet, builder committed as an explicit WIP checkpoint (`a3728df`) so nothing is lost. Grayson also asked about a rotating-light preview GIF; deferred to a spawn_task follow-up rather than scope-creeping this round. Tasks 6-11 not started.
 ### 2026-09-13 (enum-index validation enforcement, MERGED to main): `pickup` (caught baton drift: noise branch already merged `0169446`/pushed, baton said unmerged), Grayson picked the deferred enum follow-up. Advisor-prompted investigation flipped the premise: detection already worked (`validate_graph` flags t09's `type=-3` int, even in-subgraph); the hole was ENFORCEMENT (out-of-range enum was a `warning`, all gates filter to errors / promote never validates). Fix: out-of-range enum index -> `error`; message explains the clamp and either names the intended index via `_enum_literal_hint` (literal match) or lists all valid options; `catalog_builder` captures `value_literals` for numeric index-mismatched enums only; ratchet test in `test_cookbook_gate`. Wrap-up surfaced a sibling branch `claude/zealous-ritchie-cb051a` (2 commits, unmerged) fixing the same thing as a warning-with-options-list; Grayson said reconcile, so its options-list message + wavelet range-pin test were folded into this branch (sibling now superseded). TDD red->green, fast suite 1039->1045. Ruled out: string-literal guard hole (left; t09 was int) and the stale gitignored `catalog/catalog.json` artifact (not a bug). Commons log written.
 ### 2026-09-13 (noise/distortion vocabulary + core toolbox, MERGED `0169446` + pushed): `pickup` -> `subagent-driven-development` resumed at Task 8, finished the plan (all 14 tasks, per-task + final opus review clean). Shipped 6 proof materials on unused bases (s13 marble/fbm, m03 titanium/anisotropic, sf07 conduit/truchet, s12 sandstone/directional_warp, t09 wet sand/wavelet, gl02 cut gem/voronoi_triangle; cookbook 53->59), 19 diagnostic swatches, README un-collapse + count-gated "Core toolbox" section, AUTHORING distortion note. Fast suite 1039; final fix `4905d37` (gl02 card node count). Merged next session; a follow-up t09 enum fix `4d1187f` landed post-merge.

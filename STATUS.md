@@ -8,21 +8,24 @@ Gate ledger. Three states only: ✅ verified · 🔌 wired · ⬜ not started.
 
 _Last updated: 2026-09-14 (round 1's noise/distortion vocabulary + core-toolbox plan MERGED to `main` and pushed 2026-09-13 (`0169446`); round 2 FINISHED on branch `noise-vocabulary-round-2`, all 11 tasks landed and reviewed clean, not yet merged)._
 
-> 🔌 **Finished on branch `noise-vocabulary-round-2`, not yet merged:** a
+> 🔌 **Finished on branch `noise-vocabulary-round-2`, ready to merge:** a
 > reusable `quality/node_usage_audit.py` script (live noise/pattern coverage
 > reporting, replaces the old one-time manual histogram) plus six more proof
 > materials on previously-unused catalog nodes, all landed and approved:
 > `l07_pebbled_leather` (fbm Cellular 1), `f09_plaid_flannel` (fbm Cellular 3),
 > `f10_boucle_upholstery` (fbm Cellular 5), `sf05_circuit_maze_panel` (truchet
 > Line), `gl03_shattered_crystal` (shard_fbm), `w06_burled_wood` (warp2).
-> README/AUTHORING count integration done (65 materials, 14/52 live noise
-> nodes). See `.superpowers/sdd/2026-09-13-noise-vocabulary-round-2/progress.md`
-> for the exact task-by-task ledger. Plan:
-> `docs/superpowers/plans/2026-09-13-noise-vocabulary-round-2.md`. One finding
-> parked, not fixed: the shared `wood` donor bleeds GrainMask into Material's
-> metallic port (w04/w05/w06 alike); follow-up spawned as `task_21359777`, see
-> `HANDOFF.md`'s Open questions. Merge to `main` is Grayson's call, same as
-> round 1, and has not happened yet.
+> README/AUTHORING count integration done (65 materials, 14/53 live noise
+> nodes). Full task-by-task ledger for this round lived at
+> `.superpowers/sdd/2026-09-13-noise-vocabulary-round-2/progress.md`,
+> deleted per this skill's own convention once the final review closed
+> clean; see `HANDOFF.md`'s session log for the summary. Plan:
+> `docs/superpowers/plans/2026-09-13-noise-vocabulary-round-2.md`. One
+> finding parked at Task 8's review (the shared `wood` donor bleeds
+> GrainMask into Material's metallic port, w04/w05/w06 alike) was fully
+> closed before merge: `main`'s `a984312` fixed w04/w05, this branch's
+> `0997d6d` fixed w06 the same way. Merge to `main` is Grayson's call, same
+> as round 1; given, in progress.
 
 **How to read this file (rule adopted 2026-09-05, teardown #3):** each cell holds
 the state, one line of what it is, and a pointer to where the evidence lives
