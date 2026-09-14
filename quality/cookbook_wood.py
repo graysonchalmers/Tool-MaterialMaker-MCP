@@ -18,14 +18,6 @@ from quality.author_helpers import (load_example, set_gradient, set_param, add_n
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.config import load_config
 
-# KNOWN ISSUE (flagged 2026-09-14, not fixed here): the shared `wood` donor
-# wires its GrainMask blend straight into Material's metallic port instead of
-# a near-zero scalar, producing a spatially-varying (~0.04-0.58) metallic
-# channel identically in w04_driftwood_gray, w05_dark_walnut, and
-# w06_burled_wood. Tracked as follow-up task_21359777 and in HANDOFF.md; the
-# fix is a drop_conn + set_param(Material, "metallic", 0) across all three
-# builders (same pattern already used for cookbook_terrain.py's t01 fix).
-
 _LABEL = "cookbook-wood"
 
 # Worked mapping for the `wooden_floor` donor (used by w03) and the paint
@@ -333,6 +325,11 @@ def build_w06_burled_wood(catalog: dict) -> str:
     ])
     set_gradient(g, "colorize_0", [    # semi-gloss, sealed finish (same as w05)
         (0.0, 0.18, 0.18, 0.18), (1.0, 0.34, 0.34, 0.34)])
+
+    # Non-metallic fix (2026-09-14): same donor bug as w04_driftwood_gray and
+    # w05_dark_walnut -- see w04's comment. Drop before grouping.
+    drop_conn(g, "Material", 1)          # remove blend_0 -> metallic wire
+    set_param(g, "Material", "metallic", 0)
 
     # Same two-subgraph split as w04/w05, minus the removed voronoi/colorize_1
     # pair, plus the new perlin_3 swirl-displacement node.

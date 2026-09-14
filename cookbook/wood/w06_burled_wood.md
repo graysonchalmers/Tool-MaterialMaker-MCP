@@ -50,6 +50,12 @@ move `quality/node_usage_audit.py`'s noise/pattern coverage numbers, unlike
 every other material added this round. A future reader checking the audit
 script for `warp2` usage should not expect to find it counted there.
 
+Like `w04_driftwood_gray` and `w05_dark_walnut`, the shared `wood` donor
+wires its grain-mask blend directly into `Material`'s metallic port instead
+of a near-zero scalar. This material drops that wire and zeroes the
+scalar the same way, so all three wood materials render consistently
+non-metallic.
+
 ## Subgraph structure
 
 Grouped per the "Grouping into subgraphs" lever in `docs/AUTHORING.md`,
