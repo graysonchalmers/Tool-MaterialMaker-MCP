@@ -10,7 +10,8 @@ Then: python -m quality.render_cookbook cookbook-glass
 import sys
 
 from quality.author_helpers import (load_example, set_gradient, set_param, drop_conn,
-                     save_variant, add_node, _grad, group_into_subgraph, rename_nodes, retype)
+                     save_variant, add_node, _grad, group_into_subgraph, rename_nodes, retype,
+                     _from_scratch_noise_material)
 
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.config import load_config
@@ -420,10 +421,121 @@ def build_gl03_shattered_crystal(catalog: dict) -> str:
     return save_variant(g, _LABEL, "gl03_shattered_crystal", 1)
 
 
+# gl04 is the first cookbook material to use `crystal`, a compound
+# (`graph`-type) node with NO internal mode switch -- unlike this round's
+# other two compound-node siblings (`dirt`'s param0 mode picker,
+# `directional_noise`'s implicit direction control), `crystal.mmg`'s
+# `gen_parameters` block exposes only param0/param1 (Scale X/Scale Y, both
+# defaulting to 16), which drive TWO independently-seeded internal `voronoi`
+# fields (verified by reading `crystal.mmg`: `voronoi` seed_int 0, `voronoi_2`
+# seed_int 1998774700, both scale_x=scale_y=16, stretch=0.85) combined
+# through a chain of `math` nodes into one output. Built from scratch via
+# `_from_scratch_noise_material` (no donor has this topology), then
+# `retype()`d from the placeholder `perlin_0` to `crystal` -- the same
+# connection-safe move `t09`/`t10` use, since a compound node's port 0 is a
+# plain `f` output like `perlin`'s.
+_GL04_NAMES = {
+    "perlin_0": "CrystalCells",     # placeholder perlin, retyped to `crystal` below
+    "colorize_0": "CrystalColor",
+    "normal_map_0": "CrystalNormal",
+    "rough_const": "RoughnessConst",
+}
+
+
+def build_gl04_raw_crystal_cluster(catalog: dict) -> str:
+    """Raw crystal cluster: proves the `crystal` compound node (zero prior
+    cookbook use) for an irregular, natural crystal-formation look -- a
+    fourth glass topology distinct from all three existing siblings.
+    `gl01_frosted_glass` is a CONNECTED SANDBLAST crack network off plain
+    `voronoi` (soft, diffuse, matte). `gl02_cut_gem` is FACETED
+    `voronoi_triangle` cells (uniform, flat, hard-edged, no cracks).
+    `gl03_shattered_crystal` is a dense CONTINUOUS `shard_fbm` fracture field
+    (turbulent, covers the whole surface). `crystal`'s two-voronoi composite
+    is none of those: it reads as a cluster of irregular, variably-sized
+    polygonal cells with bright pointed glints near cell centers and dark
+    crack-like valleys at cell boundaries -- like a raw amethyst geode or
+    quartz cluster, not a cut/faceted/fractured surface.
+
+    VERIFICATION (isolated single-node render via the MCP
+    `render_node_output` tool, `CrystalCells`/`perlin_0` at the
+    `crystal.mmg`-default `param0=16, param1=16` before any grouping):
+    the raw grayscale output is an irregular mosaic of polygonal cells,
+    clearly varying in size and shape (not a uniform grid -- some cells
+    span several times the area of their neighbors), separated by dark
+    crack-like boundaries, with a sharp bright pointed highlight near the
+    center of many (not all) cells. That confirms the two-voronoi-composite
+    reads as an irregular natural crystal cluster rather than a regular
+    tiled pattern, and is visibly distinct from `gl02_cut_gem`'s uniform
+    `voronoi_triangle` mosaic.
+
+    That same render's pixel histogram (4,194,304 samples, 8-bit) came back
+    heavily skewed dark: min 0, p50 (median) 23, p90 67, p99 117, max 223
+    (of 255) -- i.e. roughly half the field sits below ~0.09 normalized and
+    the bright glints are a thin tail up to ~0.87, not a flat 0..1 spread.
+    A naive 0.0/0.5/1.0 gradient would have wasted its top half on values
+    the field barely reaches. `CrystalColor`'s gradient stops are placed
+    against that measured distribution instead: 0.0 and 0.08 bracket the
+    dense low end (median 0.09) with the deepest valley tones, 0.22 and
+    0.45 cover the p75-p99 range (0.17-0.46) with the mid-facet tones, and
+    0.80 catches the sparse bright tail (p99.5+ up to the observed max
+    ~0.87) with a near-white glint color -- so the interesting structure
+    (crack valleys vs. facet centers vs. glints) actually shows up in the
+    final render instead of collapsing into one flat dark hue.
+
+    Palette is jewel-tone amethyst purple (deep violet valleys through
+    lavender mid-tones to near-white glints), distinct from `gl02`'s flat
+    emerald and `gl03`'s blue-violet. Roughness is pushed low (0.06, at
+    `gl02_cut_gem`'s glossy calibration point) for actually-glossy crystal
+    faces, not matte. `CrystalNormal`'s `param1` (relief strength) is 0.7 --
+    between `gl02`'s 0.6 and `gl03`'s 0.8 -- for sharp crystalline facet
+    relief without over-exaggerating it into `gl03`'s territory.
+    `param4=0` is the required flat-normal fix."""
+    g = _from_scratch_noise_material(
+        {"scale_x": 16, "scale_y": 16},  # placeholder; retyped to crystal below
+        [(0.0, 0.10, 0.03, 0.16), (0.08, 0.22, 0.09, 0.32),
+         (0.22, 0.42, 0.22, 0.55), (0.45, 0.62, 0.42, 0.75),
+         (0.80, 0.92, 0.85, 0.95)],
+        metallic=0.0, roughness=0.06, normal_amount=0.7)
+    retype(g, "perlin_0", "crystal", {"param0": 16, "param1": 16})
+    set_param(g, "normal_map_0", "param4", 0)   # flat-normal fix (docs/AUTHORING.md)
+
+    # crystal (like dry_earth/wavelet_noise/dirt before it) leaves the
+    # roughness INPUT unconnected on a from-scratch skeleton, so a
+    # scalar-only roughness exports no ORM map. Flat low-roughness texture,
+    # same fix as every prior glass sibling.
+    add_node(g, "rough_const", "colorize",
+             {"gradient": _grad([(0.0, 0.06, 0.06, 0.06), (1.0, 0.06, 0.06, 0.06)])})
+    g["connections"].append(
+        {"from": "perlin_0", "from_port": 0, "to": "rough_const", "to_port": 0})
+    g["connections"].append(
+        {"from": "rough_const", "from_port": 0, "to": "Material", "to_port": 2})
+
+    # Same two-group split as every other from-scratch cookbook material
+    # (p01_glossy_plastic, t09_rippled_wet_sand, t10_packed_dirt): the
+    # generator feeds both the color and normal/roughness paths, so it lives
+    # in the pattern group rather than staying top-level as a single-purpose
+    # shared node.
+    group_into_subgraph(
+        g, ["perlin_0", "colorize_0"], "crystal_pattern", "Crystal Pattern",
+        [("perlin_0", "param0", "param0", "Cell scale"),
+         ("colorize_0", "gradient", "param1", "Crystal color")],
+        catalog,
+    )
+    group_into_subgraph(
+        g, ["normal_map_0", "rough_const"], "crystal_finish", "Crystal Finish",
+        [("rough_const", "gradient", "param0", "Roughness"),
+         ("normal_map_0", "param1", "param1", "Surface relief")],
+        catalog,
+    )
+    rename_nodes(g, _GL04_NAMES)
+    return save_variant(g, _LABEL, "gl04_raw_crystal_cluster", 1)
+
+
 BUILDERS = {
     "gl01_frosted_glass": build_gl01_frosted_glass,
     "gl02_cut_gem": build_gl02_cut_gem,
     "gl03_shattered_crystal": build_gl03_shattered_crystal,
+    "gl04_raw_crystal_cluster": build_gl04_raw_crystal_cluster,
 }
 
 
