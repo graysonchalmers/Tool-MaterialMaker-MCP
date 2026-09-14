@@ -807,11 +807,9 @@ def build_t10_packed_dirt(catalog: dict) -> str:
     dry-dirt highlight reached only by the brightest fleck pixels), HIGH
     matte roughness (0.88) for bare uncoated earth -- the deliberate
     opposite of `t09_rippled_wet_sand`'s 0.15 wet sheen in the same file.
-    `normal_map param1=0.3` for a moderate, worn unevenness -- softer than
-    the voronoi-plate family's hard crack relief (`t01`/`t05`/`t06`/`t08`
-    run 0.12-0.55 for sharp fissures; 0.3 here reads as rolling, worn
-    ground rather than a crack network, since `dirt` has no crack topology
-    to begin with). `param4=0` on the normal chain per the project's
+    `normal_map param1=0.3` for a moderate, worn unevenness -- `dirt` has no
+    crack network to begin with, so this relief reads as rolling, worn
+    ground rather than sharp fissures. `param4=0` on the normal chain per the project's
     standing flat-normal-source fix. Roughness fed as a flat texture
     (`rough_const`), immune to this same input-range trap since a flat
     gradient returns the same color regardless of input value, rather than

@@ -23,7 +23,7 @@ on output port 0, so the swap is connection-safe.
 connected sandblast crack network off plain `voronoi` (soft, diffuse,
 matte). `gl02_cut_gem` is faceted `voronoi_triangle` cells (uniform,
 flat, hard-edged, no cracks). `gl03_shattered_crystal` is a dense
-continuous `shard_fbm` fracture field (turbulent, covers the whole
+continuous `shard_fbm` fracture field (hard-edged, covers the whole
 surface). `crystal`'s two-voronoi composite is none of those.
 
 **Verified, not assumed.** An isolated verification render of the

@@ -1,3 +1,4 @@
+import copy
 import json
 import os
 import sys
@@ -161,7 +162,12 @@ def _resolve_widget_range(child_nodes: list, widget: dict,
         return None
     for p in referenced.get("parameters", []):
         if p.get("name") == inner_param_name:
-            return dict(p)
+            # Deep copy: `p` is a leaf node's own catalog-entry param dict
+            # (e.g. an enum's `values` list). A shallow `dict(p)` would
+            # leave that nested list object shared between the leaf node's
+            # catalog entry and this compound node's resolved param, which
+            # is an aliasing hazard if either is ever mutated in place.
+            return copy.deepcopy(p)
     return None
 
 
@@ -172,18 +178,19 @@ def parse_node(mmg_path: str) -> dict | None:
     return _parse_node_data(data, type_name)
 
 
-def _parse_node_data(data: dict, type_name: str,
-                      full_catalog: dict | None = None) -> dict | None:
+def _parse_node_data(data: dict, type_name: str) -> dict | None:
     """The actual parsing logic behind `parse_node`, split out so
-    `build_catalog` can re-invoke it for a compound/generic node's second
-    pass without re-reading and re-parsing the file's JSON. `full_catalog`
-    is forwarded to `_parse_generic_node` (see its docstring); leaf nodes
-    (those with an inline `shader_model`) never need it.
+    `build_catalog`'s pass 1 can reuse it directly on JSON it has already
+    loaded, without re-reading and re-parsing the file the way `parse_node`
+    (which takes a path) does. Compound/generic nodes get a second
+    resolution pass in `build_catalog` too, but that pass
+    (`_resolve_generic_nodes_to_fixpoint`) calls `_parse_generic_node`
+    directly with the full catalog in hand -- not this function.
     """
     sm = data.get("shader_model")
     if not sm:
         if "nodes" in data:
-            return _parse_generic_node(data, type_name, full_catalog)
+            return _parse_generic_node(data, type_name)
         return None
     # "Generic" nodes repeat their '#'-suffixed input sockets generic_size
     # times (e.g. mwf_mix's 'h#'/'c#'/'orm#'/'em#'/'nm#' each repeat

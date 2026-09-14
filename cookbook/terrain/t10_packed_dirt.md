@@ -52,10 +52,9 @@ shown its documented tan highlight.
 High matte roughness (0.88) -- the deliberate opposite of
 `t09_rippled_wet_sand`'s 0.15 wet sheen in the same file -- fed as a
 flat texture so an ORM map exports. `normal_map param1=0.3` for a
-moderate, worn unevenness, softer than the voronoi-plate family's hard
-crack relief (`t01`/`t05`/`t06`/`t08` run 0.12-0.55 for sharp fissures),
-since `dirt` has no crack topology to begin with. `param4=0` is the
-standing flat-normal fix.
+moderate, worn unevenness -- `dirt` has no crack topology to begin with,
+so this relief reads as rolling, worn ground rather than sharp fissures.
+`param4=0` is the standing flat-normal fix.
 
 ## Subgraph structure
 
