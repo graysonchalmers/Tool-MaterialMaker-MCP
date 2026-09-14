@@ -126,21 +126,21 @@ feature merged earlier the same day.
 
 ## 📌 Where we stopped
 
-Both features are on `main`. `noise-vocabulary-round-2` merged with
-Grayson's explicit go-ahead (`--no-ff`, this file's own conflict
-hand-resolved rather than taken from one side). Fast suite (1104 passed on
-the branch pre-merge) and cookbook gates were green going in; a
-post-merge full-suite re-run is the next step before push.
+Nothing in flight. Both features are on `main` and pushed: `noise-vocabulary-round-2`
+merged with Grayson's explicit go-ahead (`--no-ff`, this file's own conflict
+hand-resolved rather than taken from one side). Fast suite re-verified green
+on the merged result (1110 passed), `promote_cookbook --check` and
+`naming --cookbook` (65/65) both clean. The three now-merged branches
+(`claude/vigorous-kepler-8c0148`, `claude/heuristic-bhaskara-551ae1`,
+`noise-vocabulary-round-2`) are deleted, local and remote (the first had
+no remote ref left to delete, already cleaned up earlier).
 
 ## ▶️ Next concrete step
 
-Re-run the full suite on `main` post-merge, then push. Delete the three
-now-merged branches (`claude/vigorous-kepler-8c0148`,
-`claude/heuristic-bhaskara-551ae1`, `noise-vocabulary-round-2`), local and
-remote, when convenient. Update STATUS.md's cookbook/component rows off
-the round-2-specific "on branch" language to reflect `main` (STATUS.md's
-banner already updated as part of this merge; a couple of component-table
-rows may still say "branch").
+No pressing next step queued; pick up general project work. If looking for
+one: Grayson running `render_preview_sweep` himself through the live MCP
+tool surface (see Open questions) is the one still-open loose end from
+today's two sessions.
 
 ## ❓ Open questions
 
