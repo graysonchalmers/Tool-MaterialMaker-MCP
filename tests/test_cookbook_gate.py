@@ -46,6 +46,28 @@ def test_cookbook_graph_has_no_type_or_connection_errors(entry):
     assert hard_errors == [], f"{entry.name}: {hard_errors[:5]}"
 
 
+def test_gate_rejects_an_out_of_range_enum_index():
+    """Ratchet (2026-09-13): prove the gate ITSELF rejects an out-of-range enum
+    index, not merely that validate_graph can emit one. This is the exact class
+    of bug t09 shipped (wavelet type=-3 -> should be index 4); it slipped
+    through only because an out-of-range enum was a warning and this gate
+    collects errors. Inject a bad enum index into a copy of a real cookbook
+    graph and assert the gate's own hard-error collection is non-empty, so a
+    future refactor that stops treating it as an error breaks here."""
+    with open(ENTRIES[0].path, encoding="utf-8") as fh:
+        root = json.load(fh)
+    # blend.blend_type is a universal enum (indices 0..14); 99 is out of range.
+    root.setdefault("nodes", []).append(
+        {"name": "_bad_enum_probe", "type": "blend",
+         "parameters": {"blend_type": 99}})
+    hard_errors = []
+    for g in _all_graphs(root):
+        for p in validate_graph(g, CATALOG):
+            if p["severity"] == "error":
+                hard_errors.append(p["message"])
+    assert any("blend_type" in m for m in hard_errors), hard_errors
+
+
 @pytest.mark.parametrize("entry", ENTRIES, ids=[e.name for e in ENTRIES])
 def test_cookbook_graph_has_thumbnail(entry):
     thumb = os.path.join(_ROOT, "docs", "images", f"cookbook-{entry.category}",
