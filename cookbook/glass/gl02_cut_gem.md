@@ -39,7 +39,7 @@ map baked from the same SDF). The donor's only existing connection off
 `voronoi_0` (port 1 -> the edge-distance colorize) keeps its exact role
 after the retype, since port 1 means the same thing on both node types.
 
-**The whole graph, top to bottom.** Four nodes plus `Material`:
+**The whole graph, top to bottom.** Five nodes plus `Material`:
 `FacetCells` (the retyped voronoi) feeds `FacetTint` (per-facet color,
 straight to albedo) off port 2, and feeds `EdgeRamp` (the edge/border
 signal) off port 1, which feeds `FacetNormal` (`normal_map`) directly --
