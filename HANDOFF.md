@@ -1,6 +1,6 @@
 # 🧭 Session Handoff: Tool-MaterialMaker-MCP
 
-_Last updated: 2026-09-13 (noise/distortion vocabulary + core-toolbox plan, subagent-driven, in progress on branch `noise-vocabulary-core-toolbox`) CT (America/Chicago)_
+_Last updated: 2026-09-13 (noise/distortion vocabulary + core-toolbox plan COMPLETE on branch `noise-vocabulary-core-toolbox`, all 14 tasks done + reviewed, suite green, ready to merge) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up. **Shape rule (2026-09-05,
 teardown #3):** "Current state" describes the latest session only; anything
@@ -10,75 +10,60 @@ archive; there is no separate archive file.
 
 ## 🎯 Current state
 
-**This session (2026-09-13) is executing the noise/distortion-vocabulary +
-core-toolbox plan, subagent-driven, on branch `noise-vocabulary-core-toolbox`
-(20 commits ahead of `origin/main`, being pushed as WIP; NOT merged, the plan
-is ~60% done).** It answers Grayson's opening question ("have we explored the
-full noise/distortion toolkit, are there gaps?"): yes there are big gaps, and
-they are being cashed into shipped materials. Plan:
-[docs/superpowers/plans/2026-09-06-noise-vocabulary-and-core-toolbox.md](docs/superpowers/plans/2026-09-06-noise-vocabulary-and-core-toolbox.md);
-live ledger: `.superpowers/sdd/2026-09-06-noise-vocabulary-and-core-toolbox/progress.md`.
+**The noise/distortion-vocabulary + core-toolbox plan is COMPLETE on branch
+`noise-vocabulary-core-toolbox` (all 14 tasks done, per-task + final-review
+clean, suite green). NOT yet merged: Grayson controls the merge (he chose to
+hold until the branch was green; it now is).** It answered his opening question
+("have we explored the full noise/distortion toolkit, are there gaps?"): there
+were big gaps, now cashed into shipped materials + docs. Plan:
+[docs/superpowers/plans/2026-09-06-noise-vocabulary-and-core-toolbox.md](docs/superpowers/plans/2026-09-06-noise-vocabulary-and-core-toolbox.md).
 
 Coverage audit that motivated it: of 30 noise/pattern base nodes the cookbook
 used only 3 (perlin, voronoi, fbm); of 16 warp/distort nodes only 1 (`warp`);
-SDF (43 nodes) 0. The plan ships proof materials on the unused bases plus makes
-the existing single-node infrastructure visible.
+SDF (43 nodes) 0.
 
-Done this session:
-- **Phase A (Tasks 1-3): 19 diagnostic swatches**, up from 12. Added
-  warp/warp2/directional_warp (pixel-checked with displacement algebra derived
-  from the `.mmg` shaders), colorize/normal_map/pattern (pixel-checked), and
-  slope_blur (structural-only: it is a pure `buffer`/compute-shader node that
-  CANNOT render headless under `--export-material`). Stale docstring fixed.
-- **4 of 6 proof materials, all visually approved by Grayson:**
-  `s13_polished_marble` (fbm turbulence veins, moved terrain->stone),
-  `m03_brushed_titanium` (noise_anisotropic hairline), `sf07_conduit_panel`
-  (truchet interlocking pipes), `s12_eroded_sandstone` (directional_warp banded
-  erosion). Tasks 4-6 code-reviewed clean; Task 7 (s12) code review was in
-  flight at wrap (check the ledger / re-review if needed).
-- Cookbook is now **57** tracked materials (was 53).
+What shipped on the branch:
+- **6 proof materials on previously-unused bases, all visually approved by
+  Grayson + code-reviewed clean:** `s13_polished_marble` (fbm turbulence,
+  moved terrain->stone), `m03_brushed_titanium` (noise_anisotropic),
+  `sf07_conduit_panel` (truchet), `s12_eroded_sandstone` (directional_warp),
+  `t09_rippled_wet_sand` (wavelet_noise, anisotropic 2/24 + type -3), and
+  `gl02_cut_gem` (voronoi_triangle, glossy faceted emerald). Cookbook 53 -> 59.
+- **19 diagnostic swatches** (up from 13): warp/warp2/directional_warp +
+  colorize/normal_map/pattern pixel-checked; slope_blur structural-only (buffer
+  node, cannot render headless).
+- **README integration:** counts corrected to 59, the cookbook contact sheet
+  un-collapsed (always visible) with its count gate migrated, and a new visible
+  "Core toolbox" section (swatch contact sheet + noise gallery), all count-gated.
+- **AUTHORING** distortion-vocabulary note + SDF out-of-scope ruling.
+- Gates: fast suite 1039 passed / 31 deselected; promote --check in sync;
+  naming 59 graphs 0 problems. Final opus review: ready to merge (its one
+  fix-before-merge, the gl02 card node count, landed as `4905d37`).
 
-Workflow that emerged and works: implementer authors builder + validates +
-promotes (no Godot); the controller renders the 3D preview
-(`scratchpad/preview_material.py`) and self-screens for gross misses + variety
-collisions BEFORE surfacing to Grayson, who is the visual judge. Every material
-took 1-6 render passes; Grayson's variety lens caught two "different base still
-drifts to an existing look" regressions (t09-clay -> voronoi plates like 7 other
-materials; s12 -> wood grain).
+Workflow that worked (subagent-driven): implementer authors builder + validates
++ promotes (no Godot); the CONTROLLER renders the flat maps + a 3D preview and
+self-screens for gross misses + variety collisions BEFORE surfacing to Grayson,
+who is the visual judge. t09 took 3 self-screen passes (dark mud -> grey metal
+-> warm damp tan); gl02 took 1 (matte hex tile -> glossy faceted gem). The
+variety lens matters: a "new base" material still drifts toward existing looks.
 
 ## 📌 Where we stopped
 
-Mid-plan on branch `noise-vocabulary-core-toolbox`. Phase A + 4 of 6 materials
-done and approved (all 4 code-reviewed clean, including s12 at wrap). Nothing
-in flight. Next up is Task 8. The branch is pushed as WIP; `test_readme_counts`
-is INTENTIONALLY RED (tree has 57 materials, README still says 53) until Phase C
-Task 10 fixes the counts, so branch CI will fail on that until then. Do NOT
-merge to main until the plan finishes. **Grayson explicitly chose to HOLD the
-merge (2026-09-13)**: finish the remaining 2 materials + Core toolbox + Phase C
-counts + final review, get the branch green, THEN merge. Do not merge red.
+Plan complete and green on branch `noise-vocabulary-core-toolbox`. Every task is
+`complete` in the ledger
+(`.superpowers/sdd/2026-09-06-noise-vocabulary-and-core-toolbox/progress.md`).
+The one remaining action is the MERGE, which is Grayson's call. `finishing-a-
+development-branch` was reached; the merge was presented, not executed.
 
 ## ▶️ Next concrete step
 
-Resume the plan via `superpowers:subagent-driven-development` on the branch (the
-ledger `.superpowers/sdd/2026-09-06-noise-vocabulary-and-core-toolbox/progress.md`
-is the recovery map; trust it + `git log` over memory).
-
-1. **Task 8: `t09_rippled_wet_sand`** (wavelet_noise ripples). RULING: build it
-   as id `t09` (not the plan's `t10`) to fill the terrain gap left when the old
-   t09 became s13 marble.
-2. **Task 9: `gl02_cut_gem`** (voronoi_triangle facets).
-3. **Phase C (Tasks 10-13):** update README counts (53 -> final, currently 57
-   + the 2 remaining), un-collapse the cookbook contact sheet AND update
-   `test_readme_contact_sheet_summary_count_matches_tree`'s regex together,
-   regen the contact sheet, add the "Core toolbox" README section (unify
-   swatches + noise gallery, count-gated).
-4. **Phase D (Task 14):** AUTHORING distortion note + SDF out-of-scope ruling,
-   full-suite gate, then final whole-branch review, then merge to main.
-
-For each material: implementer authors+validates+promotes (no render), then
-render + self-screen with `scratchpad/preview_material.py <label> <case>`, then
-surface to Grayson. Watch the variety lens: a "new base" material can still
-drift into an existing look.
+Grayson's merge decision. The branch is green and reviewed; merging brings the 6
+materials, 19 swatches, and the Core toolbox README section to `main` and lets
+release-please open the next minor-version PR. If NOT merging yet, the branch
+holds the work safely. Deferred-minor follow-ups (none block merge): the
+`catalog_builder.py` non-contiguous-enum validate-warning gap (a background task
+chip was spawned during final review); the contact-sheet `<img alt>` counts are
+not test-gated; a few over-long/stale docstrings noted in the ledger.
 
 ## ❓ Open questions
 
@@ -110,9 +95,12 @@ drift into an existing look.
 - **The 3D preview scene renders METALS dark** (dark environment, metals reflect
   it). m01/m02/m03 all look dark with bright highlights; that is the scene, not a
   broken material. Judge metals by the pattern/relief, or read the ORM.
-- **Controller render tool for material self-screen:**
-  `scratchpad/preview_material.py <label> <case> [size]` renders the authored
-  v1.ptex + a 3D preview to the scratchpad (absolute outdir). One Godot at a time.
+- **Controller render tools for material self-screen:** `python -m
+  quality.render_one <label> <case> [size]` renders the promoted flat maps to
+  `quality/cookbook/<label>/<case>/` (absolute paths, ~10-30s at 512), then the
+  MCP `render_preview` tool (or `quality/_make_previews`) composites the 3D
+  sphere/cube preview. One Godot at a time. (The old `scratchpad/preview_material.py`
+  was a per-session scratch file and does not persist.)
 - **Material authoring flow (this plan):** implementer authors builder + validates
   + promotes (NO Godot); controller renders + self-screens for gross misses and
   variety collisions, then Grayson is the visual judge. A "new base" material can
@@ -202,7 +190,7 @@ drift into an existing look.
 Newest first. Keep at most 8 entries; older ones are in `git log` (search the
 commit subjects, every session ends with a `docs:` wrap-up commit).
 
-### 2026-09-13 (noise/distortion vocabulary + core toolbox, in progress): `pickup` answering Grayson's "have we explored the noise/distortion toolkit, any gaps?" -> coverage audit found big gaps (noise 3/30, distort 1/16, SDF 0/43) -> `brainstorming` -> `writing-plans` -> `subagent-driven-development` on branch `noise-vocabulary-core-toolbox`. Phase A shipped 19 diagnostic swatches (warp/warp2/directional_warp/colorize/normal_map/pattern pixel-checked; slope_blur structural-only). 4 of 6 proof materials approved + code-reviewed: s13_polished_marble (fbm turbulence, terrain->stone), m03_brushed_titanium (noise_anisotropic), sf07_conduit_panel (truchet), s12_eroded_sandstone (directional_warp). Learned: buffer nodes fail headless; truchet is a 0.5-0.95 distance field; preview scene darkens metals; a "new base" still drifts to existing looks (Grayson's variety catch on t09 + s12). Branch pushed WIP (20 ahead), README counts intentionally red until Phase C. Remaining: Tasks 8-9 (t09 wet sand, gl02 cut gem), Phase C (README/counts/core-toolbox), Phase D (final review + merge).
+### 2026-09-13 (noise/distortion vocabulary + core toolbox, COMPLETE on branch, unmerged): `pickup` -> `subagent-driven-development` resumed at Task 8 and finished the plan (all 14 tasks, per-task + final opus review clean). Shipped 6 proof materials on unused bases (s13 marble/fbm, m03 titanium/anisotropic, sf07 conduit/truchet, s12 sandstone/directional_warp, t09 wet sand/wavelet, gl02 cut gem/voronoi_triangle; cookbook 53->59), 19 diagnostic swatches, README un-collapse + count-gated "Core toolbox" section (swatch sheet + noise gallery), AUTHORING distortion note. Two materials needed controller self-screen redirects before Grayson saw them (t09 dark-mud->grey-metal->warm-tan over 3 passes; gl02 matte-hex-tile->glossy-gem in 1). Fast suite 1039 passed; promote --check + naming clean. Final review's one fix-before-merge (gl02 card said "four nodes" for five) landed `4905d37`. Branch green + reviewed; MERGE HELD for Grayson (his call). Ledger: `.superpowers/sdd/2026-09-06-noise-vocabulary-and-core-toolbox/progress.md`.
 ### 2026-09-06 (backup-ops wake-lock, cross-project): `pickup` here, Grayson picked next-step #2. Root-caused the 09-05 nightly truncation as idle-sleep mid-run (the git `NativeCommandError` is a handled CRLF warning; true signature is a missing `transcript end` footer, not a code bug), and added a `SetThreadExecutionState` wake-lock to `backup-ops\Backup-All.ps1` (acquire in try, release in finally). Verified compile + parse; commit `f7e809d` local, PUSH PENDING (ssh-agent not loaded this session). Commons log written. No MM-MCP code changed.
 ### 2026-09-06 (idle-exit watchdog): `MM_IDLE_EXIT_MINUTES` opt-in idle exit, 17/17 tools touch it, live session closed on exit; review found and fixed the two untouched tools and the atexit skip; merged `--no-ff` as `f669f8c`, suite 989; registration set to 120.
 ### 2026-09-06 (validate subgraph descent + crate round-trip prep)

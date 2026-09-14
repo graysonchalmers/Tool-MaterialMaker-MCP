@@ -6,16 +6,19 @@
 
 Gate ledger. Three states only: ✅ verified · 🔌 wired · ⬜ not started.
 
-_Last updated: 2026-09-13 (noise/distortion vocabulary + core-toolbox plan, WIP on branch `noise-vocabulary-core-toolbox`, not merged)._
+_Last updated: 2026-09-13 (noise/distortion vocabulary + core-toolbox plan COMPLETE on branch `noise-vocabulary-core-toolbox`: all 14 tasks done, per-task + final-review clean, suite green; awaiting Grayson's merge decision)._
 
-> 🚧 **In-flight (branch `noise-vocabulary-core-toolbox`, ~60% done):** Phase A
-> shipped (19 diagnostic swatches, up from 13); 4 of 6 proof materials on
-> previously-unused base nodes approved + code-reviewed (s13_polished_marble
-> fbm-turbulence, m03_brushed_titanium noise_anisotropic, sf07_conduit_panel
-> truchet, s12_eroded_sandstone directional_warp); cookbook 53 -> 57. Remaining:
-> 2 materials, README counts + "Core toolbox" section, final review, merge. The
-> README-count tests are intentionally red on the branch until the counts task.
-> Plan: `docs/superpowers/plans/2026-09-06-noise-vocabulary-and-core-toolbox.md`.
+> ✅ **Complete on branch `noise-vocabulary-core-toolbox` (ready to merge):** all
+> 6 proof materials on previously-unused base nodes shipped + visually approved +
+> code-reviewed (s13_polished_marble fbm-turbulence, m03_brushed_titanium
+> noise_anisotropic, sf07_conduit_panel truchet, s12_eroded_sandstone
+> directional_warp, t09_rippled_wet_sand wavelet_noise, gl02_cut_gem
+> voronoi_triangle); 19 diagnostic swatches (up from 13); README un-collapsed +
+> a count-gated "Core toolbox" section (swatch sheet + noise gallery); AUTHORING
+> distortion note. Cookbook 53 -> 59. Fast suite 1039 passed; promote --check in
+> sync; naming 59 graphs 0 problems. Final opus review: ready to merge with the
+> gl02 card-count fix (landed). Merge is Grayson's call (held until green; now
+> green). Plan: `docs/superpowers/plans/2026-09-06-noise-vocabulary-and-core-toolbox.md`.
 
 **How to read this file (rule adopted 2026-09-05, teardown #3):** each cell holds
 the state, one line of what it is, and a pointer to where the evidence lives
@@ -47,9 +50,9 @@ row points at.
 | `src/mm_mcp/preview.py` + `preview_project/` | ✅ | `render_preview` 3D composite (sphere/cube/cutaway). `tests/test_preview.py` |
 | `src/mm_mcp/overlay.py` + `addons/mm_live/` + `src/mm_mcp/live.py` | ✅ | Disposable MM overlay with a GDScript socket addon (port 8765); client with `connect_or_launch`, 8 commands incl. `load_graph`. `tests/test_overlay.py`, `tests/test_live.py` |
 | `src/mm_mcp/play/` (`mm-play`, `play.bat`) | ✅ | Slider web page over cookbook subgraph params with a WebGL sphere; Grayson ran `play.bat` hands-on 2026-09-05. Refuses to start beside a stale listener and names the PID (2026-09-05). `tests/test_play_*.py`; `docs/superpowers/specs/2026-09-04-play-surface-design.md` |
-| `cookbook/` + `quality/cookbook_*.py` + `promote_cookbook.py` | ✅ | 53 tracked materials, 12 categories (57 on branch `noise-vocabulary-core-toolbox`: +s13 marble, m03 titanium, sf07 conduit, s12 sandstone), subgraph-grouped, every node role-named (2026-09-06, render-identical), each card carrying a generated node table; builders are the source, `--check` is the regression baseline for graphs and card tables. `tests/test_cookbook*.py` incl. `test_cookbook_naming_gate.py`, `test_cookbook_card_table_gate.py`; `cookbook/README.md` |
+| `cookbook/` + `quality/cookbook_*.py` + `promote_cookbook.py` | ✅ | 59 tracked materials, 12 categories (53 on `main`; the 6 new proof materials land on merge of branch `noise-vocabulary-core-toolbox`), subgraph-grouped, every node role-named (2026-09-06, render-identical), each card carrying a generated node table; builders are the source, `--check` is the regression baseline for graphs and card tables. `tests/test_cookbook*.py` incl. `test_cookbook_naming_gate.py`, `test_cookbook_card_table_gate.py`; `cookbook/README.md` |
 | `docs/AUTHORING.md` + `guide://authoring` | ✅ | Invariant authoring guide served as an MCP resource; per-material recipes are cards beside each `.ptex`. `tests/test_guide_resource.py` |
-| `quality/debug_swatches.py` | ✅ | 13 single-node diagnostic swatches with pixel assertions (19 on branch `noise-vocabulary-core-toolbox`: +warp/warp2/directional_warp/colorize/normal_map/pattern; slope_blur structural-only, buffer node cannot render headless). `tests/test_debug_swatches.py`; `docs/DEBUG_SWATCHES.md` |
+| `quality/debug_swatches.py` | ✅ | 19 single-node diagnostic swatches with pixel assertions (13 on `main`; +warp/warp2/directional_warp/colorize/normal_map/pattern land on merge of branch `noise-vocabulary-core-toolbox`; slope_blur structural-only, buffer node cannot render headless). Surfaced in README's "Core toolbox" section as a swatch contact sheet. `tests/test_debug_swatches.py`; `docs/DEBUG_SWATCHES.md` |
 | `quality/` package (builders, helpers, naming checker, render_tracked, promote/check, swatches) | ✅ | Importable package, `python -m quality.<module>`; `author.py` is the shared builder base, guarded by `--check`. `tests/test_quality_package.py`, `tests/test_cookbook_builders_signature.py`; `quality/README.md` |
 | `docs/evidence/phase3/` | ✅ | Frozen Phase-3 test set, rubric, and both scorecards, archived 2026-09-05; runner retired. `tests/test_phase3_evidence.py` |
 | Packaging (wheel/sdist, CI, release-please) | 🔌 | `twine`-clean, clean-venv verified, windows-latest CI green, release PRs auto-opened. PyPI on hold; macOS/Linux untested |
