@@ -112,7 +112,12 @@ def test_enum_param_out_of_range_is_an_error():
     g = _good()
     g["nodes"][1]["parameters"] = {"blend_type": 9}
     errs = [p for p in validate_graph(g, CATALOG) if p["severity"] == "error"]
-    assert any("blend_type" in e["message"] for e in errs)
+    msg = next(e["message"] for e in errs if "blend_type" in e["message"])
+    # names the options by index and explains the clamp, so the fix is obvious
+    assert "enum index range" in msg
+    assert "clamp" in msg
+    assert "INDEX" in msg
+    assert "0=normal" in msg and "1=multiply" in msg
     # numeric slider ranges stay advisory warnings, not errors
     warns = [p for p in validate_graph(g, CATALOG) if p["severity"] == "warning"]
     assert not any("blend_type" in w["message"] for w in warns)

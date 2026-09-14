@@ -1,6 +1,6 @@
 # 🧭 Session Handoff: Tool-MaterialMaker-MCP
 
-_Last updated: 2026-09-13 (enum out-of-range reclassified to a hard error; committed on branch `fix/enum-index-validation`, not pushed) CT (America/Chicago)_
+_Last updated: 2026-09-13 (enum out-of-range reclassified to a hard error; reconciled with the sibling branch, merged to `main` and pushed) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up. **Shape rule (2026-09-05,
 teardown #3):** "Current state" describes the latest session only; anything
@@ -11,10 +11,11 @@ archive; there is no separate archive file.
 ## 🎯 Current state
 
 **Closed the deferred enum-validation follow-up: an out-of-range enum INDEX is
-now a hard `severity:error`, not a warning. Committed as `d9802cd` on branch
-`fix/enum-index-validation` (off `main`), NOT pushed.** The noise/distortion +
-core-toolbox plan from the prior session is already merged to `main` (`0169446`)
-and pushed; the baton had drifted (said "unmerged"), now corrected.
+now a hard `severity:error`, not a warning. Reconciled with a sibling branch
+that fixed the same thing a different way, merged to `main` and pushed.** The
+noise/distortion + core-toolbox plan from the prior session was already merged
+to `main` (`0169446`) and pushed; the baton had drifted (said "unmerged"), now
+corrected.
 
 The follow-up's framing turned out wrong: detection already worked. `validate_graph`
 correctly flagged t09's `type=-3` (int) even inside its subgraph. The real hole
@@ -23,44 +24,34 @@ to errors only (`test_cookbook_gate.py:44`, `render_tracked.py:41`) or never
 validates (`promote_cookbook`). So the one class of mistake that produced t09
 was a warning no gate caught. Fix (Grayson chose reclassify + better message):
 - `validator.py`: out-of-range enum index -> `error` (numeric slider ranges stay
-  advisory warnings). New `_enum_literal_hint` names the intended index when the
-  value matches a known literal: `type=-3` -> "looks like the raw enum literal
-  for index 4 ('Mult 3'); Material Maker stores the index, use 4". Range NOT
-  widened; -3 stays invalid.
+  advisory warnings). The message explains the clamp-to-0 wrong-render and says
+  "use the option's INDEX". When the bad value matches a known raw literal,
+  `_enum_literal_hint` names the intended index (`type=-3` -> "looks like the
+  raw literal for index 4 'Mult 3', use 4"); otherwise it lists every valid
+  option by index (folded in from the sibling branch). Range NOT widened.
 - `catalog_builder.py`: capture `value_literals` only for enums whose numeric
   literals mismatch their index (wavelet type). Name-literal enums (blend, fbm)
   stay lean. Added `_as_int` helper.
 - `test_cookbook_gate.py`: ratchet test injecting a bad enum index into a real
-  cookbook graph, asserting the gate's own error collection fails, so a future
-  refactor cannot silently reopen the hole.
+  cookbook graph, asserting the gate's own error collection fails.
+- `test_catalog_parse.py`: folded in the sibling's guard pinning wavelet
+  min=0/max=4 (do not derive the range from the underlying literals).
 - Verified against the real pre-fix t09 graph: now returns the named-index error,
-  located to `ripple_color/RippleField`. Fast suite 1044 passed / 31 deselected.
+  located to `ripple_color/RippleField`. Fast suite 1045 passed / 31 deselected.
 
 ## 📌 Where we stopped
 
-Fix committed on `fix/enum-index-validation` (`d9802cd`), branch not pushed and
-not merged to `main`. Wrap-up done. Nothing else in flight.
+Reconciled fix merged to `main` and pushed. Nothing in flight.
 
 ## ▶️ Next concrete step
 
-**Reconcile two overlapping enum-validation branches before merging either.** A
-sibling branch `claude/zealous-ritchie-cb051a` (2 commits, unmerged, from a
-concurrent session) already solves the same enum problem a DIFFERENT way and
-edits the same code, so they conflict:
-- `claude/zealous-ritchie-cb051a`: keeps out-of-range enum a **warning**, but
-  improves the message to list every valid option by index ("valid: 0=Add 1 ...
-  4=Mult 3"); adds a catalog test pinning wavelet min=0/max=4.
-- `fix/enum-index-validation` (this session, `d9802cd`): reclassifies to
-  **error** so the gates enforce it, adds a gate ratchet test, names the intended
-  index via a literal match, captures `value_literals` in the catalog.
-
-Mine is stronger on enforcement (error + gate); theirs has the friendlier
-"list all valid options" message. The clean outcome is ONE branch: reclassify to
-error AND list valid options. Pick one as the base and fold in the other's good
-part; do not merge both blindly. Then push + let release-please fold it into the
-next version PR. Deferred-minor follow-ups still open (none blocking): the
-contact-sheet `<img alt>` counts are not test-gated; a few over-long/stale
-docstrings noted in the noise-plan ledger.
+Nothing required. The sibling branch `claude/zealous-ritchie-cb051a` is now
+SUPERSEDED (its good parts, the options-by-index message and the wavelet
+range-pin test, were folded into the merged fix); it can be deleted, local and
+remote, when convenient. release-please will fold the enum fix into the next
+version PR on the pushed commits. Deferred-minor follow-ups still open (none
+blocking): the contact-sheet `<img alt>` counts are not test-gated; a few
+over-long/stale docstrings noted in the noise-plan ledger.
 
 ## ❓ Open questions
 
@@ -194,7 +185,7 @@ docstrings noted in the noise-plan ledger.
 Newest first. Keep at most 8 entries; older ones are in `git log` (search the
 commit subjects, every session ends with a `docs:` wrap-up commit).
 
-### 2026-09-13 (enum-index validation enforcement): `pickup` (caught baton drift: noise branch already merged `0169446`/pushed, baton said unmerged), Grayson picked the deferred enum follow-up. Advisor-prompted investigation flipped the premise: detection already worked (`validate_graph` flags t09's `type=-3` int, even in-subgraph); the hole was ENFORCEMENT (out-of-range enum was a `warning`, all gates filter to errors / promote never validates). Fix (reclassify + better message): out-of-range enum index -> `error` with `_enum_literal_hint` naming the intended index; `catalog_builder` captures `value_literals` for numeric index-mismatched enums only; ratchet test in `test_cookbook_gate`. TDD red->green, fast suite 1039->1044. Committed `d9802cd` on `fix/enum-index-validation` (off `main`), NOT pushed. Ruled out: string-literal guard hole (left; t09 was int) and the stale gitignored `catalog/catalog.json` artifact (not a bug). Commons log written.
+### 2026-09-13 (enum-index validation enforcement, MERGED to main): `pickup` (caught baton drift: noise branch already merged `0169446`/pushed, baton said unmerged), Grayson picked the deferred enum follow-up. Advisor-prompted investigation flipped the premise: detection already worked (`validate_graph` flags t09's `type=-3` int, even in-subgraph); the hole was ENFORCEMENT (out-of-range enum was a `warning`, all gates filter to errors / promote never validates). Fix: out-of-range enum index -> `error`; message explains the clamp and either names the intended index via `_enum_literal_hint` (literal match) or lists all valid options; `catalog_builder` captures `value_literals` for numeric index-mismatched enums only; ratchet test in `test_cookbook_gate`. Wrap-up surfaced a sibling branch `claude/zealous-ritchie-cb051a` (2 commits, unmerged) fixing the same thing as a warning-with-options-list; Grayson said reconcile, so its options-list message + wavelet range-pin test were folded into this branch (sibling now superseded). TDD red->green, fast suite 1039->1045. Ruled out: string-literal guard hole (left; t09 was int) and the stale gitignored `catalog/catalog.json` artifact (not a bug). Commons log written.
 ### 2026-09-13 (noise/distortion vocabulary + core toolbox, MERGED `0169446` + pushed): `pickup` -> `subagent-driven-development` resumed at Task 8, finished the plan (all 14 tasks, per-task + final opus review clean). Shipped 6 proof materials on unused bases (s13 marble/fbm, m03 titanium/anisotropic, sf07 conduit/truchet, s12 sandstone/directional_warp, t09 wet sand/wavelet, gl02 cut gem/voronoi_triangle; cookbook 53->59), 19 diagnostic swatches, README un-collapse + count-gated "Core toolbox" section, AUTHORING distortion note. Fast suite 1039; final fix `4905d37` (gl02 card node count). Merged next session; a follow-up t09 enum fix `4d1187f` landed post-merge.
 ### 2026-09-06 (backup-ops wake-lock, cross-project): `pickup` here, Grayson picked next-step #2. Root-caused the 09-05 nightly truncation as idle-sleep mid-run (the git `NativeCommandError` is a handled CRLF warning; true signature is a missing `transcript end` footer, not a code bug), and added a `SetThreadExecutionState` wake-lock to `backup-ops\Backup-All.ps1` (acquire in try, release in finally). Verified compile + parse; commit `f7e809d` local, PUSH PENDING (ssh-agent not loaded this session). Commons log written. No MM-MCP code changed.
 ### 2026-09-06 (idle-exit watchdog): `MM_IDLE_EXIT_MINUTES` opt-in idle exit, 17/17 tools touch it, live session closed on exit; review found and fixed the two untouched tools and the atexit skip; merged `--no-ff` as `f669f8c`, suite 989; registration set to 120.

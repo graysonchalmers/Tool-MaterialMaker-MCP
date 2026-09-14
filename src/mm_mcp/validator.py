@@ -17,8 +17,7 @@ def _enum_literal_hint(spec: dict, pval) -> str | None:
             if int(lit) == pval:
                 names = spec.get("values", [])
                 name = names[i] if i < len(names) else "?"
-                return (f" - looks like the raw enum literal for index {i} "
-                        f"('{name}'); Material Maker stores the index, use {i}")
+                return f" (looks like the raw literal for index {i} '{name}', use {i})"
         except (TypeError, ValueError):
             continue
     return None
@@ -59,17 +58,29 @@ def validate_graph(ptex: dict, catalog: dict, _path: str = "") -> list[dict]:
             if isinstance(pval, (int, float)) and "min" in spec and "max" in spec:
                 if pval < spec["min"] or pval > spec["max"]:
                     if spec.get("type") == "enum":
-                        # min/max on an enum are the valid index range, not a UI
-                        # hint. An out-of-range index silently clamps to 0 (a
-                        # wrong render), so it is a hard error, not an advisory
+                        # An enum param is stored as an ordinal INDEX into the
+                        # option list; Material Maker looks up values[index].value
+                        # at shader-gen time and clamps any index <0 or >=len to
+                        # 0 (gen_shader.gd:527-529, sdf_builder.gd:120), a silent
+                        # wrong render. So this is a hard error, not an advisory
                         # warning (reclassified 2026-09-13 after t09 shipped a
                         # wrong index that every error-gated check let through).
+                        # When the bad value matches a known raw literal, name the
+                        # index the author meant; otherwise list every valid
+                        # option by index so the fix is obvious either way.
                         severity = "error"
                         msg = (f"parameter '{pname}'={pval} outside enum index "
-                               f"range [{spec['min']}, {spec['max']}]")
+                               f"range [{spec['min']}, {spec['max']}] - Material "
+                               f"Maker clamps an out-of-range index to 0 and "
+                               f"renders the wrong option; use the option's INDEX")
                         hint = _enum_literal_hint(spec, pval)
-                        msg += hint if hint else (" - likely invalid, will "
-                                                  "probably render wrong or fail")
+                        if hint:
+                            msg += hint
+                        else:
+                            opts = ", ".join(f"{i}={v}" for i, v
+                                             in enumerate(spec.get("values", [])))
+                            if opts:
+                                msg += f" (valid: {opts})"
                     else:
                         # min/max on a numeric slider come from Material
                         # Maker's editor UI, not a shader-enforced clamp;

@@ -76,6 +76,26 @@ def test_compound_param_falls_back_to_none_when_inner_node_unresolvable():
     assert resolution.get("max") is None
 
 
+def test_parse_noncontiguous_enum_uses_index_range_not_underlying_values():
+    """wavelet_noise's `type` enum has NON-contiguous underlying `value`
+    fields: "Add 1/2/3" -> "1"/"2"/"3" and "Mult 2/3" -> "-2"/"-3". It is
+    tempting to derive the valid range from those literals (which would give
+    -3..3), but that is wrong: Material Maker stores an enum parameter as an
+    *ordinal index* into the values list and, at shader-generation time,
+    looks up values[index].value (gen_shader.gd:527-529 and
+    sdf_builder.gd:120). An index <0 or >=len is clamped to 0. So the valid
+    range is the index range [0, len-1], and to select "Mult 3" a graph must
+    store index 4 (which noise_gallery.py already does), NOT the literal -3.
+    This test pins that: min/max are the index bounds, not the value bounds."""
+    node = parse_node(_mmg("wavelet_noise"))
+    params = {p["name"]: p for p in node["parameters"]}
+    t = params["type"]
+    assert t["type"] == "enum"
+    assert t["values"] == ["Add 1", "Add 2", "Add 3", "Mult 2", "Mult 3"]
+    assert t["min"] == 0
+    assert t["max"] == 4  # 5 options -> index range 0..4, never -3..3
+
+
 def test_enum_captures_confusable_numeric_literals():
     """wavelet_noise.type is the trap that produced the t09 bug: its .mmg
     entries carry numeric `value` literals ("1","2","3","-2","-3") that do NOT
