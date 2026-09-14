@@ -1,0 +1,513 @@
+{
+ "connections": [
+  {
+   "from": "dirt_pattern",
+   "from_port": 1,
+   "to": "Material",
+   "to_port": 0
+  },
+  {
+   "from": "dirt_pattern",
+   "from_port": 0,
+   "to": "dirt_finish",
+   "to_port": 0
+  },
+  {
+   "from": "dirt_pattern",
+   "from_port": 2,
+   "to": "dirt_finish",
+   "to_port": 1
+  },
+  {
+   "from": "dirt_finish",
+   "from_port": 0,
+   "to": "Material",
+   "to_port": 4
+  },
+  {
+   "from": "dirt_finish",
+   "from_port": 1,
+   "to": "Material",
+   "to_port": 2
+  }
+ ],
+ "nodes": [
+  {
+   "name": "Material",
+   "type": "material",
+   "node_position": {
+    "x": 620,
+    "y": 40
+   },
+   "export_paths": {},
+   "parameters": {
+    "albedo_color": {
+     "a": 1,
+     "r": 1,
+     "g": 1,
+     "b": 1,
+     "type": "Color"
+    },
+    "ao": 1,
+    "depth_scale": 1,
+    "emission_energy": 1,
+    "metallic": 0.0,
+    "normal": 1,
+    "roughness": 0.88,
+    "size": 11,
+    "sss": 0
+   }
+  },
+  {
+   "name": "dirt_pattern",
+   "label": "Dirt Pattern",
+   "type": "graph",
+   "node_position": {
+    "x": 150.0,
+    "y": -30.0
+   },
+   "parameters": {
+    "param0": {
+     "interpolation": 1,
+     "type": "Gradient",
+     "points": [
+      {
+       "a": 1,
+       "r": 0.09,
+       "g": 0.065,
+       "b": 0.04,
+       "pos": 0.0
+      },
+      {
+       "a": 1,
+       "r": 0.18,
+       "g": 0.13,
+       "b": 0.08,
+       "pos": 0.22
+      },
+      {
+       "a": 1,
+       "r": 0.3,
+       "g": 0.22,
+       "b": 0.14,
+       "pos": 0.49
+      },
+      {
+       "a": 1,
+       "r": 0.46,
+       "g": 0.36,
+       "b": 0.24,
+       "pos": 1.0
+      }
+     ]
+    },
+    "param1": 1
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": -250.0,
+      "y": -30.0
+     },
+     "parameters": {},
+     "ports": [],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 550.0,
+      "y": -30.0
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "out0",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "out1",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "out2",
+       "type": "f",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -250.0,
+      "y": 170.0
+     },
+     "parameters": {
+      "param0": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.09,
+         "g": 0.065,
+         "b": 0.04,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.18,
+         "g": 0.13,
+         "b": 0.08,
+         "pos": 0.22
+        },
+        {
+         "a": 1,
+         "r": 0.3,
+         "g": 0.22,
+         "b": 0.14,
+         "pos": 0.49
+        },
+        {
+         "a": 1,
+         "r": 0.46,
+         "g": 0.36,
+         "b": 0.24,
+         "pos": 1.0
+        }
+       ]
+      },
+      "param1": 1
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Dirt color",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "DirtColor",
+         "widget": "gradient"
+        }
+       ]
+      },
+      {
+       "name": "param1",
+       "shortdesc": "Grain scale",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "DirtNoise",
+         "widget": "d_scale"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "DirtNoise",
+     "type": "dirt",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "param0": 2,
+      "d_scale": 1,
+      "param1": 11
+     }
+    },
+    {
+     "name": "DirtColor",
+     "type": "colorize",
+     "node_position": {
+      "x": 300,
+      "y": -60
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.09,
+         "g": 0.065,
+         "b": 0.04,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.18,
+         "g": 0.13,
+         "b": 0.08,
+         "pos": 0.22
+        },
+        {
+         "a": 1,
+         "r": 0.3,
+         "g": 0.22,
+         "b": 0.14,
+         "pos": 0.49
+        },
+        {
+         "a": 1,
+         "r": 0.46,
+         "g": 0.36,
+         "b": 0.24,
+         "pos": 1.0
+        }
+       ]
+      }
+     }
+    }
+   ],
+   "connections": [
+    {
+     "from": "DirtNoise",
+     "from_port": 0,
+     "to": "DirtColor",
+     "to_port": 0
+    },
+    {
+     "from": "DirtNoise",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    },
+    {
+     "from": "DirtColor",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 1
+    },
+    {
+     "from": "DirtNoise",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 2
+    }
+   ]
+  },
+  {
+   "name": "dirt_finish",
+   "label": "Dirt Finish",
+   "type": "graph",
+   "node_position": {
+    "x": 150.0,
+    "y": 80.0
+   },
+   "parameters": {
+    "param0": {
+     "interpolation": 1,
+     "type": "Gradient",
+     "points": [
+      {
+       "a": 1,
+       "r": 0.88,
+       "g": 0.88,
+       "b": 0.88,
+       "pos": 0.0
+      },
+      {
+       "a": 1,
+       "r": 0.88,
+       "g": 0.88,
+       "b": 0.88,
+       "pos": 1.0
+      }
+     ]
+    },
+    "param1": 0.3
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": -250.0,
+      "y": 80.0
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "in0",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "in1",
+       "type": "f",
+       "group_size": 0
+      }
+     ],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 550.0,
+      "y": 80.0
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "out0",
+       "type": "rgb",
+       "group_size": 0
+      },
+      {
+       "name": "out1",
+       "type": "rgba",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -250.0,
+      "y": 280.0
+     },
+     "parameters": {
+      "param0": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.88,
+         "g": 0.88,
+         "b": 0.88,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.88,
+         "g": 0.88,
+         "b": 0.88,
+         "pos": 1.0
+        }
+       ]
+      },
+      "param1": 0.3
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Roughness",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "RoughnessConst",
+         "widget": "gradient"
+        }
+       ]
+      },
+      {
+       "name": "param1",
+       "shortdesc": "Surface relief",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "DirtNormal",
+         "widget": "param1"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "DirtNormal",
+     "type": "normal_map",
+     "node_position": {
+      "x": 300,
+      "y": 160
+     },
+     "parameters": {
+      "param0": 10,
+      "param1": 0.3,
+      "param2": 0,
+      "param4": 0
+     }
+    },
+    {
+     "name": "RoughnessConst",
+     "type": "colorize",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.88,
+         "g": 0.88,
+         "b": 0.88,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.88,
+         "g": 0.88,
+         "b": 0.88,
+         "pos": 1.0
+        }
+       ]
+      }
+     }
+    }
+   ],
+   "connections": [
+    {
+     "from": "gen_inputs",
+     "from_port": 0,
+     "to": "DirtNormal",
+     "to_port": 0
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 1,
+     "to": "RoughnessConst",
+     "to_port": 0
+    },
+    {
+     "from": "DirtNormal",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    },
+    {
+     "from": "RoughnessConst",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 1
+    }
+   ]
+  }
+ ]
+}
