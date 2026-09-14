@@ -2,9 +2,10 @@ extends Node3D
 
 # Fixed preview rig for mm_mcp's render_preview tool: a sphere, a cube (turned
 # 45deg), and a cutaway ball (revealing an inner core), resting on a tiled
-# ground plane that runs off into a fogged distance, under raking key + rim
-# lighting with shadows and a touch of depth of field, screenshotted headfully
-# and quit.
+# ground plane that runs off into a fogged distance. Lit by a soft-shadowed key,
+# a boosted shadow-casting rim/kick, and a low bounce fill, over procedural-sky
+# ambient + reflections and screen-space AO, with a touch of depth of field,
+# screenshotted headfully and quit.
 # Args (after --): --albedo=<path> --normal=<path> --orm=<path>
 # --tile=<float, default 1.0>  UV repeat count on the sphere/cube/cutaway ball;
 #   the ground plane always tiles at 8x that so its own repeat is visible at a
@@ -13,10 +14,12 @@ extends Node3D
 #
 # Two output modes, same rig either way:
 # --out=<path>  Single static frame (render_preview).
-# --sweep-outdir=<path> --sweep-frames=<int>  Sweep the key light through a
-#   full 360-degree rotation (rim light stays fixed), writing one
-#   frame_NNN.png per step to sweep-outdir instead of a single --out
-#   (render_preview_sweep -- the caller assembles the frames into a GIF).
+# --sweep-outdir=<path> --sweep-frames=<int> [--sweep-kind=precess|azimuth]
+#   [--cone=<deg>]  Animate the key light, writing one frame_NNN.png per step to
+#   sweep-outdir instead of a single --out (render_preview_sweep -- the caller
+#   assembles the frames into a GIF). Default 'precess' wobbles the key's aim in
+#   a small cone (default 18deg) so highlights circle the relief without going
+#   backlit; 'azimuth' is the old full 360-degree orbit. Rim/fill stay fixed.
 
 const OBJECT_RADIUS := 0.85  # half-height of the cube / sphere radius, for ground placement
 const GROUND_TILE_MULTIPLIER := 8.0
@@ -152,31 +155,80 @@ func _ready() -> void:
 	get_viewport().msaa_3d = Viewport.MSAA_8X
 	get_viewport().screen_space_aa = Viewport.SCREEN_SPACE_AA_FXAA
 
+	# Soft-shadow filter quality high enough that the wide key penumbra
+	# (light_angular_distance) reads as a smooth falloff, not banding. Global
+	# RenderingServer setting: applies to every static frame and sweep frame.
+	RenderingServer.directional_soft_shadow_filter_set_quality(
+		RenderingServer.SHADOW_QUALITY_SOFT_ULTRA)
+
 	var key := DirectionalLight3D.new()
 	key.rotation_degrees = Vector3(-35, 60, 0)
 	key.light_energy = 1.3
 	key.light_color = Color(1.0, 0.96, 0.9)
 	key.shadow_enabled = true
+	# Distance-based penumbra: crisp where the shadow meets the object, blurring
+	# as it falls away. Higher = softer-with-distance.
+	key.light_angular_distance = 5.0
 	add_child(key)
 
+	# Rim / kick from behind, boosted to a real edge light that separates the
+	# objects from the dark backdrop. It DELIBERATELY casts a soft shadow: that
+	# cast is load-bearing, it stops the rim's own spill from washing out the
+	# contact grounding under the objects. This is not the usual "a rim never
+	# casts" case -- do not disable the shadow. The soft angular distance keeps
+	# that shadow from reading as a hard, cheap edge.
 	var rim := DirectionalLight3D.new()
-	rim.rotation_degrees = Vector3(-15, -130, 0)
-	rim.light_energy = 0.55
-	rim.light_color = Color(0.85, 0.9, 1.0)
+	rim.rotation_degrees = Vector3(-20, -150, 0)
+	rim.light_energy = 2.0
+	rim.light_color = Color(0.8, 0.88, 1.0)
+	rim.shadow_enabled = true
+	rim.light_angular_distance = 4.0
 	add_child(rim)
+
+	# Fill / bounce card: a low, cool directional from the shadow side, tinted
+	# toward the ground so it reads as light bouncing off the plane.
+	var fill := DirectionalLight3D.new()
+	fill.rotation_degrees = Vector3(25, -60, 0)
+	fill.light_energy = 0.35
+	fill.light_color = Color(0.6, 0.62, 0.7)
+	add_child(fill)
 
 	var env_node := WorldEnvironment.new()
 	var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR
 	env.background_color = Color(0.05, 0.05, 0.06)
-	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(1, 1, 1)
-	env.ambient_light_energy = 0.25
+	# A procedural sky drives ambient + reflections WITHOUT ever being drawn
+	# (the background stays the tuned dark color): this is the soft image-based
+	# bounce, and it is also what keeps metals from reading dead-black.
+	var sky_mat := ProceduralSkyMaterial.new()
+	sky_mat.sky_top_color = Color(0.35, 0.42, 0.55)
+	sky_mat.sky_horizon_color = Color(0.55, 0.55, 0.58)
+	sky_mat.ground_bottom_color = Color(0.22, 0.20, 0.18)
+	sky_mat.ground_horizon_color = Color(0.4, 0.4, 0.42)
+	sky_mat.sky_energy_multiplier = 1.0
+	var sky := Sky.new()
+	sky.sky_material = sky_mat
+	env.sky = sky
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+	env.ambient_light_energy = 1.0
+	env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
 	env.fog_enabled = true
 	env.fog_light_color = Color(0.05, 0.05, 0.06)
 	env.fog_light_energy = 1.0
 	env.fog_density = 0.07
 	env.fog_sky_affect = 1.0
+	# Screen-space AO: renderer-level contact darkening in creases and where
+	# objects meet the ground. Tight radius + high power for crisp contacts that
+	# hold up under the boosted rim/fill; light_affect lets it bite under the
+	# direct key, ao_channel_affect blends it with the material's baked AO.
+	env.ssao_enabled = true
+	env.ssao_radius = 0.25
+	env.ssao_intensity = 5.0
+	env.ssao_power = 3.5
+	env.ssao_detail = 0.4
+	env.ssao_horizon = 0.02
+	env.ssao_light_affect = 0.7
+	env.ssao_ao_channel_affect = 1.0
 	env_node.environment = env
 	add_child(env_node)
 
@@ -186,11 +238,29 @@ func _ready() -> void:
 	if sweep_mode:
 		var frame_count: int = args["sweep-frames"].to_int()
 		var sweep_dir: String = args["sweep-outdir"]
+		# Default sweep is a PRECESSION: the key stays aimed at the object and its
+		# aim traces a small cone (radius = --cone degrees, default 18) around the
+		# light-to-object axis, so highlights circle the relief without the shot
+		# ever going backlit. The rim/fill are held still. --sweep-kind=azimuth
+		# restores the old full 360-degree orbit of the key.
+		var kind := "precess"
+		if args.has("sweep-kind"):
+			kind = args["sweep-kind"]
+		var cone := 18.0
+		if args.has("cone"):
+			cone = args["cone"].to_float()
 		DirAccess.make_dir_recursive_absolute(sweep_dir)
-		var key_elevation := key.rotation_degrees.x
+		var base_pitch := key.rotation_degrees.x
+		var base_yaw := key.rotation_degrees.y
 		for i in range(frame_count):
-			var azimuth := 360.0 * float(i) / float(frame_count)
-			key.rotation_degrees = Vector3(key_elevation, azimuth, 0)
+			var phase := TAU * float(i) / float(frame_count)
+			if kind == "azimuth":
+				key.rotation_degrees = Vector3(base_pitch, 360.0 * float(i) / float(frame_count), 0)
+			else:
+				key.rotation_degrees = Vector3(
+					base_pitch + cone * sin(phase),
+					base_yaw + cone * cos(phase),
+					0)
 			for f in range(6):
 				await get_tree().process_frame
 			var frame_img := get_viewport().get_texture().get_image()
@@ -200,7 +270,7 @@ func _ready() -> void:
 				push_error("save_png failed for frame %d: %s" % [i, frame_err])
 				get_tree().quit(1)
 				return
-		print("PREVIEW SWEEP OK: wrote %d frames to %s" % [frame_count, sweep_dir])
+		print("PREVIEW SWEEP OK [%s]: wrote %d frames to %s" % [kind, frame_count, sweep_dir])
 		get_tree().quit(0)
 		return
 
