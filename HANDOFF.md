@@ -1,6 +1,6 @@
 # 🧭 Session Handoff: Tool-MaterialMaker-MCP
 
-_Last updated: 2026-09-13 (noise/distortion vocabulary + core-toolbox plan COMPLETE on branch `noise-vocabulary-core-toolbox`, all 14 tasks done + reviewed, suite green, ready to merge) CT (America/Chicago)_
+_Last updated: 2026-09-13 (enum out-of-range reclassified to a hard error; committed on branch `fix/enum-index-validation`, not pushed) CT (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up. **Shape rule (2026-09-05,
 teardown #3):** "Current state" describes the latest session only; anything
@@ -10,60 +10,57 @@ archive; there is no separate archive file.
 
 ## 🎯 Current state
 
-**The noise/distortion-vocabulary + core-toolbox plan is COMPLETE on branch
-`noise-vocabulary-core-toolbox` (all 14 tasks done, per-task + final-review
-clean, suite green). NOT yet merged: Grayson controls the merge (he chose to
-hold until the branch was green; it now is).** It answered his opening question
-("have we explored the full noise/distortion toolkit, are there gaps?"): there
-were big gaps, now cashed into shipped materials + docs. Plan:
-[docs/superpowers/plans/2026-09-06-noise-vocabulary-and-core-toolbox.md](docs/superpowers/plans/2026-09-06-noise-vocabulary-and-core-toolbox.md).
+**Closed the deferred enum-validation follow-up: an out-of-range enum INDEX is
+now a hard `severity:error`, not a warning. Committed as `d9802cd` on branch
+`fix/enum-index-validation` (off `main`), NOT pushed.** The noise/distortion +
+core-toolbox plan from the prior session is already merged to `main` (`0169446`)
+and pushed; the baton had drifted (said "unmerged"), now corrected.
 
-Coverage audit that motivated it: of 30 noise/pattern base nodes the cookbook
-used only 3 (perlin, voronoi, fbm); of 16 warp/distort nodes only 1 (`warp`);
-SDF (43 nodes) 0.
-
-What shipped on the branch:
-- **6 proof materials on previously-unused bases, all visually approved by
-  Grayson + code-reviewed clean:** `s13_polished_marble` (fbm turbulence,
-  moved terrain->stone), `m03_brushed_titanium` (noise_anisotropic),
-  `sf07_conduit_panel` (truchet), `s12_eroded_sandstone` (directional_warp),
-  `t09_rippled_wet_sand` (wavelet_noise, anisotropic 2/24 + type -3), and
-  `gl02_cut_gem` (voronoi_triangle, glossy faceted emerald). Cookbook 53 -> 59.
-- **19 diagnostic swatches** (up from 13): warp/warp2/directional_warp +
-  colorize/normal_map/pattern pixel-checked; slope_blur structural-only (buffer
-  node, cannot render headless).
-- **README integration:** counts corrected to 59, the cookbook contact sheet
-  un-collapsed (always visible) with its count gate migrated, and a new visible
-  "Core toolbox" section (swatch contact sheet + noise gallery), all count-gated.
-- **AUTHORING** distortion-vocabulary note + SDF out-of-scope ruling.
-- Gates: fast suite 1039 passed / 31 deselected; promote --check in sync;
-  naming 59 graphs 0 problems. Final opus review: ready to merge (its one
-  fix-before-merge, the gl02 card node count, landed as `4905d37`).
-
-Workflow that worked (subagent-driven): implementer authors builder + validates
-+ promotes (no Godot); the CONTROLLER renders the flat maps + a 3D preview and
-self-screens for gross misses + variety collisions BEFORE surfacing to Grayson,
-who is the visual judge. t09 took 3 self-screen passes (dark mud -> grey metal
--> warm damp tan); gl02 took 1 (matte hex tile -> glossy faceted gem). The
-variety lens matters: a "new base" material still drifts toward existing looks.
+The follow-up's framing turned out wrong: detection already worked. `validate_graph`
+correctly flagged t09's `type=-3` (int) even inside its subgraph. The real hole
+was ENFORCEMENT: that finding was a `warning`, and every automated path filters
+to errors only (`test_cookbook_gate.py:44`, `render_tracked.py:41`) or never
+validates (`promote_cookbook`). So the one class of mistake that produced t09
+was a warning no gate caught. Fix (Grayson chose reclassify + better message):
+- `validator.py`: out-of-range enum index -> `error` (numeric slider ranges stay
+  advisory warnings). New `_enum_literal_hint` names the intended index when the
+  value matches a known literal: `type=-3` -> "looks like the raw enum literal
+  for index 4 ('Mult 3'); Material Maker stores the index, use 4". Range NOT
+  widened; -3 stays invalid.
+- `catalog_builder.py`: capture `value_literals` only for enums whose numeric
+  literals mismatch their index (wavelet type). Name-literal enums (blend, fbm)
+  stay lean. Added `_as_int` helper.
+- `test_cookbook_gate.py`: ratchet test injecting a bad enum index into a real
+  cookbook graph, asserting the gate's own error collection fails, so a future
+  refactor cannot silently reopen the hole.
+- Verified against the real pre-fix t09 graph: now returns the named-index error,
+  located to `ripple_color/RippleField`. Fast suite 1044 passed / 31 deselected.
 
 ## 📌 Where we stopped
 
-Plan complete and green on branch `noise-vocabulary-core-toolbox`. Every task is
-`complete` in the ledger
-(`.superpowers/sdd/2026-09-06-noise-vocabulary-and-core-toolbox/progress.md`).
-The one remaining action is the MERGE, which is Grayson's call. `finishing-a-
-development-branch` was reached; the merge was presented, not executed.
+Fix committed on `fix/enum-index-validation` (`d9802cd`), branch not pushed and
+not merged to `main`. Wrap-up done. Nothing else in flight.
 
 ## ▶️ Next concrete step
 
-Grayson's merge decision. The branch is green and reviewed; merging brings the 6
-materials, 19 swatches, and the Core toolbox README section to `main` and lets
-release-please open the next minor-version PR. If NOT merging yet, the branch
-holds the work safely. Deferred-minor follow-ups (none block merge): the
-`catalog_builder.py` non-contiguous-enum validate-warning gap (a background task
-chip was spawned during final review); the contact-sheet `<img alt>` counts are
-not test-gated; a few over-long/stale docstrings noted in the ledger.
+**Reconcile two overlapping enum-validation branches before merging either.** A
+sibling branch `claude/zealous-ritchie-cb051a` (2 commits, unmerged, from a
+concurrent session) already solves the same enum problem a DIFFERENT way and
+edits the same code, so they conflict:
+- `claude/zealous-ritchie-cb051a`: keeps out-of-range enum a **warning**, but
+  improves the message to list every valid option by index ("valid: 0=Add 1 ...
+  4=Mult 3"); adds a catalog test pinning wavelet min=0/max=4.
+- `fix/enum-index-validation` (this session, `d9802cd`): reclassifies to
+  **error** so the gates enforce it, adds a gate ratchet test, names the intended
+  index via a literal match, captures `value_literals` in the catalog.
+
+Mine is stronger on enforcement (error + gate); theirs has the friendlier
+"list all valid options" message. The clean outcome is ONE branch: reclassify to
+error AND list valid options. Pick one as the base and fold in the other's good
+part; do not merge both blindly. Then push + let release-please fold it into the
+next version PR. Deferred-minor follow-ups still open (none blocking): the
+contact-sheet `<img alt>` counts are not test-gated; a few over-long/stale
+docstrings noted in the noise-plan ledger.
 
 ## ❓ Open questions
 
@@ -81,6 +78,13 @@ not test-gated; a few over-long/stale docstrings noted in the ledger.
 
 ## ⚠️ Heads-up for the next agent
 
+- **An out-of-range enum INDEX is now a hard `error`** (was a warning), so it
+  fails `test_cookbook_gate` and makes `render_tracked` SKIP that graph (records
+  a problem) instead of rendering-with-warning. Latent only: the cookbook has
+  zero out-of-range enums today. `validate` names the intended index when the
+  bad value matches a known literal (via the new catalog `value_literals`).
+  A string-stored literal (`"-3"`) is still skipped by the
+  `isinstance(pval,(int,float))` guard: deliberately left, t09's value was an int.
 - **Buffer/compute-shader nodes do NOT render headless** under `--export-material`
   (`shader_compile_spirv_from_source` on null -> all-black). This kills
   `slope_blur` and the whole `warp_dilation` family for cookbook materials even
@@ -190,7 +194,8 @@ not test-gated; a few over-long/stale docstrings noted in the ledger.
 Newest first. Keep at most 8 entries; older ones are in `git log` (search the
 commit subjects, every session ends with a `docs:` wrap-up commit).
 
-### 2026-09-13 (noise/distortion vocabulary + core toolbox, COMPLETE on branch, unmerged): `pickup` -> `subagent-driven-development` resumed at Task 8 and finished the plan (all 14 tasks, per-task + final opus review clean). Shipped 6 proof materials on unused bases (s13 marble/fbm, m03 titanium/anisotropic, sf07 conduit/truchet, s12 sandstone/directional_warp, t09 wet sand/wavelet, gl02 cut gem/voronoi_triangle; cookbook 53->59), 19 diagnostic swatches, README un-collapse + count-gated "Core toolbox" section (swatch sheet + noise gallery), AUTHORING distortion note. Two materials needed controller self-screen redirects before Grayson saw them (t09 dark-mud->grey-metal->warm-tan over 3 passes; gl02 matte-hex-tile->glossy-gem in 1). Fast suite 1039 passed; promote --check + naming clean. Final review's one fix-before-merge (gl02 card said "four nodes" for five) landed `4905d37`. Branch green + reviewed; MERGE HELD for Grayson (his call). Ledger: `.superpowers/sdd/2026-09-06-noise-vocabulary-and-core-toolbox/progress.md`.
+### 2026-09-13 (enum-index validation enforcement): `pickup` (caught baton drift: noise branch already merged `0169446`/pushed, baton said unmerged), Grayson picked the deferred enum follow-up. Advisor-prompted investigation flipped the premise: detection already worked (`validate_graph` flags t09's `type=-3` int, even in-subgraph); the hole was ENFORCEMENT (out-of-range enum was a `warning`, all gates filter to errors / promote never validates). Fix (reclassify + better message): out-of-range enum index -> `error` with `_enum_literal_hint` naming the intended index; `catalog_builder` captures `value_literals` for numeric index-mismatched enums only; ratchet test in `test_cookbook_gate`. TDD red->green, fast suite 1039->1044. Committed `d9802cd` on `fix/enum-index-validation` (off `main`), NOT pushed. Ruled out: string-literal guard hole (left; t09 was int) and the stale gitignored `catalog/catalog.json` artifact (not a bug). Commons log written.
+### 2026-09-13 (noise/distortion vocabulary + core toolbox, MERGED `0169446` + pushed): `pickup` -> `subagent-driven-development` resumed at Task 8, finished the plan (all 14 tasks, per-task + final opus review clean). Shipped 6 proof materials on unused bases (s13 marble/fbm, m03 titanium/anisotropic, sf07 conduit/truchet, s12 sandstone/directional_warp, t09 wet sand/wavelet, gl02 cut gem/voronoi_triangle; cookbook 53->59), 19 diagnostic swatches, README un-collapse + count-gated "Core toolbox" section, AUTHORING distortion note. Fast suite 1039; final fix `4905d37` (gl02 card node count). Merged next session; a follow-up t09 enum fix `4d1187f` landed post-merge.
 ### 2026-09-06 (backup-ops wake-lock, cross-project): `pickup` here, Grayson picked next-step #2. Root-caused the 09-05 nightly truncation as idle-sleep mid-run (the git `NativeCommandError` is a handled CRLF warning; true signature is a missing `transcript end` footer, not a code bug), and added a `SetThreadExecutionState` wake-lock to `backup-ops\Backup-All.ps1` (acquire in try, release in finally). Verified compile + parse; commit `f7e809d` local, PUSH PENDING (ssh-agent not loaded this session). Commons log written. No MM-MCP code changed.
 ### 2026-09-06 (idle-exit watchdog): `MM_IDLE_EXIT_MINUTES` opt-in idle exit, 17/17 tools touch it, live session closed on exit; review found and fixed the two untouched tools and the atexit skip; merged `--no-ff` as `f669f8c`, suite 989; registration set to 120.
 ### 2026-09-06 (validate subgraph descent + crate round-trip prep)
@@ -219,5 +224,4 @@ commit subjects, every session ends with a `docs:` wrap-up commit).
   card-table gate, the HANDOFF heads-up); all landed. Merged `dbf66fc`,
   pushed. Suite 809 -> 964.
 ### 2026-09-05 (teardown #4 executed): hygiene sweep (CI pinned to the MM sha), `quality/` packaged, Phase-3 harness archived (`6e4568f`, `c5d473c`).
-### 2026-09-05 (teardown #3 executed): examples/ folded into the cookbook (46 -> 53), mm-play port diagnostic, backup exclusions, baton diet (`87be578`, `5b93785`); v0.7.0 released.
-### 2026-09-05 (mm-play verified): Grayson ran `play.bat` hands-on; row promoted 🔌 -> ✅ (`056dcd4`). (Older entries: see `git log`.)
+### 2026-09-05 (teardown #3 executed): examples/ folded into the cookbook (46 -> 53), mm-play port diagnostic, backup exclusions, baton diet (`87be578`, `5b93785`); v0.7.0 released. (Older entries: see `git log`.)
