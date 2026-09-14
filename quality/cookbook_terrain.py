@@ -735,6 +735,126 @@ def build_t09_rippled_wet_sand(catalog: dict) -> str:
     return save_variant(g, _LABEL, "t09_rippled_wet_sand", 1)
 
 
+_T10_NAMES = {
+    "perlin_0": "DirtNoise",       # placeholder perlin, retyped to `dirt` below
+    "colorize_0": "DirtColor",
+    "normal_map_0": "DirtNormal",
+    "rough_const": "RoughnessConst",
+}
+
+
+def build_t10_packed_dirt(catalog: dict) -> str:
+    """Packed dirt: the first cookbook material to use `dirt`, a compound
+    (`graph`-type) node with an internal mode switch (`param0` = 0/1/2 picks
+    one of three composite sub-networks, "Dirt 1"/"Dirt 2"/"Dirt 3", each
+    blending a hexagonal `shape` field with `fbm2` noise through a tiler --
+    read from `dirt.mmg`'s own `gen_parameters` block). Built from scratch
+    via `_from_scratch_noise_material` (no donor has this topology), then
+    `retype()`d from the placeholder `perlin_0` to `dirt` -- the same
+    connection-safe swap `t07_forest_floor`/`t09_rippled_wet_sand` already
+    use, since a compound node's port 0 is a plain `f` output like `perlin`'s.
+
+    VERIFICATION (isolated single-node renders via the MCP
+    `render_node_output` tool, all three `param0` modes rendered and
+    compared at `d_scale=1`, `param1=11` -- the node's own defaults -- since
+    the brief flagged mode 0 as a real risk of reading too
+    regular/hexagonal): none of the three modes show a visible hexagonal
+    grid (the `shape` field is evidently randomized enough by the fbm2/tiler
+    math that the hex tiling never surfaces), so that specific risk did not
+    materialize. But they are NOT equivalent, and mode 0 does have its own
+    "too regular" problem the brief anticipated in different words:
+
+    - `param0=0` ("Dirt 1"): a dense scatter of small, mostly CIRCULAR,
+      individually distinct soft-edged dots/blobs of varying size -- reads
+      as a granular speckle/spatter, not as merged patches. Regular in
+      SHAPE (each blob is a soft circle) even though scattered irregularly
+      in position.
+    - `param0=1` ("Dirt 2"): much finer and closer to uniform static/grain
+      -- soft blobs are still present but smaller and more overlapping,
+      with almost no larger-scale clustering visible even at a
+      384px-downsampled "typical viewing distance" check.
+    - `param0=2` ("Dirt 3"): visibly larger, elongated, IRREGULAR blotches
+      with soft, feathered edges that merge into loose connected patches
+      rather than staying as discrete dots -- the only one of the three
+      that actually reads as "irregular soft-edged blotchy patches" rather
+      than a dot-scatter or fine grain.
+
+    Chosen: `param0=2`. `d_scale` (range 1-8) only makes the pattern FINER
+    as it increases (it raises the tiler's tile count), so `d_scale=1`
+    (the node's own default) is already the largest-patch setting available
+    -- there is no larger-scale option to reach for.
+
+    A follow-up check (per the project's pinned lesson: verify a channel by
+    reading its actual pixel values, not by eye) measured the grayscale
+    histogram of the chosen mode-2 render with a scratch numpy/PIL script:
+    mean 0.22, median (p50) 0.20, p95 0.49, p99 0.63, max 1.0 -- the `dirt`
+    output sits mostly in the bottom third of the 0..1 range, with only a
+    thin tail of pixels reaching higher values. A first-draft gradient with
+    naive stops at pos 0.0/0.5/1.0 would put the mid and light colors past
+    where the data actually lives, so the material would have rendered as
+    near-uniformly dark and never shown its documented tan highlight --
+    the same docstring-vs-pixels trap the sibling task hit, one step
+    removed (verifying the node's grayscale output is not the same as
+    verifying what the colorize gradient does with it). The gradient below
+    is remapped so its stops sit where the measured percentiles actually
+    are (dark tone at the median ~0.20, mid tan at ~0.49 = p95, light
+    highlight reached only near the true max) rather than at naive evenly
+    spaced positions.
+
+    Muted brown/tan packed-earth palette (dark shadowed dirt, its darkest
+    stop reached only in rare near-black crevices, through the
+    percentile-matched dominant dark-brown median tone, to a lighter
+    dry-dirt highlight reached only by the brightest fleck pixels), HIGH
+    matte roughness (0.88) for bare uncoated earth -- the deliberate
+    opposite of `t09_rippled_wet_sand`'s 0.15 wet sheen in the same file.
+    `normal_map param1=0.3` for a moderate, worn unevenness -- softer than
+    the voronoi-plate family's hard crack relief (`t01`/`t05`/`t06`/`t08`
+    run 0.12-0.55 for sharp fissures; 0.3 here reads as rolling, worn
+    ground rather than a crack network, since `dirt` has no crack topology
+    to begin with). `param4=0` on the normal chain per the project's
+    standing flat-normal-source fix. Roughness fed as a flat texture
+    (`rough_const`), immune to this same input-range trap since a flat
+    gradient returns the same color regardless of input value, rather than
+    left as a Material-node scalar only -- the same `_dry_earth_plates`/
+    `t09` lesson, so an ORM map exports."""
+    g = _from_scratch_noise_material(
+        {"scale_x": 4, "scale_y": 4},   # placeholder; retyped to `dirt` below
+        [(0.0,  0.09, 0.065, 0.04),   # rare near-black crevice shadow
+         (0.22, 0.18, 0.13,  0.08),   # dominant dark packed-earth tone (~measured median 0.20)
+         (0.49, 0.30, 0.22,  0.14),   # mid tan (~measured p95 0.49)
+         (1.0,  0.46, 0.36,  0.24)],  # dry-dirt highlight, only the brightest flecks reach this
+        metallic=0.0, roughness=0.88, normal_amount=0.3)
+    retype(g, "perlin_0", "dirt", {"param0": 2, "d_scale": 1, "param1": 11})
+    set_param(g, "normal_map_0", "param4", 0)
+    add_node(g, "rough_const", "colorize",
+             {"gradient": _grad([(0.0, 0.88, 0.88, 0.88), (1.0, 0.88, 0.88, 0.88)])})
+    g["connections"].append(
+        {"from": "perlin_0", "from_port": 0, "to": "rough_const", "to_port": 0})
+    g["connections"].append(
+        {"from": "rough_const", "from_port": 0, "to": "Material", "to_port": 2})
+
+    # Subgraph grouping -- the exact p01_glossy_plastic/t09_rippled_wet_sand
+    # template (the other from-scratch, no-donor cookbook materials):
+    # perlin_0 (retyped to `dirt`) feeds all three downstream nodes
+    # (colorize_0, normal_map_0, rough_const), so it has to live in one of
+    # the two groups; folding it into the color group avoids a degenerate
+    # single-node "finish" group.
+    group_into_subgraph(
+        g, ["perlin_0", "colorize_0"], "dirt_pattern", "Dirt Pattern",
+        [("colorize_0", "gradient", "param0", "Dirt color"),
+         ("perlin_0", "d_scale", "param1", "Grain scale")],
+        catalog,
+    )
+    group_into_subgraph(
+        g, ["normal_map_0", "rough_const"], "dirt_finish", "Dirt Finish",
+        [("rough_const", "gradient", "param0", "Roughness"),
+         ("normal_map_0", "param1", "param1", "Surface relief")],
+        catalog,
+    )
+    rename_nodes(g, _T10_NAMES)
+    return save_variant(g, _LABEL, "t10_packed_dirt", 1)
+
+
 BUILDERS = {
     "t01_sand_dunes": build_t01_sand_dunes,
     "t02_fresh_snow": build_t02_fresh_snow,
@@ -745,6 +865,7 @@ BUILDERS = {
     "t07_forest_floor": build_t07_forest_floor,
     "t08_riverbed_pebbles": build_t08_riverbed_pebbles,
     "t09_rippled_wet_sand": build_t09_rippled_wet_sand,
+    "t10_packed_dirt": build_t10_packed_dirt,
 }
 
 
