@@ -6,26 +6,27 @@
 
 Gate ledger. Three states only: ✅ verified · 🔌 wired · ⬜ not started.
 
-_Last updated: 2026-09-14 (round 1's noise/distortion vocabulary + core-toolbox plan MERGED to `main` and pushed 2026-09-13 (`0169446`); round 2 MERGED to `main` same day, all 11 tasks landed and reviewed clean; `render_preview_sweep` promoted to ✅ verified same day, pickup session)._
+_Last updated: 2026-09-14 (round 3 of the noise-vocabulary expansion complete on
+branch `worktree-noise-vocabulary-round-3`, all tasks reviewed clean, final
+whole-branch review pending before merge to `main`)._
 
-> ✅ **Round 2 MERGED to `main`:** a reusable `quality/node_usage_audit.py`
-> script (live noise/pattern coverage reporting, replaces the old one-time
-> manual histogram) plus six more proof materials on previously-unused
-> catalog nodes, all landed and approved: `l07_pebbled_leather` (fbm
-> Cellular 1), `f09_plaid_flannel` (fbm Cellular 3), `f10_boucle_upholstery`
-> (fbm Cellular 5), `sf05_circuit_maze_panel` (truchet Line),
-> `gl03_shattered_crystal` (shard_fbm), `w06_burled_wood` (warp2).
-> README/AUTHORING count integration done (65 materials, 14/53 live noise
-> nodes). Full task-by-task ledger for this round lived at
-> `.superpowers/sdd/2026-09-13-noise-vocabulary-round-2/progress.md`,
-> deleted per that skill's own convention once the final review closed
-> clean; see `HANDOFF.md`'s session log for the summary. Plan:
-> `docs/superpowers/plans/2026-09-13-noise-vocabulary-round-2.md`. One
-> finding parked at Task 8's review (the shared `wood` donor bleeds
-> GrainMask into Material's metallic port, w04/w05/w06 alike) was fully
-> closed before merge: a separate follow-up session fixed w04/w05
-> (`a984312`), and the identical fix was applied to w06 on this round's
-> branch (`0997d6d`) before merging.
+> ✅ **Round 3, ready for final review (not yet merged):** six more proof
+> materials on previously-unused catalog nodes, all Grayson-approved:
+> `m04_scratched_steel` (scratches), `f11_corduroy` (directional_noise),
+> `t10_packed_dirt` (dirt), `gl04_raw_crystal_cluster` (crystal),
+> `pm06_splatter_finish` (splatter), `man03_mosaic_tile` (skewed_bricks --
+> swapped in for `custom_tiles`, which needs an out-of-scope `sdf2d` input).
+> Cookbook is now 71 materials, 12 categories; live noise coverage 20/53.
+> Also fixed a real pre-existing `catalog_builder.py` bug this round surfaced
+> (compound-node param range resolution for `named_parameter` widgets and
+> type-referenced `linked_control` links, plus a fixpoint-loop fix for
+> compound-to-compound reference chains after the first pass proved
+> order-dependent). Full task-by-task ledger at
+> `.superpowers/sdd/2026-09-14-noise-vocabulary-round-3/progress.md`; see
+> `HANDOFF.md`'s session log for the summary. Plan:
+> `docs/superpowers/plans/2026-09-14-noise-vocabulary-round-3.md`. Prior
+> rounds' callouts retired to `HANDOFF.md`'s session log per this file's own
+> "state + one line + evidence pointer" rule.
 
 **How to read this file (rule adopted 2026-09-05, teardown #3):** each cell holds
 the state, one line of what it is, and a pointer to where the evidence lives
@@ -49,7 +50,7 @@ row points at.
 
 | Component | State | What it is / evidence |
 |---|---|---|
-| `src/mm_mcp/catalog_builder.py` | ✅ | `.mmg` -> `catalog.json`, incl. compound-node param ranges. `tests/test_catalog_*.py` |
+| `src/mm_mcp/catalog_builder.py` | ✅ | `.mmg` -> `catalog.json`, incl. compound-node param ranges (a bounded fixpoint pass over compound-to-compound reference chains, 2026-09-14, order-independence regression-tested). `tests/test_catalog_*.py` |
 | `src/mm_mcp/validator.py`, `graph.py` | ✅ | Graph validation (errors as data), recurses into subgraphs (2026-09-06, `577592f`), + pure helpers. `tests/test_validator.py`, `tests/test_graph.py` |
 | `src/mm_mcp/render.py` | ✅ | Headless Godot runner, `--target` profiles (Godot, Unity/URP verified; Unreal UE5 file-level only), process-tree kill, temp-file IO. `tests/test_render.py` |
 | `src/mm_mcp/server.py` (+ `idle.py`) | ✅ | 11 batch tools + 7 live tools + `catalog://nodes` + `guide://authoring`; opt-in idle exit (`MM_IDLE_EXIT_MINUTES`, 2026-09-06). `tests/test_server_tools.py`, `tests/test_server_live.py`, `tests/test_server_idle.py`, `tests/test_idle.py`; counts enforced by `tests/test_readme_counts.py` |
@@ -58,7 +59,7 @@ row points at.
 | `render_preview_sweep` (`preview.py` + `preview_project/`) | ✅ | 2026-09-14, merged to `main` `58e35ab`; verified 2026-09-14 (pickup session) via the live MCP tool surface (`render_graph` -> `render_preview_sweep` on `f01_woven_denim`), GIF confirmed by Grayson. Sweeps the key light 360 degrees in one Godot process, returns a looping GIF, for when a static preview leaves relief ambiguous. TDD-covered incl. a real frames-differ assertion; measured brightness across a real 24-frame sweep (66 front-lit -> 40 backlit, not black). Requires `Pillow` (runtime dep). `tests/test_preview.py` |
 | `src/mm_mcp/overlay.py` + `addons/mm_live/` + `src/mm_mcp/live.py` | ✅ | Disposable MM overlay with a GDScript socket addon (port 8765); client with `connect_or_launch`, 8 commands incl. `load_graph`. `tests/test_overlay.py`, `tests/test_live.py` |
 | `src/mm_mcp/play/` (`mm-play`, `play.bat`) | ✅ | Slider web page over cookbook subgraph params with a WebGL sphere; Grayson ran `play.bat` hands-on 2026-09-05. Refuses to start beside a stale listener and names the PID (2026-09-05). `tests/test_play_*.py`; `docs/superpowers/specs/2026-09-04-play-surface-design.md` |
-| `cookbook/` + `quality/cookbook_*.py` + `promote_cookbook.py` | ✅ | 65 tracked materials on `main`, 12 categories (all six round-2 materials merged), subgraph-grouped, every node role-named (2026-09-06, render-identical), each card carrying a generated node table; builders are the source, `--check` is the regression baseline for graphs and card tables. `tests/test_cookbook*.py` incl. `test_cookbook_naming_gate.py`, `test_cookbook_card_table_gate.py`; `cookbook/README.md` |
+| `cookbook/` + `quality/cookbook_*.py` + `promote_cookbook.py` | ✅ | 71 tracked materials, 12 categories (round 3's six landed on `worktree-noise-vocabulary-round-3`, not yet merged to `main`), subgraph-grouped, every node role-named (2026-09-06, render-identical), each card carrying a generated node table; builders are the source, `--check` is the regression baseline for graphs and card tables. `tests/test_cookbook*.py` incl. `test_cookbook_naming_gate.py`, `test_cookbook_card_table_gate.py`; `cookbook/README.md` |
 | `docs/AUTHORING.md` + `guide://authoring` | ✅ | Invariant authoring guide served as an MCP resource; per-material recipes are cards beside each `.ptex`. `tests/test_guide_resource.py` |
 | `quality/debug_swatches.py` | ✅ | 19 single-node diagnostic swatches with pixel assertions (merged to `main` with round 1; slope_blur structural-only, buffer node cannot render headless). Surfaced in README's "Core toolbox" section as a swatch contact sheet. `tests/test_debug_swatches.py`; `docs/DEBUG_SWATCHES.md` |
 | `quality/` package (builders, helpers, naming checker, render_tracked, promote/check, swatches) | ✅ | Importable package, `python -m quality.<module>`; `author.py` is the shared builder base, guarded by `--check`. `tests/test_quality_package.py`, `tests/test_cookbook_builders_signature.py`; `quality/README.md` |
