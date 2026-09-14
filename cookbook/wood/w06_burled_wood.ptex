@@ -1,0 +1,645 @@
+{
+ "connections": [
+  {
+   "from": "wood_grain",
+   "from_port": 2,
+   "to": "Material",
+   "to_port": 1
+  },
+  {
+   "from": "wood_grain",
+   "from_port": 3,
+   "to": "Material",
+   "to_port": 0
+  },
+  {
+   "from": "wood_grain",
+   "from_port": 0,
+   "to": "surface_finish",
+   "to_port": 0
+  },
+  {
+   "from": "wood_grain",
+   "from_port": 1,
+   "to": "surface_finish",
+   "to_port": 1
+  },
+  {
+   "from": "surface_finish",
+   "from_port": 0,
+   "to": "Material",
+   "to_port": 4
+  },
+  {
+   "from": "surface_finish",
+   "from_port": 1,
+   "to": "Material",
+   "to_port": 2
+  }
+ ],
+ "label": "Graph",
+ "name": "475",
+ "node_position": {
+  "x": 0,
+  "y": 0
+ },
+ "nodes": [
+  {
+   "name": "Material",
+   "node_position": {
+    "x": 687,
+    "y": 172
+   },
+   "parameters": {
+    "albedo_color": {
+     "a": 1,
+     "b": 1,
+     "g": 1,
+     "r": 1,
+     "type": "Color"
+    },
+    "ao_light_affect": 1,
+    "depth_scale": 1,
+    "emission_energy": 1,
+    "metallic": 1,
+    "normal_scale": 1,
+    "roughness": 1,
+    "size": 11,
+    "subsurf_scatter_strength": 0
+   },
+   "type": "material"
+  },
+  {
+   "name": "wood_grain",
+   "label": "Wood Grain",
+   "type": "graph",
+   "node_position": {
+    "x": -184.20607,
+    "y": 192.272728
+   },
+   "parameters": {
+    "param0": {
+     "interpolation": 1,
+     "points": [
+      {
+       "a": 1,
+       "r": 0.08,
+       "g": 0.05,
+       "b": 0.03,
+       "pos": 0.0
+      },
+      {
+       "a": 1,
+       "r": 0.22,
+       "g": 0.12,
+       "b": 0.06,
+       "pos": 0.3
+      },
+      {
+       "a": 1,
+       "r": 0.42,
+       "g": 0.24,
+       "b": 0.12,
+       "pos": 0.55
+      },
+      {
+       "a": 1,
+       "r": 0.3,
+       "g": 0.16,
+       "b": 0.08,
+       "pos": 0.8
+      },
+      {
+       "a": 1,
+       "r": 0.15,
+       "g": 0.08,
+       "b": 0.04,
+       "pos": 1.0
+      }
+     ],
+     "type": "Gradient"
+    }
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": -584.20607,
+      "y": 192.272728
+     },
+     "parameters": {},
+     "ports": [],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 215.79393,
+      "y": 192.272728
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "out0",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "out1",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "out2",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "out3",
+       "type": "rgba",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -584.20607,
+      "y": 392.27272800000003
+     },
+     "parameters": {
+      "param0": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0.08,
+         "g": 0.05,
+         "b": 0.03,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.22,
+         "g": 0.12,
+         "b": 0.06,
+         "pos": 0.3
+        },
+        {
+         "a": 1,
+         "r": 0.42,
+         "g": 0.24,
+         "b": 0.12,
+         "pos": 0.55
+        },
+        {
+         "a": 1,
+         "r": 0.3,
+         "g": 0.16,
+         "b": 0.08,
+         "pos": 0.8
+        },
+        {
+         "a": 1,
+         "r": 0.15,
+         "g": 0.08,
+         "b": 0.04,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      }
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Wood color",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "WoodColor",
+         "widget": "gradient"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "GrainWobble",
+     "node_position": {
+      "x": -312,
+      "y": 2.5
+     },
+     "parameters": {
+      "iterations": 6,
+      "persistence": 1,
+      "scale_x": 32,
+      "scale_y": 4
+     },
+     "type": "perlin"
+    },
+    {
+     "name": "GrainNoiseCoarse",
+     "node_position": {
+      "x": -635,
+      "y": 341.5
+     },
+     "parameters": {
+      "iterations": 3,
+      "persistence": 0.5,
+      "scale_x": 4,
+      "scale_y": 4
+     },
+     "type": "perlin"
+    },
+    {
+     "name": "GrainNoiseFine",
+     "node_position": {
+      "x": -635,
+      "y": 210.5
+     },
+     "parameters": {
+      "iterations": 3,
+      "persistence": 0.5,
+      "scale_x": 32,
+      "scale_y": 4
+     },
+     "type": "perlin"
+    },
+    {
+     "name": "GrainWarp",
+     "node_position": {
+      "x": -311,
+      "y": 280.5
+     },
+     "parameters": {
+      "amount": 0.1,
+      "eps": 0.05
+     },
+     "type": "warp"
+    },
+    {
+     "name": "BurlSwirl",
+     "node_position": {
+      "x": -89,
+      "y": 325.5
+     },
+     "parameters": {
+      "mode": 0,
+      "amount": 0.65
+     },
+     "type": "warp2"
+    },
+    {
+     "name": "GrainMask",
+     "node_position": {
+      "x": 101,
+      "y": 250.5
+     },
+     "parameters": {
+      "amount": 1,
+      "blend_type": 2
+     },
+     "type": "blend"
+    },
+    {
+     "name": "WoodColor",
+     "node_position": {
+      "x": 407.35144,
+      "y": 127.181824
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0.08,
+         "g": 0.05,
+         "b": 0.03,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.22,
+         "g": 0.12,
+         "b": 0.06,
+         "pos": 0.3
+        },
+        {
+         "a": 1,
+         "r": 0.42,
+         "g": 0.24,
+         "b": 0.12,
+         "pos": 0.55
+        },
+        {
+         "a": 1,
+         "r": 0.3,
+         "g": 0.16,
+         "b": 0.08,
+         "pos": 0.8
+        },
+        {
+         "a": 1,
+         "r": 0.15,
+         "g": 0.08,
+         "b": 0.04,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      }
+     },
+     "type": "colorize"
+    },
+    {
+     "name": "SwirlField",
+     "type": "perlin",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "scale_x": 2,
+      "scale_y": 2,
+      "iterations": 3,
+      "persistence": 0.5
+     }
+    }
+   ],
+   "connections": [
+    {
+     "from": "GrainNoiseFine",
+     "from_port": 0,
+     "to": "GrainWarp",
+     "to_port": 0
+    },
+    {
+     "from": "GrainNoiseCoarse",
+     "from_port": 0,
+     "to": "GrainWarp",
+     "to_port": 1
+    },
+    {
+     "from": "GrainWobble",
+     "from_port": 0,
+     "to": "GrainMask",
+     "to_port": 0
+    },
+    {
+     "from": "GrainWarp",
+     "from_port": 0,
+     "to": "BurlSwirl",
+     "to_port": 0
+    },
+    {
+     "from": "BurlSwirl",
+     "from_port": 0,
+     "to": "GrainMask",
+     "to_port": 1
+    },
+    {
+     "from": "GrainMask",
+     "from_port": 0,
+     "to": "WoodColor",
+     "to_port": 0
+    },
+    {
+     "from": "SwirlField",
+     "from_port": 0,
+     "to": "BurlSwirl",
+     "to_port": 1
+    },
+    {
+     "from": "GrainMask",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    },
+    {
+     "from": "GrainMask",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 1
+    },
+    {
+     "from": "GrainMask",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 2
+    },
+    {
+     "from": "WoodColor",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 3
+    }
+   ]
+  },
+  {
+   "name": "surface_finish",
+   "label": "Surface Finish",
+   "type": "graph",
+   "node_position": {
+    "x": 427.0,
+    "y": 365.0
+   },
+   "parameters": {
+    "param0": {
+     "interpolation": 1,
+     "points": [
+      {
+       "a": 1,
+       "r": 0.18,
+       "g": 0.18,
+       "b": 0.18,
+       "pos": 0.0
+      },
+      {
+       "a": 1,
+       "r": 0.34,
+       "g": 0.34,
+       "b": 0.34,
+       "pos": 1.0
+      }
+     ],
+     "type": "Gradient"
+    }
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": 27.0,
+      "y": 365.0
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "in0",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "in1",
+       "type": "f",
+       "group_size": 0
+      }
+     ],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 827.0,
+      "y": 365.0
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "out0",
+       "type": "rgb",
+       "group_size": 0
+      },
+      {
+       "name": "out1",
+       "type": "rgba",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": 27.0,
+      "y": 565.0
+     },
+     "parameters": {
+      "param0": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0.18,
+         "g": 0.18,
+         "b": 0.18,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.34,
+         "g": 0.34,
+         "b": 0.34,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      }
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Finish sheen",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "GrainRoughness",
+         "widget": "gradient"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "GrainNormal",
+     "node_position": {
+      "x": 431,
+      "y": 423.5
+     },
+     "parameters": {
+      "param0": 11,
+      "param1": 0.99,
+      "param2": 0,
+      "param4": 1
+     },
+     "type": "normal_map"
+    },
+    {
+     "name": "GrainRoughness",
+     "node_position": {
+      "x": 423,
+      "y": 306.5
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0.18,
+         "g": 0.18,
+         "b": 0.18,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.34,
+         "g": 0.34,
+         "b": 0.34,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      }
+     },
+     "type": "colorize"
+    }
+   ],
+   "connections": [
+    {
+     "from": "gen_inputs",
+     "from_port": 0,
+     "to": "GrainNormal",
+     "to_port": 0
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 1,
+     "to": "GrainRoughness",
+     "to_port": 0
+    },
+    {
+     "from": "GrainNormal",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    },
+    {
+     "from": "GrainRoughness",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 1
+    }
+   ]
+  }
+ ],
+ "parameters": {},
+ "type": "graph"
+}

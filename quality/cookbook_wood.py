@@ -12,7 +12,8 @@ Then `python -m quality.render_cookbook` renders each variant for inspection.
 import sys
 
 from quality.author_helpers import (load_example, set_gradient, set_param, add_node, rewire,
-                             save_variant, _grad, group_into_subgraph, rename_nodes)
+                             save_variant, _grad, group_into_subgraph, rename_nodes,
+                             retype, drop_conn)
 
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.config import load_config
@@ -234,10 +235,118 @@ def build_w05_dark_walnut(catalog: dict) -> str:
     return save_variant(g, _LABEL, "w05_dark_walnut", 1)
 
 
+# Naming for w06_burled_wood: same `wood` donor as w04/w05, but the
+# voronoi_0/colorize_1 ring-pattern chain is REMOVED (not folded in as dead
+# code like w03's combine_0 -- that was inherited from a donor, this dead
+# code would be introduced BY this edit, so it is deleted outright) and a
+# new low-frequency perlin (`perlin_3`) is added as the swirl displacement
+# feeding the retyped warp2 node. warp_1 keeps its position in the chain but
+# its role changes from "RingWarp" to "BurlSwirl".
+_WOOD_BURL_NAMES = {
+    "perlin_0": "GrainNoiseFine",
+    "perlin_1": "GrainNoiseCoarse",
+    "perlin_2": "GrainWobble",
+    "perlin_3": "SwirlField",
+    "warp_0": "GrainWarp",
+    "warp_1": "BurlSwirl",
+    "blend_0": "GrainMask",
+    "colorize_2": "WoodColor",
+    "colorize_0": "GrainRoughness",
+    "normal_map_0": "GrainNormal",
+}
+
+
+def build_w06_burled_wood(catalog: dict) -> str:
+    """Burled wood: rich walnut-burl palette, broad SWIRLING/knotted figure
+    instead of the straight parallel grain w04/w05's unmodified `wood` chain
+    already produces. Clones `wood` (same donor as w04/w05) and retypes
+    `warp_1` -- the donor's SECOND warp in the `wood_grain` chain, which in
+    the unmodified donor distorts the grain field by a thresholded voronoi
+    ring pattern (`RingWarp`, growth-ring/cathedral figure) -- to `warp2`.
+
+    `warp2` is a Distortion-vocabulary Transform node (MM's own `tree_item`
+    taxonomy: "warp" -> "Transform/Warp"), NOT one of the noise/pattern
+    generator nodes `quality/node_usage_audit.py`'s `_NOISE_PATTERN_NODES`
+    list counts -- so this material does not move that script's coverage
+    numbers, unlike every other material this round. Noted here so a future
+    reader checking the audit for `warp2` usage does not conclude it is
+    unused.
+
+    The donor's `voronoi_0` -> `colorize_1` ring-pattern chain (the
+    displacement `warp_1` used before this edit) is deleted outright, not
+    folded into a subgraph as dead code: unlike w03's inherited `combine_0`
+    (dead code that came WITH the donor), this pair would become dead code
+    only because of this edit, so removing it is more honest than leaving an
+    orphaned generator behind. In its place, a new low-frequency `perlin`
+    (`perlin_3`, scale_x=scale_y=2 -- roughly isotropic and an order of
+    magnitude coarser than `GrainNoiseFine`'s scale_x=32) feeds `warp2`'s
+    port-1 displacement input, producing broad, roughly circular swirls
+    instead of voronoi's cell-boundary rings.
+
+    `warp2`'s `amount` (verified range 0..1 via describe_node, unlike
+    `warp`'s unbounded `amount` -- `debug_swatches.py::build_swatch_warp2`'s
+    0.3 is well below `warp`'s own 1.0-amount swatch) is pushed to 0.65: high
+    enough that the swirl dominates the underlying grain (a lower value
+    tested during iteration read as only a subtle wobble, closer to
+    `warp_0`'s existing wave than a distinct burl figure), but short of the
+    0.9-1.0 range where the field started folding into illegible noise.
+
+    Palette: richer contrast than w05's dark walnut, with a near-black
+    "burl eye" low point and a warm honey-brown high point so the swirl
+    pattern itself reads as figure, not just a recolor. Same semi-gloss
+    roughness ramp as w05 (a finished/sealed furniture surface, not raw
+    timber)."""
+    g = load_example("wood")
+
+    # Remove the ring-pattern displacement this builder replaces, then the
+    # now-orphaned generator chain that fed it (see docstring).
+    drop_conn(g, "warp_1", 1)
+    drop_conn(g, "colorize_1", 0)
+    g["nodes"] = [n for n in g["nodes"] if n["name"] not in ("voronoi_0", "colorize_1")]
+
+    # New low-frequency displacement field for the burl swirl.
+    add_node(g, "perlin_3", "perlin",
+             {"scale_x": 2, "scale_y": 2, "iterations": 3, "persistence": 0.5})
+    g["connections"].append(
+        {"from": "perlin_3", "from_port": 0, "to": "warp_1", "to_port": 1})
+    retype(g, "warp_1", "warp2", {"mode": 0, "amount": 0.65})
+
+    set_gradient(g, "colorize_2", [    # walnut-burl: near-black eye to honey-brown streak
+        (0.0, 0.08, 0.05, 0.03),
+        (0.3, 0.22, 0.12, 0.06),
+        (0.55, 0.42, 0.24, 0.12),
+        (0.8, 0.30, 0.16, 0.08),
+        (1.0, 0.15, 0.08, 0.04),
+    ])
+    set_gradient(g, "colorize_0", [    # semi-gloss, sealed finish (same as w05)
+        (0.0, 0.18, 0.18, 0.18), (1.0, 0.34, 0.34, 0.34)])
+
+    # Same two-subgraph split as w04/w05, minus the removed voronoi/colorize_1
+    # pair, plus the new perlin_3 swirl-displacement node.
+    group_into_subgraph(
+        g,
+        ["perlin_0", "perlin_1", "perlin_2", "perlin_3",
+         "warp_0", "warp_1", "blend_0", "colorize_2"],
+        "wood_grain", "Wood Grain",
+        [("colorize_2", "gradient", "param0", "Wood color")],
+        catalog,
+    )
+    group_into_subgraph(
+        g,
+        ["colorize_0", "normal_map_0"],
+        "surface_finish", "Surface Finish",
+        [("colorize_0", "gradient", "param0", "Finish sheen")],
+        catalog,
+    )
+    rename_nodes(g, _WOOD_BURL_NAMES)
+    return save_variant(g, _LABEL, "w06_burled_wood", 1)
+
+
 BUILDERS = {
     "w03_painted_wood_siding": build_w03_painted_wood_siding,
     "w04_driftwood_gray": build_w04_driftwood_gray,
     "w05_dark_walnut": build_w05_dark_walnut,
+    "w06_burled_wood": build_w06_burled_wood,
 }
 
 
