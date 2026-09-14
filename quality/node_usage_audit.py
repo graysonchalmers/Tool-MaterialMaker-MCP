@@ -24,6 +24,13 @@ machine-readable category field (verified against the pinned MM checkout),
 so this list is maintained by hand here, the same way the SDF-family count
 in AUTHORING.md is a manual tally. Update it if the MM node set changes.
 
+Test-enforcement is one-directional: `tests/test_node_usage_audit.py` asserts
+every name in `_NOISE_PATTERN_NODES` is a real node type in the current
+Material Maker catalog (catches typos, deletions, stale names), but it does
+NOT assert the set is complete -- whether some other real generator node
+(e.g. `arc_pavement`, `pixels`, `pixels_smooth`) belongs in scope stays a
+manual judgment call, not something a test can decide.
+
 Run: python -m quality.node_usage_audit
 """
 import json
@@ -39,7 +46,7 @@ _NOISE_PATTERN_NODES = frozenset({
     "bricks2", "bricks3",
     "circle_splatter", "circle_splatter_color",
     "clouds_noise", "color_noise", "crystal", "custom_tiles",
-    "diagonal_weave", "dirt",
+    "diagonal_weave", "dirt", "directional_noise",
     "fbm", "fbm_variations", "fbm2", "fbm3", "fbm4",
     "noise", "noise_anisotropic", "noise_color", "noise_white", "noise2",
     "pattern",

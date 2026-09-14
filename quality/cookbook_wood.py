@@ -18,6 +18,14 @@ from quality.author_helpers import (load_example, set_gradient, set_param, add_n
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.config import load_config
 
+# KNOWN ISSUE (flagged 2026-09-14, not fixed here): the shared `wood` donor
+# wires its GrainMask blend straight into Material's metallic port instead of
+# a near-zero scalar, producing a spatially-varying (~0.04-0.58) metallic
+# channel identically in w04_driftwood_gray, w05_dark_walnut, and
+# w06_burled_wood. Tracked as follow-up task_21359777 and in HANDOFF.md; the
+# fix is a drop_conn + set_param(Material, "metallic", 0) across all three
+# builders (same pattern already used for cookbook_terrain.py's t01 fix).
+
 _LABEL = "cookbook-wood"
 
 # Worked mapping for the `wooden_floor` donor (used by w03) and the paint
@@ -273,11 +281,16 @@ def build_w06_burled_wood(catalog: dict) -> str:
     unused.
 
     The donor's `voronoi_0` -> `colorize_1` ring-pattern chain (the
-    displacement `warp_1` used before this edit) is deleted outright, not
-    folded into a subgraph as dead code: unlike w03's inherited `combine_0`
-    (dead code that came WITH the donor), this pair would become dead code
-    only because of this edit, so removing it is more honest than leaving an
-    orphaned generator behind. In its place, a new low-frequency `perlin`
+    displacement `warp_1` used before this edit) is deleted outright rather
+    than folded into a subgraph as `*Unused`, the way w03's inherited
+    `combine_0` and the cookbook's other donor-dead-code cases are handled
+    (that remains the dominant convention here, see e.g. `cookbook_metal.py`,
+    `cookbook_painted_metal.py`, `cookbook_stone.py`). This builder's case is
+    a local deviation, not a rule: the pair becomes dead code only because of
+    this specific edit (it did not arrive dead with the donor), so deleting
+    it felt like the more honest choice for this one node pair, not a
+    project-wide policy that dead code introduced by an edit must always be
+    deleted. In its place, a new low-frequency `perlin`
     (`perlin_3`, scale_x=scale_y=2 -- roughly isotropic and an order of
     magnitude coarser than `GrainNoiseFine`'s scale_x=32) feeds `warp2`'s
     port-1 displacement input, producing broad, roughly circular swirls
