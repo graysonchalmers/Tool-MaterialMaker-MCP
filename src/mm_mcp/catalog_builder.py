@@ -4,6 +4,15 @@ import sys
 import glob
 
 
+def _as_int(s):
+    """int(s) or None -- never raises, so a non-numeric enum literal (a plain
+    name like "soft_light") is simply 'not an int', not an error."""
+    try:
+        return int(s)
+    except (TypeError, ValueError):
+        return None
+
+
 def _parse_param(p: dict) -> dict:
     out = {
         "name": p.get("name"),
@@ -12,10 +21,24 @@ def _parse_param(p: dict) -> dict:
         "desc": p.get("shortdesc") or p.get("longdesc") or "",
     }
     if p.get("type") == "enum":
-        values = [v.get("name") for v in p.get("values", [])]
+        entries = p.get("values", [])
+        values = [v.get("name") for v in entries]
         out["values"] = values
         out["min"] = 0
         out["max"] = max(len(values) - 1, 0)
+        # Enum params are stored as the ORDINAL INDEX into `values`, but some
+        # nodes' .mmg entries carry a numeric `value` literal that does NOT
+        # equal its index (e.g. wavelet_noise.type: "Mult 3" is index 4 but
+        # its literal is "-3"). An author who types that literal instead of
+        # the index gets a silent wrong render (it clamps to 0). Capture the
+        # raw literals ONLY when at least one is a numeric string that differs
+        # from its index, so the validator can name the intended index; enums
+        # whose literals are plain names (blend, fbm) can't be confused with an
+        # index and stay lean (no value_literals field).
+        literals = [v.get("value") for v in entries]
+        if any(_as_int(lit) is not None and _as_int(lit) != i
+               for i, lit in enumerate(literals)):
+            out["value_literals"] = literals
     else:
         for k in ("min", "max", "step"):
             if k in p:

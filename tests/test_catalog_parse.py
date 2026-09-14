@@ -74,3 +74,26 @@ def test_compound_param_falls_back_to_none_when_inner_node_unresolvable():
     assert resolution["type"] is None
     assert resolution.get("min") is None
     assert resolution.get("max") is None
+
+
+def test_enum_captures_confusable_numeric_literals():
+    """wavelet_noise.type is the trap that produced the t09 bug: its .mmg
+    entries carry numeric `value` literals ("1","2","3","-2","-3") that do NOT
+    equal their ordinal index (Material Maker stores the index, so "Mult 3" is
+    index 4, not -3). Capture those literals so the validator can name the
+    intended index when an author types the raw literal."""
+    node = parse_node(_mmg("wavelet_noise"))
+    params = {p["name"]: p for p in node["parameters"]}
+    t = params["type"]
+    assert t["type"] == "enum"
+    assert t["value_literals"] == ["1", "2", "3", "-2", "-3"]
+
+
+def test_enum_with_name_literals_has_no_value_literals():
+    """blend.blend_type's literals are plain names ("normal", "multiply", ...),
+    not numbers, so nobody can confuse a literal with an index. Such an enum
+    must NOT carry value_literals - the field is only for numeric, index-
+    mismatched literals, keeping the catalog lean for the common case."""
+    node = parse_node(_mmg("blend"))
+    bt = {p["name"]: p for p in node["parameters"]}["blend_type"]
+    assert "value_literals" not in bt

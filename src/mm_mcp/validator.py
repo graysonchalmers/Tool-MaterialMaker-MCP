@@ -1,6 +1,29 @@
 from mm_mcp.catalog_builder import SPECIAL_TYPES
 
 
+def _enum_literal_hint(spec: dict, pval) -> str | None:
+    """If `pval` is out of an enum's index range but equals one of the enum's
+    raw numeric `value` literals, return a hint naming the index the author
+    almost certainly meant. This is the wavelet_noise.type trap that produced
+    the t09 bug: type=-3 is the literal for index 4 ('Mult 3'), and Material
+    Maker stores the index, not the literal. Returns None when the enum carries
+    no confusable literals (value_literals is only populated for numeric,
+    index-mismatched literals) or none matches `pval`."""
+    literals = spec.get("value_literals")
+    if not literals:
+        return None
+    for i, lit in enumerate(literals):
+        try:
+            if int(lit) == pval:
+                names = spec.get("values", [])
+                name = names[i] if i < len(names) else "?"
+                return (f" - looks like the raw enum literal for index {i} "
+                        f"('{name}'); Material Maker stores the index, use {i}")
+        except (TypeError, ValueError):
+            continue
+    return None
+
+
 def validate_graph(ptex: dict, catalog: dict, _path: str = "") -> list[dict]:
     problems = []
     nodes = ptex.get("nodes", [])
@@ -36,22 +59,29 @@ def validate_graph(ptex: dict, catalog: dict, _path: str = "") -> list[dict]:
             if isinstance(pval, (int, float)) and "min" in spec and "max" in spec:
                 if pval < spec["min"] or pval > spec["max"]:
                     if spec.get("type") == "enum":
-                        # min/max on an enum are the valid index range, not a
-                        # UI hint - an out-of-range index is a real problem.
+                        # min/max on an enum are the valid index range, not a UI
+                        # hint. An out-of-range index silently clamps to 0 (a
+                        # wrong render), so it is a hard error, not an advisory
+                        # warning (reclassified 2026-09-13 after t09 shipped a
+                        # wrong index that every error-gated check let through).
+                        severity = "error"
                         msg = (f"parameter '{pname}'={pval} outside enum index "
-                               f"range [{spec['min']}, {spec['max']}] - likely "
-                               f"invalid, will probably render wrong or fail")
+                               f"range [{spec['min']}, {spec['max']}]")
+                        hint = _enum_literal_hint(spec, pval)
+                        msg += hint if hint else (" - likely invalid, will "
+                                                  "probably render wrong or fail")
                     else:
                         # min/max on a numeric slider come from Material
                         # Maker's editor UI, not a shader-enforced clamp;
                         # values outside it commonly still render correctly
                         # (e.g. a fine voronoi/perlin scale for flecks or
                         # brush streaks), so this is advisory, not alarming.
+                        severity = "warning"
                         msg = (f"parameter '{pname}'={pval} outside the "
                                f"editor's default slider range "
                                f"[{spec['min']}, {spec['max']}] - not "
                                f"shader-clamped, often fine; verify visually")
-                    problems.append({"severity": "warning", "where": _where(n.get("name", "?")),
+                    problems.append({"severity": severity, "where": _where(n.get("name", "?")),
                                      "message": msg})
 
     for c in ptex.get("connections", []):

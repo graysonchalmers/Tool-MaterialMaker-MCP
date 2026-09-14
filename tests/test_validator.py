@@ -10,6 +10,13 @@ CATALOG = {
               "parameters": [{"name": "blend_type", "type": "enum",
                               "values": ["normal", "multiply"],
                               "min": 0, "max": 1, "default": 0}]},
+    # wavelet_noise's real trap: numeric literals that don't equal their index.
+    "wav": {"type": "wav", "inputs": [], "outputs": [{"type": "f"}],
+            "parameters": [{"name": "type", "type": "enum",
+                            "values": ["Add 1", "Add 2", "Add 3",
+                                       "Mult 2", "Mult 3"],
+                            "value_literals": ["1", "2", "3", "-2", "-3"],
+                            "min": 0, "max": 4, "default": 4}]},
 }
 
 
@@ -96,14 +103,42 @@ def test_numeric_param_out_of_range_reads_as_advisory():
     assert "invalid" not in msg
 
 
-def test_enum_param_out_of_range_reads_as_a_real_problem():
-    """An enum's min/max is a valid-index range, not a UI hint - an
-    out-of-range index is a genuine problem, so the message should say so."""
+def test_enum_param_out_of_range_is_an_error():
+    """An enum's min/max is a valid-index range, not a UI hint. An out-of-range
+    index silently clamps to 0 (a wrong render), so it is a hard error, not an
+    advisory warning - reclassified 2026-09-13 after t09 shipped a wrong enum
+    index that every error-gated check (test_cookbook_gate, render_tracked) let
+    through because it was only a warning."""
     g = _good()
     g["nodes"][1]["parameters"] = {"blend_type": 9}
+    errs = [p for p in validate_graph(g, CATALOG) if p["severity"] == "error"]
+    assert any("blend_type" in e["message"] for e in errs)
+    # numeric slider ranges stay advisory warnings, not errors
     warns = [p for p in validate_graph(g, CATALOG) if p["severity"] == "warning"]
-    msg = next(w["message"] for w in warns if "blend_type" in w["message"])
-    assert "invalid" in msg
+    assert not any("blend_type" in w["message"] for w in warns)
+
+
+def test_enum_out_of_range_names_intended_index_when_literal_matches():
+    """When the out-of-range value is one of the enum's numeric literals, the
+    error names the index the author almost certainly meant. This is the exact
+    t09 case: type=-3 is the literal for index 4 ('Mult 3')."""
+    g = _good()
+    g["nodes"].append({"name": "w", "type": "wav", "parameters": {"type": -3}})
+    errs = [p for p in validate_graph(g, CATALOG) if p["severity"] == "error"]
+    msg = next(e["message"] for e in errs if e["where"] == "w")
+    assert "index 4" in msg
+    assert "Mult 3" in msg
+
+
+def test_enum_out_of_range_without_matching_literal_still_errors_generically():
+    """An out-of-range enum value that matches no known literal is still a hard
+    error, with the generic message (no crash when there is nothing to name)."""
+    g = _good()
+    g["nodes"].append({"name": "w", "type": "wav", "parameters": {"type": 99}})
+    errs = [p for p in validate_graph(g, CATALOG) if p["severity"] == "error"]
+    msg = next(e["message"] for e in errs if e["where"] == "w")
+    assert "outside enum index range" in msg
+    assert "index" in msg
 
 
 def test_special_type_is_accepted():
