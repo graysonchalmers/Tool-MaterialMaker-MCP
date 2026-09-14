@@ -9,7 +9,7 @@ Gate ledger. Three states only: ✅ verified · 🔌 wired · ⬜ not started.
 _Last updated: 2026-09-14 (round 3 of the noise-vocabulary expansion merged to
 `main`, 71 materials/12 categories; the preview lighting rig overhaul merged
 earlier the same day, `6ce84c6`, from a concurrent session -- both landed on
-`main`, not pushed)._
+`main` and pushed to `origin`)._
 
 > ✅ **Round 3 MERGED to `main`:** six more proof materials on
 > previously-unused catalog nodes, all Grayson-approved: `m04_scratched_steel`

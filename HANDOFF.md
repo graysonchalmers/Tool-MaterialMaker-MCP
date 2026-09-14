@@ -1,9 +1,9 @@
 # 🧭 Session Handoff: Tool-MaterialMaker-MCP
 
-_Last updated: 2026-09-14 (round 3 of the noise-vocabulary expansion merged
-to `main`; the preview lighting rig overhaul merged earlier the same day
-from a concurrent session, `6ce84c6` -- both on `main`, not pushed) CT
-(America/Chicago)_
+_Last updated: 2026-09-14 21:15 CT (round 3 of the noise-vocabulary expansion
+merged to `main` and pushed to `origin`; the preview lighting rig overhaul
+merged earlier the same day from a concurrent session, `6ce84c6`, pushed
+along with it) (America/Chicago)_
 
 The session baton. Read at pickup, rewrite at wrap-up. **Shape rule (2026-09-05,
 teardown #3):** "Current state" describes the latest session only; anything
@@ -150,19 +150,25 @@ touches nothing tracked).
 
 ## 📌 Where we stopped
 
-Both sessions' work is on `main` (not pushed): round 3's six materials
-plus the catalog_builder fix, and the preview lighting rig overhaul.
-Full suite 1161+ passed post-merge, `promote_cookbook --check` and
-`naming --cookbook` both clean (71/71). The scratchpad lighting
-prototype (`scratchpad/preview_variant/`, `scratchpad/lighting_lab/`)
-is untracked, still on disk.
+Both sessions' work is on `main` AND pushed to `origin` (confirmed synced,
+`git rev-list --left-right --count origin/main...HEAD` reads `0  0`): round
+3's six materials plus the catalog_builder fix, and the preview lighting rig
+overhaul. Full suite 1163 passed in the primary checkout post-merge,
+`promote_cookbook --check` and `naming --cookbook` both clean (71/71). The
+scratchpad lighting prototype (`scratchpad/preview_variant/`,
+`scratchpad/lighting_lab/`) is untracked, still on disk. The merged-away
+worktree (`worktree-noise-vocabulary-round-3`) hit a Windows file-lock on
+`git worktree remove`; a follow-up (`task_86ba47bd`) was spawned to retry
+the cleanup once nothing has it locked.
 
 ## ▶️ Next concrete step
 
 No pressing next MM-MCP step queued. Open items, any of which Grayson
 can pick up next:
-- Push `main` if wanted (`git push`; confirm `git rev-list --left-right --count origin/main...HEAD` reads `0  0`).
-- The spawned follow-up (`task_73027cd8`): fix the catalog's resolved `default` field for compound-node parameters.
+- The spawned follow-up (`task_73027cd8`, already running as of this
+  writing): fix the catalog's resolved `default` field for compound-node
+  parameters.
+- The spawned worktree-cleanup follow-up (`task_86ba47bd`).
 - Promote the interactive lighting slider lab (`scratchpad/lighting_lab/`) to a tracked dev tool, or leave it as throwaway scratchpad.
 
 ## ❓ Open questions
@@ -295,7 +301,7 @@ Newest first. Keep at most 8 entries; older ones are in `git log` (search the
 commit subjects, every session ends with a `docs:` wrap-up commit).
 
 ### 2026-09-14 (noise-vocabulary round 3 + catalog fix, MERGED to `main`): `pickup` -> `writing-plans` -> `subagent-driven-development` for a 6-material round Grayson approved (scope-corrected before dispatch: `custom_tiles` swapped for `skewed_bricks`). Refined the implementer/controller split: implementer authors + validates + isolated verification renders only; controller renders all six, self-screens, batches one `SendUserFile`, gets Grayson's real approval before writing cards/promoting. All 6 materials + 2 README/AUTHORING tasks landed, only Task 2 (`f11_corduroy`) needed a fix round (an overstated "clean ribbing" claim caught by the task reviewer). Task 8 surfaced a real pre-existing `catalog_builder.py` bug (compound-node param range resolution) fixed as its own TDD'd task, itself needing one fix round (a fixpoint loop replacing an order-dependent two-pass sweep). Final whole-branch review (opus) came back "ready to merge with fixes": one fix wave (a fabricated-numbers card fix matching Task 2's own error class, catalog dead-code cleanup, an aliasing fix, a card tidy), re-reviewed clean. One finding spawned as a follow-up instead of fixed (`task_73027cd8`: catalog default-field accuracy for 17 params). Cookbook 65 -> 71 materials, 12 categories. Merged `main` into this branch first (a concurrent session had landed `6ce84c6`/`6051eed` on `main` after this branch forked), hand-reconciling HANDOFF.md/STATUS.md conflicts; then merged this branch into `main`. Full suite 1161+ passed throughout.
-### 2026-09-14 (preview lighting overhaul, MERGED `6ce84c6`, NOT pushed): `pickup` on the lighting worktree; a long live visual-iteration session (advisor-guided). Prototyped soft-shadow/bounce/AO/precession options in a throwaway scratchpad Godot project + an interactive slider lab (`lab.bat`), sending PNG/GIF comparisons each pass; Grayson converged over ~10 rounds to: soft distance key shadow (angular 5.0), boosted rim (2.0) casting a soft shadow (load-bearing for contact grounding), cool bounce fill, procedural-sky ambient+reflections (fixes dark metals), SSAO contacts, and a precession-default sweep (cone 18, rim still). Landed into production `preview.gd` + `preview.py` + `server.py` + `tests/test_preview.py`. Fast suite 1112, preview integration 4. The planned 65-preview regen was found MOOT (tracked thumbnails are flat albedo, not lit renders). Merged `--ff-only` to `main`. Gotchas hit: Godot launcher hangs on raw-pipe/parse-error; `var x := a and b` Variant-inference failure.
+### 2026-09-14 (preview lighting overhaul, MERGED `6ce84c6`, pushed with round 3): `pickup` on the lighting worktree; a long live visual-iteration session (advisor-guided). Prototyped soft-shadow/bounce/AO/precession options in a throwaway scratchpad Godot project + an interactive slider lab (`lab.bat`), sending PNG/GIF comparisons each pass; Grayson converged over ~10 rounds to: soft distance key shadow (angular 5.0), boosted rim (2.0) casting a soft shadow (load-bearing for contact grounding), cool bounce fill, procedural-sky ambient+reflections (fixes dark metals), SSAO contacts, and a precession-default sweep (cone 18, rim still). Landed into production `preview.gd` + `preview.py` + `server.py` + `tests/test_preview.py`. Fast suite 1112, preview integration 4. The planned 65-preview regen was found MOOT (tracked thumbnails are flat albedo, not lit renders). Merged `--ff-only` to `main`. Gotchas hit: Godot launcher hangs on raw-pipe/parse-error; `var x := a and b` Variant-inference failure.
 ### 2026-09-14 (pickup, render_preview_sweep verified): ran the sweep tool for real through the live MCP tool surface (`render_graph` on cookbook's `f01_woven_denim`, piped into `render_preview_sweep`), sent Grayson the resulting GIF, he confirmed it read fine. Promoted `render_preview_sweep` 🔌 -> ✅ in STATUS.md.
 ### 2026-09-14 (noise-vocabulary round 2, MERGED to `main`): `pickup` resumed at Task 5's pending approval; `subagent-driven-development` drove Tasks 5-11 to completion (cookbook 59 -> 65 across 12 categories, README/AUTHORING count integration). Task 8 found + parked a real pre-existing bug (shared `wood` donor bleeds GrainMask into Material's metallic port, w04/w05/w06); a follow-up session fixed w04/w05, then w06 was fixed on this round's branch before merging. Merged with HANDOFF.md's session log hand-reconciled.
 ### 2026-09-14 (rotating-key-light preview mode, `render_preview_sweep`, MERGED `58e35ab`): brainstorming -> TDD. `preview.gd` azimuth sweep mode (one Godot process, N frames, 360 key-light rotation) + `render_preview_sweep()` (Pillow GIF assembly, runtime dep) + 11th MCP tool. Advisor review caught a thin test and the verified/wired state mismatch; added a real frames-differ assertion, measured a real brightness curve. Merged same session.
