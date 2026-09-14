@@ -81,12 +81,14 @@ def render_preview(albedo_path: str, normal_path: str, orm_path: str,
 
 
 def _build_sweep_command(cfg: Config, albedo_path: str, normal_path: str, orm_path: str,
-                          sweep_dir: str, frames: int, tile: float) -> list[str]:
+                          sweep_dir: str, frames: int, tile: float,
+                          sweep_kind: str = "precess", cone: float = 18.0) -> list[str]:
     return [
         cfg.console_binary, "--path", _PREVIEW_PROJECT, "--",
         f"--albedo={albedo_path}", f"--normal={normal_path}",
         f"--orm={orm_path}", f"--sweep-outdir={sweep_dir}",
         f"--sweep-frames={frames}", f"--tile={tile}",
+        f"--sweep-kind={sweep_kind}", f"--cone={cone}",
     ]
 
 
@@ -102,11 +104,18 @@ def render_preview_sweep(albedo_path: str, normal_path: str, orm_path: str,
                           outdir: str | None = None, basename: str = "preview",
                           tile: float = 1.0, frames: int = 18,
                           frame_duration_ms: int = 80,
+                          sweep_kind: str = "precess", cone: float = 18.0,
                           cfg: Config | None = None) -> PreviewSweepResult:
-    """Sweep the key light through a full 360-degree rotation around the same
-    sphere/cube/cutaway rig render_preview uses, and composite the frames
-    into a looping GIF -- relief that a single fixed-angle static frame hides
-    becomes visible across the sweep.
+    """Animate the key light around the same sphere/cube/cutaway rig
+    render_preview uses, and composite the frames into a looping GIF -- relief
+    that a single fixed-angle static frame hides becomes visible across the
+    sweep.
+
+    sweep_kind defaults to 'precess': the key stays aimed at the object and its
+    aim traces a small cone (radius = cone degrees) so highlights circle the
+    relief without the shot ever going backlit. sweep_kind='azimuth' is the
+    older full 360-degree orbit of the key. The rim/fill are held fixed either
+    way.
 
     Same inputs as render_preview (already-rendered albedo/normal/orm maps,
     not a .ptex graph). Renders every frame inside ONE Godot process rather
@@ -136,7 +145,8 @@ def render_preview_sweep(albedo_path: str, normal_path: str, orm_path: str,
     if os.path.exists(gif_path):
         os.remove(gif_path)
 
-    cmd = _build_sweep_command(cfg, albedo_path, normal_path, orm_path, sweep_dir, frames, tile)
+    cmd = _build_sweep_command(cfg, albedo_path, normal_path, orm_path, sweep_dir,
+                                frames, tile, sweep_kind=sweep_kind, cone=cone)
 
     timeout = max(90, frames * 8)
     try:

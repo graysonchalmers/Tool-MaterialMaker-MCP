@@ -6,22 +6,25 @@
 
 Gate ledger. Three states only: ✅ verified · 🔌 wired · ⬜ not started.
 
-_Last updated: 2026-09-14 (round 3 of the noise-vocabulary expansion complete on
-branch `worktree-noise-vocabulary-round-3`, all tasks reviewed clean, final
-whole-branch review pending before merge to `main`)._
+_Last updated: 2026-09-14 (round 3 of the noise-vocabulary expansion merged to
+`main`, 71 materials/12 categories; the preview lighting rig overhaul merged
+earlier the same day, `6ce84c6`, from a concurrent session -- both landed on
+`main`, not pushed)._
 
-> ✅ **Round 3, ready for final review (not yet merged):** six more proof
-> materials on previously-unused catalog nodes, all Grayson-approved:
-> `m04_scratched_steel` (scratches), `f11_corduroy` (directional_noise),
-> `t10_packed_dirt` (dirt), `gl04_raw_crystal_cluster` (crystal),
-> `pm06_splatter_finish` (splatter), `man03_mosaic_tile` (skewed_bricks --
-> swapped in for `custom_tiles`, which needs an out-of-scope `sdf2d` input).
-> Cookbook is now 71 materials, 12 categories; live noise coverage 20/53.
-> Also fixed a real pre-existing `catalog_builder.py` bug this round surfaced
-> (compound-node param range resolution for `named_parameter` widgets and
-> type-referenced `linked_control` links, plus a fixpoint-loop fix for
-> compound-to-compound reference chains after the first pass proved
-> order-dependent). Full task-by-task ledger at
+> ✅ **Round 3 MERGED to `main`:** six more proof materials on
+> previously-unused catalog nodes, all Grayson-approved: `m04_scratched_steel`
+> (scratches), `f11_corduroy` (directional_noise), `t10_packed_dirt` (dirt),
+> `gl04_raw_crystal_cluster` (crystal), `pm06_splatter_finish` (splatter),
+> `man03_mosaic_tile` (skewed_bricks -- swapped in for `custom_tiles`, which
+> needs an out-of-scope `sdf2d` input). Cookbook is now 71 materials, 12
+> categories; live noise coverage 20/53. Also fixed a real pre-existing
+> `catalog_builder.py` bug this round surfaced (compound-node param range
+> resolution for `named_parameter` widgets and type-referenced `linked_control`
+> links, plus a fixpoint-loop fix for compound-to-compound reference chains
+> after the first pass proved order-dependent). A follow-up was spawned
+> (`task_73027cd8`) for a related-but-separate, non-blocking issue: the fix's
+> resolved `default` field is taken from the wrong (inner leaf) node for 17
+> parameters, including `crystal`. Full task-by-task ledger at
 > `.superpowers/sdd/2026-09-14-noise-vocabulary-round-3/progress.md`; see
 > `HANDOFF.md`'s session log for the summary. Plan:
 > `docs/superpowers/plans/2026-09-14-noise-vocabulary-round-3.md`. Prior
@@ -55,11 +58,11 @@ row points at.
 | `src/mm_mcp/render.py` | ✅ | Headless Godot runner, `--target` profiles (Godot, Unity/URP verified; Unreal UE5 file-level only), process-tree kill, temp-file IO. `tests/test_render.py` |
 | `src/mm_mcp/server.py` (+ `idle.py`) | ✅ | 11 batch tools + 7 live tools + `catalog://nodes` + `guide://authoring`; opt-in idle exit (`MM_IDLE_EXIT_MINUTES`, 2026-09-06). `tests/test_server_tools.py`, `tests/test_server_live.py`, `tests/test_server_idle.py`, `tests/test_idle.py`; counts enforced by `tests/test_readme_counts.py` |
 | `src/mm_mcp/doctor.py`, `paths.py`, `inspect.py`, `config.py` | ✅ | Setup preflight, opt-in path bounding (`MM_ALLOWED_ROOTS`), `.ptex` metrics, env config. Matching `tests/test_*.py` |
-| `src/mm_mcp/preview.py` + `preview_project/` | ✅ | `render_preview` 3D composite (sphere/cube/cutaway). `tests/test_preview.py` |
-| `render_preview_sweep` (`preview.py` + `preview_project/`) | ✅ | 2026-09-14, merged to `main` `58e35ab`; verified 2026-09-14 (pickup session) via the live MCP tool surface (`render_graph` -> `render_preview_sweep` on `f01_woven_denim`), GIF confirmed by Grayson. Sweeps the key light 360 degrees in one Godot process, returns a looping GIF, for when a static preview leaves relief ambiguous. TDD-covered incl. a real frames-differ assertion; measured brightness across a real 24-frame sweep (66 front-lit -> 40 backlit, not black). Requires `Pillow` (runtime dep). `tests/test_preview.py` |
+| `src/mm_mcp/preview.py` + `preview_project/` | ✅ | `render_preview` 3D composite (sphere/cube/cutaway). Lighting rig overhauled 2026-09-14 (`6ce84c6`): soft distance key shadow (angular 5.0, SOFT_ULTRA), boosted rim (2.0) casting a soft shadow (load-bearing for contact grounding), cool bounce fill, procedural-sky ambient+reflections (fixes dark metals), SSAO contacts. Verified on cobblestone (Grayson's approved pick) + out-of-category glass. Tracked thumbnails are flat albedo, unaffected. `tests/test_preview.py` |
+| `render_preview_sweep` (`preview.py` + `preview_project/`) | ✅ | 2026-09-14: default sweep changed from the azimuth 360 orbit to a PRECESSION (`6ce84c6`) -- key aim wobbles in a cone (default 18 deg, rim/fill held still) so highlights circle relief without going backlit; `sweep_kind="azimuth"`/`cone` still reachable. Motion integration test now exercises precession, clears its floor empirically. One Godot process, looping GIF, `Pillow` runtime dep. `tests/test_preview.py` |
 | `src/mm_mcp/overlay.py` + `addons/mm_live/` + `src/mm_mcp/live.py` | ✅ | Disposable MM overlay with a GDScript socket addon (port 8765); client with `connect_or_launch`, 8 commands incl. `load_graph`. `tests/test_overlay.py`, `tests/test_live.py` |
 | `src/mm_mcp/play/` (`mm-play`, `play.bat`) | ✅ | Slider web page over cookbook subgraph params with a WebGL sphere; Grayson ran `play.bat` hands-on 2026-09-05. Refuses to start beside a stale listener and names the PID (2026-09-05). `tests/test_play_*.py`; `docs/superpowers/specs/2026-09-04-play-surface-design.md` |
-| `cookbook/` + `quality/cookbook_*.py` + `promote_cookbook.py` | ✅ | 71 tracked materials, 12 categories (round 3's six landed on `worktree-noise-vocabulary-round-3`, not yet merged to `main`), subgraph-grouped, every node role-named (2026-09-06, render-identical), each card carrying a generated node table; builders are the source, `--check` is the regression baseline for graphs and card tables. `tests/test_cookbook*.py` incl. `test_cookbook_naming_gate.py`, `test_cookbook_card_table_gate.py`; `cookbook/README.md` |
+| `cookbook/` + `quality/cookbook_*.py` + `promote_cookbook.py` | ✅ | 71 tracked materials on `main`, 12 categories (all six round-3 materials merged), subgraph-grouped, every node role-named (2026-09-06, render-identical), each card carrying a generated node table; builders are the source, `--check` is the regression baseline for graphs and card tables. `tests/test_cookbook*.py` incl. `test_cookbook_naming_gate.py`, `test_cookbook_card_table_gate.py`; `cookbook/README.md` |
 | `docs/AUTHORING.md` + `guide://authoring` | ✅ | Invariant authoring guide served as an MCP resource; per-material recipes are cards beside each `.ptex`. `tests/test_guide_resource.py` |
 | `quality/debug_swatches.py` | ✅ | 19 single-node diagnostic swatches with pixel assertions (merged to `main` with round 1; slope_blur structural-only, buffer node cannot render headless). Surfaced in README's "Core toolbox" section as a swatch contact sheet. `tests/test_debug_swatches.py`; `docs/DEBUG_SWATCHES.md` |
 | `quality/` package (builders, helpers, naming checker, render_tracked, promote/check, swatches) | ✅ | Importable package, `python -m quality.<module>`; `author.py` is the shared builder base, guarded by `--check`. `tests/test_quality_package.py`, `tests/test_cookbook_builders_signature.py`; `quality/README.md` |

@@ -178,9 +178,16 @@ def render_preview(albedo_path: str, normal_path: str, orm_path: str,
 
 def render_preview_sweep(albedo_path: str, normal_path: str, orm_path: str,
                           basename: str = "preview", tile: float = 1.0,
-                          frames: int = 18, frame_duration_ms: int = 80) -> dict:
-    """Sweep the key light through a full 360-degree rotation around the same
-    sphere/cube/cutaway rig render_preview uses, and return a looping GIF.
+                          frames: int = 18, frame_duration_ms: int = 80,
+                          sweep_kind: str = "precess", cone: float = 18.0) -> dict:
+    """Animate the key light around the same sphere/cube/cutaway rig
+    render_preview uses, and return a looping GIF.
+
+    sweep_kind defaults to 'precess': the key stays aimed at the object and its
+    aim wobbles in a small cone (radius = cone degrees) so highlights circle the
+    relief without the shot ever going backlit -- the best all-round relief
+    reveal. sweep_kind='azimuth' is the older full 360-degree orbit (its backlit
+    third reads dark on most materials).
 
     Optional and slower than render_preview (one Godot process, but frames
     frames rendered inside it) -- reach for this only when render_preview's
@@ -198,7 +205,8 @@ def render_preview_sweep(albedo_path: str, normal_path: str, orm_path: str,
         return {"ok": False, "image": None, "error": str(exc)}
     result = _render_preview_sweep(albedo_path, normal_path, orm_path,
                                     basename=basename, tile=tile, frames=frames,
-                                    frame_duration_ms=frame_duration_ms, cfg=cfg)
+                                    frame_duration_ms=frame_duration_ms,
+                                    sweep_kind=sweep_kind, cone=cone, cfg=cfg)
     return {"ok": result.ok, "image": result.image, "frame_count": result.frame_count,
             "error": result.error, "log_tail": result.log_tail}
 
