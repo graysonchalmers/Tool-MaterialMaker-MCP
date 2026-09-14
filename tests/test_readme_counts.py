@@ -28,8 +28,8 @@ def test_readme_cookbook_material_count_matches_tree():
 
 
 def test_readme_contact_sheet_summary_count_matches_tree():
-    m = re.search(r"Show the cookbook contact sheet</b>\s+\((\d+)\s+materials:", README)
-    assert m, "contact-sheet <summary> must state '(<N> materials:'"
+    m = re.search(r"The full cookbook \((\d+)\s+materials:", README)
+    assert m, "contact-sheet caption must state 'The full cookbook (<N> materials:'"
     assert int(m.group(1)) == len(ENTRIES)
 
 

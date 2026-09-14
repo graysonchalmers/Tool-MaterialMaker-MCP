@@ -78,14 +78,11 @@ materials are in [docs/AUTHORING.md](docs/AUTHORING.md), also served as the
 its graph as `cookbook/<category>/<id>.md`. The builders that regenerate the
 graphs live in [`quality/`](quality/).
 
-<details>
-<summary><b>Show the cookbook contact sheet</b> (59 materials: ceramic, fabrics, glass, leather, metal, organics, painted metal, plastics, sci-fi, stone, terrain, wood)</summary>
+**The full cookbook (59 materials:** ceramic, fabrics, glass, leather, metal, organics, painted metal, plastics, sci-fi, stone, terrain, wood)
 
 <p align="center">
   <img src="docs/images/cookbook-contact-sheet.png" alt="Contact sheet of all 59 cookbook materials across 12 categories" width="100%">
 </p>
-
-</details>
 
 ## How it works
 
