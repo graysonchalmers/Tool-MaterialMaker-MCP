@@ -1,7 +1,10 @@
+import glob
 import json
 import tempfile
 import os
+import types
 
+import mm_mcp.catalog_builder as catalog_builder
 from mm_mcp.catalog_builder import build_catalog, SPECIAL_TYPES
 from mm_mcp.config import load_config
 
@@ -53,6 +56,47 @@ def test_linked_control_resolves_through_a_type_referenced_inner_node():
     param0 = {p["name"]: p for p in cat["crystal"]["parameters"]}["param0"]
     assert param0["min"] == 1
     assert param0["max"] == 32
+
+
+def test_build_catalog_resolves_compound_to_compound_links_order_independently(monkeypatch):
+    """binary_smooth.mmg's 'smooth' widget links (via linked_control) to
+    fast_blur's 'param1' -- ANOTHER compound node's parameter, not a leaf's.
+    fast_blur.param1 itself only resolves once fast_blur has been
+    re-resolved against the full catalog (it links to the leaf-referenced
+    fast_blur_shader.sigma, min=1/max=256/step=1/default=1).
+
+    A pass-2 implementation that sweeps generic nodes only ONCE gives a
+    different answer for binary_smooth.smooth depending on whether
+    binary_smooth or fast_blur happens to be visited first in that sweep --
+    and that visitation order tracks glob.glob()'s file order, which the
+    stdlib does not guarantee to be sorted or stable across platforms. This
+    is exactly the class of bug the crystal/voronoi (compound-to-LEAF) case
+    cannot catch, because a leaf's parameters are already fully resolved
+    after pass 1 regardless of order.
+
+    Build the catalog under forward and reversed glob order (a real
+    monkeypatch of catalog_builder's glob.glob, not just this one entry)
+    and assert both agree, and both fully resolve."""
+    real_files = glob.glob(os.path.join(cfg.nodes_dir, "*.mmg"))
+    assert real_files, "expected to find real .mmg fixture files"
+
+    def build_with_file_order(files):
+        monkeypatch.setattr(
+            catalog_builder, "glob",
+            types.SimpleNamespace(glob=lambda *a, **k: list(files)),
+        )
+        return build_catalog(cfg.nodes_dir)
+
+    cat_forward = build_with_file_order(real_files)
+    cat_reversed = build_with_file_order(list(reversed(real_files)))
+
+    for label, cat in (("forward", cat_forward), ("reversed", cat_reversed)):
+        smooth = {p["name"]: p for p in cat["binary_smooth"]["parameters"]}["smooth"]
+        assert smooth.get("min") == 1, f"{label} order: smooth.min unresolved"
+        assert smooth.get("max") == 256, f"{label} order: smooth.max unresolved"
+        assert smooth.get("step") == 1, f"{label} order: smooth.step unresolved"
+
+    assert cat_forward == cat_reversed
 
 
 def test_build_catalog_skips_malformed_files(capsys):

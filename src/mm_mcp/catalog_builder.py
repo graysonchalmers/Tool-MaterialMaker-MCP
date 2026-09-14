@@ -212,6 +212,9 @@ SPECIAL_TYPES = {"graph", "comment", "remote", "shader",
                  "buffer", "image", "switch", "debug", "ios"}
 
 
+_MAX_FIXPOINT_ROUNDS = 10
+
+
 def build_catalog(nodes_dir: str) -> dict:
     """Build the full node catalog in two passes.
 
@@ -232,6 +235,8 @@ def build_catalog(nodes_dir: str) -> dict:
     crystal's 'voronoi' inner node has no shader_model of its own; its real
     parameters live in the separately-parsed 'voronoi' catalog entry, which
     may not exist yet -- or may not even be parsed yet -- during pass 1).
+    See `_resolve_generic_nodes_to_fixpoint` for why pass 2 has to repeat to
+    a fixpoint rather than run once.
     """
     catalog = {}
     generic_raw_data = {}  # type_name -> raw .mmg JSON, for pass 2
@@ -249,11 +254,56 @@ def build_catalog(nodes_dir: str) -> dict:
             if not data.get("shader_model"):
                 generic_raw_data[node["type"]] = data
 
-    for type_name, data in generic_raw_data.items():
-        reparsed = _parse_generic_node(data, type_name, full_catalog=catalog)
-        if reparsed is not None:
-            catalog[type_name] = reparsed
+    _resolve_generic_nodes_to_fixpoint(catalog, generic_raw_data)
     return catalog
+
+
+def _resolve_generic_nodes_to_fixpoint(catalog: dict, generic_raw_data: dict) -> None:
+    """Re-resolve every compound/generic node's parameters against the
+    current state of `catalog`, in place, repeating full rounds until one
+    round makes no further change (a fixpoint).
+
+    A single round is not enough: a compound node's `linked_control` can
+    point at ANOTHER compound node's parameter, not just a leaf node's. That
+    referenced compound node might not have had ITS OWN re-resolution
+    applied yet within the same round -- whether it has depends on
+    `generic_raw_data`'s iteration order, which mirrors `glob.glob()`'s
+    order, which the stdlib does not guarantee to be sorted or stable
+    across platforms or filesystems. Concretely: `binary_smooth.smooth`
+    links to `fast_blur.param1`, and `fast_blur.param1` itself only
+    resolves once `fast_blur` has been reprocessed with the full catalog
+    available (it links to the leaf-referenced `fast_blur_shader.sigma`).
+    A single sweep gives a different answer for `binary_smooth.smooth`
+    depending on whether `binary_smooth` or `fast_blur` happens to be
+    visited first -- silently reintroducing the exact nondeterminism this
+    two-pass design exists to remove.
+
+    Looping to a fixpoint fixes this: each round can only ever add a range
+    that some later round could also have derived (re-parsing is
+    idempotent once its inputs stop changing), so repeating until nothing
+    changes converges on the same fully-resolved catalog regardless of
+    which node happens to be visited first, in how many rounds it takes.
+
+    Bounded by `_MAX_FIXPOINT_ROUNDS` so a cyclic compound reference (which
+    would never converge) cannot hang the build. If the cap is hit, this
+    warns to stderr -- matching this file's existing malformed-file warning
+    convention -- rather than silently returning a half-resolved catalog.
+    """
+    for _round_num in range(_MAX_FIXPOINT_ROUNDS):
+        changed = False
+        for type_name, data in generic_raw_data.items():
+            reparsed = _parse_generic_node(data, type_name, full_catalog=catalog)
+            if reparsed is not None and reparsed != catalog.get(type_name):
+                catalog[type_name] = reparsed
+                changed = True
+        if not changed:
+            return
+    print(
+        f"WARNING: compound-node parameter resolution did not converge after "
+        f"{_MAX_FIXPOINT_ROUNDS} rounds; the catalog may contain unresolved "
+        "or order-dependent ranges (check for a cyclic compound reference)",
+        file=sys.stderr,
+    )
 
 
 def write_catalog(nodes_dir: str, out_path: str) -> int:
