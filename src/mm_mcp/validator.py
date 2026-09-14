@@ -36,11 +36,22 @@ def validate_graph(ptex: dict, catalog: dict, _path: str = "") -> list[dict]:
             if isinstance(pval, (int, float)) and "min" in spec and "max" in spec:
                 if pval < spec["min"] or pval > spec["max"]:
                     if spec.get("type") == "enum":
-                        # min/max on an enum are the valid index range, not a
-                        # UI hint - an out-of-range index is a real problem.
+                        # An enum parameter is stored as an ordinal INDEX into
+                        # the option list; Material Maker looks up
+                        # values[index].value at shader-gen time and clamps any
+                        # index <0 or >=len to 0 (gen_shader.gd:527-529,
+                        # sdf_builder.gd:120). So an out-of-range value is not a
+                        # UI hint - it silently renders as option 0. Name the
+                        # options with their indices so the fix is obvious (the
+                        # classic trap: using an option's underlying value, e.g.
+                        # -3, instead of its index, e.g. 4).
+                        opts = ", ".join(f"{i}={v}" for i, v
+                                         in enumerate(spec.get("values", [])))
                         msg = (f"parameter '{pname}'={pval} outside enum index "
-                               f"range [{spec['min']}, {spec['max']}] - likely "
-                               f"invalid, will probably render wrong or fail")
+                               f"range [{spec['min']}, {spec['max']}] - Material "
+                               f"Maker will clamp it to index 0 and render the "
+                               f"wrong option; use the option's INDEX"
+                               + (f" (valid: {opts})" if opts else ""))
                     else:
                         # min/max on a numeric slider come from Material
                         # Maker's editor UI, not a shader-enforced clamp;

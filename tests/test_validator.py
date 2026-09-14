@@ -98,12 +98,17 @@ def test_numeric_param_out_of_range_reads_as_advisory():
 
 def test_enum_param_out_of_range_reads_as_a_real_problem():
     """An enum's min/max is a valid-index range, not a UI hint - an
-    out-of-range index is a genuine problem, so the message should say so."""
+    out-of-range index is a genuine problem, so the message should say so,
+    and it should name the options by index so the fix is obvious (the trap
+    is using an option's underlying value instead of its ordinal index)."""
     g = _good()
     g["nodes"][1]["parameters"] = {"blend_type": 9}
     warns = [p for p in validate_graph(g, CATALOG) if p["severity"] == "warning"]
     msg = next(w["message"] for w in warns if "blend_type" in w["message"])
-    assert "invalid" in msg
+    assert "enum index range" in msg
+    assert "clamp" in msg
+    assert "INDEX" in msg
+    assert "0=normal" in msg and "1=multiply" in msg  # options named by index
 
 
 def test_special_type_is_accepted():

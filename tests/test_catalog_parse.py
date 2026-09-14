@@ -29,6 +29,28 @@ def test_parse_blend_enum_param():
     assert amount["min"] == 0 and amount["max"] == 1
 
 
+def test_parse_noncontiguous_enum_uses_index_range_not_underlying_values():
+    """wavelet_noise's `type` enum has NON-contiguous underlying `value`
+    fields: "Add 1/2/3" -> "1"/"2"/"3" and "Mult 2/3" -> "-2"/"-3". It is
+    tempting to derive the valid range from those literals (which would give
+    -3..3), but that is wrong: Material Maker stores an enum parameter as an
+    *ordinal index* into the values list and, at shader-generation time,
+    looks up values[index].value (gen_shader.gd:527-529 and
+    sdf_builder.gd:120). An index <0 or >=len is clamped to 0. So the valid
+    range is the index range [0, len-1], and to select "Mult 3" a graph must
+    store index 4 (which noise_gallery.py already does), NOT the literal -3.
+    This test pins that: min/max are the index bounds, not the value bounds."""
+    node = parse_node(_mmg("wavelet_noise"))
+    params = {p["name"]: p for p in node["parameters"]}
+    t = params["type"]
+    assert t["type"] == "enum"
+    # names, in declared order -- the underlying values (1,2,3,-2,-3) are
+    # non-contiguous, but the range must NOT be derived from them.
+    assert t["values"] == ["Add 1", "Add 2", "Add 3", "Mult 2", "Mult 3"]
+    assert t["min"] == 0
+    assert t["max"] == 4  # 5 options -> index range 0..4, never -3..3
+
+
 def test_generic_input_expansion_produces_distinct_dicts():
     """mwf_mix has '#'-suffixed inputs (h#, c#, orm#, em#, nm#) repeated
     generic_size times. Each repeated entry must be its own dict object,
