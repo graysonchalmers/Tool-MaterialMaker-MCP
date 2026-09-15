@@ -252,11 +252,60 @@ def build_m04_scratched_steel(catalog: dict) -> str:
     return save_variant(g, _LABEL, "m04_scratched_steel", 1)
 
 
+_M05_NAMES = {
+    "perlin_0": "MicroNoise",
+    "colorize_0": "ChromeColor",
+    "colorize_rough": "RoughnessVariation",
+    "normal_map_0": "MicroNormal",
+}
+
+
+def build_m05_polished_chrome(catalog: dict) -> str:
+    """Polished chrome: the purest metallic case in the cookbook, meant to
+    prove the reflection path (metallic=1.0 scalar, roughness held very low)
+    reads as a genuine mirror against the enriched preview environment
+    (sun-disc reflection + SSR from the `reflections` branch). Built from
+    scratch via `_from_scratch_noise_material` (no donor is this minimal):
+    albedo is a bright near-neutral gray with the faintest cool cast (chrome
+    is not pure white -- a hint of blue keeps it from reading as diffuse
+    plastic), and normal_amount is dialed down to 0.04 (not 0, which would
+    produce Godot's dead-flat default normal per the m03/m04 precedent) for
+    an almost mirror-smooth surface. Roughness is a texture, not a bare
+    scalar (same lesson as m04_scratched_steel: a scalar-only roughness
+    exports no ORM map for the preview), fed by a second colorize reading
+    the same MicroNoise so the sheen has the faintest breakup instead of a
+    perfectly uniform mirror plane -- 0.06 to 0.14, staying in the brief's
+    low-roughness band throughout."""
+    g = _from_scratch_noise_material(
+        {"scale_x": 8, "scale_y": 8},
+        [(0.0, 0.82, 0.84, 0.88), (1.0, 0.90, 0.92, 0.96)],
+        metallic=1.0, roughness=0.1, normal_amount=0.04)
+    add_node(g, "colorize_rough", "colorize",
+             {"gradient": _grad([(0.0, 0.06, 0.06, 0.06), (1.0, 0.14, 0.14, 0.14)])})
+    g["connections"].append(
+        {"from": "perlin_0", "from_port": 0, "to": "colorize_rough", "to_port": 0})
+    g["connections"].append(
+        {"from": "colorize_rough", "from_port": 0, "to": "Material", "to_port": 2})
+
+    group_into_subgraph(
+        g, ["perlin_0", "colorize_0", "colorize_rough", "normal_map_0"],
+        "chrome_finish", "Chrome Finish",
+        [("perlin_0", "scale_x", "param0", "Micro-variation scale"),
+         ("colorize_0", "gradient", "param1", "Chrome color"),
+         ("colorize_rough", "gradient", "param2", "Roughness"),
+         ("normal_map_0", "param1", "param3", "Micro relief")],
+        catalog,
+    )
+    rename_nodes(g, _M05_NAMES)
+    return save_variant(g, _LABEL, "m05_polished_chrome", 1)
+
+
 BUILDERS = {
     "m01_weathered_copper": build_m01_weathered_copper,
     "m02_brushed_aluminum": build_m02_brushed_aluminum,
     "m03_brushed_titanium": build_m03_brushed_titanium,
     "m04_scratched_steel": build_m04_scratched_steel,
+    "m05_polished_chrome": build_m05_polished_chrome,
 }
 
 
