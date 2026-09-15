@@ -68,7 +68,7 @@ func _ready() -> void:
 		clearcoat_roughness = args["clearcoat-roughness"].to_float()
 
 	var albedo_tex := _load_tex(args["albedo"])
-	var normal_tex := _load_tex(args["normal"])
+	var normal_tex := _load_normal_tex(args["normal"])
 	var orm_tex := _load_tex(args["orm"])
 	if albedo_tex == null or normal_tex == null or orm_tex == null:
 		push_error("one or more textures failed to load, aborting instead of rendering a broken preview")
@@ -349,6 +349,24 @@ func _load_tex(path: String) -> ImageTexture:
 		return null
 	var tex := ImageTexture.create_from_image(img)
 	return tex
+
+
+func _load_normal_tex(path: String) -> ImageTexture:
+	# WORKAROUND (preview-only): Godot's uv1_triplanar normal path reads the
+	# green channel opposite its standard-UV path, so Material Maker's OpenGL
+	# normals render with INVERTED relief under the triplanar rig (grooves become
+	# ridges). Flip green here so relief is correct. The exported maps are untouched.
+	var img := Image.load_from_file(path)
+	if img == null:
+		return null
+	img.convert(Image.FORMAT_RGBA8)
+	var w := img.get_width()
+	var h := img.get_height()
+	var data := img.get_data()
+	for i in range(w * h):
+		data[i * 4 + 1] = 255 - data[i * 4 + 1]
+	var flipped := Image.create_from_data(w, h, false, Image.FORMAT_RGBA8, data)
+	return ImageTexture.create_from_image(flipped)
 
 
 func _make_material(albedo_tex: ImageTexture, normal_tex: ImageTexture,
