@@ -121,8 +121,18 @@ func _ready() -> void:
 	outer.material = mat
 	outer.smooth_faces = true
 	cutaway.add_child(outer)
-	var wedge := CSGBox3D.new()
-	wedge.size = Vector3(OBJECT_RADIUS * 2.2, OBJECT_RADIUS * 2.2, OBJECT_RADIUS * 2.2)
+	# Rounded-box cutter instead of a sharp CSGBox3D: the boolean's interior
+	# corners and the cutter-edge lines it carves into the sphere come out
+	# filleted (soft) rather than razor-sharp, matching the cube's bevel feel.
+	# Godot CSG cannot fillet a boolean result directly, so we soften the tool.
+	var wedge := CSGMesh3D.new()
+	var cut_size := OBJECT_RADIUS * 2.2
+	# Large cutter fillet: not just to soften the interior corner but so the whole
+	# near-sphere cutting surface is a rounded SHOULDER, not a flat face. A sharp
+	# box face crosses the outer sphere at a knife-edge rim; a broad rounded
+	# shoulder rolls that outer lip over instead. Radius drives how soft the lip
+	# reads (CSG cannot truly fillet a boolean rim, so we widen the roll).
+	wedge.mesh = _rounded_box(cut_size, cut_size * 0.64, CUBE_BEVEL_SEGMENTS)
 	wedge.operation = CSGShape3D.OPERATION_SUBTRACTION
 	wedge.position = Vector3(OBJECT_RADIUS * 0.75, OBJECT_RADIUS * 0.75, 0)
 	wedge.rotation_degrees = Vector3(0, 45, 0)
@@ -341,11 +351,38 @@ func _rounded_box(size: float, radius: float, segments: int) -> ArrayMesh:
 		var n := d / dl if dl > 1e-6 else p.normalized()
 		verts[i] = core + n * radius
 		normals[i] = n
+	# Weld coincident vertices. BoxMesh emits each face separately, so the shared
+	# box edges carry duplicate verts -- fine to render, but non-manifold, which
+	# makes this mesh unusable as a CSG boolean cutter (the subtraction silently
+	# does nothing). Merging exact-coincident positions closes it into a manifold.
+	# Only cross-face edge duplicates coincide (identical position AND normal), so
+	# the visible result is unchanged; it just becomes watertight.
+	var old_index: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
+	var key_to_idx := {}
+	var w_verts := PackedVector3Array()
+	var w_norms := PackedVector3Array()
+	var remap := PackedInt32Array()
+	remap.resize(verts.size())
+	for i in verts.size():
+		var v: Vector3 = verts[i]
+		var key := Vector3i(roundi(v.x * 100000), roundi(v.y * 100000), roundi(v.z * 100000))
+		if key_to_idx.has(key):
+			remap[i] = key_to_idx[key]
+		else:
+			var ni := w_verts.size()
+			key_to_idx[key] = ni
+			remap[i] = ni
+			w_verts.append(v)
+			w_norms.append(normals[i])
+	var new_index := PackedInt32Array()
+	new_index.resize(old_index.size())
+	for i in old_index.size():
+		new_index[i] = remap[old_index[i]]
 	var out := []
 	out.resize(Mesh.ARRAY_MAX)
-	out[Mesh.ARRAY_VERTEX] = verts
-	out[Mesh.ARRAY_NORMAL] = normals
-	out[Mesh.ARRAY_INDEX] = arrays[Mesh.ARRAY_INDEX]
+	out[Mesh.ARRAY_VERTEX] = w_verts
+	out[Mesh.ARRAY_NORMAL] = w_norms
+	out[Mesh.ARRAY_INDEX] = new_index
 	var mesh := ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, out)
 	return mesh
