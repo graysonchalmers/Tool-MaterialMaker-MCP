@@ -20,6 +20,10 @@ do not edit by hand. Open the `.ptex` and look for these names.
 | stone_profile | DomeFlatten | math |
 | stone_profile | DomeSmooth | math |
 | material_finish | NonMetallic | colorize |
-| material_finish | WetSheenRoughness | colorize |
+| material_finish | WetRoughness | colorize |
+| material_finish | DryRoughness | colorize |
+| material_finish | PatchNoise | perlin |
+| material_finish | PatchMask | colorize |
+| material_finish | RoughnessPatchComposite | blend |
 | relief | PebbleNormal | normal_map |
 <!-- nodes:end -->

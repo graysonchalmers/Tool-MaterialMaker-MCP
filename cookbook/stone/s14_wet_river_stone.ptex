@@ -25,6 +25,12 @@
    "to_port": 1
   },
   {
+   "from": "stone_profile",
+   "from_port": 2,
+   "to": "material_finish",
+   "to_port": 2
+  },
+  {
    "from": "material_finish",
    "from_port": 0,
    "to": "Material",
@@ -442,6 +448,11 @@
        "name": "out1",
        "type": "f",
        "group_size": 0
+      },
+      {
+       "name": "out2",
+       "type": "f",
+       "group_size": 0
       }
      ],
      "seed": 0
@@ -541,6 +552,12 @@
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1
+    },
+    {
+     "from": "DomeSmooth",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 2
     }
    ]
   },
@@ -549,8 +566,8 @@
    "label": "Material Finish",
    "type": "graph",
    "node_position": {
-    "x": 529.5,
-    "y": 300.5
+    "x": 176.5,
+    "y": 100.16666666666667
    },
    "parameters": {
     "param0": {
@@ -558,21 +575,56 @@
      "points": [
       {
        "a": 1,
-       "r": 0.2,
-       "g": 0.2,
-       "b": 0.2,
+       "r": 0.08,
+       "g": 0.08,
+       "b": 0.08,
        "pos": 0.0
       },
       {
        "a": 1,
-       "r": 0.12,
-       "g": 0.12,
-       "b": 0.12,
+       "r": 0.14,
+       "g": 0.14,
+       "b": 0.14,
+       "pos": 0.35
+      },
+      {
+       "a": 1,
+       "r": 0.35,
+       "g": 0.35,
+       "b": 0.35,
        "pos": 1.0
       }
      ],
      "type": "Gradient"
-    }
+    },
+    "param1": {
+     "interpolation": 1,
+     "type": "Gradient",
+     "points": [
+      {
+       "a": 1,
+       "r": 0.3,
+       "g": 0.3,
+       "b": 0.3,
+       "pos": 0.0
+      },
+      {
+       "a": 1,
+       "r": 0.42,
+       "g": 0.42,
+       "b": 0.42,
+       "pos": 0.35
+      },
+      {
+       "a": 1,
+       "r": 0.6,
+       "g": 0.6,
+       "b": 0.6,
+       "pos": 1.0
+      }
+     ]
+    },
+    "param2": 3
    },
    "seed_int": 0,
    "nodes": [
@@ -580,8 +632,8 @@
      "name": "gen_inputs",
      "type": "ios",
      "node_position": {
-      "x": 129.5,
-      "y": 300.5
+      "x": -223.5,
+      "y": 100.16666666666667
      },
      "parameters": {},
      "ports": [
@@ -594,6 +646,11 @@
        "name": "in1",
        "type": "f",
        "group_size": 0
+      },
+      {
+       "name": "in2",
+       "type": "f",
+       "group_size": 0
       }
      ],
      "seed": 0,
@@ -603,8 +660,8 @@
      "name": "gen_outputs",
      "type": "ios",
      "node_position": {
-      "x": 929.5,
-      "y": 300.5
+      "x": 576.5,
+      "y": 100.16666666666667
      },
      "parameters": {},
      "ports": [
@@ -625,8 +682,8 @@
      "name": "gen_parameters",
      "type": "remote",
      "node_position": {
-      "x": 129.5,
-      "y": 500.5
+      "x": -223.5,
+      "y": 300.1666666666667
      },
      "parameters": {
       "param0": {
@@ -634,33 +691,92 @@
        "points": [
         {
          "a": 1,
-         "r": 0.2,
-         "g": 0.2,
-         "b": 0.2,
+         "r": 0.08,
+         "g": 0.08,
+         "b": 0.08,
          "pos": 0.0
         },
         {
          "a": 1,
-         "r": 0.12,
-         "g": 0.12,
-         "b": 0.12,
+         "r": 0.14,
+         "g": 0.14,
+         "b": 0.14,
+         "pos": 0.35
+        },
+        {
+         "a": 1,
+         "r": 0.35,
+         "g": 0.35,
+         "b": 0.35,
          "pos": 1.0
         }
        ],
        "type": "Gradient"
-      }
+      },
+      "param1": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.3,
+         "g": 0.3,
+         "b": 0.3,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.42,
+         "g": 0.42,
+         "b": 0.42,
+         "pos": 0.35
+        },
+        {
+         "a": 1,
+         "r": 0.6,
+         "g": 0.6,
+         "b": 0.6,
+         "pos": 1.0
+        }
+       ]
+      },
+      "param2": 3
      },
      "seed": 0,
      "widgets": [
       {
        "name": "param0",
-       "shortdesc": "Wet sheen roughness",
+       "shortdesc": "Wet crevice roughness",
        "label": "",
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "WetSheenRoughness",
+         "node": "WetRoughness",
          "widget": "gradient"
+        }
+       ]
+      },
+      {
+       "name": "param1",
+       "shortdesc": "Dry top roughness",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "DryRoughness",
+         "widget": "gradient"
+        }
+       ]
+      },
+      {
+       "name": "param2",
+       "shortdesc": "Wet patch scale",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "PatchNoise",
+         "widget": "scale_x"
         }
        ]
       }
@@ -697,7 +813,7 @@
      "type": "colorize"
     },
     {
-     "name": "WetSheenRoughness",
+     "name": "WetRoughness",
      "node_position": {
       "x": 526,
       "y": 258
@@ -708,16 +824,23 @@
        "points": [
         {
          "a": 1,
-         "r": 0.2,
-         "g": 0.2,
-         "b": 0.2,
+         "r": 0.08,
+         "g": 0.08,
+         "b": 0.08,
          "pos": 0.0
         },
         {
          "a": 1,
-         "r": 0.12,
-         "g": 0.12,
-         "b": 0.12,
+         "r": 0.14,
+         "g": 0.14,
+         "b": 0.14,
+         "pos": 0.35
+        },
+        {
+         "a": 1,
+         "r": 0.35,
+         "g": 0.35,
+         "b": 0.35,
          "pos": 1.0
         }
        ],
@@ -725,9 +848,139 @@
       }
      },
      "type": "colorize"
+    },
+    {
+     "name": "DryRoughness",
+     "type": "colorize",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.3,
+         "g": 0.3,
+         "b": 0.3,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.42,
+         "g": 0.42,
+         "b": 0.42,
+         "pos": 0.35
+        },
+        {
+         "a": 1,
+         "r": 0.6,
+         "g": 0.6,
+         "b": 0.6,
+         "pos": 1.0
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "PatchNoise",
+     "type": "perlin",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "scale_x": 3,
+      "scale_y": 3,
+      "iterations": 2
+     }
+    },
+    {
+     "name": "PatchMask",
+     "type": "colorize",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0,
+         "g": 0,
+         "b": 0,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0,
+         "g": 0,
+         "b": 0,
+         "pos": 0.4
+        },
+        {
+         "a": 1,
+         "r": 1,
+         "g": 1,
+         "b": 1,
+         "pos": 0.6
+        },
+        {
+         "a": 1,
+         "r": 1,
+         "g": 1,
+         "b": 1,
+         "pos": 1.0
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "RoughnessPatchComposite",
+     "type": "blend",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "blend_type": 0,
+      "amount": 1
+     }
     }
    ],
    "connections": [
+    {
+     "from": "PatchNoise",
+     "from_port": 0,
+     "to": "PatchMask",
+     "to_port": 0
+    },
+    {
+     "from": "WetRoughness",
+     "from_port": 0,
+     "to": "RoughnessPatchComposite",
+     "to_port": 0
+    },
+    {
+     "from": "DryRoughness",
+     "from_port": 0,
+     "to": "RoughnessPatchComposite",
+     "to_port": 1
+    },
+    {
+     "from": "PatchMask",
+     "from_port": 0,
+     "to": "RoughnessPatchComposite",
+     "to_port": 2
+    },
     {
      "from": "gen_inputs",
      "from_port": 0,
@@ -737,7 +990,13 @@
     {
      "from": "gen_inputs",
      "from_port": 1,
-     "to": "WetSheenRoughness",
+     "to": "WetRoughness",
+     "to_port": 0
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 2,
+     "to": "DryRoughness",
      "to_port": 0
     },
     {
@@ -747,7 +1006,7 @@
      "to_port": 0
     },
     {
-     "from": "WetSheenRoughness",
+     "from": "RoughnessPatchComposite",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1
