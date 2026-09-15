@@ -1,8 +1,11 @@
 """Pure request handlers for the play surface. Each takes already-parsed input
 and returns JSON-serializable data; no socket, no HTTP. Errors are data."""
-import io
 import json
 import os
+from pathlib import Path
+import re
+import tempfile
+import uuid
 import zipfile
 
 from mm_mcp import cookbook
@@ -56,26 +59,69 @@ def render_request(cfg, catalog, body, outdir, render_fn=renderer.render_materia
         return err
     applied = sliders.apply_values(graph, values)
     changes = _changes_for(graph, catalog, values)
-    result = render_fn(applied, changes, size, cfg, outdir, material_id=name)
-    if not result.get("ok"):
-        return {"ok": False, "error": result.get("error") or "render failed"}
-    return {"ok": True, "path": result.get("path"),
-            "maps": [os.path.basename(p) for p in result.get("images", [])]}
+    graph_json = json.dumps(applied, indent=1)
+    preview_id = uuid.uuid4().hex
+    root = Path(outdir).resolve() / "previews"
+    try:
+        root.mkdir(parents=True, exist_ok=True)
+        # A renderer gets its own directory. Publish the whole completed result
+        # together, so another request cannot replace its maps during download.
+        with tempfile.TemporaryDirectory(prefix=".render-", dir=root) as stage:
+            stage = Path(stage)
+            result = render_fn(applied, changes, size, cfg, str(stage), material_id=name)
+            if not result.get("ok"):
+                return {"ok": False, "error": result.get("error") or "render failed"}
+            images = [Path(p).resolve() for p in result.get("images", [])]
+            if not images or any(
+                p.parent != stage or p.suffix.lower() != ".png"
+                or not p.is_file() or p.stat().st_size == 0 for p in images
+            ):
+                return {"ok": False, "error": "renderer did not produce private preview maps"}
+            maps = [p.name for p in images]
+            if len(set(maps)) != len(maps):
+                return {"ok": False, "error": "renderer returned duplicate preview maps"}
+            with zipfile.ZipFile(stage / "download.zip", "w", zipfile.ZIP_DEFLATED) as z:
+                for p in images:
+                    z.write(p, p.name)
+                z.writestr(f"{name}.ptex", graph_json)
+            receipt = {"material_id": name, "values": values, "size": size,
+                       "path": result.get("path"), "maps": maps}
+            (stage / "receipt.json").write_text(json.dumps(receipt), encoding="utf-8")
+            os.replace(stage, root / preview_id)
+        return {"ok": True, "path": result.get("path"),
+                "preview_id": preview_id, "maps": maps}
+    except (OSError, ValueError) as exc:
+        return {"ok": False, "error": str(exc)}
+
+
+def _load_preview(outdir, preview_id):
+    if not isinstance(preview_id, str) or not re.fullmatch(r"[0-9a-f]{32}", preview_id):
+        raise ValueError("invalid preview id")
+    directory = Path(outdir).resolve() / "previews" / preview_id
+    receipt = json.loads((directory / "receipt.json").read_text(encoding="utf-8"))
+    return directory, receipt
+
+
+def map_bytes(outdir, preview_id, name):
+    """Only serve maps listed in a completed render's receipt."""
+    try:
+        directory, receipt = _load_preview(outdir, preview_id)
+        if name in receipt["maps"]:
+            return (directory / name).read_bytes()
+    except (OSError, ValueError, KeyError, TypeError):
+        pass
+    return None
 
 
 def export(cfg, catalog, body, outdir):
-    """Zip the current maps in outdir plus the material's applied .ptex.
-    Returns (zip_bytes, filename). On unknown material, returns (None, error)."""
-    name = body.get("material_id")
-    values = body.get("values") or {}
-    graph, err = _load_graph(cfg, name)
-    if err:
-        return None, err["error"]
-    applied = sliders.apply_values(graph, values)
-    buf = io.BytesIO()
-    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
-        for fn in sorted(os.listdir(outdir)):
-            if fn.lower().endswith(".png"):
-                z.write(os.path.join(outdir, fn), fn)
-        z.writestr(f"{name}.ptex", json.dumps(applied, indent=1))
-    return buf.getvalue(), f"{name}.zip"
+    """Download the saved maps and applied graph of a completed preview.
+
+    `preview_id` comes from render_request. A material id or new control values
+    cannot reconstruct a prior render and are deliberately insufficient here.
+    Returns (zip_bytes, filename), or (None, error) for an unavailable preview.
+    """
+    try:
+        directory, receipt = _load_preview(outdir, body.get("preview_id"))
+        return (directory / "download.zip").read_bytes(), f'{receipt["material_id"]}.zip'
+    except (OSError, ValueError, KeyError, TypeError):
+        return None, "unknown or incomplete preview; render the material before downloading"

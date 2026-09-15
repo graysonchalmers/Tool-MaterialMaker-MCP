@@ -6,6 +6,8 @@
 let current = null;      // {name, sliders}
 let values = {};         // slider id (e.g. "dune_ripples/param0") -> value
 let debounceTimer = null;
+let generation = 0;
+let completedPreview = null;
 let sphere = null, renderer = null, scene = null, camera = null;
 let yaw = 0.6, pitch = 0.3, dragging = false, lastX = 0, lastY = 0;
 
@@ -51,7 +53,7 @@ function initThree() {
   })();
 }
 
-function applyMaps(maps) {
+function applyMaps(maps, previewId) {
   if (!sphere) return;  // 3D preview unavailable (e.g. no WebGL); nothing to shade
   // maps: array of basenames like play_albedo.png. Match by suffix.
   // Real render output has no separate roughness map (roughness is packed
@@ -59,16 +61,18 @@ function applyMaps(maps) {
   const tex = suffix => {
     const m = maps.find(x => x.includes(suffix));
     if (!m) return null;
-    const t = new THREE.TextureLoader().load("/api/maps/" + m + "?t=" + Date.now());
+    const t = new THREE.TextureLoader().load("/api/maps/" + encodeURIComponent(m)
+      + "?preview_id=" + encodeURIComponent(previewId));
     return t;
   };
   const mat = sphere.material;
-  mat.map = tex("albedo") || mat.map;
-  const n = tex("normal"); if (n) mat.normalMap = n;
-  const orm = tex("orm"); const rough = tex("roughness");
-  if (rough) mat.roughnessMap = rough; else if (orm) mat.roughnessMap = orm;
+  const previous = new Set([mat.map, mat.normalMap, mat.roughnessMap, mat.bumpMap]);
+  mat.map = tex("albedo");
+  mat.normalMap = tex("normal");
+  mat.roughnessMap = tex("roughness") || tex("orm");
   const h = tex("heightmap") || tex("height");
-  if (h) { mat.bumpMap = h; mat.bumpScale = 0.15; }
+  mat.bumpMap = h; mat.bumpScale = h ? 0.15 : 0;
+  previous.forEach(t => { if (t) t.dispose(); });
   mat.needsUpdate = true;
 }
 
@@ -87,7 +91,17 @@ async function loadGallery() {
 }
 
 async function loadMaterial(name) {
-  const out = await j("/api/material/" + encodeURIComponent(name));
+  invalidatePreview();
+  const version = generation;
+  current = null;
+  document.getElementById("controls").hidden = true;
+  let out;
+  try { out = await j("/api/material/" + encodeURIComponent(name)); }
+  catch (e) {
+    if (version === generation) setStatus("material request failed: " + e.message);
+    return;
+  }
+  if (version !== generation) return;
   if (!out.ok) { setStatus(out.error); return; }
   current = out; values = {};
   document.getElementById("material-name").textContent = name;
@@ -107,20 +121,29 @@ async function loadMaterial(name) {
     const inp = document.createElement("input"); inp.type = "range";
     inp.min = s.min != null ? s.min : 0; inp.max = s.max != null ? s.max : 1;
     inp.step = s.step != null ? s.step : 0.01; inp.value = s.value;
-    inp.oninput = () => { values[s.id] = parseFloat(inp.value); };
+    inp.oninput = () => { values[s.id] = parseFloat(inp.value); invalidatePreview(); };
     inp.onchange = () => scheduleRender(256);
     row.appendChild(inp); box.appendChild(row);
   });
   scheduleRender(256);
 }
 
-function scheduleRender(size) {
+function invalidatePreview() {
   clearTimeout(debounceTimer);
+  generation += 1;
+  completedPreview = null;
+  document.getElementById("download").disabled = true;
+}
+
+function scheduleRender(size) {
+  invalidatePreview();
   debounceTimer = setTimeout(() => doRender(size), 200);
 }
 
 async function doRender(size) {
   if (!current) return;
+  invalidatePreview();
+  const version = generation;
   setStatus("rendering...");
   let out;
   try {
@@ -129,13 +152,17 @@ async function doRender(size) {
       body: JSON.stringify({ material_id: current.name, values, size })
     });
   } catch (e) {
+    if (version !== generation) return;
     // The request itself failed (server crashed the connection, network error).
     // Surface it instead of leaving the status stuck on "rendering..." forever.
     setStatus("render request failed: " + (e && e.message ? e.message : e));
     return;
   }
+  if (version !== generation) return;
   if (!out.ok) { setStatus("render failed: " + out.error); return; }
-  applyMaps(out.maps);
+  applyMaps(out.maps, out.preview_id);
+  completedPreview = out.preview_id;
+  document.getElementById("download").disabled = false;
   setStatus(out.path === "live" ? "live" : "ready");
 }
 
@@ -143,8 +170,9 @@ function setStatus(t) { document.getElementById("status").textContent = t; }
 
 document.getElementById("full").onclick = () => doRender(1024);
 document.getElementById("download").onclick = () => {
-  if (current) window.location = "/api/export?material_id=" + encodeURIComponent(current.name);
+  if (completedPreview) window.location = "/api/export?preview_id=" + encodeURIComponent(completedPreview);
 };
+invalidatePreview();
 
 // A 3D-preview init failure (e.g. no WebGL context) must not blank the whole
 // page: surface it and still load the gallery so the sliders remain usable.
