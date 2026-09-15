@@ -1,6 +1,9 @@
 import os
 import shutil
+import tempfile
 from dataclasses import dataclass
+from contextlib import ExitStack
+from struct import error as StructError
 from PIL import Image
 from mm_mcp.config import Config, load_config
 from mm_mcp.render import _run_godot, _log_tail, _GodotTimeout
@@ -95,9 +98,24 @@ def _build_sweep_command(cfg: Config, albedo_path: str, normal_path: str, orm_pa
 def _frames_to_gif(frame_paths: list[str], gif_path: str, frame_duration_ms: int) -> None:
     """Stitch already-rendered frame PNGs (in order) into a looping GIF.
     Pure assembly only -- callers own producing and cleaning up the frames."""
-    images = [Image.open(p).convert("RGB") for p in frame_paths]
-    images[0].save(gif_path, save_all=True, append_images=images[1:],
-                    duration=frame_duration_ms, loop=0)
+    with ExitStack() as resources:
+        images = []
+        size = None
+        for path in frame_paths:
+            with Image.open(path) as frame:
+                if frame.format != "PNG":
+                    raise ValueError(f"not a PNG: {os.path.basename(path)}")
+                if size is not None and frame.size != size:
+                    raise ValueError(f"{os.path.basename(path)} has size {frame.size}, expected {size}")
+                size = frame.size
+                frame.verify()
+            # verify() checks structure and checksums; reopening and converting
+            # also decodes pixels, including corrupt/truncated compressed data.
+            with Image.open(path) as frame:
+                images.append(frame.convert("RGB"))
+                resources.callback(images[-1].close)
+        images[0].save(gif_path, save_all=True, append_images=images[1:],
+                        duration=frame_duration_ms, loop=0)
 
 
 def render_preview_sweep(albedo_path: str, normal_path: str, orm_path: str,
@@ -124,6 +142,13 @@ def render_preview_sweep(albedo_path: str, normal_path: str, orm_path: str,
     render_preview -- reach for it only when a static preview leaves relief
     ambiguous.
     """
+    if (not isinstance(basename, str) or basename in ("", ".", "..")
+            or any(char in basename for char in ("/", "\\", ":", "\0"))):
+        return PreviewSweepResult(ok=False, error="basename must be a nonempty file name without path separators")
+    for label, value in (("frames", frames), ("frame_duration_ms", frame_duration_ms)):
+        if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
+            return PreviewSweepResult(ok=False, error=f"{label} must be a positive integer")
+
     for label, path in (("albedo", albedo_path), ("normal", normal_path),
                          ("orm", orm_path)):
         if not os.path.isfile(path):
@@ -134,36 +159,48 @@ def render_preview_sweep(albedo_path: str, normal_path: str, orm_path: str,
     orm_path = os.path.abspath(orm_path)
 
     cfg = cfg or load_config()
-    outdir = outdir or cfg.output_dir
-    os.makedirs(outdir, exist_ok=True)
-
-    sweep_dir = os.path.abspath(os.path.join(outdir, basename + "_sweep_frames"))
-    if os.path.exists(sweep_dir):
-        shutil.rmtree(sweep_dir)
-
+    outdir = os.path.abspath(outdir or cfg.output_dir)
     gif_path = os.path.abspath(os.path.join(outdir, basename + "_sweep.gif"))
-    if os.path.exists(gif_path):
-        os.remove(gif_path)
-
-    cmd = _build_sweep_command(cfg, albedo_path, normal_path, orm_path, sweep_dir,
-                                frames, tile, sweep_kind=sweep_kind, cone=cone)
-
     timeout = max(90, frames * 8)
+    log_tail = ""
     try:
-        proc = _run_godot(cmd, timeout)
+        os.makedirs(outdir, exist_ok=True)
+        # Keep temporary files on the destination filesystem for atomic
+        # publication, and never touch a legacy/shared *_sweep_frames folder.
+        with tempfile.TemporaryDirectory(prefix=".preview-sweep-", dir=outdir,
+                                         ignore_cleanup_errors=True) as stage:
+            sweep_dir = os.path.join(stage, "frames")
+            staged_gif = os.path.join(stage, "sweep.gif")
+
+            def prepare_attempt():
+                if os.path.exists(sweep_dir):
+                    shutil.rmtree(sweep_dir)
+                os.makedirs(sweep_dir)
+
+            cmd = _build_sweep_command(cfg, albedo_path, normal_path, orm_path, sweep_dir,
+                                        frames, tile, sweep_kind=sweep_kind, cone=cone)
+            proc = _run_godot(cmd, timeout, before_attempt=prepare_attempt)
+            log_tail = _log_tail(proc)
+            if proc.returncode != 0:
+                return PreviewSweepResult(ok=False, log_tail=log_tail,
+                                          error=f"Godot exited {proc.returncode}")
+
+            expected_names = [f"frame_{index:03d}.png" for index in range(frames)]
+            actual_names = {name for name in os.listdir(sweep_dir)
+                            if name.lower().endswith(".png")}
+            if actual_names != set(expected_names):
+                return PreviewSweepResult(
+                    ok=False, log_tail=log_tail,
+                    error=f"expected {frames} sweep frames named frame_000.png through "
+                          f"{expected_names[-1]}; found {len(actual_names)} PNG files",
+                )
+            frame_paths = [os.path.join(sweep_dir, name) for name in expected_names]
+            _frames_to_gif(frame_paths, staged_gif, frame_duration_ms)
+            os.replace(staged_gif, gif_path)
     except _GodotTimeout:
         return PreviewSweepResult(ok=False, error=f"preview sweep render timed out after {timeout}s")
-    log_tail = _log_tail(proc)
+    except (OSError, ValueError, SyntaxError, EOFError, OverflowError,
+            StructError, Image.DecompressionBombError) as exc:
+        return PreviewSweepResult(ok=False, log_tail=log_tail, error=str(exc))
 
-    frame_paths = sorted(
-        os.path.join(sweep_dir, fn) for fn in os.listdir(sweep_dir)
-        if fn.lower().endswith(".png")
-    ) if os.path.isdir(sweep_dir) else []
-    if not frame_paths:
-        error = f"Godot exited {proc.returncode}" if proc.returncode != 0 else "no sweep frames produced"
-        return PreviewSweepResult(ok=False, log_tail=log_tail, error=error)
-
-    _frames_to_gif(frame_paths, gif_path, frame_duration_ms)
-    shutil.rmtree(sweep_dir, ignore_errors=True)
-
-    return PreviewSweepResult(ok=True, image=gif_path, frame_count=len(frame_paths), log_tail=log_tail)
+    return PreviewSweepResult(ok=True, image=gif_path, frame_count=frames, log_tail=log_tail)

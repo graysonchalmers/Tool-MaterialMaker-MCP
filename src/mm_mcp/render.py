@@ -2,6 +2,7 @@ import json
 import os
 import subprocess
 import tempfile
+from typing import Callable
 from dataclasses import dataclass, field
 from mm_mcp.config import Config, load_config
 
@@ -54,7 +55,8 @@ def _kill_tree(process) -> None:
         pass
 
 
-def _run_godot(cmd: list, timeout: int) -> subprocess.CompletedProcess:
+def _run_godot(cmd: list, timeout: int, *,
+               before_attempt: Callable[[], None] | None = None) -> subprocess.CompletedProcess:
     """Run a Godot command with capture, retrying up to 3x around the
     transient Windows crash codes above. Raises _GodotTimeout on timeout.
     Shared by render() and preview.render_preview(), which otherwise each had
@@ -76,6 +78,9 @@ def _run_godot(cmd: list, timeout: int) -> subprocess.CompletedProcess:
     harmlessly. This is what the working raw-console path always did."""
     proc = None
     for _ in range(3):
+        # A successful retry must not inherit partial files from a crash.
+        if before_attempt is not None:
+            before_attempt()
         with tempfile.TemporaryFile() as out_f, tempfile.TemporaryFile() as err_f:
             process = subprocess.Popen(cmd, stdout=out_f, stderr=err_f)
             try:
