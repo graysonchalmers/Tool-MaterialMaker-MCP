@@ -38,3 +38,6 @@ Desktop.ini
 
 # Local Godot binary copied for host-side play.bat rendering (large, not tracked)
 _godot/
+
+# Session scratch (SDD baselines, calibration renders)
+scratchpad/
