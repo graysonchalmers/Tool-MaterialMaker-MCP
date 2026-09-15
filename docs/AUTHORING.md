@@ -190,6 +190,12 @@ voronoi-cellular or wood-grain), and the only base noise ever ADDED by hand is
 the cookbook effectively used two. Same structural DNA recolored = materials
 that read alike. The fix is a wider base-noise vocabulary, not more recolors.
 
+**Live coverage.** `python -m quality.node_usage_audit` recounts this from the current cookbook instead of relying on a stale manual tally: as of this writing the cookbook uses 20 of 53 curated noise/pattern generator types (see the module's `_NOISE_PATTERN_NODES` list and its scope notes for exactly what counts, and what is deliberately excluded -- distortion nodes, the SDF family, and symbolic/glyph generators each have their own scope ruling).
+
+Six cookbook proof materials shipped on previously-zero-use bases in this round (the 2026-09-14 noise-vocabulary-round-2 session): `l07_pebbled_leather` (fbm Cellular 1), `f09_plaid_flannel` (fbm Cellular 3), `f10_boucle_upholstery` (fbm Cellular 5), `sf05_circuit_maze_panel` (truchet Line), and `gl03_shattered_crystal` (shard_fbm), plus `w06_burled_wood` (warp2, described under the Distortion vocabulary section) -- most of these are new enum *modes* on an already-counted node type, not new node types outright, which is why `shard_fbm` (a genuinely new type) is the only one that moves the coverage count above by +1.
+
+Six more cookbook proof materials shipped in the following round (the 2026-09-14 noise-vocabulary-round-3 session), all on genuinely new top-level node types this time, not new enum modes: `m04_scratched_steel` (scratches), `f11_corduroy` (directional_noise), `t10_packed_dirt` (dirt), `gl04_raw_crystal_cluster` (crystal), `pm06_splatter_finish` (splatter), and `man03_mosaic_tile` (skewed_bricks) -- which is why this round moves the coverage count by +6. The plan originally targeted `custom_tiles` for the tile-mosaic slot, but that node requires an `sdf2d`-typed shape input, which only the out-of-scope SDF family can produce (see "SDF is out of scope" below), so `skewed_bricks` was substituted instead; `custom_tiles` therefore remains unused despite this round's work, on purpose.
+
 Gallery source: `quality/noise_gallery.py` (single node -> grey ramp -> albedo,
 so you see the raw field). Render with `python -m quality.render_cookbook
 noise-gallery`. Tracked contact sheets:
@@ -241,6 +247,45 @@ For a soft, continuous material (velvet, felt, fog, skin), reach for
 `perlin`/`fbm` first, not `voronoi`: voronoi's cell boundaries are inherently
 hard-edged even when blurred at the color level, while perlin has no edges
 to begin with.
+
+## Distortion vocabulary (reach past warp)
+
+_Added 2026-09-13._
+
+`warp` is the workhorse displacement node and covers most cases, but `warp2`
+and `directional_warp` give displacement characters `warp` cannot reach on
+its own. See the `warp`, `warp2`, and `directional_warp` swatches in the
+debug-swatches Core toolbox for the visual reference: `warp` and `warp2`
+both displace along the SLOPE of a wired height map (`warp2` is the
+simpler, `eps`-free variant, same shift shape as `warp` when driven by a
+real map), while `directional_warp` ignores local slope entirely and pushes
+every pixel a constant amount along a fixed `angle`, even with no map
+wired at all. That makes `directional_warp` the pick when the material
+wants a uniform directional push rather than displacement that follows
+surface detail: streaked, combed, or wind-blown-ripple looks (the
+sand-ripple family). Six cookbook proof materials shipped on
+previously-zero-use bases this session, including `s12_eroded_sandstone`
+built on `directional_warp` and `t09_rippled_wet_sand` on `wavelet_noise`,
+alongside `s13_polished_marble` (fbm turbulence), `m03_brushed_titanium`
+(noise_anisotropic), `sf07_conduit_panel` (truchet), and `gl02_cut_gem`
+(voronoi_triangle).
+
+**`buffer`-type compound nodes do not render headless.** `slope_blur` and
+the `warp_dilation` family are `buffer`-type compound nodes, and they do
+NOT render in the headless `--export-material` pipeline: their internal
+compute shader fails to compile against the null rendering device the
+headless export uses, producing an all-black result. They pass `validate`
+cleanly (validation does not catch this), so the failure only shows up at
+render time. This makes them unusable for cookbook materials even though
+the catalog lists them as legitimate distortion nodes. `normal_map` is the
+one bundled compound node that survives this trap, and only because its
+internal `switch` bypasses its own buffer when `param4=0` (see "The
+flat-normal fix" below); any other buffer-type node hit the same way stays
+black.
+
+**SDF is out of scope.** The SDF family (43 nodes, 0 cookbook use) is shape
+and signed-distance-field authoring, not texture authoring, and is ruled
+out of scope for this project's cookbook.
 
 ## Node & pattern recipes
 

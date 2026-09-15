@@ -1,0 +1,495 @@
+{
+ "connections": [
+  {
+   "from": "scratch_finish",
+   "from_port": 1,
+   "to": "Material",
+   "to_port": 0
+  },
+  {
+   "from": "scratch_finish",
+   "from_port": 0,
+   "to": "surface_detail",
+   "to_port": 0
+  },
+  {
+   "from": "scratch_finish",
+   "from_port": 2,
+   "to": "surface_detail",
+   "to_port": 1
+  },
+  {
+   "from": "surface_detail",
+   "from_port": 0,
+   "to": "Material",
+   "to_port": 4
+  },
+  {
+   "from": "surface_detail",
+   "from_port": 1,
+   "to": "Material",
+   "to_port": 2
+  }
+ ],
+ "nodes": [
+  {
+   "name": "Material",
+   "type": "material",
+   "node_position": {
+    "x": 620,
+    "y": 40
+   },
+   "export_paths": {},
+   "parameters": {
+    "albedo_color": {
+     "a": 1,
+     "r": 1,
+     "g": 1,
+     "b": 1,
+     "type": "Color"
+    },
+    "ao": 1,
+    "depth_scale": 1,
+    "emission_energy": 1,
+    "metallic": 1.0,
+    "normal": 1,
+    "roughness": 0.6,
+    "size": 11,
+    "sss": 0
+   }
+  },
+  {
+   "name": "scratch_finish",
+   "label": "Scratch Finish",
+   "type": "graph",
+   "node_position": {
+    "x": 150.0,
+    "y": -30.0
+   },
+   "parameters": {
+    "param0": {
+     "interpolation": 1,
+     "type": "Gradient",
+     "points": [
+      {
+       "a": 1,
+       "r": 0.3,
+       "g": 0.31,
+       "b": 0.33,
+       "pos": 0.0
+      },
+      {
+       "a": 1,
+       "r": 0.4,
+       "g": 0.41,
+       "b": 0.44,
+       "pos": 0.5
+      },
+      {
+       "a": 1,
+       "r": 0.5,
+       "g": 0.52,
+       "b": 0.55,
+       "pos": 1.0
+      }
+     ]
+    },
+    "param1": 0.5
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": -250.0,
+      "y": -30.0
+     },
+     "parameters": {},
+     "ports": [],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 550.0,
+      "y": -30.0
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "out0",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "out1",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "out2",
+       "type": "f",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -250.0,
+      "y": 170.0
+     },
+     "parameters": {
+      "param0": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.3,
+         "g": 0.31,
+         "b": 0.33,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.4,
+         "g": 0.41,
+         "b": 0.44,
+         "pos": 0.5
+        },
+        {
+         "a": 1,
+         "r": 0.5,
+         "g": 0.52,
+         "b": 0.55,
+         "pos": 1.0
+        }
+       ]
+      },
+      "param1": 0.5
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Steel color",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "SteelColor",
+         "widget": "gradient"
+        }
+       ]
+      },
+      {
+       "name": "param1",
+       "shortdesc": "Scratch randomness",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "ScratchNoise",
+         "widget": "randomness"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "ScratchNoise",
+     "type": "scratches",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "length": 0.25,
+      "width": 0.5,
+      "layers": 4,
+      "waviness": 0.5,
+      "angle": 0,
+      "randomness": 0.5
+     }
+    },
+    {
+     "name": "SteelColor",
+     "type": "colorize",
+     "node_position": {
+      "x": 300,
+      "y": -60
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.3,
+         "g": 0.31,
+         "b": 0.33,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.4,
+         "g": 0.41,
+         "b": 0.44,
+         "pos": 0.5
+        },
+        {
+         "a": 1,
+         "r": 0.5,
+         "g": 0.52,
+         "b": 0.55,
+         "pos": 1.0
+        }
+       ]
+      }
+     }
+    }
+   ],
+   "connections": [
+    {
+     "from": "ScratchNoise",
+     "from_port": 0,
+     "to": "SteelColor",
+     "to_port": 0
+    },
+    {
+     "from": "ScratchNoise",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    },
+    {
+     "from": "SteelColor",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 1
+    },
+    {
+     "from": "ScratchNoise",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 2
+    }
+   ]
+  },
+  {
+   "name": "surface_detail",
+   "label": "Surface Detail",
+   "type": "graph",
+   "node_position": {
+    "x": 150.0,
+    "y": 80.0
+   },
+   "parameters": {
+    "param0": {
+     "interpolation": 1,
+     "type": "Gradient",
+     "points": [
+      {
+       "a": 1,
+       "r": 0.6,
+       "g": 0.6,
+       "b": 0.6,
+       "pos": 0.0
+      },
+      {
+       "a": 1,
+       "r": 0.6,
+       "g": 0.6,
+       "b": 0.6,
+       "pos": 1.0
+      }
+     ]
+    },
+    "param1": 0.4
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": -250.0,
+      "y": 80.0
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "in0",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "in1",
+       "type": "f",
+       "group_size": 0
+      }
+     ],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 550.0,
+      "y": 80.0
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "out0",
+       "type": "rgb",
+       "group_size": 0
+      },
+      {
+       "name": "out1",
+       "type": "rgba",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -250.0,
+      "y": 280.0
+     },
+     "parameters": {
+      "param0": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.6,
+         "g": 0.6,
+         "b": 0.6,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.6,
+         "g": 0.6,
+         "b": 0.6,
+         "pos": 1.0
+        }
+       ]
+      },
+      "param1": 0.4
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Roughness",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "RoughnessConst",
+         "widget": "gradient"
+        }
+       ]
+      },
+      {
+       "name": "param1",
+       "shortdesc": "Scratch depth",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "ScratchNormal",
+         "widget": "param1"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "ScratchNormal",
+     "type": "normal_map",
+     "node_position": {
+      "x": 300,
+      "y": 160
+     },
+     "parameters": {
+      "param0": 10,
+      "param1": 0.4,
+      "param2": 0,
+      "param4": 0
+     }
+    },
+    {
+     "name": "RoughnessConst",
+     "type": "colorize",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.6,
+         "g": 0.6,
+         "b": 0.6,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.6,
+         "g": 0.6,
+         "b": 0.6,
+         "pos": 1.0
+        }
+       ]
+      }
+     }
+    }
+   ],
+   "connections": [
+    {
+     "from": "gen_inputs",
+     "from_port": 0,
+     "to": "ScratchNormal",
+     "to_port": 0
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 1,
+     "to": "RoughnessConst",
+     "to_port": 0
+    },
+    {
+     "from": "ScratchNormal",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    },
+    {
+     "from": "RoughnessConst",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 1
+    }
+   ]
+  }
+ ]
+}

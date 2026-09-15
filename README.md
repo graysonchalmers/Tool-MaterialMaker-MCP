@@ -3,7 +3,7 @@
 > Part of [gProdDevKit](https://kit.graysonchalmers.com), Grayson Chalmers' game production / dev kit.
 
 <p align="center">
-  <img src="docs/images/hero.png" alt="Cobblestone, moss, and ceramic-tile materials authored by the server and rendered in 3D" width="100%">
+  <img src="docs/images/hero.png" alt="Cobblestone, marble, and raw-crystal materials authored by the server and rendered in 3D" width="100%">
 </p>
 
 An [MCP](https://modelcontextprotocol.io) server that lets an AI assistant
@@ -48,26 +48,35 @@ Why this project exists and what it's actually optimizing for is in
 
 ## Gallery
 
-Each material below was authored by the server from the one-line prompt beside
-it, then its rendered maps were composited onto a sphere, a cube, and a cutaway
-ball on a lit ground plane, so the normal-map relief reads under real lighting
-instead of as a flat swatch. The bottom-right one is a round-trip example: the
-server drafted the graph, then I finished it by hand in Material Maker. Full
-graphs live in the cookbook below (`s02_gray_granite`, `f01_woven_denim`,
-`man02_ceramic_hex_tiles`, `m02_brushed_aluminum`, `o01_mossy_forest_floor`,
-`o03_tree_bark`, `w05_dark_walnut`); the hand-finished one is
-[`saved_graphs/bricks_grayson_edit.ptex`](saved_graphs/bricks_grayson_edit.ptex).
+Each material below was authored by the server, then its rendered maps were
+composited onto a sphere, a rounded-bevel cube, and a lathed chess rook on a
+lit ground plane, so the normal-map relief reads under real lighting instead of
+as a flat swatch. Full graphs live in the cookbook below (`s07_cobblestone`,
+`s09_ashlar_wall`, `s11_marble`, `gl04_raw_crystal_cluster`,
+`sf02_hazard_stripe_panel`, `f07_herringbone_tweed`, `t05_cracked_ice`,
+`t08_riverbed_pebbles`).
 
 | | |
 |:--:|:--:|
-| ![polished gray granite](docs/images/gallery/s02_gray_granite.png) | ![blue denim fabric](docs/images/gallery/f01_woven_denim.png) |
-| ![tree bark](docs/images/gallery/o03_tree_bark.png) | ![dark walnut wood](docs/images/gallery/w05_dark_walnut.png) |
-| ![white ceramic hexagon tiles](docs/images/gallery/man02_ceramic_hex_tiles.png) | ![brushed aluminum](docs/images/gallery/m02_brushed_aluminum.png) |
-| ![mossy forest floor](docs/images/gallery/o01_mossy_forest_floor.png) | ![mossy cobblestone, hand-finished in Material Maker](docs/images/gallery/bricks_grayson_edit.png) |
+| ![irregular cobblestone](docs/images/gallery/s07_cobblestone.png) | ![coursed ashlar stone wall](docs/images/gallery/s09_ashlar_wall.png) |
+| ![veined marble](docs/images/gallery/s11_marble.png) | ![raw purple crystal cluster](docs/images/gallery/gl04_raw_crystal_cluster.png) |
+| ![yellow and black hazard stripe panel](docs/images/gallery/sf02_hazard_stripe_panel.png) | ![herringbone tweed fabric](docs/images/gallery/f07_herringbone_tweed.png) |
+| ![cracked ice](docs/images/gallery/t05_cracked_ice.png) | ![riverbed pebbles](docs/images/gallery/t08_riverbed_pebbles.png) |
+
+### In motion
+
+The static frame hides how relief plays with light. These sweep the key light
+across five materials so the normal-map depth reads as it moves.
+
+| | |
+|:--:|:--:|
+| ![cobblestone under a moving light](docs/images/gallery/s07_cobblestone.gif) | ![raw crystal under a moving light](docs/images/gallery/gl04_raw_crystal_cluster.gif) |
+| ![cracked ice under a moving light](docs/images/gallery/t05_cracked_ice.gif) | ![hazard stripe panel under a moving light](docs/images/gallery/sf02_hazard_stripe_panel.gif) |
+| ![ashlar wall under a moving light](docs/images/gallery/s09_ashlar_wall.gif) | |
 
 ## Material cookbook
 
-The cookbook is 53 materials across 12 categories (the gallery above is
+The cookbook is 71 materials across 12 categories (the gallery above is
 drawn from it), each one a real graph this server authored and then locked
 after a 3D-preview pass. Every one ships as a tracked `.ptex` under
 [`cookbook/`](cookbook/): open `cookbook/<category>/<id>.ptex` in Material
@@ -78,14 +87,45 @@ materials are in [docs/AUTHORING.md](docs/AUTHORING.md), also served as the
 its graph as `cookbook/<category>/<id>.md`. The builders that regenerate the
 graphs live in [`quality/`](quality/).
 
-<details>
-<summary><b>Show the cookbook contact sheet</b> (53 materials: ceramic, fabrics, glass, leather, metal, organics, painted metal, plastics, sci-fi, stone, terrain, wood)</summary>
+**The full cookbook (71 materials:** ceramic, fabrics, glass, leather, metal, organics, painted metal, plastics, sci-fi, stone, terrain, wood)
 
 <p align="center">
-  <img src="docs/images/cookbook-contact-sheet.png" alt="Contact sheet of all 53 cookbook materials across 12 categories" width="100%">
+  <img src="docs/images/cookbook-contact-sheet.png" alt="Contact sheet of all 71 cookbook materials across 12 categories" width="100%">
 </p>
 
-</details>
+## Core toolbox
+
+Below the finished cookbook materials sit the single-node building blocks
+they are made from: two galleries that isolate ONE node at a time so you see
+its raw, unmixed behavior before it gets composited into anything.
+
+**Debug swatches.** 19 single-node debug swatches, each wiring exactly one
+node straight into a Material so what you see IS that node's behavior, no
+recipe, no blend, nothing to misread. Every swatch also doubles as a live
+pixel-assertion regression test (`tests/test_debug_swatches.py` renders it
+fresh and checks known-answer pixels), so a wiring regression fails a test
+instead of waiting for a human to notice a material looks wrong. One swatch,
+`slope_blur`, ships structure-only: it is a buffer/compute-shader node that
+cannot render headless, so its tile is black by design, not broken. Legend
+and known-answers for every swatch are in
+[docs/DEBUG_SWATCHES.md](docs/DEBUG_SWATCHES.md).
+
+<p align="center">
+  <img src="docs/images/core-toolbox/swatches.png" alt="Contact sheet of the 19 debug swatches, one node isolated per tile" width="100%">
+</p>
+
+**Noise vocabulary.** A gallery of base noise/pattern nodes beyond the two
+(`perlin`, `voronoi`) the cookbook leaned on early: `fbm`'s 8 base functions
+side by side, plus a cross-family row (anisotropic, truchet, voronoi
+triangle, wavelet, and more) showing how differently they read. Full
+writeup, including the "the catalog carries 47 noise nodes, the cookbook
+effectively used two" problem this was built to fix, is in the
+[Noise vocabulary](docs/AUTHORING.md#noise-vocabulary-reach-past-voronoi--perlin)
+section of `docs/AUTHORING.md`.
+
+<p align="center">
+  <img src="docs/images/noise-gallery/fbm-bases.png" alt="fbm noise node's 8 base functions rendered side by side" width="100%">
+</p>
 
 ## How it works
 
@@ -237,7 +277,7 @@ but is not the right default for every client.
 
 ## Tools
 
-The server exposes 10 batch-mode tools and two resources (plus 7 more in Live mode, below):
+The server exposes 11 batch-mode tools and two resources (plus 7 more in Live mode, below):
 
 | Tool | What it does |
 |---|---|
@@ -247,6 +287,7 @@ The server exposes 10 batch-mode tools and two resources (plus 7 more in Live mo
 | `render_graph` | Render a `.ptex` to PBR maps at a given size |
 | `render_node_output` | Render one node's output in isolation, without editing the real graph |
 | `render_preview` | Composite already-rendered maps onto a sphere/cube/cutaway-ball preview scene |
+| `render_preview_sweep` | Optional: same preview scene, but sweeps the key light through a full 360-degree rotation and returns a looping GIF, for when a static preview leaves relief/normal-map depth ambiguous |
 | `save_graph` | Write a `.ptex` graph to a path |
 | `list_examples` | List starting graphs from both sources: Material Maker's bundled examples and this repo's `cookbook/` (filter with `source`) |
 | `load_example` | Load one starting graph by name as a `.ptex` (cookbook first, then bundled) |
@@ -284,7 +325,7 @@ for the full design.
 ## Play surface (optional)
 
 `mm-play` is a small local web page for a non-technical person who wants to
-tweak a cookbook material without touching a node graph: a gallery of the 53
+tweak a cookbook material without touching a node graph: a gallery of the 71
 cookbook materials, each opening to friendly sliders (derived from the
 material's author-chosen subgraph parameters) with a WebGL sphere preview
 that re-renders as you drag. It deliberately hides the node graph; it is a

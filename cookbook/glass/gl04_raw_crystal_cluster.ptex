@@ -1,0 +1,533 @@
+{
+ "connections": [
+  {
+   "from": "crystal_pattern",
+   "from_port": 1,
+   "to": "Material",
+   "to_port": 0
+  },
+  {
+   "from": "crystal_pattern",
+   "from_port": 0,
+   "to": "crystal_finish",
+   "to_port": 0
+  },
+  {
+   "from": "crystal_pattern",
+   "from_port": 2,
+   "to": "crystal_finish",
+   "to_port": 1
+  },
+  {
+   "from": "crystal_finish",
+   "from_port": 0,
+   "to": "Material",
+   "to_port": 4
+  },
+  {
+   "from": "crystal_finish",
+   "from_port": 1,
+   "to": "Material",
+   "to_port": 2
+  }
+ ],
+ "nodes": [
+  {
+   "name": "Material",
+   "type": "material",
+   "node_position": {
+    "x": 620,
+    "y": 40
+   },
+   "export_paths": {},
+   "parameters": {
+    "albedo_color": {
+     "a": 1,
+     "r": 1,
+     "g": 1,
+     "b": 1,
+     "type": "Color"
+    },
+    "ao": 1,
+    "depth_scale": 1,
+    "emission_energy": 1,
+    "metallic": 0.0,
+    "normal": 1,
+    "roughness": 0.06,
+    "size": 11,
+    "sss": 0
+   }
+  },
+  {
+   "name": "crystal_pattern",
+   "label": "Crystal Pattern",
+   "type": "graph",
+   "node_position": {
+    "x": 150.0,
+    "y": -30.0
+   },
+   "parameters": {
+    "param0": 16,
+    "param1": {
+     "interpolation": 1,
+     "type": "Gradient",
+     "points": [
+      {
+       "a": 1,
+       "r": 0.1,
+       "g": 0.03,
+       "b": 0.16,
+       "pos": 0.0
+      },
+      {
+       "a": 1,
+       "r": 0.22,
+       "g": 0.09,
+       "b": 0.32,
+       "pos": 0.08
+      },
+      {
+       "a": 1,
+       "r": 0.42,
+       "g": 0.22,
+       "b": 0.55,
+       "pos": 0.22
+      },
+      {
+       "a": 1,
+       "r": 0.62,
+       "g": 0.42,
+       "b": 0.75,
+       "pos": 0.45
+      },
+      {
+       "a": 1,
+       "r": 0.92,
+       "g": 0.85,
+       "b": 0.95,
+       "pos": 0.8
+      }
+     ]
+    }
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": -250.0,
+      "y": -30.0
+     },
+     "parameters": {},
+     "ports": [],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 550.0,
+      "y": -30.0
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "out0",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "out1",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "out2",
+       "type": "f",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -250.0,
+      "y": 170.0
+     },
+     "parameters": {
+      "param0": 16,
+      "param1": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.1,
+         "g": 0.03,
+         "b": 0.16,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.22,
+         "g": 0.09,
+         "b": 0.32,
+         "pos": 0.08
+        },
+        {
+         "a": 1,
+         "r": 0.42,
+         "g": 0.22,
+         "b": 0.55,
+         "pos": 0.22
+        },
+        {
+         "a": 1,
+         "r": 0.62,
+         "g": 0.42,
+         "b": 0.75,
+         "pos": 0.45
+        },
+        {
+         "a": 1,
+         "r": 0.92,
+         "g": 0.85,
+         "b": 0.95,
+         "pos": 0.8
+        }
+       ]
+      }
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Cell scale",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "CrystalCells",
+         "widget": "param0"
+        }
+       ]
+      },
+      {
+       "name": "param1",
+       "shortdesc": "Crystal color",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "CrystalColor",
+         "widget": "gradient"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "CrystalCells",
+     "type": "crystal",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "param0": 16,
+      "param1": 16
+     }
+    },
+    {
+     "name": "CrystalColor",
+     "type": "colorize",
+     "node_position": {
+      "x": 300,
+      "y": -60
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.1,
+         "g": 0.03,
+         "b": 0.16,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.22,
+         "g": 0.09,
+         "b": 0.32,
+         "pos": 0.08
+        },
+        {
+         "a": 1,
+         "r": 0.42,
+         "g": 0.22,
+         "b": 0.55,
+         "pos": 0.22
+        },
+        {
+         "a": 1,
+         "r": 0.62,
+         "g": 0.42,
+         "b": 0.75,
+         "pos": 0.45
+        },
+        {
+         "a": 1,
+         "r": 0.92,
+         "g": 0.85,
+         "b": 0.95,
+         "pos": 0.8
+        }
+       ]
+      }
+     }
+    }
+   ],
+   "connections": [
+    {
+     "from": "CrystalCells",
+     "from_port": 0,
+     "to": "CrystalColor",
+     "to_port": 0
+    },
+    {
+     "from": "CrystalCells",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    },
+    {
+     "from": "CrystalColor",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 1
+    },
+    {
+     "from": "CrystalCells",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 2
+    }
+   ]
+  },
+  {
+   "name": "crystal_finish",
+   "label": "Crystal Finish",
+   "type": "graph",
+   "node_position": {
+    "x": 150.0,
+    "y": 80.0
+   },
+   "parameters": {
+    "param0": {
+     "interpolation": 1,
+     "type": "Gradient",
+     "points": [
+      {
+       "a": 1,
+       "r": 0.06,
+       "g": 0.06,
+       "b": 0.06,
+       "pos": 0.0
+      },
+      {
+       "a": 1,
+       "r": 0.06,
+       "g": 0.06,
+       "b": 0.06,
+       "pos": 1.0
+      }
+     ]
+    },
+    "param1": 0.7
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": -250.0,
+      "y": 80.0
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "in0",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "in1",
+       "type": "f",
+       "group_size": 0
+      }
+     ],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 550.0,
+      "y": 80.0
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "out0",
+       "type": "rgb",
+       "group_size": 0
+      },
+      {
+       "name": "out1",
+       "type": "rgba",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -250.0,
+      "y": 280.0
+     },
+     "parameters": {
+      "param0": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.06,
+         "g": 0.06,
+         "b": 0.06,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.06,
+         "g": 0.06,
+         "b": 0.06,
+         "pos": 1.0
+        }
+       ]
+      },
+      "param1": 0.7
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Roughness",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "RoughnessConst",
+         "widget": "gradient"
+        }
+       ]
+      },
+      {
+       "name": "param1",
+       "shortdesc": "Surface relief",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "CrystalNormal",
+         "widget": "param1"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "CrystalNormal",
+     "type": "normal_map",
+     "node_position": {
+      "x": 300,
+      "y": 160
+     },
+     "parameters": {
+      "param0": 10,
+      "param1": 0.7,
+      "param2": 0,
+      "param4": 0
+     }
+    },
+    {
+     "name": "RoughnessConst",
+     "type": "colorize",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.06,
+         "g": 0.06,
+         "b": 0.06,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.06,
+         "g": 0.06,
+         "b": 0.06,
+         "pos": 1.0
+        }
+       ]
+      }
+     }
+    }
+   ],
+   "connections": [
+    {
+     "from": "gen_inputs",
+     "from_port": 0,
+     "to": "CrystalNormal",
+     "to_port": 0
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 1,
+     "to": "RoughnessConst",
+     "to_port": 0
+    },
+    {
+     "from": "CrystalNormal",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    },
+    {
+     "from": "RoughnessConst",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 1
+    }
+   ]
+  }
+ ]
+}

@@ -1,6 +1,6 @@
 [project]
 name = "mm-mcp"
-version = "0.8.0"
+version = "0.7.0"
 description = "MCP server for authoring and rendering Material Maker node graphs"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -25,6 +25,7 @@ classifiers = [
 dependencies = [
     "mcp>=2,<3",
     "python-dotenv>=1.0.0",
+    "Pillow>=10.0.0",
 ]
 
 [project.optional-dependencies]

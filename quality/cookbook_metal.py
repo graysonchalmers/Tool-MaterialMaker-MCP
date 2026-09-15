@@ -10,7 +10,10 @@ Then: python -m quality.promote_cookbook cookbook-metal
 import sys
 
 from quality import author  # shared builder base; regression guard is promote_cookbook --check
-from quality.author_helpers import save_variant, take_variant, group_into_subgraph, rename_nodes
+from quality.author_helpers import (
+    save_variant, take_variant, group_into_subgraph, rename_nodes,
+    _from_scratch_noise_material, retype, add_node, _grad, set_param,
+)
 
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.config import load_config
@@ -53,6 +56,64 @@ _M02_NAMES = {
     "colorize_1": "KnotColorUnused",
     "warp_1": "KnotWarpFinalUnused",
 }
+
+
+# `noise_anisotropic` from-scratch build for m03: no donor to clone (the
+# aluminum donor's warp-stretched streak is exactly the technique this
+# material is meant to avoid), so it starts from
+# `_from_scratch_noise_material`'s minimal perlin skeleton and `retype`s the
+# generator to `noise_anisotropic` in place (single "f" output port 0, same
+# shape as perlin's, so every downstream connection stays valid). A second
+# colorize (roughness texture) is grafted on so the brushed sheen varies
+# along the hairline direction instead of staying a flat scalar.
+_M03_NAMES = {
+    "perlin_0": "HairlineNoise",       # retyped to noise_anisotropic
+    "colorize_0": "TitaniumColor",
+    "colorize_rough": "RoughnessRamp",
+    "normal_map_0": "BrushNormal",
+}
+
+
+def build_m03_brushed_titanium(catalog: dict) -> str:
+    """Brushed titanium: a finer, more uniform directional hairline than
+    `m02_brushed_aluminum`'s warp-stretched streak, built from the
+    `noise_anisotropic` node (scale_y:scale_x = 48:4, the anisotropic
+    stretch ratio itself is the directional grain -- no warp node needed).
+    Titanium reads as a mid-light cool gray, slightly cooler than aluminum
+    and with a faint violet cast (m02's albedo is neutral bright silver;
+    here the gradient leans violet-gray, R and B both above G), so the two
+    brushed metals are never a recolor of each other. The whole surface is metal (metallic=1
+    scalar, same reasoning as m02: no paint layer to mask off). Roughness
+    is a texture (not m02's scalar) fed by the same anisotropic noise so
+    the sheen varies faintly along the brush direction. The hairline noise
+    also feeds normal_map for the fine directional groove relief;
+    param4=0 keeps it a real (if subtle) buffered normal rather than the
+    dead-flat default the analytic generator would otherwise produce."""
+    g = _from_scratch_noise_material(
+        {"scale_x": 4, "scale_y": 48},
+        [(0.0, 0.58, 0.56, 0.62), (1.0, 0.66, 0.64, 0.70)],
+        metallic=1.0, roughness=0.3, normal_amount=0.35)
+    retype(g, "perlin_0", "noise_anisotropic",
+           {"scale_x": 4, "scale_y": 48, "smoothness": 1, "interpolation": 1})
+    set_param(g, "normal_map_0", "param4", 0)
+    add_node(g, "colorize_rough", "colorize",
+             {"gradient": _grad([(0.0, 0.22, 0.22, 0.22), (1.0, 0.38, 0.38, 0.38)])})
+    g["connections"].append(
+        {"from": "perlin_0", "from_port": 0, "to": "colorize_rough", "to_port": 0})
+    g["connections"].append(
+        {"from": "colorize_rough", "from_port": 0, "to": "Material", "to_port": 2})
+
+    group_into_subgraph(
+        g, ["perlin_0", "colorize_0", "colorize_rough", "normal_map_0"],
+        "brushed_finish", "Brushed Finish",
+        [("perlin_0", "scale_y", "param0", "Hairline density"),
+         ("colorize_0", "gradient", "param1", "Titanium color"),
+         ("colorize_rough", "gradient", "param2", "Roughness"),
+         ("normal_map_0", "param1", "param3", "Groove depth")],
+        catalog,
+    )
+    rename_nodes(g, _M03_NAMES)
+    return save_variant(g, _LABEL, "m03_brushed_titanium", 1)
 
 
 def build_m01_weathered_copper(catalog: dict) -> str:
@@ -118,9 +179,84 @@ def build_m02_brushed_aluminum(catalog: dict) -> str:
     return save_variant(g, _LABEL, "m02_brushed_aluminum", 1)
 
 
+_M04_NAMES = {
+    "perlin_0": "ScratchNoise",     # retyped to scratches
+    "colorize_0": "SteelColor",
+    "normal_map_0": "ScratchNormal",
+    "rough_const": "RoughnessConst",
+}
+
+
+def build_m04_scratched_steel(catalog: dict) -> str:
+    """Scratched steel: the first cookbook material to use the `scratches`
+    node (discrete, individually-angled, wavy scratch marks composed in
+    layers), a genuinely different technique from `m02_brushed_aluminum`
+    (continuous parallel streaks from a stretched `perlin`) and
+    `m03_brushed_titanium` (continuous streaks from `noise_anisotropic`):
+    those two read as a uniform brushed finish, this one reads as scuffed,
+    scored metal. Built from scratch via `_from_scratch_noise_material` (no
+    donor has this topology) then `retype()`d from its placeholder
+    `perlin_0` to `scratches` using the node's own verified catalog
+    defaults -- `length`/`width`/`layers`/`waviness`/`angle`/`randomness`
+    are all real, independently tunable float params, so the starting point
+    is trustworthy rather than a guess. Both nodes' output port 0 is a
+    plain `f` scalar, so the swap is connection-safe (same move `t09`
+    (`cookbook_terrain.py`) uses for `wavelet_noise`).
+
+    Cool gray steel palette, slightly darker and less uniform than m02's
+    neutral bright silver or m03's violet-tinted titanium, since scored
+    steel reads rougher than a brushed finish. metallic=1.0 scalar (uniform
+    metal, same reasoning as m02/m03: no paint layer to mask off), and
+    moderate-to-high roughness (scored metal is not glossy) fed as a flat
+    texture (`rough_const`) rather than left as a Material-node scalar
+    only, the same `_dry_earth_plates`/`t09` lesson: a scalar-only
+    roughness exports no ORM map for the preview. Roughness is intentionally
+    NOT proportional to the scratch signal itself (unlike, say, a relief-
+    driven roughness ramp) since scored steel's matte-vs-glossy read is
+    fairly uniform across the surface; the variation is scratch angle and
+    position, not roughness."""
+    g = _from_scratch_noise_material(
+        {"scale_x": 4, "scale_y": 4},   # placeholder; retyped to scratches below
+        [(0.0, 0.30, 0.31, 0.33), (0.5, 0.40, 0.41, 0.44), (1.0, 0.50, 0.52, 0.55)],
+        metallic=1.0, roughness=0.6, normal_amount=0.4)
+    retype(g, "perlin_0", "scratches", {
+        "length": 0.25, "width": 0.5, "layers": 4, "waviness": 0.5,
+        "angle": 0, "randomness": 0.5})
+    set_param(g, "normal_map_0", "param4", 0)
+    add_node(g, "rough_const", "colorize",
+             {"gradient": _grad([(0.0, 0.6, 0.6, 0.6), (1.0, 0.6, 0.6, 0.6)])})
+    g["connections"].append(
+        {"from": "perlin_0", "from_port": 0, "to": "rough_const", "to_port": 0})
+    g["connections"].append(
+        {"from": "rough_const", "from_port": 0, "to": "Material", "to_port": 2})
+
+    # Subgraph grouping -- the exact t09_rippled_wet_sand template (the other
+    # from-scratch, no-donor cookbook material): perlin_0 (retyped to
+    # scratches) feeds all three downstream nodes (colorize_0, normal_map_0,
+    # rough_const), so it has to live in one of the two groups; folding it
+    # into the color group (rather than leaving it top-level) avoids a
+    # degenerate single-node "finish" group.
+    group_into_subgraph(
+        g, ["perlin_0", "colorize_0"], "scratch_finish", "Scratch Finish",
+        [("colorize_0", "gradient", "param0", "Steel color"),
+         ("perlin_0", "randomness", "param1", "Scratch randomness")],
+        catalog,
+    )
+    group_into_subgraph(
+        g, ["normal_map_0", "rough_const"], "surface_detail", "Surface Detail",
+        [("rough_const", "gradient", "param0", "Roughness"),
+         ("normal_map_0", "param1", "param1", "Scratch depth")],
+        catalog,
+    )
+    rename_nodes(g, _M04_NAMES)
+    return save_variant(g, _LABEL, "m04_scratched_steel", 1)
+
+
 BUILDERS = {
     "m01_weathered_copper": build_m01_weathered_copper,
     "m02_brushed_aluminum": build_m02_brushed_aluminum,
+    "m03_brushed_titanium": build_m03_brushed_titanium,
+    "m04_scratched_steel": build_m04_scratched_steel,
 }
 
 

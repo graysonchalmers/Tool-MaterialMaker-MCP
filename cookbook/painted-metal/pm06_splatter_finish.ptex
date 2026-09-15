@@ -1,0 +1,537 @@
+{
+ "connections": [
+  {
+   "from": "splatter_pattern",
+   "from_port": 1,
+   "to": "Material",
+   "to_port": 0
+  },
+  {
+   "from": "splatter_pattern",
+   "from_port": 0,
+   "to": "splatter_finish",
+   "to_port": 0
+  },
+  {
+   "from": "splatter_pattern",
+   "from_port": 2,
+   "to": "splatter_finish",
+   "to_port": 1
+  },
+  {
+   "from": "splatter_finish",
+   "from_port": 0,
+   "to": "Material",
+   "to_port": 4
+  },
+  {
+   "from": "splatter_finish",
+   "from_port": 1,
+   "to": "Material",
+   "to_port": 2
+  }
+ ],
+ "nodes": [
+  {
+   "name": "Material",
+   "type": "material",
+   "node_position": {
+    "x": 620,
+    "y": 40
+   },
+   "export_paths": {},
+   "parameters": {
+    "albedo_color": {
+     "a": 1,
+     "r": 1,
+     "g": 1,
+     "b": 1,
+     "type": "Color"
+    },
+    "ao": 1,
+    "depth_scale": 1,
+    "emission_energy": 1,
+    "metallic": 0.0,
+    "normal": 1,
+    "roughness": 0.38,
+    "size": 11,
+    "sss": 0
+   }
+  },
+  {
+   "name": "splatter_pattern",
+   "label": "Splatter Pattern",
+   "type": "graph",
+   "node_position": {
+    "x": 100.0,
+    "y": -20.0
+   },
+   "parameters": {
+    "param0": {
+     "interpolation": 1,
+     "points": [
+      {
+       "a": 1,
+       "r": 0.07,
+       "g": 0.08,
+       "b": 0.1,
+       "pos": 0.0
+      },
+      {
+       "a": 1,
+       "r": 0.09,
+       "g": 0.1,
+       "b": 0.12,
+       "pos": 0.32
+      },
+      {
+       "a": 1,
+       "r": 0.62,
+       "g": 0.58,
+       "b": 0.5,
+       "pos": 0.55
+      },
+      {
+       "a": 1,
+       "r": 0.88,
+       "g": 0.84,
+       "b": 0.76,
+       "pos": 1.0
+      }
+     ],
+     "type": "Gradient"
+    },
+    "param1": 24
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": -300.0,
+      "y": -20.0
+     },
+     "parameters": {},
+     "ports": [],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 500.0,
+      "y": -20.0
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "out0",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "out1",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "out2",
+       "type": "f",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -300.0,
+      "y": 180.0
+     },
+     "parameters": {
+      "param0": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0.07,
+         "g": 0.08,
+         "b": 0.1,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.09,
+         "g": 0.1,
+         "b": 0.12,
+         "pos": 0.32
+        },
+        {
+         "a": 1,
+         "r": 0.62,
+         "g": 0.58,
+         "b": 0.5,
+         "pos": 0.55
+        },
+        {
+         "a": 1,
+         "r": 0.88,
+         "g": 0.84,
+         "b": 0.76,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      },
+      "param1": 24
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Splatter color",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "SplatterColor",
+         "widget": "gradient"
+        }
+       ]
+      },
+      {
+       "name": "param1",
+       "shortdesc": "Splat density",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "SplatterPattern",
+         "widget": "count"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "SplatterShape",
+     "type": "shape",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "shape": 0,
+      "radius": 0.12,
+      "edge": 0.3
+     }
+    },
+    {
+     "name": "SplatterColor",
+     "type": "colorize",
+     "node_position": {
+      "x": 300,
+      "y": -60
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0.07,
+         "g": 0.08,
+         "b": 0.1,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.09,
+         "g": 0.1,
+         "b": 0.12,
+         "pos": 0.32
+        },
+        {
+         "a": 1,
+         "r": 0.62,
+         "g": 0.58,
+         "b": 0.5,
+         "pos": 0.55
+        },
+        {
+         "a": 1,
+         "r": 0.88,
+         "g": 0.84,
+         "b": 0.76,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      }
+     }
+    },
+    {
+     "name": "SplatterPattern",
+     "type": "splatter",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "count": 24,
+      "inputs": 0,
+      "scale_x": 1,
+      "scale_y": 1,
+      "rotate": 180,
+      "scale": 0.4,
+      "value": 0.6,
+      "variations": true
+     }
+    }
+   ],
+   "connections": [
+    {
+     "from": "SplatterPattern",
+     "from_port": 0,
+     "to": "SplatterColor",
+     "to_port": 0
+    },
+    {
+     "from": "SplatterShape",
+     "from_port": 0,
+     "to": "SplatterPattern",
+     "to_port": 0
+    },
+    {
+     "from": "SplatterPattern",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    },
+    {
+     "from": "SplatterColor",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 1
+    },
+    {
+     "from": "SplatterPattern",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 2
+    }
+   ]
+  },
+  {
+   "name": "splatter_finish",
+   "label": "Splatter Finish",
+   "type": "graph",
+   "node_position": {
+    "x": 150.0,
+    "y": 80.0
+   },
+   "parameters": {
+    "param0": {
+     "interpolation": 1,
+     "type": "Gradient",
+     "points": [
+      {
+       "a": 1,
+       "r": 0.38,
+       "g": 0.38,
+       "b": 0.38,
+       "pos": 0.0
+      },
+      {
+       "a": 1,
+       "r": 0.38,
+       "g": 0.38,
+       "b": 0.38,
+       "pos": 1.0
+      }
+     ]
+    },
+    "param1": 0.18
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": -250.0,
+      "y": 80.0
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "in0",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "in1",
+       "type": "f",
+       "group_size": 0
+      }
+     ],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 550.0,
+      "y": 80.0
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "out0",
+       "type": "rgb",
+       "group_size": 0
+      },
+      {
+       "name": "out1",
+       "type": "rgba",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -250.0,
+      "y": 280.0
+     },
+     "parameters": {
+      "param0": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.38,
+         "g": 0.38,
+         "b": 0.38,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.38,
+         "g": 0.38,
+         "b": 0.38,
+         "pos": 1.0
+        }
+       ]
+      },
+      "param1": 0.18
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Roughness",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "RoughnessConst",
+         "widget": "gradient"
+        }
+       ]
+      },
+      {
+       "name": "param1",
+       "shortdesc": "Splat relief",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "SplatterNormal",
+         "widget": "param1"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "SplatterNormal",
+     "type": "normal_map",
+     "node_position": {
+      "x": 300,
+      "y": 160
+     },
+     "parameters": {
+      "param0": 10,
+      "param1": 0.18,
+      "param2": 0,
+      "param4": 0
+     }
+    },
+    {
+     "name": "RoughnessConst",
+     "type": "colorize",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.38,
+         "g": 0.38,
+         "b": 0.38,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.38,
+         "g": 0.38,
+         "b": 0.38,
+         "pos": 1.0
+        }
+       ]
+      }
+     }
+    }
+   ],
+   "connections": [
+    {
+     "from": "gen_inputs",
+     "from_port": 0,
+     "to": "SplatterNormal",
+     "to_port": 0
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 1,
+     "to": "RoughnessConst",
+     "to_port": 0
+    },
+    {
+     "from": "SplatterNormal",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    },
+    {
+     "from": "RoughnessConst",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 1
+    }
+   ]
+  }
+ ]
+}

@@ -11,7 +11,7 @@ import sys
 
 from quality.author_helpers import (load_example, node, set_gradient, set_param, retype,
                      rewire, drop_conn, add_node, save_variant, _grad,
-                     group_into_subgraph, rename_nodes)
+                     group_into_subgraph, rename_nodes, _from_scratch_noise_material)
 
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.config import load_config
@@ -38,13 +38,17 @@ _DUNE_NAMES = {
     "colorize_0": "DuneRoughness",   # matte sand roughness
 }
 
-# t05_cracked_ice and t08_riverbed_pebbles both clone `dry_earth`'s
-# voronoi-plate structure via `_dry_earth_plates`/`_group_dry_earth_plate`
-# below -- the same donor shape as the stone paving family
-# (quality/cookbook_stone.py's `_DRY_EARTH_NAMES`, Task 10). Copied here with
-# ice wording for t05; t08 (pebbles) and t06 (lava, which regroups `warp_0`
-# away from the plain crack composite into its own glow chain) get their own
-# bespoke mappings below since their node roles genuinely differ.
+# t05_cracked_ice and t08_riverbed_pebbles clone `dry_earth`'s voronoi-plate
+# structure via `_dry_earth_plates`/`_group_dry_earth_plate` below -- the same
+# donor shape as the stone paving family (quality/cookbook_stone.py's
+# `_DRY_EARTH_NAMES`, Task 10). Copied here with ice wording for t05; t08
+# (pebbles) and t06 (lava, which regroups `warp_0` away from the plain crack
+# composite into its own glow chain) get their own bespoke mappings below
+# since their node roles genuinely differ. The former t09 slot (flowing
+# fbm-turbulence, no plate/crack topology) has moved to the stone category as
+# `s13_polished_marble` (quality/cookbook_stone.py) -- Grayson's verdict on
+# the render was that it read as polished marble, so it was promoted out of
+# terrain into stone rather than kept as a terrain material.
 _ICE_PLATE_NAMES = {
     "voronoi_0": "IcePlates",
     "colorize_1": "CrackLines",
@@ -183,41 +187,193 @@ def build_t03_gravel(catalog: dict) -> str:
     at PEBBLE scale (14, vs granite's fine-fleck 44) and a wider earthy
     gray/tan/brown palette instead of granite's grayscale. Stronger
     param4=0 relief than granite -- loose gravel is bumpier than a
-    polished slab."""
+    polished slab.
+
+    2026-09-14 normal/albedo alignment fix (mirrors s02 granite): the normal
+    now derives from the SAME voronoi_0 (port 1, the `.w` distance field rock's
+    donor already routed to its normal chain) instead of a separate
+    voronoi_1/perlin_1/warp_0 relief chain. Because Material Maker seeds
+    voronoi from node position, two voronoi nodes never share a cell layout
+    even at matching scale, so the old chain bumped nowhere near the gravel
+    colors; switching the generator (not the port/polarity) keeps rock's
+    rounded-bulge relief but co-located with the color. Look note: dropping
+    warp_0 makes gravel silhouettes cleanly voronoi-geometric (the water-worn
+    edge distortion is gone)."""
     g = load_example("rock")
     set_param(g, "voronoi_0", "scale_x", 14)
     set_param(g, "voronoi_0", "scale_y", 14)
     set_param(g, "voronoi_0", "randomness", 1)
     rewire(g, "colorize_0", 0, "voronoi_0", 2)
-    set_gradient(g, "colorize_0", [    # varied gray/tan/brown pebbles
+    _gravel_grad = [    # varied gray/tan/brown pebbles
         (0.0, 0.22, 0.20, 0.17),
         (0.30, 0.42, 0.38, 0.32),
         (0.55, 0.55, 0.50, 0.42),
         (0.80, 0.35, 0.28, 0.20),
         (1.0, 0.48, 0.46, 0.44),
-    ])
+    ]
+    set_gradient(g, "colorize_0", _gravel_grad)
     set_gradient(g, "colorize_1", [(0.0, 0, 0, 0), (1.0, 0, 0, 0)])
     set_gradient(g, "colorize_2", [
         (0.0, 0.55, 0.55, 0.55),
         (1.0, 0.82, 0.82, 0.82),
     ])
+    # normal derives from voronoi_0 (same generator as the albedo) so the bulge
+    # registers with the color. DOME FIX (2026-09-14): feed the normal from
+    # voronoi_0 PORT 0 (.z, distance-to-cell-center: smooth, radial around each
+    # seed) through a REVERSED height ramp, NOT port 1 (.w, distance-to-borders,
+    # which peaks along each cell's medial axis -> a sharp crease that reads
+    # faceted). Reversed ramp: centers (low port0) -> high, borders (high port0)
+    # -> recessed seam -- the Grayson-approved _dome_the_cells leather recipe.
+    # The old separate voronoi_1/perlin_1/warp_0 relief chain is dead.
+    # CONVEX dome profile (spherical cap): FLAT at the apex (low port0) so the
+    # top rounds, steepening toward the seam. A straight ramp would make port0's
+    # LINEAR distance field a CONE with a singular point at the tip (the "point
+    # in the middle" Grayson caught). Holding the top flat rounds it.
+    # Smooth ANALYTIC dome via a single math node, NOT a stepped colorize: a
+    # colorize gradient has a control point at every stop, and the analytic
+    # normal (param4=0) turns each into a concentric contour RING on the
+    # near-flat apex (the banding). cos(port0*B) is one smooth expression ->
+    # zero control points -> zero rings. cos=1 at the cell center (apex) curving
+    # to ~0 at the border (B=2.6 -> cos(~1.57)~0 = recessed seam); zero slope at
+    # the apex rounds the top (no cone point).
+    add_node(g, "dome_curve", "math",
+             {"op": 16, "default_in2": 2.6, "clamp": True})   # 16 = cos(A*B)
+    # COIN PROFILE (2026-09-14 pass 2): flatten the smooth bell into a flat-topped
+    # coin -- a flat plateau on top with a small beveled edge dropping to the seam,
+    # not a full round dome. cos alone bells the whole cell; multiply it up (k>1)
+    # and clamp to [0,1] so the center region saturates flat (plateau) and only the
+    # outer radius still curves down (the bevel). Still ANALYTIC -- one A*B node, no
+    # colorize control points -> none of the concentric-ring banding the stepped
+    # gradient rang with under the param4=0 normal. k (default_in2) widens the
+    # plateau / steepens the bevel; tune visually.
+    add_node(g, "dome_flatten", "math",
+             {"op": 2, "default_in2": 1.5, "clamp": True})   # 2 = A*B, clamp [0,1]
+    # The hard clamp leaves a C1 kink at the plateau rim AND at the zero floor;
+    # under the param4=0 edge-detect normal each kink rang as a concentric ring
+    # (a raised washer, not a coin -- pass-2a render caught it). smoothstep has
+    # zero slope at both 0 and 1, so composing it over the clamp removes both
+    # kinks at once: the plateau stays flat, the bevel becomes a rounded S, the
+    # floor stays flat -- a coin, no rings.
+    add_node(g, "dome_smooth", "math", {"op": 20, "clamp": True})   # 20 = smoothstep(0,1,A)
+    g["connections"] += [
+        {"from": "voronoi_0", "from_port": 0, "to": "dome_curve", "to_port": 0},
+        {"from": "dome_curve", "from_port": 0, "to": "dome_flatten", "to_port": 0},
+        {"from": "dome_flatten", "from_port": 0, "to": "dome_smooth", "to_port": 0},
+    ]
+    rewire(g, "normal_map_0", 0, "dome_smooth", 0)
+    drop_conn(g, "warp_0", 0)
+    drop_conn(g, "warp_0", 1)
+    g["nodes"] = [n for n in g["nodes"]
+                  if n["name"] not in ("voronoi_1", "perlin_1", "warp_0")]
     set_param(g, "normal_map_0", "param4", 0)
     set_param(g, "normal_map_0", "param1", 0.55)
+    # TWO-SCALE MIX (2026-09-14 pass 3b, Grayson: "tiny gravel + medium + slightly
+    # bigger"). Same lever as s06_river_pebbles: a SECOND finer voronoi with its
+    # own coin chain, nestled lower (*0.65), MAX-composited with the coarse dome so
+    # small stones fill the coarse seams. The albedo gets a matching fine layer via
+    # the SAME selection mask or the small stones are colorless bumps (see s06 for
+    # the full rationale; the audit is blind to that misregistration).
+    add_node(g, "voronoi_fine", "voronoi",
+             {"scale_x": 36, "scale_y": 36, "randomness": 1})
+    add_node(g, "dome_curve_f", "math", {"op": 16, "default_in2": 2.6, "clamp": True})
+    add_node(g, "dome_flatten_f", "math", {"op": 2, "default_in2": 1.5, "clamp": True})
+    add_node(g, "dome_smooth_f", "math", {"op": 20, "clamp": True})
+    add_node(g, "dome_fine_low", "math", {"op": 2, "default_in2": 0.65})   # nestle lower
+    add_node(g, "dome_mix", "math", {"op": 14})                            # 14 = max(coarse, fine)
+    add_node(g, "sel_fine", "math", {"op": 15})                           # 15 = A<B (coarse < fine)
+    add_node(g, "colorize_fine", "colorize", {"gradient": _grad(_gravel_grad)})
+    add_node(g, "blend_layer_color", "blend", {"blend_type": 0, "amount": 1})
+    g["connections"] += [
+        {"from": "voronoi_fine", "from_port": 0, "to": "dome_curve_f", "to_port": 0},
+        {"from": "dome_curve_f", "from_port": 0, "to": "dome_flatten_f", "to_port": 0},
+        {"from": "dome_flatten_f", "from_port": 0, "to": "dome_smooth_f", "to_port": 0},
+        {"from": "dome_smooth_f", "from_port": 0, "to": "dome_fine_low", "to_port": 0},
+        {"from": "dome_smooth", "from_port": 0, "to": "dome_mix", "to_port": 0},
+        {"from": "dome_fine_low", "from_port": 0, "to": "dome_mix", "to_port": 1},
+        {"from": "dome_smooth", "from_port": 0, "to": "sel_fine", "to_port": 0},
+        {"from": "dome_fine_low", "from_port": 0, "to": "sel_fine", "to_port": 1},
+        {"from": "voronoi_fine", "from_port": 2, "to": "colorize_fine", "to_port": 0},
+        {"from": "colorize_0", "from_port": 0, "to": "blend_layer_color", "to_port": 1},
+        {"from": "colorize_fine", "from_port": 0, "to": "blend_layer_color", "to_port": 0},
+        {"from": "sel_fine", "from_port": 0, "to": "blend_layer_color", "to_port": 2},
+    ]
+    # NOTE 3 (2026-09-14 pass 3a): give gravel the same fine surface grain s06
+    # carries -- perlin multiplied over the albedo (unmasked, uniform 1.0), plus a
+    # small fraction into the NORMAL for micro-relief co-located with the color.
+    add_node(g, "perlin_grain", "perlin", {"scale_x": 48, "scale_y": 48, "iterations": 5})
+    add_node(g, "colorize_grain", "colorize",
+             {"gradient": _grad([(0.0, 0.82, 0.82, 0.82), (1.0, 1.0, 1.0, 1.0)])})
+    add_node(g, "blend_grain", "blend", {"blend_type": 2, "amount": 1})   # Multiply
+    g["connections"] += [
+        {"from": "perlin_grain", "from_port": 0, "to": "colorize_grain", "to_port": 0},
+        {"from": "blend_layer_color", "from_port": 0, "to": "blend_grain", "to_port": 0},
+        {"from": "colorize_grain", "from_port": 0, "to": "blend_grain", "to_port": 1},
+    ]
+    rewire(g, "Material", 0, "blend_grain", 0)   # albedo <- grain over two-scale gravel
+    # grain into the NORMAL: dome + w*grain before edge-detect, so gravel carries
+    # fine grit relief co-located with its albedo grain (weight low, coin dominates).
+    add_node(g, "grain_scaled", "math", {"op": 2, "default_in2": 0.15})   # perlin_grain * w
+    add_node(g, "height_relief", "math", {"op": 0})                       # 0 = A+B: dome + grain
+    g["connections"] += [
+        {"from": "perlin_grain", "from_port": 0, "to": "grain_scaled", "to_port": 0},
+        {"from": "dome_mix", "from_port": 0, "to": "height_relief", "to_port": 0},
+        {"from": "grain_scaled", "from_port": 0, "to": "height_relief", "to_port": 1},
+    ]
+    rewire(g, "normal_map_0", 0, "height_relief", 0)
+    # seam substrate: recessed seams get a DISTINCT matte grit roughness, not just
+    # a dark gradient. dome field (1 top, 0 seam) masks top roughness vs. grit --
+    # blend Normal mix(port1, port0, mask): dome=1 -> port0 (colorize_2 top), dome=0
+    # -> port1 (grit). perlin_0 feeds the grit colorize for variation.
+    add_node(g, "colorize_rough_seam", "colorize",
+             {"gradient": _grad([(0.0, 0.86, 0.86, 0.86), (1.0, 0.93, 0.93, 0.93)])})
+    add_node(g, "blend_rough", "blend", {"blend_type": 0, "amount": 1})
+    g["connections"] += [
+        {"from": "perlin_0", "from_port": 0, "to": "colorize_rough_seam", "to_port": 0},
+        {"from": "colorize_2", "from_port": 0, "to": "blend_rough", "to_port": 0},
+        {"from": "colorize_rough_seam", "from_port": 0, "to": "blend_rough", "to_port": 1},
+        {"from": "dome_mix", "from_port": 0, "to": "blend_rough", "to_port": 2},
+    ]
+    rewire(g, "Material", 2, "blend_rough", 0)   # roughness <- seam-masked top/grit split
+                                                 # (dome_mix: both stone sizes count as top)
 
     # Subgraph grouping, the exact s06_river_pebbles template (Task 10):
     # colorize_0 was rewired to read voronoi_0 PORT 2 (rand3) directly,
     # orphaning blend_0 -- still present with no consumer, folded into
-    # Pebble Pattern since it shares voronoi_0 as a source.
+    # Pebble Pattern since it shares voronoi_0 as a source. voronoi_0 now also
+    # feeds the normal externally, so group_into_subgraph auto-creates the
+    # second gen_outputs port (granite's multi-consumer boundary mechanism).
     group_into_subgraph(g, ["voronoi_0", "colorize_0", "blend_0"],
                          "pebble_pattern", "Pebble Pattern",
                          [("voronoi_0", "scale_x", "param0", "Pebble size"),
                           ("colorize_0", "gradient", "param1", "Pebble color")],
                          catalog)
-    group_into_subgraph(g, ["perlin_0", "colorize_1", "colorize_2"],
-                         "material_finish", "Material Finish",
-                         [("colorize_2", "gradient", "param0", "Roughness")],
+    # Two-scale profile (see s06 for the full note): both coin chains, the
+    # max/select mix, and the small-stone colour composite in one group.
+    # pattern -> profile -> relief/finish/grain, one-directional, no cycle.
+    group_into_subgraph(g, ["dome_curve", "dome_flatten", "dome_smooth",
+                             "voronoi_fine", "dome_curve_f", "dome_flatten_f",
+                             "dome_smooth_f", "dome_fine_low", "dome_mix",
+                             "sel_fine", "colorize_fine", "blend_layer_color"],
+                         "stone_profile", "Stone Profile",
+                         [("voronoi_fine", "scale_x", "param0", "Small stone size"),
+                          ("dome_fine_low", "default_in2", "param1", "Small stone height"),
+                          ("dome_flatten", "default_in2", "param2", "Top flatness")],
                          catalog)
-    group_into_subgraph(g, ["perlin_1", "voronoi_1", "warp_0", "normal_map_0"],
+    group_into_subgraph(g, ["perlin_grain", "colorize_grain", "blend_grain"],
+                         "surface_grain", "Surface Grain",
+                         [("perlin_grain", "scale_x", "param0", "Grain scale"),
+                          ("perlin_grain", "iterations", "param1", "Grain detail")],
+                         catalog)
+    group_into_subgraph(g, ["perlin_0", "colorize_1", "colorize_2",
+                             "colorize_rough_seam", "blend_rough"],
+                         "material_finish", "Material Finish",
+                         [("colorize_2", "gradient", "param0", "Stone roughness"),
+                          ("colorize_rough_seam", "gradient", "param1", "Seam roughness")],
+                         catalog)
+    # relief holds the grain-into-normal math + normal_map_0; it consumes
+    # StoneHeightMix from Stone Profile (grouped above). The dome apparatus is
+    # not in relief -- that would make dome_mix a back-edge into relief (cycle).
+    group_into_subgraph(g, ["grain_scaled", "height_relief", "normal_map_0"],
                          "relief", "Relief",
                          [("normal_map_0", "param1", "param0", "Relief strength")],
                          catalog)
@@ -228,9 +384,25 @@ def build_t03_gravel(catalog: dict) -> str:
         "colorize_1": "NonMetallic",
         "colorize_2": "GravelRoughness",
         "perlin_0": "SurfaceNoise",
-        "perlin_1": "ReliefWarpNoise",
-        "voronoi_1": "ReliefCells",
-        "warp_0": "ContactWarp",
+        "perlin_grain": "GrainNoise",
+        "colorize_grain": "GrainContrast",
+        "blend_grain": "GrainOverGravel",
+        "colorize_rough_seam": "SeamRoughness",
+        "blend_rough": "RoughnessComposite",
+        "dome_curve": "BigDomeCurve",
+        "dome_flatten": "BigDomeFlatten",
+        "dome_smooth": "BigDomeSmooth",
+        "voronoi_fine": "SmallStoneCells",
+        "dome_curve_f": "SmallDomeCurve",
+        "dome_flatten_f": "SmallDomeFlatten",
+        "dome_smooth_f": "SmallDomeSmooth",
+        "dome_fine_low": "SmallStoneHeight",
+        "dome_mix": "StoneHeightMix",
+        "sel_fine": "SmallStoneMask",
+        "colorize_fine": "SmallStoneColor",
+        "blend_layer_color": "StoneColorMix",
+        "grain_scaled": "GrainHeight",
+        "height_relief": "ReliefHeight",
         "normal_map_0": "GravelNormal",
     })
     return save_variant(g, _LABEL, "t03_gravel", 1)
@@ -602,6 +774,253 @@ def build_t08_riverbed_pebbles(catalog: dict) -> str:
     return save_variant(g, _LABEL, "t08_riverbed_pebbles", 1)
 
 
+_T09_NAMES = {
+    "perlin_0": "RippleField",       # placeholder perlin, retyped to wavelet_noise below
+    "colorize_0": "WetSandColor",
+    "normal_map_0": "RippleNormal",
+    "rough_const": "WetSandRoughness",  # flat colorize; feeds Material's roughness port so ORM exports
+}
+
+
+def build_t09_rippled_wet_sand(catalog: dict) -> str:
+    """Rippled wet sand: the first cookbook material to use `wavelet_noise`
+    (zero prior use anywhere in the cookbook per the 2026-09-01 noise-vocab
+    audit -- `noise_gallery.py`'s own `wavelet_banded` swatch is the only
+    place this node had appeared before). Built from scratch via
+    `_from_scratch_noise_material` (no donor has this topology) then
+    `retype()`d from its placeholder `perlin_0` to `wavelet_noise`, the same
+    move `t07_forest_floor` uses to swap in `fbm` -- output port 0 is a
+    plain `f` scalar on both node types, so the swap is connection-safe.
+
+    RETUNE (round 3, controller self-screen): round 2 locked in the correct
+    ripple STRUCTURE (anisotropic scale 2/24, `type=4` = "Mult 3", `iterations=2`, the
+    ripple->normal relief -- all left untouched here) but overcorrected the
+    palette all the way to a flat neutral grey, reading as brushed metal or
+    stone rather than sand. Palette-only fix: `WetSandColor`'s gradient
+    shifted warm again -- a muted warm khaki/tan (more red+green than blue)
+    -- while keeping round 2's mid-tone luminance (still ~0.35-0.5 average,
+    not round 1's dark ~0.2). Landed between the two prior attempts: warmer
+    (higher saturation, clear R>G>B warmth) than round 2's grey, lighter and
+    less saturated than round 1's dark chocolate-brown. Nothing else in
+    this builder changed for round 3 -- see the round-2 note below for the
+    ripple-structure reasoning, which is now locked.
+
+    RETUNE (round 2, controller self-screen at 512): round 1 used isotropic
+    `scale_x == scale_y` and read as a dark, dense, muddy mottle -- no
+    banding at all, and too dark/chocolate-brown for wet sand. Two root
+    causes, both fixed here:
+
+    1. Isotropic scale can't produce bands. Reading `wavelet_noise.mmg`'s
+       actual GLSL (`z-Git/material-maker/addons/material_maker/nodes/
+       wavelet_noise.mmg`): `size = vec2(scale_x, scale_y)` tiles the field
+       per-axis independently, so equal scale tiles equally in both
+       directions -> isotropic blobs, never bands, no matter what `type` or
+       `iterations` is. Fixed with STRONG anisotropy: `scale_x=2` (few
+       tiles -> the field barely varies along x, so each feature stretches
+       long across it) and `scale_y=24` (many tiles -> tight repetition
+       along y), producing elongated near-parallel streaks running along x,
+       stacked along y -- the near-parallel-ripple-band look wet sand
+       actually has, distinct from `t01_sand_dunes`' broad ISOTROPIC-ish
+       perlin rolls (which vary smoothly in both axes, never band) and from
+       every voronoi-plate sibling (cellular, not banded, at all).
+    2. `type` must be the enum INDEX, not the option's underlying value.
+       Material Maker stores an enum parameter as the ordinal index into the
+       option list; at shader-gen time it substitutes `values[index].value`
+       into `$type`, clamping any index < 0 or >= len to 0 (see
+       `z-Git/material-maker/addons/material_maker/engine/nodes/gen_shader.gd`
+       lines 527-529). The options are Add 1/2/3 (underlying values
+       `1`/`2`/`3`, indices 0/1/2) and Mult 2/3 (underlying values `-2`/`-3`,
+       indices 3/4). The shader does `if (type > 0.0) { ... additive domain
+       shift ... } else { local_uv *= -type; size *= -type; ... }`, so the
+       Mult branch multiplies the domain each octave, which is where the
+       sharp interference-fringe character comes from. "Mult 3" is therefore
+       INDEX 4: storing `4` makes MM substitute `values[4].value` = `-3`
+       into the shader (the Mult branch) for the sharpest fringes -- so the
+       catalog's 0-4 index range is CORRECT and `validate_graph` passes with
+       no warning. (History: round 1 used the right index `4`; a round-2
+       detour changed it to the literal `-3` believing that was "Mult 3",
+       but `-3 < 0` clamps to index 0 = "Add 1", a silent wrong render.
+       Reverted to `4` on 2026-09-13.) Also kept `iterations` at 2 (round 1
+       used 3; fewer octaves -> cleaner, less busy bands), `frequency` 1.6
+       (pairs with the Mult type for tighter interference fringes) and
+       `persistence`/`offset` at 0.5/0.
+
+    Palette also lightened and cooled per the round-2 brief: wet sand is a
+    damp mid-tone khaki/tan (round 1 was too dark and too saturated warm-
+    brown, reading as mud/coffee grounds). New gradient averages ~0.35-0.48
+    luminance with a narrow, mostly-grey R/G/B spread (khaki, not chocolate
+    brown) -- see `WetSandColor` below.
+
+    Distinct from `t01_sand_dunes` (broad, organic, wood-donor perlin rolls,
+    warm tan, high roughness) on every axis: tight anisotropic bands
+    instead of broad isotropic rolls, a cooler/greyer damp khaki instead of
+    warm tan, and LOW roughness for a wet sheen instead of dune's high matte
+    roughness. Not based on any voronoi-plate/`dry_earth` donor, so it does
+    not add to that already-overused family either.
+
+    Roughness is fed as a flat texture (`rough_const`) rather than left as
+    a Material-node scalar only -- the same lesson `_dry_earth_plates` and
+    `p01_glossy_plastic` (`cookbook_plastics.py`) already established -- so
+    an ORM map exports for the wet-sheen preview instead of silently having
+    none. This, the low-roughness wet sheen, and feeding the ripple field
+    into the normal for corrugation are all unchanged from round 1 -- the
+    round-2 brief flagged only the base-field anisotropy/type and the
+    palette."""
+    g = _from_scratch_noise_material(
+        {"scale_x": 4, "scale_y": 4},   # placeholder; retyped to wavelet_noise below
+        [(0.0, 0.34, 0.29, 0.21), (0.5, 0.44, 0.38, 0.28), (1.0, 0.53, 0.46, 0.35)],
+        metallic=0.0, roughness=0.15, normal_amount=0.4)
+    retype(g, "perlin_0", "wavelet_noise", {
+        "type": 4, "scale_x": 2, "scale_y": 24, "iterations": 2,
+        "persistence": 0.5, "frequency": 1.6, "offset": 0})
+    set_param(g, "normal_map_0", "param4", 0)
+    add_node(g, "rough_const", "colorize",
+             {"gradient": _grad([(0.0, 0.15, 0.15, 0.15), (1.0, 0.15, 0.15, 0.15)])})
+    g["connections"].append(
+        {"from": "perlin_0", "from_port": 0, "to": "rough_const", "to_port": 0})
+    g["connections"].append(
+        {"from": "rough_const", "from_port": 0, "to": "Material", "to_port": 2})
+
+    # Subgraph grouping -- the exact p01_glossy_plastic template (the other
+    # from-scratch, no-donor cookbook material): perlin_0 (retyped to
+    # wavelet_noise) feeds all three downstream nodes (colorize_0,
+    # normal_map_0, rough_const), so it has to live in one of the two
+    # groups; folding it into the color group (rather than leaving it
+    # top-level) avoids a degenerate single-node "finish" group.
+    group_into_subgraph(
+        g, ["perlin_0", "colorize_0"], "ripple_color", "Ripple Color",
+        [("colorize_0", "gradient", "param0", "Sand color"),
+         ("perlin_0", "scale_x", "param1", "Ripple scale")],
+        catalog,
+    )
+    group_into_subgraph(
+        g, ["normal_map_0", "rough_const"], "wet_sand_finish", "Wet Sand Finish",
+        [("rough_const", "gradient", "param0", "Roughness"),
+         ("normal_map_0", "param1", "param1", "Ripple relief")],
+        catalog,
+    )
+    rename_nodes(g, _T09_NAMES)
+    return save_variant(g, _LABEL, "t09_rippled_wet_sand", 1)
+
+
+_T10_NAMES = {
+    "perlin_0": "DirtNoise",       # placeholder perlin, retyped to `dirt` below
+    "colorize_0": "DirtColor",
+    "normal_map_0": "DirtNormal",
+    "rough_const": "RoughnessConst",
+}
+
+
+def build_t10_packed_dirt(catalog: dict) -> str:
+    """Packed dirt: the first cookbook material to use `dirt`, a compound
+    (`graph`-type) node with an internal mode switch (`param0` = 0/1/2 picks
+    one of three composite sub-networks, "Dirt 1"/"Dirt 2"/"Dirt 3", each
+    blending a hexagonal `shape` field with `fbm2` noise through a tiler --
+    read from `dirt.mmg`'s own `gen_parameters` block). Built from scratch
+    via `_from_scratch_noise_material` (no donor has this topology), then
+    `retype()`d from the placeholder `perlin_0` to `dirt` -- the same
+    connection-safe swap `t07_forest_floor`/`t09_rippled_wet_sand` already
+    use, since a compound node's port 0 is a plain `f` output like `perlin`'s.
+
+    VERIFICATION (isolated single-node renders via the MCP
+    `render_node_output` tool, all three `param0` modes rendered and
+    compared at `d_scale=1`, `param1=11` -- the node's own defaults -- since
+    the brief flagged mode 0 as a real risk of reading too
+    regular/hexagonal): none of the three modes show a visible hexagonal
+    grid (the `shape` field is evidently randomized enough by the fbm2/tiler
+    math that the hex tiling never surfaces), so that specific risk did not
+    materialize. But they are NOT equivalent, and mode 0 does have its own
+    "too regular" problem the brief anticipated in different words:
+
+    - `param0=0` ("Dirt 1"): a dense scatter of small, mostly CIRCULAR,
+      individually distinct soft-edged dots/blobs of varying size -- reads
+      as a granular speckle/spatter, not as merged patches. Regular in
+      SHAPE (each blob is a soft circle) even though scattered irregularly
+      in position.
+    - `param0=1` ("Dirt 2"): much finer and closer to uniform static/grain
+      -- soft blobs are still present but smaller and more overlapping,
+      with almost no larger-scale clustering visible even at a
+      384px-downsampled "typical viewing distance" check.
+    - `param0=2` ("Dirt 3"): visibly larger, elongated, IRREGULAR blotches
+      with soft, feathered edges that merge into loose connected patches
+      rather than staying as discrete dots -- the only one of the three
+      that actually reads as "irregular soft-edged blotchy patches" rather
+      than a dot-scatter or fine grain.
+
+    Chosen: `param0=2`. `d_scale` (range 1-8) only makes the pattern FINER
+    as it increases (it raises the tiler's tile count), so `d_scale=1`
+    (the node's own default) is already the largest-patch setting available
+    -- there is no larger-scale option to reach for.
+
+    A follow-up check (per the project's pinned lesson: verify a channel by
+    reading its actual pixel values, not by eye) measured the grayscale
+    histogram of the chosen mode-2 render with a scratch numpy/PIL script:
+    mean 0.22, median (p50) 0.20, p95 0.49, p99 0.63, max 1.0 -- the `dirt`
+    output sits mostly in the bottom third of the 0..1 range, with only a
+    thin tail of pixels reaching higher values. A first-draft gradient with
+    naive stops at pos 0.0/0.5/1.0 would put the mid and light colors past
+    where the data actually lives, so the material would have rendered as
+    near-uniformly dark and never shown its documented tan highlight --
+    the same docstring-vs-pixels trap the sibling task hit, one step
+    removed (verifying the node's grayscale output is not the same as
+    verifying what the colorize gradient does with it). The gradient below
+    is remapped so its stops sit where the measured percentiles actually
+    are (dark tone at the median ~0.20, mid tan at ~0.49 = p95, light
+    highlight reached only near the true max) rather than at naive evenly
+    spaced positions.
+
+    Muted brown/tan packed-earth palette (dark shadowed dirt, its darkest
+    stop reached only in rare near-black crevices, through the
+    percentile-matched dominant dark-brown median tone, to a lighter
+    dry-dirt highlight reached only by the brightest fleck pixels), HIGH
+    matte roughness (0.88) for bare uncoated earth -- the deliberate
+    opposite of `t09_rippled_wet_sand`'s 0.15 wet sheen in the same file.
+    `normal_map param1=0.3` for a moderate, worn unevenness -- `dirt` has no
+    crack network to begin with, so this relief reads as rolling, worn
+    ground rather than sharp fissures. `param4=0` on the normal chain per the project's
+    standing flat-normal-source fix. Roughness fed as a flat texture
+    (`rough_const`), immune to this same input-range trap since a flat
+    gradient returns the same color regardless of input value, rather than
+    left as a Material-node scalar only -- the same `_dry_earth_plates`/
+    `t09` lesson, so an ORM map exports."""
+    g = _from_scratch_noise_material(
+        {"scale_x": 4, "scale_y": 4},   # placeholder; retyped to `dirt` below
+        [(0.0,  0.09, 0.065, 0.04),   # rare near-black crevice shadow
+         (0.22, 0.18, 0.13,  0.08),   # dominant dark packed-earth tone (~measured median 0.20)
+         (0.49, 0.30, 0.22,  0.14),   # mid tan (~measured p95 0.49)
+         (1.0,  0.46, 0.36,  0.24)],  # dry-dirt highlight, only the brightest flecks reach this
+        metallic=0.0, roughness=0.88, normal_amount=0.3)
+    retype(g, "perlin_0", "dirt", {"param0": 2, "d_scale": 1, "param1": 11})
+    set_param(g, "normal_map_0", "param4", 0)
+    add_node(g, "rough_const", "colorize",
+             {"gradient": _grad([(0.0, 0.88, 0.88, 0.88), (1.0, 0.88, 0.88, 0.88)])})
+    g["connections"].append(
+        {"from": "perlin_0", "from_port": 0, "to": "rough_const", "to_port": 0})
+    g["connections"].append(
+        {"from": "rough_const", "from_port": 0, "to": "Material", "to_port": 2})
+
+    # Subgraph grouping -- the exact p01_glossy_plastic/t09_rippled_wet_sand
+    # template (the other from-scratch, no-donor cookbook materials):
+    # perlin_0 (retyped to `dirt`) feeds all three downstream nodes
+    # (colorize_0, normal_map_0, rough_const), so it has to live in one of
+    # the two groups; folding it into the color group avoids a degenerate
+    # single-node "finish" group.
+    group_into_subgraph(
+        g, ["perlin_0", "colorize_0"], "dirt_pattern", "Dirt Pattern",
+        [("colorize_0", "gradient", "param0", "Dirt color"),
+         ("perlin_0", "d_scale", "param1", "Grain scale")],
+        catalog,
+    )
+    group_into_subgraph(
+        g, ["normal_map_0", "rough_const"], "dirt_finish", "Dirt Finish",
+        [("rough_const", "gradient", "param0", "Roughness"),
+         ("normal_map_0", "param1", "param1", "Surface relief")],
+        catalog,
+    )
+    rename_nodes(g, _T10_NAMES)
+    return save_variant(g, _LABEL, "t10_packed_dirt", 1)
+
+
 BUILDERS = {
     "t01_sand_dunes": build_t01_sand_dunes,
     "t02_fresh_snow": build_t02_fresh_snow,
@@ -611,6 +1030,8 @@ BUILDERS = {
     "t06_cooled_lava": build_t06_cooled_lava,
     "t07_forest_floor": build_t07_forest_floor,
     "t08_riverbed_pebbles": build_t08_riverbed_pebbles,
+    "t09_rippled_wet_sand": build_t09_rippled_wet_sand,
+    "t10_packed_dirt": build_t10_packed_dirt,
 }
 
 

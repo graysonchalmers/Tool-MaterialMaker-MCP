@@ -1,210 +1,125 @@
 # 🧭 Session Handoff: Tool-MaterialMaker-MCP
 
-_Last updated: 2026-09-06 (cross-project detour: backup-ops nightly-backup truncation root-caused + wake-lock fix; no MM-MCP code changed) CT (America/Chicago)_
+_Last updated: 2026-09-14 (night CT) — preview-rig overhaul (rounded-bevel cube,
+unified triplanar tiling, cutaway ball → lathed chess rook) + front-page showcase
+recuration to 8 new materials + 5 GIFs. All merged/committed to `main` (`24ff854`), only
+the final showcase commit + this wrap-up unpushed._
 
 The session baton. Read at pickup, rewrite at wrap-up. **Shape rule (2026-09-05,
-teardown #3):** "Current state" describes the latest session only; anything
-older is one line in the session log. "Heads-up" is a bounded list of live
-gotchas (drop an entry once a mechanism makes it moot). Git history is the
-archive; there is no separate archive file.
+teardown #3):** "Current state" describes the latest session only; anything older is one
+line in the session log. "Heads-up" is a bounded list of live gotchas. Git history is the
+archive.
 
 ## 🎯 Current state
 
-**Latest session (2026-09-06) was a cross-project detour started from a `pickup`
-here: no MM-MCP code changed.** Grayson picked next-step #2 (the backup abort);
-it was root-caused and fixed in `backup-ops` (wake-lock, see next-step #2 and
-the session log). That commit is local (`f7e809d`) and PUSH-PENDING because the
-ssh-agent was not loaded in the spawned session. The MM-MCP repo itself is
-unchanged from the prior session:
+The preview rig (`src/mm_mcp/preview_project/preview.gd`) and the front-page showcase are
+fully reworked and committed to `main`, every step Grayson visual-approved:
+- **Rounded-bevel cube**: `_rounded_box` helper (dense subdivided box pushed onto a box+sphere
+  Minkowski surface, analytic normals, flat faces preserved) + a triplanar material, so the
+  texture wraps seamlessly across faces and the rounded edges. `_rounded_box` welds coincident
+  verts into a manifold (required for it to work as a CSG cutter).
+- **Unified tiling**: every object (sphere/cube/ground/rook) shares one triplanar material at a
+  single world-space density; the old per-object UV/multiplier scales are gone. Default tile
+  lowered 1.0 → **0.45** (preview.py `render_preview`/`_sweep` + the .gd fallback).
+- **Chess rook** replaces the cutaway ball: a lathe (`_lathe`, surface of revolution) driven by
+  a Catmull-Rom profile (`_catmull_profile`) — bold molding silhouette (base torus + cornice)
+  with smooth vertex normals so it flows, plain circular top, height matched to the cube. The
+  lathe carries UVs + `generate_tangents()` (missing tangents rendered it black under triplanar
+  normal mapping); its outward normal sign was verified in-render (the geometric guess was
+  inverted).
+- **Showcase recuration** (`24ff854`): gallery swapped to 8 higher-contrast materials —
+  cobblestone, ashlar wall, marble, raw crystal, hazard stripe, herringbone tweed, cracked ice,
+  riverbed pebbles — chosen off a full-71 browse. New hero (cobblestone/marble/crystal), a new
+  "In motion" README strip of 5 light-sweep GIFs, and per-material tile overrides baked into
+  `quality/_make_showcase._TILE_OVERRIDES` (one global tile can't fit every material's baked
+  feature size). GIFs shrunk to ~0.7–0.9MB (448px/14f, shared 128-colour palette + optimize).
 
-`main` at `ebba5b6` plus the idle-exit merge `f669f8c` and this docs commit, pushed, in sync (0/0). Two sessions ran on this checkout in parallel today; this file merges both. Fast suite **993 passed, 1
-flaked** (the one flake was `test_live.py::test_load_graph_round_trips_a_cookbook_material`,
-a live-overlay test that collided with a concurrent Godot render; it passes
-in 25 s on its own and its material validates with 0 errors under the new
-code). `promote_cookbook --check` and `naming --cookbook` untouched this
-session.
-
-Short `pickup` + do-it session. Grayson picked two of the five surfaced
-moves and both landed:
-
-- **Pick 2 (option 2 in the pickup list): `validate` now descends into
-  subgraphs.** TDD: five subgraph-descent tests written failing first
-  (clean nested case, dangling inner connection, unknown inner type, inner
-  port out of range, doubly-nested), then `validate_graph` made to recurse
-  into `graph`-typed nodes, prefixing inner problems' `where` with the
-  subgraph path (e.g. `sub/deep`) so they stay locatable.
-  `tests/test_validator.py` 19/19. Commit `577592f`, pushed. This closes the
-  "found by dogfooding, not fixed" bug from the prior session.
-- **Pick 1 prep (option 1): crate round-trip readied for Grayson's hands-on
-  half.** The Unity side was verified from disk (no Unity launch needed):
-  `SM_Crate_A.prefab` points at `M_Crate_Pine.mat` on both slots, and that
-  .mat references all three `T_Crate_Pine_*` textures by matching guids. A
-  3D starting-point preview of `saved_graphs/crate_pine_mcp_authored.ptex`
-  was rendered and sent to Grayson (session scratchpad only, not tracked).
-  The hand-edit itself is deliberately left to him: it is the experiment the
-  moratorium wants.
-- **Idle-exit watchdog (other session, merge `f669f8c`, suite 989).**
-  `MM_IDLE_EXIT_MINUTES` (default 0 = off) makes the stdio server exit after
-  that many minutes without a tool call: `src/mm_mcp/idle.py`, every one of
-  the 17 tools touches it (a test pins the count against the registrations),
-  and the exit path closes any live Material Maker session before
-  `os._exit(0)`. Grayson's user-scope registration and this repo's `.mcp.json`
-  carry `120`. Built in a git worktree because this checkout was mid-edit;
-  worktree removed. Thirteen stale per-session servers were killed by hand.
+The concurrent coin-profile session's s06/t03 work merged into `main` cleanly (`abaecee`); it
+superseded this session's earlier intermediate dome-soften of s06/t03.
 
 ## 📌 Where we stopped
 
-Both picks done and pushed. Grayson's hands-on half of pick 1 (use-session
-one of the moratorium's three) has NOT happened. Nothing is in flight.
+Showcase regen fully committed (`24ff854`), gates green (README/showcase/package suites). Two
+backlog items captured for next session (reflections; self-illumination/lava — see below).
+Wrap-up in progress; `main` is 1 commit ahead of origin (the showcase commit) plus this wrap-up.
 
 ## ▶️ Next concrete step
 
-1. **Grayson: close the loop by hand.** Open `_UnityQA-Sandbox` in Unity and
-   confirm `SM_Crate_A` shows the crate material. Then open
-   `saved_graphs/crate_pine_mcp_authored.ptex` in Material Maker, edit it,
-   save as `saved_graphs/crate_pine_grayson_edit.ptex`, note what was hard to
-   read. This is use-session one of the three the moratorium asks for.
-2. **`backup-ops`: the 2026-09-05 nightly truncation is FIXED (2026-09-06).**
-   Root cause was idle-sleep mid-run, not the `git diff` `NativeCommandError`
-   (that is a handled CRLF warning the run sails past). `Backup-All.ps1` now
-   holds a `SetThreadExecutionState` wake-lock for the run. Commit `f7e809d`,
-   **push pending** (push from a terminal with the ssh-agent loaded). Watch the
-   next nightly log for the new "Wake lock acquired / released" lines.
-3. **Unreal UE5 export** (backlogged: memory pressure with a live Unreal
-   Editor + bridge; run a `stop-node-hogs` sweep first).
-4. More cookbook materials only after a consumer project asks for one.
-5. Optional: note in README/AUTHORING that `validate` now covers subgraph
-   internals (currently only in the validator and its tests).
+**Push `main`** (approval standing this session) so the showcase + rig land on origin. Then the
+two new backlog items are the natural next work:
+- Alt A: **Reflections / reflection mapping** — materials have no reflectivity/env-reflection
+  control yet. Add a reflection/metallic-reflection path (likely an ORM-metallic + environment
+  probe already partly present in the rig; expose/author it per material).
+- Alt B: **Self-illumination (emission)** — add an emissive channel and author a glowing
+  material (lava / something that emits light). The rig would need to honour an emission map.
+- Alt C: **GIF polish** — the sweep GIFs are functional; revisit palette/dither if any bands.
 
 ## ❓ Open questions
 
-- PyPI vs GitHub-clone-only (leaning GitHub-only); macOS/Linux never run.
-  release-please will open the next PR on the pushed commits.
-- NORTH_STAR treats UE4's export path as a lesser tier; never confirmed.
-- `.mcp.json` question resolved in practice: user-scope registration is the
-  wiring; `.mcp.json` stays for this repo's own dev sessions. Whether
-  `project-setup` should register MCP servers user-wide is open.
-- Two parked overlay-builder findings (2026-08-28): no rollback if `copytree`
-  fails partway; staleness check hashes only the addon.
-- README's "10 batch-mode tools" is the one count not test-enforced.
-- `m01_weathered_copper` ships without a normal map (content gap surfaced by
-  the render baseline).
+- Reflections: author per-material, or a global rig reflection strength? Where does MM's ORM
+  metallic feed the reflection today vs what needs adding?
+- Emission: does a lava material want a separate emission map output from the graph, and does
+  `render_preview`/ORMMaterial3D need an emission_texture wired?
+- Rook proportions/molding are Grayson-approved as-is; revisit only if a future eye disagrees.
 
 ## ⚠️ Heads-up for the next agent
 
-- **The 2026-09-05 nightly backup truncation is FIXED (2026-09-06).** The cause
-  was NOT the `git diff HEAD --binary` `NativeCommandError` at
-  `Backup.Common.ps1:229` (that is a benign CRLF warning already handled by the
-  EAP relax at lines 217-232). The powershell process was idle-slept mid-run
-  before the top-level `finally { Stop-Transcript }`. `Backup-All.ps1` now holds
-  a `SetThreadExecutionState(ES_SYSTEM_REQUIRED)` wake-lock for the run's
-  duration (commit `f7e809d`, push pending). The true truncation signature is a
-  missing `transcript end` footer, not the git error. A forced sleep (lid close)
-  or `StopIfGoingOnBatteries` can still truncate, far more rarely.
-- **Run quality scripts as `python -m quality.<module>` from the repo root**
-  (`pip install -e .` is a prerequisite; running from inside `quality/`
-  breaks `.env` lookup). Never launch a Godot render from `python -c`.
-  Renders are one Godot at a time.
-- **Pass `render()` an absolute `outdir`.** Godot runs with the Material Maker
-  checkout as its cwd, so a relative outdir is never found, Material Maker
-  opens its GUI instead, and the render idles to the 180 s timeout with an
-  empty log (cost two implementer runs on 2026-09-06).
-  `quality/render_tracked.py` resolves its own paths; `src/mm_mcp/render.py`
-  still accepts a relative one.
-- **Subagents lose long Godot runs.** Run `render_tracked` per category; the
-  stone and terrain compares take 6 to 9 minutes because `quality/pngread.py`
-  decodes 2048x2048 normal maps in pure Python. Tell implementers to poll the
-  output file rather than return. One re-render of an unchanged graph once
-  measured 21.89 mean abs diff and 0.0 on two reruns: a single compare
-  failure is a rerender first, a regression second.
-- **In the Git Bash tool, `taskkill /F` is rewritten to `F:/`.** Use
-  `taskkill //F //IM Godot_v4.7.1-stable_win64_console.exe` (and the GUI exe).
-- **Every Claude Code session on this machine spawns its own `mm-mcp.exe`**
-  (user-scope registration). Since `f669f8c` a server with no tool call for
-  `MM_IDLE_EXIT_MINUTES` (120 in Grayson's registration) closes its live
-  session and exits on its own. Claude Code does NOT restart an exited stdio
-  server: a tab idle for two hours loses its Material Maker tools until it
-  reconnects (`/mcp`) or the session restarts. Servers started before the
-  change keep running without the timer.
-- **Node names never affect renders** (Material Maker seeds from node
-  position), so a rename pass is render-identical by construction; add
-  materials through a builder that ends with `rename_nodes(g, {...})` after
-  grouping, and never rename a subgraph node (`mm-play` slider ids).
-- **Edit cookbook materials by changing the builder and re-promoting**, never
-  the tracked `.ptex` or the generated card table by hand;
-  `promote_cookbook --check` flags both. `--check` compares against the
-  gitignored `quality/authored/`, so regenerate the category first. Godot is
-  not byte-deterministic: do not regenerate thumbnails for a name-only change.
-- **`group_into_subgraph` fails silently on a mistyped member name.**
-- **A `blend` shows port-1 where its port-2 mask is 0 and port-0 where it is 1**;
-  put the majority layer on port-1. Opacity = amount x mask. `normal_map`
-  `param4=0` is the flat-normal fix. Voronoi output port 2 is the per-cell
-  random source.
-- **Verify metallic/roughness/AO fixes by reading the exported ORM channel**
-  (`quality/pngread.py`), not by eye.
-- **`take_variant(builder, label, keep_n)`** returns one variant and deletes
-  the files it wrote; the caller re-saves as v1.
-- **Bumping the Material Maker pin** means `MM_UPSTREAM_PIN` in
-  `src/mm_mcp/__init__.py` AND `MM_PIN` in `.github/workflows/test.yml`,
-  then the local checkout, then regenerate every category and `--check`.
-- **Stale mm-play on 8788 is a startup error with the PID.**
-- **The SPIRV `SCRIPT ERROR` at `parse_args.gd:59` prints on every successful
-  export.** Red herring.
-- **`ambientcg.com` redirected to scareware (2026-09-03).** Use Wikimedia.
-- **Donors load from `quality/donors/`** (tracked); vendor new donors there.
-- **release-please has `bump-minor-pre-major: true`**; do not remove it.
-- **`.mcp.json` and `.env` are gitignored; never echo `.env`.** The user-scope
-  registration in `~/.claude.json` carries the same paths.
-- **A second Claude session is active on this machine and its `Push-Repo`
-  runs `git add -A`.** On 2026-09-06 it swept this session's untracked
-  `_agent-commons` log into its own commit (`f94c240`, subject "vibecheck
-  s102...") and pushed it. Content is intact, but the log is not findable by
-  commit subject: search the commons by filename, not `git log --grep`. It
-  also committed a `docs:` correction (`868d16a`) to THIS file. `git fetch`
-  and re-read before editing shared files.
-- **The user-scope `mm-mcp.exe` is an EDITABLE install** (`pip show mm-mcp` ->
-  `Editable project location: C:\Projects-local\Tool-MaterialMaker-MCP`), so
-  on-disk source == what the server imports; no reinstall is ever needed for a
-  code change. Only a server process already running from BEFORE a change holds
-  stale code in memory. Fix = restart that process (idle-exit retires it, or
-  `/mcp` reconnect, or session restart), not `pip install`. Verified 2026-09-06:
-  the `577592f` subgraph-descent fix is live in the MCP `validate` tool this
-  session (probe returned `where: sub1/inner`).
+- **New tool `quality/normal_albedo_audit.py`** is the objective gate for "does relief
+  register with color": `audit_graph(ptex)["flagged"]` False = shares a source. Run
+  `python -m quality.normal_albedo_audit` for the full 71-material report. Use it to verify
+  any normal-relief fix instead of eyeballing.
+- **New tool `quality/_make_showcase.py`** regenerates hero/gallery/GIFs in one command
+  (still/hero/gif modes). Gallery still native size is 1024x576; hero is a 3-panel montage
+  (683x560 x3 = 2049x560). Use it for the pending showcase regen rather than re-doing it
+  ad-hoc.
+- **The normal/albedo bug pattern**: MM seeds voronoi from NODE POSITION, so two different
+  voronoi nodes never share a cell layout even at equal scale. A normal that must register
+  with the albedo has to derive from the SAME generator node. Granite/s04/s06/t03/pm04 are
+  the fixed examples; mirror them.
+- **The r-metric in `scratchpad/triage_normal_align.py` is CONFOUNDED**: r~0 fires both on
+  real misregistration AND on smooth-albedo materials (nothing to correlate). Judge with the
+  visual contact sheet, not the number alone.
+- **Front-page hero + `docs/images/gallery/*.png` ARE lit 3D `render_preview` renders** (now on
+  the CURRENT rook rig at per-material tile), UNLIKE the cookbook thumbnails
+  `docs/images/cookbook-*/*.png` which are flat ALBEDO downscales. Only the former need regen
+  for a lighting/rig change. Regen via `python -m quality._make_showcase still|hero|gif`.
+- **Per-material tile lives in `quality/_make_showcase._TILE_OVERRIDES`** — a material that reads
+  too small/large in the showcase gets a tile there (lower = bigger cells), not a global change.
+  The rig default is 0.45.
+- **`_rounded_box` / `_lathe` in `preview.gd` are hand-built meshes.** The lathe needs
+  UVs + `generate_tangents()` or triplanar normal-mapping renders it BLACK (no tangent basis).
+  Both are welded/manifold. Two materials had NO normal output (m01_weathered_copper,
+  combo01_rusted_painted_steel) so they can't show relief — unusable for the 3D showcase.
+- **GIF budget**: keep sweep GIFs ≤~1.5MB (they live in git forever). `cmd_gif` now quantizes to
+  a shared 128-colour palette + `optimize=True`; 448px/14f lands ~0.7–0.9MB. Eyeball glossy
+  materials for palette banding.
+- **`promote_cookbook` full-category runs churn every card's line endings (autocrlf)**;
+  `git checkout --` the unintended `.md` churn so only the changed material's files stage.
+- **A git worktree needs its own `.env`** (copy from the main checkout). Without it
+  `cfg.nodes_dir` resolves to a relative path that doesn't exist and `render_one` aborts at
+  validation with a wall of "unknown node type 'material'" — the catalog silently failed to
+  load, not a real graph error.
+- **`normal_albedo_audit` is blind to per-LAYER misregistration.** It only checks whether the
+  albedo and normal source-generator SETS are disjoint. A two-layer material whose fine relief
+  layer has no matching fine COLOUR still passes (both share the coarse voronoi). Judge fine
+  layers by eye, not the audit.
+- Standing render gotchas: one Godot at a time; `render()` needs ABSOLUTE outdir; in Git Bash
+  `taskkill //F //IM Godot_v4.7.1-stable_win64_console.exe` (double slashes) to recover a hang;
+  every session spawns its own `mm-mcp.exe`.
+- SDD ledger for this work: `.superpowers/sdd/2026-09-14-showcase-lighting-refresh/progress.md`.
 
 ## 🕓 Session log
 
-Newest first. Keep at most 8 entries; older ones are in `git log` (search the
-commit subjects, every session ends with a `docs:` wrap-up commit).
+Newest first. Keep at most 8; older ones are in `git log` (search commit subjects).
 
-### 2026-09-06 (backup-ops wake-lock, cross-project): `pickup` here, Grayson picked next-step #2. Root-caused the 09-05 nightly truncation as idle-sleep mid-run (the git `NativeCommandError` is a handled CRLF warning; true signature is a missing `transcript end` footer, not a code bug), and added a `SetThreadExecutionState` wake-lock to `backup-ops\Backup-All.ps1` (acquire in try, release in finally). Verified compile + parse; commit `f7e809d` local, PUSH PENDING (ssh-agent not loaded this session). Commons log written. No MM-MCP code changed.
-### 2026-09-06 (idle-exit watchdog): `MM_IDLE_EXIT_MINUTES` opt-in idle exit, 17/17 tools touch it, live session closed on exit; review found and fixed the two untouched tools and the atexit skip; merged `--no-ff` as `f669f8c`, suite 989; registration set to 120.
-### 2026-09-06 (validate subgraph descent + crate round-trip prep)
-- `pickup`; Grayson picked options 1 + 2 ("automate most of 1 for me").
-- Option 2 TDD: `validate_graph` recurses into subgraph nodes, inner
-  problems path-prefixed; 5 new tests; `577592f` pushed. Closes the prior
-  session's dogfooding bug.
-- Option 1: Unity crate wiring verified from disk; 3D preview rendered and
-  sent. Hand-edit left to Grayson (use-session one).
-- Full suite 993 passed / 1 flake (live-overlay test, Godot contention;
-  passes alone). A concurrent session's `Push-Repo` swept this session's
-  commons log into its `f94c240` and pushed it.
-### 2026-09-06 (teardown #5 executed): MCP user-wide, crate into the Unity sandbox, kit-map layer 4b, role-named cookbook
-- `pickup`, then `teardown` #5 from usage evidence (48 transcripts, MCP
-  registration, portfolio survey). Grayson: "1, and do 2 + 3 in the same
-  session", then "merge, push, and wrap".
-- Pick 1: user-scope registration; crate authored over MCP only; Unity/URP
-  export placed in `_UnityQA-Sandbox` (`T_` names, prefab repointed).
-  `validate` found not to check subgraph internals.
-- Pick 2: gProdDevKit layer 4b, D-KIT-9, tools.json, README (local commit).
-- Pick 3 via `writing-plans` -> `subagent-driven-development`: 12 tasks.
-  Root cause of two lost implementer runs was the plan's own relative
-  `--out` (Godot cwd); compare rewritten to cover every map the baseline
-  holds (heightmaps, m01 no normal); per-category compares as the whole-tree
-  proof. Final opus review found three ratchets (subgraph-rename guard,
-  card-table gate, the HANDOFF heads-up); all landed. Merged `dbf66fc`,
-  pushed. Suite 809 -> 964.
-### 2026-09-05 (teardown #4 executed): hygiene sweep (CI pinned to the MM sha), `quality/` packaged, Phase-3 harness archived (`6e4568f`, `c5d473c`).
-### 2026-09-05 (teardown #3 executed): examples/ folded into the cookbook (46 -> 53), mm-play port diagnostic, backup exclusions, baton diet (`87be578`, `5b93785`); v0.7.0 released.
-### 2026-09-05 (mm-play verified): Grayson ran `play.bat` hands-on; row promoted 🔌 -> ✅ (`056dcd4`).
-### 2026-09-04 (blocker correction): the "host can't render" blocker was a stale server squatting 8788, not GPU (`b016f1b`).
-### 2026-09-04 (live_load): seventh live tool, in-place graph replace; play surface pushes the picked material live (`d523ad6`).
+### 2026-09-14 (night: preview-rig overhaul + showcase recuration, committed to `main` `24ff854`)
+Long visual-iteration session, every step Grayson-approved. Rig (`preview.gd`): cube → `_rounded_box` (Minkowski box+sphere, analytic normals) + triplanar; unified ALL objects on one triplanar material (dropped per-object UV/multiplier scales); cutaway ball → chess rook via `_lathe` + `_catmull_profile` (bold molding silhouette, smooth normals, circular top, cube height). Debugged: lathe rendered black until it got UVs + `generate_tangents()` (triplanar normal-map needs a tangent basis); its outward-normal sign was inverted vs the (r,y) guess and fixed in-render. Baked default tile 1.0→0.45, then per-material `_TILE_OVERRIDES` in `_make_showcase`. Recurated the front page: browsed all 71, rendered a 12-candidate 3D contact sheet, Grayson picked 8 (cobblestone/ashlar/marble/crystal/hazard/herringbone/ice/pebbles) + hero (cobblestone/marble/crystal) + 5 GIFs. Fixed a `cmd_gif` Windows temp-cleanup crash (unclosed handle) and added GIF quantize+optimize (~0.7–0.9MB). Backlog logged: reflections/reflection-mapping + self-illumination (lava). See memory [[preview-rig-rook-and-showcase-recuration]].
+### 2026-09-14 (late evening: s06/t03 coin + grit + two-scale, committed `4b0948f`, pushed, NOT merged)
+Follow-up shape tuning after 206b730's dome-softening, all Grayson visual-approved iteration by iteration. Coin profile = `clamp(cos(port0*B)*1.5)` plateau + `smoothstep` bevel (raw clamp alone rang as washer rings — the C1 kink under param4=0 edge-detect, same family as the earlier banding; smoothstep's zero-slope endpoints kill both kinks). Grit into the normal via 0.15*perlin_grain added onto the dome height; t03 also got the albedo grain it lacked. Seam substrate = dome-masked matte grit roughness. Two-scale = a finer `voronoi_fine` with its own nestled (*0.65) coin chain, `max`-composited so small stones fill the coarse seams (tiny/medium/bigger) and s06's regular seam network breaks up; the fine layer needs its OWN per-cell colour composited by the same selection or the small stones are colourless bumps (the audit is BLIND to that — both layers share voronoi_0). Grouping cleanup: one `Stone Profile` subgraph, kept out of Relief to avoid a subgraph cycle (dome_mix reads the coarse dome AND feeds height_relief). Committed 4b0948f, pushed branch. See memory [[coin-profile-two-scale-gravel]].
+### 2026-09-14 (evening: normal/albedo audit + 5 fixes, MERGED to main)
+Started as "re-render the front-page showcase with the new lighting rig". Built `_make_showcase.py`. Granite drift-check passed, but Grayson's eye caught the normal not registering with the surface. A/B green-flip test proved it was NOT a normal-convention flip. A no-render albedo-vs-normal pixel overlay + reading the builder found the cause: normal built from a SEPARATE coarse voronoi than the fleck albedo (MM position-seeding means they can't align). Built `normal_albedo_audit.py` to size it (8/71 flagged). Fixed granite + 4 siblings (normal derives from albedo source; pm04 inverted). Grayson approved granite/pm04/s04; s06+t03 to be softened to domes next; snow/powder-coat/enamel left fine-by-design. Merged main in first (reconciling HANDOFF/STATUS vs the concurrent task_73027cd8 work), then merged to main. Backlog idea logged: a "quality ops" runner to do these multi-step flows in fewer agent tokens.
+### 2026-09-14 (task_73027cd8 compound-default fix, MERGED PR #11 `948a8e7`): `_parse_generic_node` now sources a compound param's `default` from the node's own remote/gen_parameters block, not the linked inner leaf (crystal.param0 was 4, real 16). Concurrent session.
+### 2026-09-14 (worktree hygiene, no MM-MCP code): PEB-read process scan cleared a stuck Windows worktree lock (a hung `find /` + orphaned bash wrappers).
+### 2026-09-14 (noise-vocabulary round 3 + catalog range fix, MERGED): 6 materials (cookbook 65->71), catalog_builder compound-node range fixpoint fix.
+### 2026-09-14 (preview lighting overhaul, MERGED `6ce84c6`): render_preview rig reworked (soft key shadow, shadow-casting rim, sky bounce, SSAO, precession sweep). Tracked thumbnails are flat albedo so no regen needed.
+### 2026-09-14 (pickup): ran `render_preview_sweep` for real, Grayson confirmed the GIF; promoted it ✅.

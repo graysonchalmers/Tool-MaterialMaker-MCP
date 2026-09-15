@@ -13,10 +13,11 @@ If a render doesn't match its legend, a node is miswired -- that's the whole
 point (the inverted voronoi-port-0 grain that bit the leather cookbook would
 have been obvious here on sight).
 
-Phase 2 (deferred, Grayson's "both, phased" call): turn each legend line into a
-headless pixel assertion (sample a cell center vs a border, assert the channel
-ordering) so these run as a real automated regression smoke test. Not built yet
--- see docs/DEBUG_SWATCHES.md for the intended shape.
+Phase 2 (built): pixel assertions in tests/test_debug_swatches.py render each
+swatch and assert known-answer pixels (sample a cell center vs a border, assert
+channel ordering). The swatch set covers noise-diagnostic nodes, warp/distortion
+family (warp, warp2, directional_warp, slope_blur), and the workhorses (colorize,
+normal_map, pattern).
 
 Run: python -m quality.debug_swatches
 Then: python -m quality.render_cookbook debug-swatches
@@ -314,6 +315,203 @@ def build_blend_opacity_ramp() -> str:
                          [(0.0, 0, 0, 0), (1.0, 1, 1, 1)], amount=0.5)
 
 
+# ---- 6. warp / distortion family -------------------------------------------
+# Distortion nodes are assertable because they DISPLACE a KNOWN reference
+# field. Each swatch below shares one reference: `ref_grad` is a raw 0->1
+# horizontal ramp (rotate=0, repeat=1, so it spans the full width once);
+# `ref_mask` thresholds it into a hard black-left / white-right split via
+# colorize. ref_grad is fed to the distortion node a SECOND time as its
+# control/displacement input (the height/angle map), the same "one node feeds
+# two consumers" pattern the relief family already uses for normal_map. Ports
+# were confirmed against describe_node before wiring (see task-1-report.md).
+
+_REF_SPLIT = [(0.499, 0, 0, 0), (0.5, 1, 1, 1)]
+
+
+def _ref_field():
+    """A raw 0->1 horizontal ramp (`ref_grad`) plus its hard-thresholded
+    black-left / white-right reference (`ref_mask`). ref_grad doubles as the
+    displacement/control input for the distortion node under test, so the
+    distortion has a known, constant direction instead of noise."""
+    nodes = [
+        {"name": "ref_grad", "type": "gradient", "node_position": {"x": 0, "y": 0},
+         "parameters": {"repeat": 1, "rotate": 0, "mirror": False,
+                        "gradient": _grad([(0.0, 0, 0, 0), (1.0, 1, 1, 1)])}},
+        {"name": "ref_mask", "type": "colorize", "node_position": {"x": 260, "y": 0},
+         "parameters": {"gradient": _grad(_REF_SPLIT)}},
+    ]
+    conns = [{"from": "ref_grad", "from_port": 0, "to": "ref_mask", "to_port": 0}]
+    return nodes, conns
+
+
+def build_swatch_warp() -> str:
+    """`warp` displaces `ref_mask` using the slope of `ref_grad` (mode=Slope).
+    ref_grad's slope is a constant (2*eps, 0), so the output is ref_mask
+    shifted right by exactly 2*amount*eps in x. amount=1.0, eps=0.1 gives a
+    0.2 shift: at x=0.45 (black in the undistorted reference, left of the 0.5
+    boundary), the warped output now samples x=0.65 (white), so the pixel
+    flips from black to white. That flip IS the proof of displacement."""
+    ref_nodes, ref_conns = _ref_field()
+    nodes = ref_nodes + [
+        {"name": "warp_0", "type": "warp", "node_position": {"x": 520, "y": 0},
+         "parameters": {"mode": 0, "amount": 1.0, "eps": 0.1}},
+    ]
+    conns = ref_conns + [
+        {"from": "ref_mask", "from_port": 0, "to": "warp_0", "to_port": 0},  # in# (image to distort)
+        {"from": "ref_grad", "from_port": 0, "to": "warp_0", "to_port": 1},  # d (height/displacement map)
+        {"from": "warp_0", "from_port": 0, "to": "Material", "to_port": 0},
+    ]
+    return save_variant(_graph(nodes, conns), _LABEL, "warp", 1)
+
+
+def build_swatch_warp2() -> str:
+    """`warp2` is warp's simpler sibling: no eps parameter, and its slope
+    function evaluates to an exact unit vector for a linear ramp, so the
+    shift is simply (amount, 0). amount=0.3 shifts ref_mask right by 0.3: at
+    x=0.35 (black, left of the 0.5 boundary) the output now samples x=0.65
+    (white), flipping the pixel."""
+    ref_nodes, ref_conns = _ref_field()
+    nodes = ref_nodes + [
+        {"name": "warp2_0", "type": "warp2", "node_position": {"x": 520, "y": 0},
+         "parameters": {"mode": 0, "amount": 0.3}},
+    ]
+    conns = ref_conns + [
+        {"from": "ref_mask", "from_port": 0, "to": "warp2_0", "to_port": 0},  # in (image to distort)
+        {"from": "ref_grad", "from_port": 0, "to": "warp2_0", "to_port": 1},  # d (height/displacement map)
+        {"from": "warp2_0", "from_port": 0, "to": "Material", "to_port": 0},
+    ]
+    return save_variant(_graph(nodes, conns), _LABEL, "warp2", 1)
+
+
+def build_swatch_directional_warp() -> str:
+    """`directional_warp` displaces uniformly along a fixed `angle` by a
+    constant `strength`, using its own default constant angle/strength maps
+    when those optional inputs are left unconnected (anglemap defaults to
+    1.0, strengthmap defaults to 0.0 per directional_warp.mmg) -- so only
+    `ref_mask` needs to be wired, into port 0 (in#). With angle=0 and
+    strength=1.0, the unconnected-input formula reduces to a constant -0.5
+    shift in x: at x=0.45 (black) the output now samples x=-0.05 == 0.95
+    (white), flipping the pixel."""
+    ref_nodes, ref_conns = _ref_field()
+    nodes = ref_nodes + [
+        {"name": "directional_warp_0", "type": "directional_warp",
+         "node_position": {"x": 520, "y": 0},
+         "parameters": {"angle": 0.0, "strength": 1.0}},
+    ]
+    conns = ref_conns + [
+        {"from": "ref_mask", "from_port": 0, "to": "directional_warp_0", "to_port": 0},  # in#
+        {"from": "directional_warp_0", "from_port": 0, "to": "Material", "to_port": 0},
+    ]
+    return save_variant(_graph(nodes, conns), _LABEL, "directional_warp", 1)
+
+
+def build_swatch_slope_blur() -> str:
+    """`slope_blur` smears its input along the slope of a height map, so a
+    hard edge would become a gradient ramp instead of moving intact. Feeding
+    ref_grad as the heightmap gives a constant slope everywhere (not just at
+    the boundary), so the blur would run along x across the whole image.
+
+    CONCERN (verified 2026-09-06): this swatch's .ptex is valid (validate_graph
+    reports no errors) but does NOT render in this project's headless
+    `--export-material` pipeline. slope_blur.mmg's compound graph is built
+    ENTIRELY from two `buffer`-type nodes sandwiching an edge_detect shader
+    (buffer -> edge_detect_3_3_2 -> buffer_2, no unbuffered bypass), and
+    `buffer` nodes compile a compute shader in gen_buffer.gd's `_ready()`
+    (MMShaderCompute -> compute_shader.gd -> pipeline.gd's
+    do_compile_shader). That compile fails headless with "SCRIPT ERROR:
+    Cannot call method 'shader_compile_spirv_from_source' on a null value",
+    producing an all-black render (confirmed even for a completely bare,
+    unwired slope_blur node with no reference graph at all -- not a wiring
+    mistake here). The relief swatches' `normal_map` ALSO contains an
+    internal `buffer` node and hits the exact same SCRIPT ERROR every render
+    (confirmed by direct log inspection), but normal_map has a `switch` node
+    that selects the UNBUFFERED branch at param4=0, so the failed buffer
+    output is simply never used and the relief renders fine anyway.
+    slope_blur has no such bypass, so it cannot produce any image here. This
+    reads as a genuine `buffer`/compute-shader limitation of the headless
+    export pipeline, not a defect in this swatch's wiring -- see
+    task-1-report.md for the full investigation. The builder and its .ptex
+    are still shipped (useful once/if the pipeline gap is fixed, or for
+    interactive-editor use where compute shaders do initialize), but no
+    pixel assertion is registered for it (see PIXEL_CHECKS below)."""
+    ref_nodes, ref_conns = _ref_field()
+    nodes = ref_nodes + [
+        {"name": "slope_blur_0", "type": "slope_blur",
+         "node_position": {"x": 520, "y": 0},
+         "parameters": {"param0": 10, "param1": 30}},
+    ]
+    conns = ref_conns + [
+        {"from": "ref_mask", "from_port": 0, "to": "slope_blur_0", "to_port": 0},       # in
+        {"from": "ref_grad", "from_port": 0, "to": "slope_blur_0", "to_port": 1},       # heightmap
+        {"from": "slope_blur_0", "from_port": 0, "to": "Material", "to_port": 0},
+    ]
+    return save_variant(_graph(nodes, conns), _LABEL, "slope_blur", 1)
+
+
+# ---- 7. baseline toolbox: colorize / normal_map / pattern -----------------
+# The three workhorse nodes every cookbook material uses at least once. Each
+# swatch isolates the node with a known-answer input so a wiring regression
+# is a pixel assertion, not an eyeball.
+
+def build_swatch_colorize() -> str:
+    """A raw horizontal 0->1 ramp (`ramp`, same gradient-node shape as
+    `_ref_field`'s ref_grad) fed into a `colorize` whose own gradient maps
+    0->RED, 1->BLUE. Known answer: x~0.05 (near 0 on the ramp) reads
+    red-dominant, x~0.95 (near 1) reads blue-dominant, and the midpoint reads
+    a genuine red/blue mix (proving a smooth gradient, not a hard switch)."""
+    nodes = [
+        {"name": "ramp", "type": "gradient", "node_position": {"x": 0, "y": 0},
+         "parameters": {"repeat": 1, "rotate": 0, "mirror": False,
+                        "gradient": _grad([(0.0, 0, 0, 0), (1.0, 1, 1, 1)])}},
+        {"name": "colorize_0", "type": "colorize", "node_position": {"x": 300, "y": 0},
+         "parameters": {"gradient": _grad([(0.0, 0.9, 0.1, 0.1), (1.0, 0.1, 0.1, 0.9)])}},
+    ]
+    conns = [
+        {"from": "ramp", "from_port": 0, "to": "colorize_0", "to_port": 0},
+        {"from": "colorize_0", "from_port": 0, "to": "Material", "to_port": 0},
+    ]
+    return save_variant(_graph(nodes, conns), _LABEL, "colorize", 1)
+
+
+def build_swatch_normal_map() -> str:
+    """A bumpy `perlin` field fed straight into `normal_map` with
+    `param1=0.6` (strength) and `param4=0` -- the unbuffered/flat-fix branch
+    required for `normal_map` to render at all headless (its internal
+    `buffer` node's compute-shader compile fails headless; a `switch` node
+    picks the unbuffered branch only when param4=0, see build_relief_circle's
+    docstring and task-1-report.md for the full investigation). Known
+    answer: for a bumpy input the rendered normal map must NOT be the flat-
+    normal constant (0.5, 0.5, 1.0), i.e. roughly (127, 127, 255) in 8-bit,
+    across a substantial fraction of the image. param4=1 (buffered) is the
+    exact trap this memorializes -- it renders flat."""
+    nodes = [
+        {"name": "perlin_0", "type": "perlin", "node_position": {"x": 0, "y": 0},
+         "parameters": {"scale_x": 6, "scale_y": 6, "iterations": 3, "persistence": 0.5}},
+        {"name": "normal_map_0", "type": "normal_map", "node_position": {"x": 300, "y": 0},
+         "parameters": {"param0": 11, "param1": 0.6, "param2": 0, "param4": 0}},
+    ]
+    conns = [
+        {"from": "perlin_0", "from_port": 0, "to": "normal_map_0", "to_port": 0},
+        {"from": "normal_map_0", "from_port": 0, "to": "Material", "to_port": 4},
+    ]
+    return save_variant(_graph(nodes, conns), _LABEL, "normal_map", 1)
+
+
+def build_swatch_pattern() -> str:
+    """A `pattern` node, sin*sin shape (mix=Multiply, x_wave=y_wave=Sine,
+    x_scale=y_scale=1 so exactly one period spans the whole 0->1 UV range)
+    fed straight to Material albedo. wave_sine(t) = 0.5-0.5*cos(2*pi*t) peaks
+    at t=0.5 and is 0 at t=0/1, so the two independent sine terms multiply to
+    a single bright PEAK at the center (0.5, 0.5) and a dark VALLEY at each
+    corner, sampled here at (0.05, 0.05)."""
+    nodes = [
+        {"name": "pattern_0", "type": "pattern", "node_position": {"x": 0, "y": 0},
+         "parameters": {"mix": 0, "x_wave": 0, "x_scale": 1, "y_wave": 0, "y_scale": 1}},
+    ]
+    conns = [{"from": "pattern_0", "from_port": 0, "to": "Material", "to_port": 0}]
+    return save_variant(_graph(nodes, conns), _LABEL, "pattern", 1)
+
+
 # ---- phase 2: known-answer pixel checks -----------------------------------
 # Each entry: swatch name -> (which rendered map to sample, check function). A
 # check takes a pngread.Sampler (0-255 rgb, v points down) and returns a list of
@@ -455,6 +653,97 @@ def _check_blend_opacity(s):
     return out
 
 
+def _check_displaced_to_white(white_x: float, black_x: float):
+    """Builds a check for a distortion swatch whose known displacement moves
+    the reference boundary so that a pixel black in the UNDISTORTED reference
+    (x < 0.5) reads white at sample coordinate `white_x` after the warp. A
+    pixel still reading black at `white_x` means the node did not displace
+    anything.
+
+    Also samples `black_x`, a point deep in the region the displacement does
+    NOT move into (derived from the same shift algebra as `white_x`, see each
+    builder's docstring), and asserts it stays black. Without this second
+    sample, a bug that saturated the WHOLE render white (for example an
+    unconnected input silently defaulting to a white fill) would still pass
+    the single white-pixel assertion above -- a uniform-white false pass."""
+    def check(s):
+        out = []
+        white_px = s.at(white_x, 0.5)
+        if not (white_px[0] > 140 and white_px[1] > 140 and white_px[2] > 140):
+            out.append(f"expected the displaced boundary pixel at x={white_x} "
+                       f"to read white (proving displacement), got {white_px}")
+        black_px = s.at(black_x, 0.5)
+        if not (black_px[0] < 60 and black_px[1] < 60 and black_px[2] < 60):
+            out.append(f"expected x={black_x} to remain black (ruling out a "
+                       f"uniform-white false pass), got {black_px}")
+        return out
+    return check
+
+
+# black_x for each swatch is picked deep inside the region the node's own
+# shift algebra (see each build_swatch_* docstring) proves does NOT get
+# displaced into white, well clear of both the new boundary and the ref_mask
+# anti-alias band at the original 0.499-0.5 split.
+_check_warp = _check_displaced_to_white(0.45, 0.1)            # boundary moves to x=0.3; 0.1 stays black
+_check_warp2 = _check_displaced_to_white(0.35, 0.05)           # boundary moves to x=0.2; 0.05 stays black
+_check_directional_warp = _check_displaced_to_white(0.45, 0.75)  # black region is x in [0.5, 1.0); 0.75 stays black
+
+
+def _check_colorize(s):
+    """Left (x=0.05) must be red-dominant, right (x=0.95) blue-dominant, and
+    the midpoint must be a genuine red/blue mix -- proving a smooth gradient
+    ramp drove the colorize, not a hard left/right switch."""
+    left, right, mid = s.at(0.05, 0.5), s.at(0.95, 0.5), s.at(0.5, 0.5)
+    out = []
+    if not (left[0] > 140 and left[2] < 110):
+        out.append(f"left (x=0.05) should be red-dominant (0->RED), got {left}")
+    if not (right[2] > 140 and right[0] < 110):
+        out.append(f"right (x=0.95) should be blue-dominant (1->BLUE), got {right}")
+    if left[0] <= right[0]:
+        out.append(f"polarity flip? red channel should be higher on the left: left R={left[0]} right R={right[0]}")
+    if abs(mid[0] - mid[2]) > 70:
+        out.append(f"midpoint should read a red/blue mix (linear gradient, not a switch), got {mid}")
+    return out
+
+
+def _check_normal_map_relief(s):
+    """Scans the FULL buffer (not a sparse grid, matching _check_relief_present's
+    reasoning) and asserts a substantial fraction of pixels are off the
+    flat-normal constant (~127,127,255). A flat render (the param4=1 buffered
+    trap) is uniform, so any reasonable ratio of off-neutral pixels separates
+    real perlin-driven relief from the flat fallback."""
+    buf, c = s.buf, s.c
+    total = len(buf) // c
+    off = sum(1 for i in range(0, len(buf), c)
+              if abs(buf[i] - 127) > 20 or abs(buf[i + 1] - 127) > 20)
+    if off < total * 0.08:
+        return [f"expected substantial normal-map relief for a bumpy perlin "
+                f"input, only {off}/{total} pixels off flat-normal (param4 "
+                f"buffered-flat trap?)"]
+    return []
+
+
+def _check_pattern(s):
+    """Center (0.5, 0.5) must be bright (the sin*sin peak); a corner (0.05,
+    0.05) must be dark (a sin*sin valley, both terms near zero there)."""
+    peak, valley = s.at(0.5, 0.5), s.at(0.05, 0.05)
+    out = []
+    if min(peak) < 140:
+        out.append(f"peak at (0.5, 0.5) should be bright, got {peak}")
+    if max(valley) > 90:
+        out.append(f"valley at (0.05, 0.05) should be dark, got {valley}")
+    return out
+
+
+# No _check_slope_blur / PIXEL_CHECKS entry: see build_swatch_slope_blur's
+# docstring. Its render fails headless (a `buffer`/compute-shader pipeline
+# limitation, not a wiring bug in this swatch), so an intermediate-grey
+# assertion would either always fail here for a reason unrelated to
+# correctness, or (worse) silently pass against a black image if written
+# loosely. tests/test_debug_swatches.py instead asserts the graph itself
+# validates cleanly, which is the honest, currently-provable claim.
+
+
 PIXEL_CHECKS = {
     "blend_mask_polarity": ("albedo", _check_blend_polarity),
     "blend_opacity_ramp": ("albedo", _check_blend_opacity),
@@ -468,6 +757,13 @@ PIXEL_CHECKS = {
     "relief_star": ("normal", _check_relief_present),
     "relief_rays": ("normal", _check_relief_present),
     "relief_glyph": ("normal", _check_relief_present),
+    "warp": ("albedo", _check_warp),
+    "warp2": ("albedo", _check_warp2),
+    "directional_warp": ("albedo", _check_directional_warp),
+    # "slope_blur" intentionally absent -- see build_swatch_slope_blur's docstring.
+    "colorize": ("albedo", _check_colorize),
+    "normal_map": ("normal", _check_normal_map_relief),
+    "pattern": ("albedo", _check_pattern),
 }
 
 
@@ -484,6 +780,13 @@ BUILDERS = {
     "relief_star": build_relief_star,
     "relief_rays": build_relief_rays,
     "relief_glyph": build_relief_glyph,
+    "warp": build_swatch_warp,
+    "warp2": build_swatch_warp2,
+    "directional_warp": build_swatch_directional_warp,
+    "slope_blur": build_swatch_slope_blur,
+    "colorize": build_swatch_colorize,
+    "normal_map": build_swatch_normal_map,
+    "pattern": build_swatch_pattern,
 }
 
 

@@ -1,0 +1,505 @@
+{
+ "type": "graph",
+ "name": "graph",
+ "label": "Graph",
+ "node_position": {
+  "x": 0,
+  "y": 0
+ },
+ "parameters": {},
+ "connections": [
+  {
+   "from": "conduit_pattern",
+   "from_port": 2,
+   "to": "Material",
+   "to_port": 0
+  },
+  {
+   "from": "conduit_pattern",
+   "from_port": 0,
+   "to": "surface_finish",
+   "to_port": 0
+  },
+  {
+   "from": "conduit_pattern",
+   "from_port": 1,
+   "to": "surface_finish",
+   "to_port": 1
+  },
+  {
+   "from": "surface_finish",
+   "from_port": 0,
+   "to": "Material",
+   "to_port": 2
+  },
+  {
+   "from": "surface_finish",
+   "from_port": 1,
+   "to": "Material",
+   "to_port": 4
+  }
+ ],
+ "nodes": [
+  {
+   "name": "Material",
+   "type": "material",
+   "node_position": {
+    "x": 0,
+    "y": 0
+   },
+   "parameters": {
+    "metallic": 0.6
+   }
+  },
+  {
+   "name": "conduit_pattern",
+   "label": "Conduit Pattern",
+   "type": "graph",
+   "node_position": {
+    "x": 0.0,
+    "y": 0.0
+   },
+   "parameters": {
+    "param0": 4,
+    "param1": {
+     "interpolation": 1,
+     "points": [
+      {
+       "a": 1,
+       "r": 0.05,
+       "g": 0.06,
+       "b": 0.07,
+       "pos": 0.0
+      },
+      {
+       "a": 1,
+       "r": 0.05,
+       "g": 0.06,
+       "b": 0.07,
+       "pos": 0.68
+      },
+      {
+       "a": 1,
+       "r": 0.62,
+       "g": 0.42,
+       "b": 0.22,
+       "pos": 0.72
+      },
+      {
+       "a": 1,
+       "r": 0.66,
+       "g": 0.46,
+       "b": 0.24,
+       "pos": 1.0
+      }
+     ],
+     "type": "Gradient"
+    }
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": -400.0,
+      "y": 0.0
+     },
+     "parameters": {},
+     "ports": [],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 400.0,
+      "y": 0.0
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "out0",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "out1",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "out2",
+       "type": "rgba",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -400.0,
+      "y": 200.0
+     },
+     "parameters": {
+      "param0": 4,
+      "param1": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0.05,
+         "g": 0.06,
+         "b": 0.07,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.05,
+         "g": 0.06,
+         "b": 0.07,
+         "pos": 0.68
+        },
+        {
+         "a": 1,
+         "r": 0.62,
+         "g": 0.42,
+         "b": 0.22,
+         "pos": 0.72
+        },
+        {
+         "a": 1,
+         "r": 0.66,
+         "g": 0.46,
+         "b": 0.24,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      }
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Conduit density",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "ConduitLayout",
+         "widget": "size"
+        }
+       ]
+      },
+      {
+       "name": "param1",
+       "shortdesc": "Conduit color",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "ConduitColor",
+         "widget": "gradient"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "ConduitLayout",
+     "type": "truchet",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "shape": 1,
+      "size": 4
+     }
+    },
+    {
+     "name": "ConduitColor",
+     "type": "colorize",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0.05,
+         "g": 0.06,
+         "b": 0.07,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.05,
+         "g": 0.06,
+         "b": 0.07,
+         "pos": 0.68
+        },
+        {
+         "a": 1,
+         "r": 0.62,
+         "g": 0.42,
+         "b": 0.22,
+         "pos": 0.72
+        },
+        {
+         "a": 1,
+         "r": 0.66,
+         "g": 0.46,
+         "b": 0.24,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      }
+     }
+    }
+   ],
+   "connections": [
+    {
+     "from": "ConduitLayout",
+     "from_port": 0,
+     "to": "ConduitColor",
+     "to_port": 0
+    },
+    {
+     "from": "ConduitLayout",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    },
+    {
+     "from": "ConduitLayout",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 1
+    },
+    {
+     "from": "ConduitColor",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 2
+    }
+   ]
+  },
+  {
+   "name": "surface_finish",
+   "label": "Surface Finish",
+   "type": "graph",
+   "node_position": {
+    "x": 0.0,
+    "y": 0.0
+   },
+   "parameters": {
+    "param0": {
+     "interpolation": 1,
+     "points": [
+      {
+       "a": 1,
+       "r": 0.6,
+       "g": 0.6,
+       "b": 0.6,
+       "pos": 0.0
+      },
+      {
+       "a": 1,
+       "r": 0.3,
+       "g": 0.3,
+       "b": 0.3,
+       "pos": 1.0
+      }
+     ],
+     "type": "Gradient"
+    },
+    "param1": 0.9
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": -400.0,
+      "y": 0.0
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "in0",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "in1",
+       "type": "f",
+       "group_size": 0
+      }
+     ],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 400.0,
+      "y": 0.0
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "out0",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "out1",
+       "type": "rgb",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -400.0,
+      "y": 200.0
+     },
+     "parameters": {
+      "param0": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0.6,
+         "g": 0.6,
+         "b": 0.6,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.3,
+         "g": 0.3,
+         "b": 0.3,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      },
+      "param1": 0.9
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Surface sheen",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "PanelRoughness",
+         "widget": "gradient"
+        }
+       ]
+      },
+      {
+       "name": "param1",
+       "shortdesc": "Relief strength",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "ConduitNormal",
+         "widget": "param1"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "PanelRoughness",
+     "type": "colorize",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0.6,
+         "g": 0.6,
+         "b": 0.6,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.3,
+         "g": 0.3,
+         "b": 0.3,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      }
+     }
+    },
+    {
+     "name": "ConduitNormal",
+     "type": "normal_map",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "param0": 10,
+      "param1": 0.9,
+      "param2": 0,
+      "param4": 0
+     }
+    }
+   ],
+   "connections": [
+    {
+     "from": "gen_inputs",
+     "from_port": 0,
+     "to": "PanelRoughness",
+     "to_port": 0
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 1,
+     "to": "ConduitNormal",
+     "to_port": 0
+    },
+    {
+     "from": "PanelRoughness",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    },
+    {
+     "from": "ConduitNormal",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 1
+    }
+   ]
+  }
+ ]
+}

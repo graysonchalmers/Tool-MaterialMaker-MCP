@@ -12,8 +12,8 @@ Then `python -m quality.render_cookbook` renders each variant for inspection.
 import sys
 
 from quality.author_helpers import (load_example, set_gradient, set_param, save_variant,
-                             add_node, rewire, _grad, group_into_subgraph,
-                             take_variant, rename_nodes)
+                             add_node, rewire, drop_conn, retype, node, _grad,
+                             group_into_subgraph, take_variant, rename_nodes)
 from quality import author  # shared builder base; regression guard is promote_cookbook --check
 
 from mm_mcp.catalog_builder import build_catalog
@@ -118,15 +118,22 @@ def build_s04_scattered_river_stones(catalog: dict) -> str:
     gradient -- softer/lighter than s06's darker slate-to-brown spread, per
     "softer." Sand fills the gaps with perlin-driven warm tan variation.
     Normal relief kept gentle (`param1` ~0.35, lower than s06's 0.6) for
-    smooth, water-worn stones rather than s06's more pronounced bulge."""
+    smooth, water-worn stones rather than s06's more pronounced bulge.
+
+    2026-09-14 normal/albedo alignment fix (mirrors s02 granite / s06): the
+    normal now derives from the SAME voronoi_0 (port 1, the `.w` distance
+    field rock's donor already routed to its normal chain) instead of a
+    separate voronoi_1/perlin_1/warp_0 relief chain. Material Maker seeds
+    voronoi from node position, so two voronoi nodes never share a cell layout
+    even at matching scale -- the old chain bumped nowhere near the stones.
+    Switching the generator (not the port/polarity) keeps the rounded bulge
+    but now on the same cells the mask carves into stone-vs-sand. Look note:
+    dropping warp_0 makes the stone silhouettes cleanly voronoi-geometric (the
+    water-worn edge distortion is gone)."""
     g = load_example("rock")
     set_param(g, "voronoi_0", "scale_x", 9)
     set_param(g, "voronoi_0", "scale_y", 9)
     set_param(g, "voronoi_0", "randomness", 1)
-    set_param(g, "voronoi_1", "scale_x", 9)
-    set_param(g, "voronoi_1", "scale_y", 9)
-    set_param(g, "voronoi_1", "randomness", 1)
-    set_param(g, "voronoi_1", "intensity", 1)
 
     # stone-vs-sand mask straight from the distance field, thresholded hard.
     # voronoi_0 port0 is F1 (distance to nearest seed): LOW at cell centers,
@@ -172,7 +179,14 @@ def build_s04_scattered_river_stones(catalog: dict) -> str:
     rewire(g, "Material", 0, "blend_stones", 0)
     rewire(g, "Material", 2, "blend_rgh", 0)
     set_gradient(g, "colorize_1", [(0.0, 0, 0, 0), (1.0, 0, 0, 0)])   # non-metal
-    set_param(g, "warp_0", "amount", 0.12)
+    # normal from voronoi_0 port 1 (same generator as the mask/stone albedo)
+    # so the bulge sits on the stones; the old separate voronoi_1/perlin_1/
+    # warp_0 relief chain is dead -- drop its connections and remove it.
+    rewire(g, "normal_map_0", 0, "voronoi_0", 1)
+    drop_conn(g, "warp_0", 0)
+    drop_conn(g, "warp_0", 1)
+    g["nodes"] = [n for n in g["nodes"]
+                  if n["name"] not in ("voronoi_1", "perlin_1", "warp_0")]
     set_param(g, "normal_map_0", "param4", 0)
     set_param(g, "normal_map_0", "param1", 0.35)   # gentler bulge than s06's 0.6
 
@@ -197,7 +211,11 @@ def build_s04_scattered_river_stones(catalog: dict) -> str:
                          [("colorize_rgh_stone", "gradient", "param0", "Stone roughness"),
                           ("colorize_rgh_sand", "gradient", "param1", "Sand roughness")],
                          catalog)
-    group_into_subgraph(g, ["perlin_1", "voronoi_1", "warp_0", "normal_map_0"],
+    # relief now derives from voronoi_0 (inside mask_pattern, grouped first):
+    # normal_map_0 is the only member, group_into_subgraph auto-creates a
+    # gen_inputs port fed by mask_pattern's extra output (granite's
+    # multi-consumer boundary mechanism).
+    group_into_subgraph(g, ["normal_map_0"],
                          "relief", "Relief",
                          [("normal_map_0", "param1", "param0", "Relief strength")],
                          catalog)
@@ -215,9 +233,6 @@ def build_s04_scattered_river_stones(catalog: dict) -> str:
         "colorize_rgh_sand": "SandRoughness",
         "colorize_rgh_stone": "StoneRoughness",
         "blend_rgh": "RoughnessComposite",
-        "perlin_1": "ReliefWarpNoise",
-        "voronoi_1": "ReliefCells",
-        "warp_0": "ContactWarp",
         "normal_map_0": "PebbleNormal",
     })
     return save_variant(g, _LABEL, "s04_scattered_river_stones", 1)
@@ -333,50 +348,146 @@ def build_s06_river_pebbles(catalog: dict) -> str:
     """Natural river stones / pebbles: rounded, tightly-packed smooth stones
     in varied natural tones, the organic counterpart to s05's regular hex
     tile. CLONE `rock` (same donor as s02 granite -- it already has a voronoi
-    albedo chain AND a working voronoi->warp->normal_map relief chain), but
-    tune for BIG rounded cells instead of granite's fine flecks:
+    albedo chain), but tune for BIG rounded cells instead of granite's fine
+    flecks:
 
-    - voronoi_0/voronoi_1 scale dropped to ~7 (big pebble-sized cells, vs
-      granite's 40+ fine flecks). A voronoi distance field bulges high at
-      cell centers and drops to a crevice at borders, so at this scale each
-      cell reads as one rounded stone with a dark gap around it.
+    - voronoi_0 scale dropped to ~7 (big pebble-sized cells, vs granite's 40+
+      fine flecks). A voronoi distance field bulges high at cell centers and
+      drops to a crevice at borders, so at this scale each cell reads as one
+      rounded stone with a dark gap around it.
     - albedo fed from voronoi_0 PORT 2 (rand3 per-cell random) through a
       multi-tone natural-stone gradient, so each pebble is a genuinely
       different tone (gray, tan, brown, slate) rather than one flat color --
       the same per-cell-random lever s02 granite v2 and s05 hex tile use.
-    - normal strength raised (param1 ~0.6, param4=0 for the directly-fed
-      analytic source) so the pebbles visibly bulge, not the near-flat
-      relief granite/concrete want.
+    - normal fed from the SAME voronoi_0 (port 1, the `.w` distance field that
+      rock's donor already routed to its normal chain), so the relief bulge
+      lands on the very cells the albedo colors instead of a disjoint second
+      voronoi. This is the 2026-09-14 normal/albedo alignment fix (mirrors the
+      s02 granite root-cause fix): because Material Maker seeds voronoi from
+      node position, two different voronoi nodes never share a cell layout
+      even at matching scale, so the old separate voronoi_1/perlin_1/warp_0
+      relief chain bumped nowhere near the pebble colors. Switching the
+      generator (not the port or polarity) keeps rock's proven rounded-bulge
+      relief but now co-located with the color. param1 ~0.6 / param4=0 for a
+      pronounced directly-fed analytic bulge (controller-tunable).
     - a fine perlin grain multiplied over albedo for per-stone surface
       texture, same detail lever added to s05 after Grayson's "needs another
       level of detail" note -- a smooth pebble still has fine mineral grain.
     Non-metal, moderate roughness (wet-looking river stone is a touch
-    glossier than dry fieldstone, kept mid-range)."""
+    glossier than dry fieldstone, kept mid-range).
+
+    Look note: dropping warp_0 makes the pebble silhouettes cleanly
+    voronoi-geometric -- the water-worn organic edge distortion the separate
+    warped relief used to add is gone; re-add a voronoi_0-fed warp if a softer
+    edge is wanted."""
     g = load_example("rock")
-    # big pebble-sized cells on both the albedo and the normal voronoi
+    # big pebble-sized cells (albedo AND normal now share this one voronoi)
     set_param(g, "voronoi_0", "scale_x", 7)
     set_param(g, "voronoi_0", "scale_y", 7)
     set_param(g, "voronoi_0", "randomness", 1)
-    set_param(g, "voronoi_1", "scale_x", 7)
-    set_param(g, "voronoi_1", "scale_y", 7)
-    set_param(g, "voronoi_1", "randomness", 1)
-    set_param(g, "voronoi_1", "intensity", 1)
     # albedo <- per-cell random -> varied natural stone tones per pebble
     rewire(g, "colorize_0", 0, "voronoi_0", 2)
-    set_gradient(g, "colorize_0", [
+    _pebble_grad = [
         (0.0, 0.18, 0.17, 0.16),    # dark slate pebble
         (0.28, 0.34, 0.30, 0.26),   # brown-gray
         (0.52, 0.52, 0.48, 0.42),   # warm tan
         (0.74, 0.44, 0.45, 0.47),   # cool blue-gray
         (1.0, 0.30, 0.27, 0.24),    # dark brown
-    ])
+    ]
+    set_gradient(g, "colorize_0", _pebble_grad)
     set_gradient(g, "colorize_1", [(0.0, 0, 0, 0), (1.0, 0, 0, 0)])   # non-metal
     set_gradient(g, "colorize_2", [            # mid roughness, faint wet sheen
         (0.0, 0.42, 0.42, 0.42), (1.0, 0.60, 0.60, 0.60)])
-    # pronounced rounded pebble relief (directly-fed analytic -> param4=0)
-    set_param(g, "warp_0", "amount", 0.2)
+    # pronounced rounded pebble relief (directly-fed analytic -> param4=0),
+    # derived from voronoi_0 (same generator as the albedo) so the bulge
+    # registers with the color. DOME FIX (2026-09-14): feed the normal from
+    # voronoi_0 PORT 0 (.z, distance-to-cell-center: smooth, radial around each
+    # seed) through a REVERSED height ramp, NOT port 1 (.w, distance-to-borders,
+    # which peaks along each cell's medial axis -> a sharp crease that reads
+    # faceted). Reversed ramp: centers (low port0) -> high ground, borders (high
+    # port0) -> recessed seam. This is the Grayson-approved _dome_the_cells
+    # recipe from the leather cookbook. The old separate voronoi_1/perlin_1/
+    # warp_0 relief chain is dead -- drop its connections and remove it.
+    # CONVEX dome profile (h ~= sqrt(1-(r/0.618)^2), a spherical cap): FLAT at
+    # the apex (low port0) so the normal points straight up at the top, then
+    # steepening toward the seam. A straight ramp would make port0's LINEAR
+    # distance field a CONE -- constant slope to a singular point at the tip
+    # (the "point in the middle" Grayson caught). Holding the top flat rounds it.
+    # Smooth ANALYTIC dome via a single math node, NOT a stepped colorize: a
+    # colorize gradient has a control point at every stop, and the analytic
+    # normal (param4=0) turns each into a concentric contour RING on the
+    # near-flat apex (the "banding" Grayson caught). cos(port0*B) is one smooth
+    # expression -> zero control points -> zero rings. cos=1 at the cell center
+    # (A=0, apex) curving to ~0 at the border (A~0.6, B=2.6 -> cos(~1.57)~0 =
+    # recessed seam); the zero slope at A=0 rounds the top (no cone point).
+    add_node(g, "dome_curve", "math",
+             {"op": 16, "default_in2": 2.6, "clamp": True})   # 16 = cos(A*B)
+    # COIN PROFILE (2026-09-14 pass 2): flatten the smooth bell into a flat-topped
+    # coin -- a flat plateau on top with a small beveled edge dropping to the seam,
+    # not a full round dome. cos alone bells the whole cell; multiply it up (k>1)
+    # and clamp to [0,1] so the center region saturates flat (plateau) and only the
+    # outer radius still curves down (the bevel). Still ANALYTIC -- one A*B node, no
+    # colorize control points -> none of the concentric-ring banding the stepped
+    # gradient rang with under the param4=0 normal. k (default_in2) widens the
+    # plateau / steepens the bevel; tune visually.
+    add_node(g, "dome_flatten", "math",
+             {"op": 2, "default_in2": 1.5, "clamp": True})   # 2 = A*B, clamp [0,1]
+    # The hard clamp leaves a C1 kink at the plateau rim AND at the zero floor;
+    # under the param4=0 edge-detect normal each kink rang as a concentric ring
+    # (a raised washer, not a coin -- pass-2a render caught it). smoothstep has
+    # zero slope at both 0 and 1, so composing it over the clamp removes both
+    # kinks at once: the plateau stays flat, the bevel becomes a rounded S, the
+    # floor stays flat -- a coin, no rings.
+    add_node(g, "dome_smooth", "math", {"op": 20, "clamp": True})   # 20 = smoothstep(0,1,A)
+    g["connections"] += [
+        {"from": "voronoi_0", "from_port": 0, "to": "dome_curve", "to_port": 0},
+        {"from": "dome_curve", "from_port": 0, "to": "dome_flatten", "to_port": 0},
+        {"from": "dome_flatten", "from_port": 0, "to": "dome_smooth", "to_port": 0},
+    ]
+    rewire(g, "normal_map_0", 0, "dome_smooth", 0)
+    drop_conn(g, "warp_0", 0)
+    drop_conn(g, "warp_0", 1)
+    g["nodes"] = [n for n in g["nodes"]
+                  if n["name"] not in ("voronoi_1", "perlin_1", "warp_0")]
     set_param(g, "normal_map_0", "param4", 0)
     set_param(g, "normal_map_0", "param1", 0.6)
+    # TWO-SCALE MIX (2026-09-14 pass 3b, Grayson: "tiny gravel + medium + slightly
+    # bigger", and s06 still read a regular seam network he wants gone). Add a
+    # SECOND finer voronoi with its own identical coin chain, nestle it lower
+    # (*0.65) so the small stones sit BELOW the big ones, and take the MAX of the
+    # two dome fields: big stones keep full height, small stones fill only the big
+    # ones' seams (max, not add -- add would mush the seams and flatten the coin).
+    # Filling the coarse seams with small stones is what breaks the regular seam
+    # network (t03 already reads seamless because its cells are small vs the gap).
+    # REGISTRATION: the albedo MUST get a matching fine layer or every small stone
+    # is a colorless bump inheriting the big cell's tone (the audit is blind to
+    # this -- both layers still share voronoi_0). So colorize_fine reads
+    # voronoi_fine port2 with the same palette, composited by the SAME selection
+    # (fine wins where its nestled dome beats the coarse one) that max uses.
+    add_node(g, "voronoi_fine", "voronoi",
+             {"scale_x": 18, "scale_y": 18, "randomness": 1})
+    add_node(g, "dome_curve_f", "math", {"op": 16, "default_in2": 2.6, "clamp": True})
+    add_node(g, "dome_flatten_f", "math", {"op": 2, "default_in2": 1.5, "clamp": True})
+    add_node(g, "dome_smooth_f", "math", {"op": 20, "clamp": True})
+    add_node(g, "dome_fine_low", "math", {"op": 2, "default_in2": 0.65})   # nestle lower
+    add_node(g, "dome_mix", "math", {"op": 14})                            # 14 = max(coarse, fine)
+    add_node(g, "sel_fine", "math", {"op": 15})                           # 15 = A<B (coarse < fine)
+    add_node(g, "colorize_fine", "colorize", {"gradient": _grad(_pebble_grad)})
+    add_node(g, "blend_layer_color", "blend", {"blend_type": 0, "amount": 1})
+    g["connections"] += [
+        {"from": "voronoi_fine", "from_port": 0, "to": "dome_curve_f", "to_port": 0},
+        {"from": "dome_curve_f", "from_port": 0, "to": "dome_flatten_f", "to_port": 0},
+        {"from": "dome_flatten_f", "from_port": 0, "to": "dome_smooth_f", "to_port": 0},
+        {"from": "dome_smooth_f", "from_port": 0, "to": "dome_fine_low", "to_port": 0},
+        {"from": "dome_smooth", "from_port": 0, "to": "dome_mix", "to_port": 0},
+        {"from": "dome_fine_low", "from_port": 0, "to": "dome_mix", "to_port": 1},
+        {"from": "dome_smooth", "from_port": 0, "to": "sel_fine", "to_port": 0},
+        {"from": "dome_fine_low", "from_port": 0, "to": "sel_fine", "to_port": 1},
+        {"from": "voronoi_fine", "from_port": 2, "to": "colorize_fine", "to_port": 0},
+        {"from": "colorize_0", "from_port": 0, "to": "blend_layer_color", "to_port": 1},
+        {"from": "colorize_fine", "from_port": 0, "to": "blend_layer_color", "to_port": 0},
+        {"from": "sel_fine", "from_port": 0, "to": "blend_layer_color", "to_port": 2},
+    ]
     # fine per-stone surface grain, multiplied over the albedo (no mask, so
     # the unconnected opacity port defaults to a uniform 1.0 -- same detail
     # lever as s05, no threshold/speckle risk)
@@ -386,10 +497,40 @@ def build_s06_river_pebbles(catalog: dict) -> str:
     add_node(g, "blend_grain", "blend", {"blend_type": 2, "amount": 1})   # Multiply
     g["connections"] += [
         {"from": "perlin_grain", "from_port": 0, "to": "colorize_grain", "to_port": 0},
-        {"from": "colorize_0", "from_port": 0, "to": "blend_grain", "to_port": 0},
+        {"from": "blend_layer_color", "from_port": 0, "to": "blend_grain", "to_port": 0},
         {"from": "colorize_grain", "from_port": 0, "to": "blend_grain", "to_port": 1},
     ]
-    rewire(g, "Material", 0, "blend_grain", 0)   # albedo <- grain-multiplied pebbles
+    rewire(g, "Material", 0, "blend_grain", 0)   # albedo <- grain over two-scale pebbles
+    # NOTE 3 (2026-09-14 pass 3a) -- micro-relief + seam substrate.
+    # (a) fine surface grain into the NORMAL, not just the albedo: add a small
+    # fraction of the SAME perlin_grain height onto the dome before edge-detect,
+    # so each stone carries fine mineral grit relief co-located with its albedo
+    # grain. Weight low so the coin profile still dominates the read.
+    add_node(g, "grain_scaled", "math", {"op": 2, "default_in2": 0.15})   # perlin_grain * w
+    add_node(g, "height_relief", "math", {"op": 0})                       # 0 = A+B: dome + grain
+    g["connections"] += [
+        {"from": "perlin_grain", "from_port": 0, "to": "grain_scaled", "to_port": 0},
+        {"from": "dome_mix", "from_port": 0, "to": "height_relief", "to_port": 0},
+        {"from": "grain_scaled", "from_port": 0, "to": "height_relief", "to_port": 1},
+    ]
+    rewire(g, "normal_map_0", 0, "height_relief", 0)
+    # (b) recessed seams are a DISTINCT material, not just a dark gradient: the
+    # dome field (1 on stone tops, 0 in the seams) masks a rougher matte grit into
+    # the seams while the raised stones keep their wetter sheen. blend Normal =
+    # mix(port1, port0, mask): dome=1 (top) shows port0 (colorize_2, the stone
+    # roughness), dome=0 (seam) shows port1 (the rough grit). perlin_0 feeds the
+    # seam colorize so the grit is not a flat value.
+    add_node(g, "colorize_rough_seam", "colorize",
+             {"gradient": _grad([(0.0, 0.86, 0.86, 0.86), (1.0, 0.93, 0.93, 0.93)])})
+    add_node(g, "blend_rough", "blend", {"blend_type": 0, "amount": 1})
+    g["connections"] += [
+        {"from": "perlin_0", "from_port": 0, "to": "colorize_rough_seam", "to_port": 0},
+        {"from": "colorize_2", "from_port": 0, "to": "blend_rough", "to_port": 0},
+        {"from": "colorize_rough_seam", "from_port": 0, "to": "blend_rough", "to_port": 1},
+        {"from": "dome_mix", "from_port": 0, "to": "blend_rough", "to_port": 2},
+    ]
+    rewire(g, "Material", 2, "blend_rough", 0)   # roughness <- seam-masked top/grit split
+                                                 # (dome_mix: both stone sizes count as top)
 
     # Subgraph grouping. blend_0 (rock donor's original albedo composite,
     # voronoi_0 ports 0/1 + perlin_0 mask) was orphaned by the rewire above
@@ -402,16 +543,37 @@ def build_s06_river_pebbles(catalog: dict) -> str:
                          [("voronoi_0", "scale_x", "param0", "Pebble size"),
                           ("colorize_0", "gradient", "param1", "Pebble color")],
                          catalog)
+    # Two-scale profile: both coin chains (big + nestled small), the max/select
+    # mix, and the small-stone colour composite in one group. Consumes voronoi_0
+    # + colorize_0 from Pebble Pattern (grouped first) and outputs the mixed
+    # height (StoneHeightMix -> relief + seam roughness) and mixed colour
+    # (StoneColorMix -> surface grain). One-directional (pattern -> profile ->
+    # relief/finish/grain), so no subgraph cycle.
+    group_into_subgraph(g, ["dome_curve", "dome_flatten", "dome_smooth",
+                             "voronoi_fine", "dome_curve_f", "dome_flatten_f",
+                             "dome_smooth_f", "dome_fine_low", "dome_mix",
+                             "sel_fine", "colorize_fine", "blend_layer_color"],
+                         "stone_profile", "Stone Profile",
+                         [("voronoi_fine", "scale_x", "param0", "Small stone size"),
+                          ("dome_fine_low", "default_in2", "param1", "Small stone height"),
+                          ("dome_flatten", "default_in2", "param2", "Top flatness")],
+                         catalog)
     group_into_subgraph(g, ["perlin_grain", "colorize_grain", "blend_grain"],
                          "surface_grain", "Surface Grain",
                          [("perlin_grain", "scale_x", "param0", "Grain scale"),
                           ("perlin_grain", "iterations", "param1", "Grain detail")],
                          catalog)
-    group_into_subgraph(g, ["colorize_1", "colorize_2", "perlin_0"],
+    group_into_subgraph(g, ["colorize_1", "colorize_2", "perlin_0",
+                             "colorize_rough_seam", "blend_rough"],
                          "material_finish", "Material Finish",
-                         [("colorize_2", "gradient", "param0", "Roughness")],
+                         [("colorize_2", "gradient", "param0", "Stone roughness"),
+                          ("colorize_rough_seam", "gradient", "param1", "Seam roughness")],
                          catalog)
-    group_into_subgraph(g, ["perlin_1", "voronoi_1", "warp_0", "normal_map_0"],
+    # relief holds the grain-into-normal math + normal_map_0. It consumes
+    # StoneHeightMix from Stone Profile (grouped above), so the dome apparatus
+    # is NOT in relief -- that would make dome_mix (feeding height_relief) a
+    # back-edge into relief and a subgraph cycle.
+    group_into_subgraph(g, ["grain_scaled", "height_relief", "normal_map_0"],
                          "relief", "Relief",
                          [("normal_map_0", "param1", "param0", "Relief strength")],
                          catalog)
@@ -425,9 +587,22 @@ def build_s06_river_pebbles(catalog: dict) -> str:
         "perlin_grain": "GrainNoise",
         "colorize_grain": "GrainContrast",
         "blend_grain": "GrainOverPebbles",
-        "perlin_1": "ReliefWarpNoise",
-        "voronoi_1": "ReliefCells",
-        "warp_0": "ContactWarp",
+        "colorize_rough_seam": "SeamRoughness",
+        "blend_rough": "RoughnessComposite",
+        "dome_curve": "BigDomeCurve",
+        "dome_flatten": "BigDomeFlatten",
+        "dome_smooth": "BigDomeSmooth",
+        "voronoi_fine": "SmallStoneCells",
+        "dome_curve_f": "SmallDomeCurve",
+        "dome_flatten_f": "SmallDomeFlatten",
+        "dome_smooth_f": "SmallDomeSmooth",
+        "dome_fine_low": "SmallStoneHeight",
+        "dome_mix": "StoneHeightMix",
+        "sel_fine": "SmallStoneMask",
+        "colorize_fine": "SmallStoneColor",
+        "blend_layer_color": "StoneColorMix",
+        "grain_scaled": "GrainHeight",
+        "height_relief": "ReliefHeight",
         "normal_map_0": "PebbleNormal",
     })
     return save_variant(g, _LABEL, "s06_river_pebbles", 1)
@@ -787,9 +962,20 @@ def build_s02_gray_granite(catalog: dict) -> str:
     at a fine cell scale, so each cell is a flat random gray fleck, with the
     normal_map param4=0 fix for real polished-stone micro-relief. This
     builder only GROUPS it: three named subgraphs so a person opening it sees
-    fleck color, surface finish, and relief instead of 11 raw nodes.
+    fleck color, surface finish, and relief instead of 8 raw nodes.
     perlin_0 stays top-level because it feeds both the color group (blend_0)
-    and the finish group (colorize_1, colorize_2)."""
+    and the finish group (colorize_1, colorize_2).
+
+    2026-09-14 normal/albedo alignment fix (see author.py's docstring for the
+    root cause): the normal now derives from voronoi_0 port 2 too -- the same
+    per-cell random already driving FleckColor -- instead of a separate
+    relief voronoi that could never share its cell layout. voronoi_0 stays
+    INSIDE fleck_color (group_into_subgraph auto-creates a second gen_outputs
+    port for its second external consumer, the same mechanism that already
+    lets it feed both blend_0 internally and normal_map_0 externally), so
+    fleck_color now has two outputs: FleckColor's albedo and the raw per-cell
+    random feeding stone_relief. stone_relief shrinks to just normal_map_0
+    (voronoi_1/perlin_1/warp_0 no longer exist, see author.py)."""
     g = take_variant(author.build_s02_gray_granite, _LABEL, 2)
     group_into_subgraph(
         g, ["voronoi_0", "blend_0", "colorize_0"],
@@ -805,10 +991,9 @@ def build_s02_gray_granite(catalog: dict) -> str:
         catalog,
     )
     group_into_subgraph(
-        g, ["voronoi_1", "perlin_1", "warp_0", "normal_map_0"],
+        g, ["normal_map_0"],
         "stone_relief", "Stone Relief",
-        [("voronoi_1", "scale_x", "param0", "Relief cell size"),
-         ("normal_map_0", "param1", "param1", "Relief strength")],
+        [("normal_map_0", "param1", "param1", "Relief strength")],
         catalog,
     )
     rename_nodes(g, {
@@ -817,13 +1002,341 @@ def build_s02_gray_granite(catalog: dict) -> str:
         "colorize_0": "FleckColor",
         "colorize_1": "NonMetallic",
         "colorize_2": "PolishRoughness",
-        "voronoi_1": "ReliefCells",
-        "perlin_1": "ReliefWarpNoise",
-        "warp_0": "ReliefWarp",
         "normal_map_0": "GraniteNormal",
         "perlin_0": "SurfaceNoise",
     })
     return save_variant(g, _LABEL, "s02_gray_granite", 1)
+
+
+def build_s13_polished_marble(catalog: dict) -> str:
+    """Polished Carrara-style marble, MOVED IN from the terrain category
+    (was `t09_marbled_silt`, quality/cookbook_terrain.py). Grayson's verdict
+    on that material's render: the fbm-turbulence swirl reads as marble, so
+    embrace it -- keep the exact same base (`crocodile_skin` donor, `voronoi_0`
+    retyped to `fbm` with a Perlin+folds turbulence basis) and rework it into
+    a proper polished stone: classic white/gray Carrara palette, low glossy
+    roughness, zero metallic, and a near-flat relief, instead of terrain's
+    warm tan/sand "dried mineral wash" read.
+
+    This is deliberately a DIFFERENT technique from `s11_marble` (which warps
+    `dry_earth`'s voronoi crack network hard, per that builder's docstring,
+    "the flow IS the look"). s11's veins come from a distance-field crack
+    network pushed through heavy warp; s13's veins come from a folded fbm
+    turbulence field with no voronoi cells anywhere in the graph. Keeping
+    both gives the stone category two structurally distinct marble recipes,
+    which is the point of preserving this fbm-turbulence proof rather than
+    discarding it once the terrain slot moved on.
+
+    Changes from `t09_marbled_silt`, all pointed at "polished stone" rather
+    than "dry ground":
+
+    - **Vein-retune fix (this pass)**: Grayson's verdict on the first stone
+      render was TERRAZZO/speckled granite, not flowing Carrara veins. Root
+      cause 1: `scale_x`/`scale_y` at 3 still made many small folded features
+      per unit surface, not a handful of large meandering ones -- dropped to
+      1.8 (a smaller MM scale number means larger features) so only a few
+      major ridges span the sphere. `folds` bumped 2 -> 3 to make the fold
+      geometry itself meander more (a different lever from feature count),
+      while `iterations` dropped 5 -> 4 to hold fine-octave graininess down
+      rather than let the extra fold complexity reintroduce speckle.
+      Root cause 2: the albedo gradient's dark/transition region ate roughly
+      56% of the fbm value range (0.0-0.28 and 0.72-1.0), so a wide swath of
+      the field rendered as some shade of gray, reading as many small dark
+      flecks instead of a few thin lines. Narrowed the vein-plus-transition
+      band to 12% on each end (0.0-0.12, 0.88-1.0) and widened the near-white
+      plateau to 76% of the range (0.12-0.88) so only the sparse fold
+      extremes go dark.
+    - Palette: classic white/gray Carrara, not t09's warm tan/rust. Base
+      plateau near-white (~0.86-0.90) now spans the wide 0.12-0.88 middle of
+      the gradient, with the vein core a charcoal grey (~0.16-0.17, darker
+      than the prior cool-gray 0.32-0.35 so the thin lines read as crisp dark
+      strokes) confined to a narrow band at each extreme (0.0-0.05, 0.95-1.0)
+      with a short transition (0.05-0.12, 0.88-0.95) -- not a 50/50 split,
+      which is what made the prior warm-toned pass at this shape read as burl
+      wood rather than stone, and not the too-broad transition that made the
+      first Carrara pass read as terrazzo.
+    - Roughness: `MarbleRoughness` now reads the SAME raw fbm field as the
+      albedo (this donor's shape feeds `colorize_0`/`colorize_1`/`colorize_3`
+      all straight from `voronoi_0` port 0, so no rewiring is needed), with a
+      narrow polished-marble band (0.20 field / 0.30 at the vein bands) in
+      place of t09's flat near-white matte ramp -- a genuine roughness
+      TEXTURE, not a bare scalar, so an ORM map still exports; the veins read
+      a touch rougher than the polished field, matching real ground-and-
+      polished stone where the veins take the polish slightly differently.
+      Its gradient breakpoints (0.05/0.12/0.88/0.95) mirror the retuned
+      albedo gradient's so the rougher band lines up with the vein band.
+    - Metallic: `NonMetallic` (`uniform_0`) left at its untouched 0 -- marble
+      is a dielectric, verified via the ORM metallic channel approach if a
+      render is taken.
+    - Relief: `MarbleNormal`'s `param1` dropped 0.25 -> 0.08 (`param4=0`
+      unchanged, the standing flat-normal fix) -- polished marble is nearly
+      flat, so the veins should be the faintest whisper of relief, not
+      terrain's gentle swell."""
+    g = load_example("crocodile_skin")
+    retype(g, "voronoi_0", "fbm",
+           {"noise": 1, "scale_x": 1.8, "scale_y": 1.8, "folds": 3,
+            "iterations": 4, "persistence": 0.5})
+    set_gradient(g, "colorize_1", [    # classic white/gray Carrara: thin sparse veins
+        (0.0,  0.16, 0.16, 0.17),   # charcoal vein core
+        (0.05, 0.55, 0.55, 0.56),   # quick vein-edge transition
+        (0.12, 0.88, 0.88, 0.86),   # near-white base plateau begins
+        (0.88, 0.90, 0.90, 0.88),   # near-white base plateau (light variation)
+        (0.95, 0.55, 0.55, 0.56),   # quick vein-edge transition
+        (1.0,  0.16, 0.16, 0.17),   # charcoal vein core
+    ])
+    set_gradient(g, "colorize_3", [    # polished sheen, veins a touch rougher
+        (0.0,  0.30, 0.30, 0.30),
+        (0.05, 0.26, 0.26, 0.26),
+        (0.12, 0.20, 0.20, 0.20),
+        (0.88, 0.20, 0.20, 0.20),
+        (0.95, 0.26, 0.26, 0.26),
+        (1.0,  0.30, 0.30, 0.30),
+    ])
+    set_gradient(g, "colorize_0", [(0.0, 0, 0, 0), (1.0, 1, 1, 1)])
+    node(g, "normal_map_0")["parameters"] = {
+        "param0": 11, "param1": 0.08, "param2": 0, "param4": 0}
+
+    group_into_subgraph(g, ["voronoi_0", "colorize_1"],
+                         "marble_veins", "Marble Veins",
+                         [("voronoi_0", "scale_x", "param0", "Vein scale"),
+                          ("colorize_1", "gradient", "param1", "Vein color")],
+                         catalog)
+    group_into_subgraph(g, ["colorize_0", "colorize_3", "normal_map_0"],
+                         "polished_finish", "Polished Finish",
+                         [("colorize_3", "gradient", "param0", "Roughness"),
+                          ("normal_map_0", "param1", "param1", "Vein relief")],
+                         catalog)
+    rename_nodes(g, {
+        "voronoi_0": "MarbleVeins",     # fbm Perlin+folds turbulence, retuned from t09
+        "colorize_1": "VeinColor",
+        "colorize_3": "MarbleRoughness",
+        "colorize_0": "MarbleHeight",
+        "normal_map_0": "MarbleNormal",
+        "uniform_0": "NonMetallic",
+    })
+    return save_variant(g, _LABEL, "s13_polished_marble", 1)
+
+
+def build_s12_eroded_sandstone(catalog: dict) -> str:
+    """Water-eroded sandstone: horizontal sediment strata smeared into
+    diagonal erosion runs, built FROM SCRATCH (no donor -- nothing else in
+    the cookbook has this topology, and it needs its own).
+
+    **Why `directional_warp`, not `slope_blur`.** The phase plan originally
+    named `slope_blur` for this recipe. `slope_blur.mmg` is a compound graph
+    built entirely from two `buffer` nodes sandwiching an `edge_detect`
+    shader (`buffer -> edge_detect_3_3_2 -> buffer_2`, no unbuffered
+    bypass), and `buffer` nodes compile a compute shader at load time --
+    this project's headless `--export-material` pipeline cannot drive that
+    (see `build_swatch_slope_blur`'s docstring in `quality/debug_swatches.py`
+    for the proof: valid graph, all-black render). `directional_warp` has no
+    such trap -- it is a plain per-pixel UV offset by a constant
+    `angle`/`strength` (no map inputs needed, verified with `describe_node`
+    and pixel-checked in `build_swatch_directional_warp`) -- and its
+    displacement behavior is exactly the "smear a layered field along a
+    constant direction" effect real water erosion needs, so it is a better
+    fit for this material, not just a workaround.
+
+    **Banded sediment base -- restored to distinct, legible strata (round
+    2 fix, see below).** `SedimentNoise` is a `perlin` with `scale_x=4` (low
+    -- few large horizontal-ish features) and `scale_y=14` (high again --
+    more, thinner, clearly separated bands; raised back up from the
+    de-wood pass's 9, which had softened the strata into a mottle), 3
+    iterations and `persistence=0.62`. `SedimentBands` colorizes it through
+    a 10-stop palette built as five flat COLOR PLATEAUS joined by soft
+    (~0.08-wide) transitions -- pale buff / pale tan / muted rust / light
+    warm grey / pale sandy highlight -- instead of a hard step or a fully
+    smooth ramp, so each stratum still reads as a distinct band but fades
+    gradually into its neighbor (round 3 fix, see below). Still
+    lower-saturation/higher-value than a wood palette (pale, cool, dry),
+    per the de-wood fix.
+
+    **Fix (round 1: controller render read as polished wood, not
+    sandstone).** The first pass's fine high-frequency bands + saturated
+    warm-brown palette + glossy mid roughness, once smeared by
+    `directional_warp`, read exactly like continuous wood grain. Fixed by:
+    (1) matte roughness -- see below; (2) a fine `GritNoise` perlin
+    multiplied subtly over the albedo (see below) so the surface reads as
+    gritty stone, not smooth grain; (3) a paler/cooler/desaturated palette;
+    (4) chunkier bands (`scale_y` dropped 16->9) so the base had broad
+    bands for the warp to smear, not fine continuous lines.
+
+    **Fix (round 2: controller render read as travertine/limestone mottle,
+    strata washed out).** Pulling the banding down in round 1 overcorrected
+    -- the sediment layers stopped reading as distinct strata at all. Fixed
+    by (1) raising `SedimentNoise.scale_y` back up (9 -> 14, more/thinner
+    bands) while keeping `scale_x` low (still 4, stretched horizontal
+    bands); (2) replacing `SedimentBands`' smooth 6-stop ramp with the
+    10-stop hard-plateau gradient above, so individual layers are visible as
+    distinct color bands rather than a soft gradient; (3) trimming
+    `ErosionWarp.strength` 0.62 -> 0.5 so the now-thinner, higher-contrast
+    layers get smeared into legible erosion runs rather than dissolved back
+    into a mottle. The matte roughness, grit, and pale/cool palette from
+    round 1 are all kept unchanged.
+
+    **Fix (round 3: controller read the band edges as too hard-edged /
+    posterized, like topographic contour lines).** Round 2's 10-stop
+    gradient joined its five color plateaus with hard ~0.02-wide cuts,
+    which read as crisp, almost cartographic steps rather than natural
+    geology. Softened by widening each of the four transition zones from
+    ~0.02 to ~0.08 (the four paired near-coincident stops moved apart:
+    0.19/0.21 -> 0.16/0.24, 0.40/0.42 -> 0.37/0.45, 0.61/0.63 -> 0.58/0.66,
+    0.82/0.84 -> 0.79/0.87), so each layer now fades gradually into the
+    next instead of stepping. All 5 colors, their order, and their
+    approximate plateau centers are unchanged; only the transition width
+    moved, trading round 2's "5 flat plateaus / hard cuts" look for
+    "5 distinct layers / soft edges" -- still clearly banded, not washed
+    back into round 1's smooth mottle. `SedimentNoise.scale_y`,
+    `ErosionWarp.strength`/`angle`, the matte roughness, and the grit are
+    all unchanged from round 2.
+
+    **Directional erosion.** `ErosionWarp` (`directional_warp`) takes
+    `SedimentBands`' RGBA output directly on its `in#` port (port 0) --
+    proven valid by `dry_earth`'s own `warp_0`, which reads an RGBA colorize
+    the same way. `anglemap`/`strengthmap` (ports 1/2) are left unconnected
+    so the node uses its own constant defaults, giving a clean, repeatable
+    displacement from `angle`/`strength` alone (per `describe_node` and the
+    task brief). `angle=-58` (a steep diagonal, not the swatch's horizontal
+    0) and `strength=0.5` (moderate -- trimmed from round 1's 0.62 per the
+    round-2 fix above) smear the horizontal bands into diagonal streaks --
+    the strata read as if water ran down the face and dragged the layers
+    with it, smeared but still legible as layers, not erased.
+
+    **Relief and roughness both read the eroded field, not the pre-warp
+    one** -- `ErosionWarp`'s output feeds both `ReliefHeight` (a plain 0->1
+    ramp) and `SandstoneRoughness` (a narrow MATTE band, 0.80-0.88 -- raised
+    substantially from the first pass's 0.52-0.70 glossy-leaning band, which
+    was a big part of the wood-sheen misread; sandstone is not glossy), the
+    same "RGBA warp output straight into an f-typed `colorize` input"
+    pattern `dry_earth` uses for `warp_0 -> colorize_4`. So the bump map and
+    the roughness variation both carry the erosion streaks, not just the
+    albedo -- a stone face that has been eroded reads that erosion in its
+    surface relief and finish, not only its color. `SandstoneNormal`
+    (`normal_map`) keeps `param4=0` (the project's standing flat-normal fix
+    for a directly-fed analytic source) with a moderate `param1=0.3` --
+    gentle relief, not a deep bulge; this is a worn stone face, not chunky
+    cobbles. Non-metal: `Material.metallic` is set to 0 as a plain scalar
+    (port 1 left unconnected), the same convention
+    `_from_scratch_noise_material` and `s11_marble`'s roughness use when no
+    texture is wired to a port -- the scalar applies directly.
+
+    **Surface grit.** `GritNoise` is a fine perlin (`scale_x=42`,
+    `scale_y=42`, 5 iterations -- the same fine-grain idiom `s05`/`s06`/
+    `s07`/`s08`/`s10` already use in this file for per-stone surface grain),
+    `GritContrast` colorizes it to a narrow, subtle multiply band
+    (0.88-1.0), and `AlbedoGrit` (`blend`, `blend_type=2` Multiply,
+    `amount=1`, port 2 mask left unconnected so the opacity defaults to a
+    uniform 1.0 -- no threshold/speckle risk) multiplies it over
+    `ErosionWarp`'s eroded albedo before `Material` port 0. Continuous smooth
+    grain reads as wood; a fine gritty micro-texture reads as stone, so this
+    is the second (with the matte roughness) biggest lever against the wood
+    misread.
+
+    **How this differs from the rest of the stone category.** Every other
+    stone recipe differentiates through a spatial CELL pattern (voronoi
+    plates/cracks for s07/s08/s10/s11, a hex grid for s05, Bricks courses
+    for s09) or per-cell/per-fleck random color (s02, s04, s06). This one has
+    no cells at all -- its structure is a directional smear of horizontal
+    layers, the one distortion technique (`directional_warp`) nothing else
+    in the cookbook uses. That keeps it visually and structurally distinct
+    rather than reading as another rocky-blob variant."""
+    g = {
+        "connections": [],
+        "nodes": [
+            {"name": "perlin_bands", "type": "perlin",
+             "node_position": {"x": 0, "y": 0},
+             "parameters": {"scale_x": 4, "scale_y": 14, "iterations": 3,
+                            "persistence": 0.62}},
+            {"name": "colorize_bands", "type": "colorize",
+             "node_position": {"x": 260, "y": 0},
+             "parameters": {"gradient": _grad([
+                 (0.00, 0.74, 0.68, 0.58),   # pale buff (plateau)
+                 (0.16, 0.74, 0.68, 0.58),   # pale buff (plateau end)
+                 (0.24, 0.80, 0.74, 0.64),   # -> pale tan, soft transition
+                 (0.37, 0.80, 0.74, 0.64),   # pale tan (plateau)
+                 (0.45, 0.60, 0.48, 0.38),   # -> muted rust, soft transition
+                 (0.58, 0.60, 0.48, 0.38),   # muted rust (plateau)
+                 (0.66, 0.70, 0.64, 0.55),   # -> light warm grey, soft transition
+                 (0.79, 0.70, 0.64, 0.55),   # light warm grey (plateau)
+                 (0.87, 0.84, 0.78, 0.68),   # -> pale sandy highlight, soft transition
+                 (1.00, 0.84, 0.78, 0.68),   # pale sandy highlight (plateau)
+             ])}},
+            {"name": "directional_warp_0", "type": "directional_warp",
+             "node_position": {"x": 520, "y": 0},
+             "parameters": {"angle": -58, "strength": 0.5}},
+            {"name": "colorize_relief", "type": "colorize",
+             "node_position": {"x": 780, "y": -140},
+             "parameters": {"gradient": _grad([(0.0, 0, 0, 0), (1.0, 1, 1, 1)])}},
+            {"name": "normal_map_0", "type": "normal_map",
+             "node_position": {"x": 1040, "y": -140},
+             "parameters": {"param0": 10, "param1": 0.3, "param2": 0, "param4": 0}},
+            {"name": "colorize_rough", "type": "colorize",
+             "node_position": {"x": 780, "y": 140},
+             "parameters": {"gradient": _grad([
+                 (0.0, 0.80, 0.80, 0.80), (1.0, 0.88, 0.88, 0.88)])}},
+            {"name": "perlin_grit", "type": "perlin",
+             "node_position": {"x": 780, "y": 320},
+             "parameters": {"scale_x": 42, "scale_y": 42, "iterations": 5}},
+            {"name": "colorize_grit", "type": "colorize",
+             "node_position": {"x": 1040, "y": 320},
+             "parameters": {"gradient": _grad([
+                 (0.0, 0.88, 0.88, 0.88), (1.0, 1.0, 1.0, 1.0)])}},
+            {"name": "blend_grit", "type": "blend",
+             "node_position": {"x": 1300, "y": 160},
+             "parameters": {"blend_type": 2, "amount": 1}},   # Multiply
+            {"name": "Material", "type": "material",
+             "node_position": {"x": 1560, "y": 0},
+             "export_paths": {},
+             "parameters": {
+                 "albedo_color": {"a": 1, "r": 1, "g": 1, "b": 1, "type": "Color"},
+                 "ao": 1, "depth_scale": 1, "emission_energy": 1,
+                 "metallic": 0, "normal": 1, "roughness": 1,
+                 "size": 11, "sss": 0}},
+        ],
+    }
+    g["connections"] = [
+        {"from": "perlin_bands", "from_port": 0, "to": "colorize_bands", "to_port": 0},
+        {"from": "colorize_bands", "from_port": 0, "to": "directional_warp_0", "to_port": 0},
+        {"from": "directional_warp_0", "from_port": 0, "to": "colorize_relief", "to_port": 0},
+        {"from": "colorize_relief", "from_port": 0, "to": "normal_map_0", "to_port": 0},
+        {"from": "normal_map_0", "from_port": 0, "to": "Material", "to_port": 4},
+        {"from": "directional_warp_0", "from_port": 0, "to": "colorize_rough", "to_port": 0},
+        {"from": "colorize_rough", "from_port": 0, "to": "Material", "to_port": 2},
+        {"from": "perlin_grit", "from_port": 0, "to": "colorize_grit", "to_port": 0},
+        {"from": "directional_warp_0", "from_port": 0, "to": "blend_grit", "to_port": 0},
+        {"from": "colorize_grit", "from_port": 0, "to": "blend_grit", "to_port": 1},
+        {"from": "blend_grit", "from_port": 0, "to": "Material", "to_port": 0},
+    ]
+
+    group_into_subgraph(g, ["perlin_bands", "colorize_bands"],
+                         "sediment_layers", "Sediment Layers",
+                         [("perlin_bands", "scale_y", "param0", "Layer frequency"),
+                          ("colorize_bands", "gradient", "param1", "Sediment color")],
+                         catalog)
+    group_into_subgraph(g, ["directional_warp_0", "colorize_relief", "normal_map_0",
+                             "colorize_rough"],
+                         "erosion_relief", "Erosion & Relief",
+                         [("directional_warp_0", "angle", "param0", "Erosion angle"),
+                          ("directional_warp_0", "strength", "param1", "Erosion strength"),
+                          ("normal_map_0", "param1", "param2", "Relief strength"),
+                          ("colorize_rough", "gradient", "param3", "Roughness")],
+                         catalog)
+    group_into_subgraph(g, ["perlin_grit", "colorize_grit", "blend_grit"],
+                         "surface_grit", "Surface Grit",
+                         [("perlin_grit", "scale_x", "param0", "Grit scale")],
+                         catalog)
+    rename_nodes(g, {
+        "perlin_bands": "SedimentNoise",
+        "colorize_bands": "SedimentBands",
+        "directional_warp_0": "ErosionWarp",
+        "colorize_relief": "ReliefHeight",
+        "normal_map_0": "SandstoneNormal",
+        "colorize_rough": "SandstoneRoughness",
+        "perlin_grit": "GritNoise",
+        "colorize_grit": "GritContrast",
+        "blend_grit": "AlbedoGrit",
+    })
+    return save_variant(g, _LABEL, "s12_eroded_sandstone", 1)
 
 
 BUILDERS = {
@@ -836,6 +1349,8 @@ BUILDERS = {
     "s09_ashlar_wall": build_s09_ashlar_wall,
     "s10_flagstone": build_s10_flagstone,
     "s11_marble": build_s11_marble,
+    "s12_eroded_sandstone": build_s12_eroded_sandstone,
+    "s13_polished_marble": build_s13_polished_marble,
 }
 
 

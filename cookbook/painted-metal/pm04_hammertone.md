@@ -6,7 +6,7 @@ Bronze-gray hammertone paint with a dimple field, the strongest structural read 
 
 ## Recipe
 
-Clones `rock`, using the same normal chain as pm01's powder coat but at a medium cell size (`voronoi_1` scale 14) so the rounded cells read as hammer-blow dimples: bigger than pm01's fine orange peel and smaller than `rock`'s native lumps, with the deepest relief in the family (`param1` 0.42, `param4=0`) because the dimples are the whole point of this material. Bronze-gray albedo carries per-cell tonal variation so the dimples catch the light, semi-gloss roughness gives the metallic-looking sheen, and metallic stays 0 since it is paint, not exposed metal.
+Clones `rock`, using the same normal chain as pm01's powder coat but at a medium cell size (`voronoi_1` scale 14) so the rounded cells read as hammer-blow dimples: bigger than pm01's fine orange peel and smaller than `rock`'s native lumps, with the deepest relief in the family (`param1` 0.42, `param4=0`) because the dimples are the whole point of this material. Here the **normal is the hero**, so the alignment fix runs the opposite direction from the stone/gravel materials: the bronze-gray albedo is fed from `DimpleWarp`'s output — the exact warped height field that also drives the normal — so the dark-pit / lit-crest tones land precisely in the dimples instead of on an unrelated cell field. Semi-gloss roughness gives the metallic-looking sheen, and metallic stays 0 since it is paint, not exposed metal.
 
 Pitfall: this material runs a little dark in the preview scene; lift the bronze albedo stops if a brighter finish is wanted.
 
@@ -16,16 +16,28 @@ Grouped per the "Grouping into subgraphs" lever in `docs/AUTHORING.md`.
 Opening the graph shows 3 top-level nodes (two groups plus `Material`)
 instead of the raw 11-node graph:
 
-- **Hammer Dimple Pattern** — `HammerDimples`, `DimpleNormalCells`,
-  `DimpleWarp`, `MixNoise`, `WarpNoise`, `CellMix`, `PaintColor` (albedo).
-  Same `rock` donor blend as pm01/pm02: `CellMix`'s port0/port1 sources
-  are `HammerDimples`'s two output ports and its port2 mask is
-  `MixNoise`, all three inside this group, so it is fully self-contained.
-  Exposed: `Paint color`, `Dimple size`.
+- **Hammer Dimple Pattern** — `HammerDimples` (the dimple voronoi),
+  `DimpleWarp`, `WarpNoise`, `MixNoise`, `PaintColor` (albedo), plus the
+  dead-for-output donor mix `CellMixCellsUnused`/`CellMixUnused`.
+  `HammerDimples` (port 1) → `DimpleWarp` (warped by `WarpNoise`) now feeds
+  BOTH `PaintColor` (albedo) inside this group and `HammerNormal` across the
+  boundary, so albedo and normal share one generator. As on pm02, `rock`'s
+  own `CellMixUnused` blend feeds nothing after that rewire — it rides along
+  with its `CellMixCellsUnused` source inside this group. Exposed:
+  `Paint color`, `Dimple size`.
 - **Surface Finish** — `NonMetallic` (metallic, flat 0), `PaintRoughness`
   (roughness), `HammerNormal`. `MixNoise` (inside Hammer Dimple Pattern)
   also feeds this group's `NonMetallic`/`PaintRoughness` directly — the
   expected shared-upstream-node case. Exposed: `Sheen`, `Dimple depth`.
+
+2026-09-14 normal/albedo alignment fix: previously the albedo mottle came
+from `CellMixCellsUnused` (`rock`'s own separate voronoi) while the dimple
+relief came from `HammerDimples`, two position-seeded voronoi nodes that
+could never share a cell layout — so the tones sat on unrelated cells, not
+in the dimples. Feeding `PaintColor` from `DimpleWarp` (the same warped
+`HammerDimples` field the normal uses) co-locates them; the dimples now
+stay deep and the mottle tracks them (confirmed by
+`quality/normal_albedo_audit.py` and a gradient-direction overlay).
 
 ## See also
 
@@ -46,10 +58,10 @@ do not edit by hand. Open the `.ptex` and look for these names.
 | hammer_dimple_pattern | PaintColor | colorize |
 | hammer_dimple_pattern | MixNoise | perlin |
 | hammer_dimple_pattern | WarpNoise | perlin |
-| hammer_dimple_pattern | DimpleNormalCells | voronoi |
-| hammer_dimple_pattern | DimpleWarp | warp |
 | hammer_dimple_pattern | HammerDimples | voronoi |
-| hammer_dimple_pattern | CellMix | blend |
+| hammer_dimple_pattern | DimpleWarp | warp |
+| hammer_dimple_pattern | CellMixCellsUnused | voronoi |
+| hammer_dimple_pattern | CellMixUnused | blend |
 | surface_finish | HammerNormal | normal_map |
 | surface_finish | NonMetallic | colorize |
 | surface_finish | PaintRoughness | colorize |

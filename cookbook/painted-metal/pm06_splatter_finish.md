@@ -1,0 +1,113 @@
+# pm06_splatter_finish - Industrial spray-splatter finish
+
+_Category: painted-metal. Open the graph: `cookbook/painted-metal/pm06_splatter_finish.ptex`._
+
+A dark charcoal base coat with light cream paint flecks, scattered as
+discrete, individually placed, scaled, and tinted splat instances. The
+first cookbook material to use `splatter`, and the only material in this
+category built from discrete splat instances rather than a continuous
+noise field.
+
+## Recipe
+
+`splatter` is not a bare generator: its `in` port has a literal `"0.0"`
+shader default, so an unconnected `in` renders as a flat blank field.
+Built from scratch via `_from_scratch_noise_material` (no donor has this
+topology), then the placeholder generator is `retype()`d to `shape` (a
+Circle) instead of the true target, and a `splatter` node is spliced in
+between it and the skeleton's albedo/normal chain -- the same
+"retype the placeholder, then splice a real node after it" move
+`t09_rippled_wet_sand` uses for `wavelet_noise`, with one extra node in
+the chain since `splatter` needs a real pattern feeding its `in` port
+rather than being a bare generator itself.
+
+Wiring, in order: the shape feeds `splatter`'s `in` port (input index 0);
+`mask` (input index 1) is left unconnected, since its literal `"1.0"`
+default means "splatter everywhere," correct for a panel with no masked
+region; then the skeleton's albedo colorize and normal map are rewired
+from the shape onto the splatter's output.
+
+**A real deviation from the naive recipe, found by rendering it.** The
+`shape` node's own bare catalog defaults (`radius=1`, filling the whole
+tile) render through `splatter` as 3-4 giant overlapping circles that
+each fill nearly the whole frame -- `splatter` treats its entire input
+field as one splat instance and places copies of that whole field at
+random per-instance offsets, so a tile-filling circle can never read as
+a small discrete droplet no matter how `splatter`'s own count/scale/value
+are tuned. Shrunk to `radius=0.12, edge=0.3` (small circle, soft wide
+edge) so each placed instance reads as one paint droplet with visible
+gaps between them. This was diagnosed by reading `splatter.mmg`'s own
+shader source, not guessed.
+
+`splatter`'s own parameters are pushed up from its bare catalog defaults
+(`count=10, rotate=0, scale=0, value=0.5, variations=false`, which would
+tile identical un-rotated, unscaled circles) to `count=24, scale=0.4,
+value=0.6, variations=true` so each instance gets randomized size and
+brightness -- verified via two isolated verification renders (the
+oversized-blob failure, then the corrected scatter of ~20-25 visibly
+varying discrete splats) and one full-graph render, all inspected
+directly rather than assumed. `rotate=180` is carried over from the
+original recipe but is cosmetically inert here, since a Circle is
+rotationally symmetric.
+
+**Gradient stops are histogram-matched.** The splatter field's raw
+output is 71.8% background (value 0), with the splat body only becoming
+substantial above roughly the 80th percentile. `SplatterColor`'s
+gradient holds the dark base coat flat through pos 0.32 (covering the
+background plus the soft antialiased splat edge), ramps to the full
+cream tone by pos 0.55 (just below the measured 90th percentile), with
+the brightest cream reached only near pos 1.0 (the rare near-max pixels
+at splat centers).
+
+Semi-gloss roughness (flat 0.38, between `pm01`'s matte 0.62-0.72 and
+`pm02`'s near-mirror 0.07-0.11) via a flat `rough_const` texture.
+`metallic=0.0` throughout (a painted finish over metal, not bare metal,
+the same metallic-is-a-decision convention every material in this file
+follows). `normal_map`'s `param4=0` turns each splat's edge into a thin
+raised-rim highlight with a flat interior and flat background -- an
+honest "thin paint build-up at the perimeter" read, not a modeled 3D
+droplet, but consistent with how every other edge-detect-sourced normal
+in this project reads.
+
+## Subgraph structure
+
+Two named subgraphs:
+
+- **Splatter Pattern** -- the retyped `shape` node, the `splatter` node,
+  and the albedo colorize. Exposed: `Splatter color`, `Splat density`
+  (`count`).
+- **Splatter Finish** -- the normal map and the flat roughness texture.
+  Exposed: `Roughness`, `Splat relief`.
+
+## Honest limitation
+
+The normal map's raised-rim relief is an edge-detect artifact, not a
+modeled droplet bump -- it reads as a thin build-up at each splat's
+perimeter with a flat interior, which is an honest simplification of
+real paint-droplet relief (which would have a domed, not rimmed,
+profile) rather than a claim of physical accuracy.
+
+## See also
+
+The invariant guide (`guide://authoring` resource, or `docs/AUTHORING.md`)
+for the rubric and the `param4=0` flat-normal fix. `pm01_powder_coat`
+through `pm05_scuffed_panel` for the five continuous-noise-field painted
+finishes this material's discrete-splat technique deliberately differs
+from.
+
+<!-- nodes:begin -->
+## Nodes
+
+Generated by `python -m quality.promote_cookbook` from the shipped graph;
+do not edit by hand. Open the `.ptex` and look for these names.
+
+| Subgraph | Node | Type |
+|---|---|---|
+| (top level) | splatter_pattern | graph |
+| (top level) | splatter_finish | graph |
+| splatter_pattern | SplatterShape | shape |
+| splatter_pattern | SplatterColor | colorize |
+| splatter_pattern | SplatterPattern | splatter |
+| splatter_finish | SplatterNormal | normal_map |
+| splatter_finish | RoughnessConst | colorize |
+<!-- nodes:end -->

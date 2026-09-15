@@ -33,7 +33,7 @@ import sys
 
 from quality.author_helpers import (load_example, set_gradient, set_param, save_variant,
                     add_node, rewire, drop_conn, node, _grad, group_into_subgraph,
-                    take_variant, rename_nodes)
+                    take_variant, rename_nodes, retype, _from_scratch_noise_material)
 from quality import author  # shared builder base; regression guard is promote_cookbook --check
 
 from mm_mcp.catalog_builder import build_catalog
@@ -77,12 +77,14 @@ def _group_rock_family(g, catalog, *, pattern_name, pattern_label, density_label
     untouched by any of these three builders. Per the task's blend caution,
     its port sources were traced from each material's serialized
     connections before grouping:
-      pm01/pm04: port0 <- voronoi_0:0, port1 <- voronoi_0:1,
+      pm01:      port0 <- voronoi_0:0, port1 <- voronoi_0:1,
                  port2(mask) <- perlin_0:0, output -> colorize_0 (albedo).
-      pm02:      same port0/1/2 sources, but colorize_0 was rewired to read
-                 voronoi_0:2 directly instead, so blend_0's output feeds
-                 NOTHING (a harmless dead end, not a wiring bug introduced
-                 here -- see build_pm02_automotive_enamel's docstring).
+      pm02/pm04: same port0/1/2 sources, but colorize_0 was rewired to read
+                 a different source directly instead (pm02: voronoi_0:2 for
+                 the flake speckle; pm04: warp_0:0 for the dimple-locked
+                 mottle -- the 2026-09-14 normal/albedo alignment fix), so
+                 blend_0's output feeds NOTHING (a harmless dead end, not a
+                 wiring bug introduced here -- see each builder's docstring).
     In every case all three of blend_0's inputs (voronoi_0, perlin_0) are
     placed in the SAME group as blend_0 itself, so port0/port1/port2 are
     all internal to the collapsed subgraph -- only blend_0's single output
@@ -348,12 +350,30 @@ def build_pm04_hammertone(catalog: dict) -> str:
     orange peel, smaller than rock's lumps), with a deeper relief than any other
     material in this family -- the dimples are the whole point. Bronze-gray
     albedo with per-cell tonal variation so dimples catch the light; metallic 0
-    (it is paint), semi-gloss roughness for the metallic-looking sheen."""
+    (it is paint), semi-gloss roughness for the metallic-looking sheen.
+
+    2026-09-14 normal/albedo alignment fix -- the OTHER direction from the
+    stone/gravel fixes, because here the NORMAL (the hammer dimples) is the
+    hero and must stay deep. Rock's donor drives the albedo colorize off
+    voronoi_0/blend_0 but the relief off a SEPARATE voronoi_1 (warped by
+    perlin_1), so the bronze mottling used to sit on an unrelated cell field,
+    not in the dimples. Fix: feed colorize_0 (albedo) from warp_0's output --
+    the EXACT warped height field that also drives normal_map_0 -- so the dark
+    pit / lit crest tones land precisely in the dimples. voronoi_0/blend_0 go
+    dead-for-output (the same harmless dead-end pm02 already carries; perlin_0
+    still drives roughness/metallic, so it stays live). The dimple depth
+    (param1=0.42) is untouched. Look note: albedo mottling is now strictly
+    dimple-locked; the incidental voronoi_0 tonal variation is gone from
+    albedo (roughness variation from perlin_0 survives)."""
     g = load_example("rock")
     set_param(g, "voronoi_1", "scale_x", 14)   # medium dimples (the structure)
     set_param(g, "voronoi_1", "scale_y", 14)
     set_param(g, "voronoi_0", "scale_x", 14)
     set_param(g, "voronoi_0", "scale_y", 14)
+    # albedo <- the warped dimple height field (warp_0:0), the same signal that
+    # drives the normal, so the tones sit IN the dimples. gradient 0.0=pit ->
+    # 1.0=crest maps onto that field's low->high range.
+    rewire(g, "colorize_0", 0, "warp_0", 0)
     set_gradient(g, "colorize_0", [            # bronze-gray, dimples catch light
         (0.0, 0.20, 0.18, 0.14),               # dimple pit (shaded)
         (0.5, 0.34, 0.30, 0.23),
@@ -369,9 +389,11 @@ def build_pm04_hammertone(catalog: dict) -> str:
         pattern_label="Hammer Dimple Pattern", density_label="Dimple size",
         finish_roughness_label="Sheen", relief_label="Dimple depth",
     )
+    # voronoi_1 is the real dimple generator (now feeds BOTH normal and albedo
+    # via warp_0); voronoi_0/blend_0 are the dead-for-output donor mix.
     rename_nodes(g, _rock_family_names(
-        pattern_cells="HammerDimples", normal_cells="DimpleNormalCells",
-        cell_mix="CellMix", mix_noise="MixNoise", warp_noise="WarpNoise",
+        pattern_cells="CellMixCellsUnused", normal_cells="HammerDimples",
+        cell_mix="CellMixUnused", mix_noise="MixNoise", warp_noise="WarpNoise",
         pattern_warp="DimpleWarp", normal_name="HammerNormal",
     ))
     return save_variant(g, _LABEL, "pm04_hammertone", 1)
@@ -452,6 +474,179 @@ def build_pm05_scuffed_panel(catalog: dict) -> str:
     return save_variant(g, _LABEL, "pm05_scuffed_panel", 1)
 
 
+_PM06_NAMES = {
+    "perlin_0": "SplatterShape",     # placeholder perlin, retyped to `shape` below
+    "splatter_0": "SplatterPattern",
+    "colorize_0": "SplatterColor",
+    "normal_map_0": "SplatterNormal",
+    "rough_const": "RoughnessConst",
+}
+
+
+def build_pm06_splatter_finish(catalog: dict) -> str:
+    """Industrial spray-splatter finish: a dark charcoal base coat with light
+    cream paint flecks, the first cookbook material to use `splatter`
+    (zero prior use anywhere in the cookbook). Distinct from every other
+    painted-metal material in this file (`pm01` orange-peel, `pm02` mirror
+    enamel, `pm03` paint-chip-to-bare-metal, `pm04` hammer dimples, `pm05`
+    directional scuffs) -- this is the only one built from discrete,
+    individually placed/scaled/tinted splat instances rather than a
+    continuous noise field.
+
+    `splatter` is NOT a bare generator: its `in` port has a literal `"0.0"`
+    shader default, so an unconnected `in` renders as a flat blank field
+    (verified via `describe_node`). Built from scratch via
+    `_from_scratch_noise_material` (no donor has this topology), then the
+    placeholder `perlin_0` is `retype()`d to `shape` (a Circle) instead of
+    the true target, and a `splatter_0` node is inserted between it and the
+    skeleton's albedo/normal chain -- the same "retype the placeholder,
+    then splice a real node after it" move `t09_rippled_wet_sand` uses for
+    `wavelet_noise`, just with an extra node in the chain since `splatter`
+    needs a real pattern feeding its `in` port rather than being a bare
+    generator itself.
+
+    Wiring, in order:
+      1. `retype(g, "perlin_0", "shape", {...})` -- perlin_0 keeps its name,
+         now outputs a soft-edged circle field.
+      2. `add_node(g, "splatter_0", "splatter", {...})`.
+      3. `perlin_0:0 -> splatter_0:0` (feeds the circle into splatter's
+         `in`, input index 0). `mask` (input index 1) is left unconnected;
+         its literal `"1.0"` default means "splatter everywhere," correct
+         for a panel with no masked region.
+      4. `rewire(g, "colorize_0", 0, "splatter_0", 0)` and
+         `rewire(g, "normal_map_0", 0, "splatter_0", 0)` -- repoint the
+         skeleton's downstream albedo/normal chain from the shape onto the
+         splatter output.
+
+    DEVIATION from the task brief's literal shape params, found by the
+    verification render below and worth flagging explicitly: the brief's
+    suggested `{"shape": 0, "radius": 1, "edge": 0.2}` (shape's own bare
+    catalog defaults) renders as 3-4 giant circles that each fill nearly
+    the whole tile and overlap into indistinct blobs -- `splatter` treats
+    its ENTIRE input field as one splat instance and places copies of that
+    whole field at random per-instance offsets (traced in
+    `splatter.mmg`'s shader: `pv = fract(uv - seed) - 0.5`), so a
+    tile-filling circle can never read as a small discrete droplet no
+    matter how `splatter`'s own count/scale/value are tuned. Shrunk to
+    `radius=0.12, edge=0.3` (small circle, soft wide edge) so each placed
+    instance reads as one paint droplet with visible gaps between them.
+    `splatter_0`'s own params are exactly the brief's recipe, pushed up
+    from splatter's bare defaults (`count=10, rotate=0, scale=0, value=0.5,
+    variations=false`) so each instance gets randomized scale and
+    brightness: `count=24` (enough droplets to read as a finish, not a few
+    stray specks), `scale=0.4` (RndScale, up to +-40% per-instance size
+    variation, clearly visible in the render as small/large droplet mix),
+    `value=0.6` (RndValue, per-instance darkening up to 60%, giving the
+    tonal variation seen below), `variations=True` (so `variations` also
+    randomizes which part of the shape field each instance samples, not
+    just its transform). `rotate=180` is carried over from the brief's
+    recipe but is cosmetically INERT here -- a Circle is rotationally
+    symmetric, so `splatter`'s RndRotate has no visible effect on this
+    particular shape; kept anyway since the brief specifies it and it
+    costs nothing (a future non-circular splat shape would make it visible).
+
+    VERIFICATION (honest, two isolated-render passes plus one full-graph
+    render, all via MCP tools, all pixels actually inspected, not
+    described from expectation):
+      - First pass at the brief's literal `radius=1, edge=0.2`: rendered
+        `splatter_0` in isolation (`render_node_output`) and saw exactly
+        the failure mode above -- 3-4 huge overlapping pale-grey circles
+        covering nearly the entire 512x512 frame, no gaps, no readable
+        individual droplets. Not the blank-field failure (input WAS
+        connected) but a distinct "splats too large to read as discrete"
+        failure the brief anticipated in general terms ("adjust
+        count/rotate/scale/value... if it looks wrong").
+      - Second pass at `radius=0.12, edge=0.3`: re-rendered `splatter_0` in
+        isolation. Result: a scatter of ~20-25 soft-edged circular splats
+        of clearly varying size (RndScale) and clearly varying grayscale
+        brightness (RndValue, from near-white to mid-grey), on a solid
+        black background, with visible gaps between most splats and only
+        occasional overlap where two instances happen to land close
+        together. This is the target look -- randomly placed, randomly
+        scaled, randomly toned discrete circular splats, neither blank nor
+        a regular untransformed grid.
+      - Measured the raw grayscale output with `quality/pngread.py`
+        (project convention: verify a channel by reading its pixel values,
+        not by eye) before choosing the albedo gradient: background (value
+        0) is 71.8% of pixels; the splat body only becomes substantial
+        above roughly the 80th percentile (p80=0.35, p85=0.47, p90=0.58,
+        p95=0.73, p99=0.80, max=0.96). So `SplatterColor`'s gradient below
+        holds the dark base coat flat through pos 0.32 (covering the
+        background plus the soft antialiased onset of a splat edge), then
+        ramps to the full cream splatter tone by pos 0.55 (just below the
+        measured p90), with the brightest cream reached only near pos 1.0
+        (the rare near-max pixels at splat centers) -- stops chosen against
+        the measured distribution, not evenly spaced guesses.
+      - Rendered the complete small graph (`render_graph`, full
+        perlin_0->splatter_0->colorize_0/normal_map_0/rough_const->Material
+        chain) and inspected the actual albedo and normal outputs. Albedo:
+        a genuine two-tone industrial spatter finish, dark charcoal base
+        with light cream flecks of clearly varying size and tone, no blank
+        field, no regular grid -- matches the isolated-render read above.
+        Normal: `normal_map`'s `param4=0` (raw edge_detect, the project's
+        standing flat-normal-source fix) turns each splat's EDGE into a
+        thin raised-rim highlight with a flat interior and flat
+        background, not a smooth domed bump -- an honest "thin build-up"
+        read (paint sitting slightly proud at each droplet's perimeter),
+        distinct from a modeled 3D droplet but consistent with how every
+        other edge_detect-sourced normal in this project reads (crack
+        rims, scuff ridges), so described here as a raised-rim relief, not
+        a dome.
+
+    Semi-gloss roughness (flat 0.38, between `pm01`'s matte 0.62-0.72 and
+    `pm02`'s near-mirror 0.07-0.11) via a flat `rough_const` texture so an
+    ORM map exports, same pattern as `t09`/`p01`. `metallic=0.0` throughout
+    (a painted finish over metal, not bare metal, matching the
+    metallic-is-a-decision convention every other material in this file
+    follows). `normal_map_0.param1=0.18` for the thin raised-rim relief
+    described above -- shallower than `pm04`'s 0.42 hammer dimples, in the
+    same range as `pm01`'s 0.12 orange-peel skin."""
+    g = _from_scratch_noise_material(
+        {"scale_x": 4, "scale_y": 4},   # placeholder; retyped to shape below
+        [(0.0, 0.07, 0.08, 0.10), (1.0, 0.88, 0.84, 0.76)],  # placeholder; replaced below
+        metallic=0.0, roughness=0.38, normal_amount=0.18)
+    retype(g, "perlin_0", "shape", {"shape": 0, "radius": 0.12, "edge": 0.3})
+    add_node(g, "splatter_0", "splatter",
+             {"count": 24, "inputs": 0, "scale_x": 1, "scale_y": 1,
+              "rotate": 180, "scale": 0.4, "value": 0.6, "variations": True})
+    g["connections"].append(
+        {"from": "perlin_0", "from_port": 0, "to": "splatter_0", "to_port": 0})
+    rewire(g, "colorize_0", 0, "splatter_0", 0)
+    rewire(g, "normal_map_0", 0, "splatter_0", 0)
+    set_param(g, "normal_map_0", "param4", 0)   # raw edge_detect -> real relief
+    # gradient stops chosen against the measured splatter_0 output
+    # distribution (see VERIFICATION above), not evenly spaced guesses:
+    # background+edge-onset stays flat dark base through ~p80, ramps to
+    # full cream by ~p90, brightest cream only at the rare near-max tail.
+    set_gradient(g, "colorize_0", [
+        (0.0, 0.07, 0.08, 0.10),        # dark charcoal base coat
+        (0.32, 0.09, 0.10, 0.12),
+        (0.55, 0.62, 0.58, 0.50),       # transition into cream splatter tone
+        (1.0, 0.88, 0.84, 0.76)])       # brightest cream fleck highlight
+    add_node(g, "rough_const", "colorize",
+             {"gradient": _grad([(0.0, 0.38, 0.38, 0.38), (1.0, 0.38, 0.38, 0.38)])})
+    g["connections"].append(
+        {"from": "splatter_0", "from_port": 0, "to": "rough_const", "to_port": 0})
+    g["connections"].append(
+        {"from": "rough_const", "from_port": 0, "to": "Material", "to_port": 2})
+
+    group_into_subgraph(
+        g, ["perlin_0", "splatter_0", "colorize_0"], "splatter_pattern",
+        "Splatter Pattern",
+        [("colorize_0", "gradient", "param0", "Splatter color"),
+         ("splatter_0", "count", "param1", "Splat density")],
+        catalog,
+    )
+    group_into_subgraph(
+        g, ["normal_map_0", "rough_const"], "splatter_finish", "Splatter Finish",
+        [("rough_const", "gradient", "param0", "Roughness"),
+         ("normal_map_0", "param1", "param1", "Splat relief")],
+        catalog,
+    )
+    rename_nodes(g, _PM06_NAMES)
+    return save_variant(g, _LABEL, "pm06_splatter_finish", 1)
+
+
 def build_combo01_rusted_painted_steel(catalog: dict) -> str:
     """Rusted painted steel, paint peeling to bare metal, folded in from the
     Phase-3 hero set (was examples/combo01_rusted_painted_steel, iter1
@@ -512,6 +707,7 @@ BUILDERS = {
     "pm03_chipped_paint": build_pm03_chipped_paint,
     "pm04_hammertone": build_pm04_hammertone,
     "pm05_scuffed_panel": build_pm05_scuffed_panel,
+    "pm06_splatter_finish": build_pm06_splatter_finish,
 }
 
 
