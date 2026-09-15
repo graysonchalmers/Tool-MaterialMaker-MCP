@@ -387,13 +387,14 @@ def build_s06_river_pebbles(catalog: dict) -> str:
     set_param(g, "voronoi_0", "randomness", 1)
     # albedo <- per-cell random -> varied natural stone tones per pebble
     rewire(g, "colorize_0", 0, "voronoi_0", 2)
-    set_gradient(g, "colorize_0", [
+    _pebble_grad = [
         (0.0, 0.18, 0.17, 0.16),    # dark slate pebble
         (0.28, 0.34, 0.30, 0.26),   # brown-gray
         (0.52, 0.52, 0.48, 0.42),   # warm tan
         (0.74, 0.44, 0.45, 0.47),   # cool blue-gray
         (1.0, 0.30, 0.27, 0.24),    # dark brown
-    ])
+    ]
+    set_gradient(g, "colorize_0", _pebble_grad)
     set_gradient(g, "colorize_1", [(0.0, 0, 0, 0), (1.0, 0, 0, 0)])   # non-metal
     set_gradient(g, "colorize_2", [            # mid roughness, faint wet sheen
         (0.0, 0.42, 0.42, 0.42), (1.0, 0.60, 0.60, 0.60)])
@@ -421,15 +422,72 @@ def build_s06_river_pebbles(catalog: dict) -> str:
     # recessed seam); the zero slope at A=0 rounds the top (no cone point).
     add_node(g, "dome_curve", "math",
              {"op": 16, "default_in2": 2.6, "clamp": True})   # 16 = cos(A*B)
-    g["connections"].append(
-        {"from": "voronoi_0", "from_port": 0, "to": "dome_curve", "to_port": 0})
-    rewire(g, "normal_map_0", 0, "dome_curve", 0)
+    # COIN PROFILE (2026-09-14 pass 2): flatten the smooth bell into a flat-topped
+    # coin -- a flat plateau on top with a small beveled edge dropping to the seam,
+    # not a full round dome. cos alone bells the whole cell; multiply it up (k>1)
+    # and clamp to [0,1] so the center region saturates flat (plateau) and only the
+    # outer radius still curves down (the bevel). Still ANALYTIC -- one A*B node, no
+    # colorize control points -> none of the concentric-ring banding the stepped
+    # gradient rang with under the param4=0 normal. k (default_in2) widens the
+    # plateau / steepens the bevel; tune visually.
+    add_node(g, "dome_flatten", "math",
+             {"op": 2, "default_in2": 1.5, "clamp": True})   # 2 = A*B, clamp [0,1]
+    # The hard clamp leaves a C1 kink at the plateau rim AND at the zero floor;
+    # under the param4=0 edge-detect normal each kink rang as a concentric ring
+    # (a raised washer, not a coin -- pass-2a render caught it). smoothstep has
+    # zero slope at both 0 and 1, so composing it over the clamp removes both
+    # kinks at once: the plateau stays flat, the bevel becomes a rounded S, the
+    # floor stays flat -- a coin, no rings.
+    add_node(g, "dome_smooth", "math", {"op": 20, "clamp": True})   # 20 = smoothstep(0,1,A)
+    g["connections"] += [
+        {"from": "voronoi_0", "from_port": 0, "to": "dome_curve", "to_port": 0},
+        {"from": "dome_curve", "from_port": 0, "to": "dome_flatten", "to_port": 0},
+        {"from": "dome_flatten", "from_port": 0, "to": "dome_smooth", "to_port": 0},
+    ]
+    rewire(g, "normal_map_0", 0, "dome_smooth", 0)
     drop_conn(g, "warp_0", 0)
     drop_conn(g, "warp_0", 1)
     g["nodes"] = [n for n in g["nodes"]
                   if n["name"] not in ("voronoi_1", "perlin_1", "warp_0")]
     set_param(g, "normal_map_0", "param4", 0)
     set_param(g, "normal_map_0", "param1", 0.6)
+    # TWO-SCALE MIX (2026-09-14 pass 3b, Grayson: "tiny gravel + medium + slightly
+    # bigger", and s06 still read a regular seam network he wants gone). Add a
+    # SECOND finer voronoi with its own identical coin chain, nestle it lower
+    # (*0.65) so the small stones sit BELOW the big ones, and take the MAX of the
+    # two dome fields: big stones keep full height, small stones fill only the big
+    # ones' seams (max, not add -- add would mush the seams and flatten the coin).
+    # Filling the coarse seams with small stones is what breaks the regular seam
+    # network (t03 already reads seamless because its cells are small vs the gap).
+    # REGISTRATION: the albedo MUST get a matching fine layer or every small stone
+    # is a colorless bump inheriting the big cell's tone (the audit is blind to
+    # this -- both layers still share voronoi_0). So colorize_fine reads
+    # voronoi_fine port2 with the same palette, composited by the SAME selection
+    # (fine wins where its nestled dome beats the coarse one) that max uses.
+    add_node(g, "voronoi_fine", "voronoi",
+             {"scale_x": 18, "scale_y": 18, "randomness": 1})
+    add_node(g, "dome_curve_f", "math", {"op": 16, "default_in2": 2.6, "clamp": True})
+    add_node(g, "dome_flatten_f", "math", {"op": 2, "default_in2": 1.5, "clamp": True})
+    add_node(g, "dome_smooth_f", "math", {"op": 20, "clamp": True})
+    add_node(g, "dome_fine_low", "math", {"op": 2, "default_in2": 0.65})   # nestle lower
+    add_node(g, "dome_mix", "math", {"op": 14})                            # 14 = max(coarse, fine)
+    add_node(g, "sel_fine", "math", {"op": 15})                           # 15 = A<B (coarse < fine)
+    add_node(g, "colorize_fine", "colorize", {"gradient": _grad(_pebble_grad)})
+    add_node(g, "blend_layer_color", "blend", {"blend_type": 0, "amount": 1})
+    g["connections"] += [
+        {"from": "voronoi_fine", "from_port": 0, "to": "dome_curve_f", "to_port": 0},
+        {"from": "dome_curve_f", "from_port": 0, "to": "dome_flatten_f", "to_port": 0},
+        {"from": "dome_flatten_f", "from_port": 0, "to": "dome_smooth_f", "to_port": 0},
+        {"from": "dome_smooth_f", "from_port": 0, "to": "dome_fine_low", "to_port": 0},
+        {"from": "dome_smooth", "from_port": 0, "to": "dome_mix", "to_port": 0},
+        {"from": "dome_fine_low", "from_port": 0, "to": "dome_mix", "to_port": 1},
+        {"from": "dome_smooth", "from_port": 0, "to": "sel_fine", "to_port": 0},
+        {"from": "dome_fine_low", "from_port": 0, "to": "sel_fine", "to_port": 1},
+        {"from": "voronoi_fine", "from_port": 2, "to": "colorize_fine", "to_port": 0},
+        {"from": "colorize_0", "from_port": 0, "to": "blend_layer_color", "to_port": 1},
+        {"from": "colorize_fine", "from_port": 0, "to": "blend_layer_color", "to_port": 0},
+        {"from": "sel_fine", "from_port": 0, "to": "blend_layer_color", "to_port": 2},
+    ]
     # fine per-stone surface grain, multiplied over the albedo (no mask, so
     # the unconnected opacity port defaults to a uniform 1.0 -- same detail
     # lever as s05, no threshold/speckle risk)
@@ -439,10 +497,40 @@ def build_s06_river_pebbles(catalog: dict) -> str:
     add_node(g, "blend_grain", "blend", {"blend_type": 2, "amount": 1})   # Multiply
     g["connections"] += [
         {"from": "perlin_grain", "from_port": 0, "to": "colorize_grain", "to_port": 0},
-        {"from": "colorize_0", "from_port": 0, "to": "blend_grain", "to_port": 0},
+        {"from": "blend_layer_color", "from_port": 0, "to": "blend_grain", "to_port": 0},
         {"from": "colorize_grain", "from_port": 0, "to": "blend_grain", "to_port": 1},
     ]
-    rewire(g, "Material", 0, "blend_grain", 0)   # albedo <- grain-multiplied pebbles
+    rewire(g, "Material", 0, "blend_grain", 0)   # albedo <- grain over two-scale pebbles
+    # NOTE 3 (2026-09-14 pass 3a) -- micro-relief + seam substrate.
+    # (a) fine surface grain into the NORMAL, not just the albedo: add a small
+    # fraction of the SAME perlin_grain height onto the dome before edge-detect,
+    # so each stone carries fine mineral grit relief co-located with its albedo
+    # grain. Weight low so the coin profile still dominates the read.
+    add_node(g, "grain_scaled", "math", {"op": 2, "default_in2": 0.15})   # perlin_grain * w
+    add_node(g, "height_relief", "math", {"op": 0})                       # 0 = A+B: dome + grain
+    g["connections"] += [
+        {"from": "perlin_grain", "from_port": 0, "to": "grain_scaled", "to_port": 0},
+        {"from": "dome_mix", "from_port": 0, "to": "height_relief", "to_port": 0},
+        {"from": "grain_scaled", "from_port": 0, "to": "height_relief", "to_port": 1},
+    ]
+    rewire(g, "normal_map_0", 0, "height_relief", 0)
+    # (b) recessed seams are a DISTINCT material, not just a dark gradient: the
+    # dome field (1 on stone tops, 0 in the seams) masks a rougher matte grit into
+    # the seams while the raised stones keep their wetter sheen. blend Normal =
+    # mix(port1, port0, mask): dome=1 (top) shows port0 (colorize_2, the stone
+    # roughness), dome=0 (seam) shows port1 (the rough grit). perlin_0 feeds the
+    # seam colorize so the grit is not a flat value.
+    add_node(g, "colorize_rough_seam", "colorize",
+             {"gradient": _grad([(0.0, 0.86, 0.86, 0.86), (1.0, 0.93, 0.93, 0.93)])})
+    add_node(g, "blend_rough", "blend", {"blend_type": 0, "amount": 1})
+    g["connections"] += [
+        {"from": "perlin_0", "from_port": 0, "to": "colorize_rough_seam", "to_port": 0},
+        {"from": "colorize_2", "from_port": 0, "to": "blend_rough", "to_port": 0},
+        {"from": "colorize_rough_seam", "from_port": 0, "to": "blend_rough", "to_port": 1},
+        {"from": "dome_mix", "from_port": 0, "to": "blend_rough", "to_port": 2},
+    ]
+    rewire(g, "Material", 2, "blend_rough", 0)   # roughness <- seam-masked top/grit split
+                                                 # (dome_mix: both stone sizes count as top)
 
     # Subgraph grouping. blend_0 (rock donor's original albedo composite,
     # voronoi_0 ports 0/1 + perlin_0 mask) was orphaned by the rewire above
@@ -455,20 +543,37 @@ def build_s06_river_pebbles(catalog: dict) -> str:
                          [("voronoi_0", "scale_x", "param0", "Pebble size"),
                           ("colorize_0", "gradient", "param1", "Pebble color")],
                          catalog)
+    # Two-scale profile: both coin chains (big + nestled small), the max/select
+    # mix, and the small-stone colour composite in one group. Consumes voronoi_0
+    # + colorize_0 from Pebble Pattern (grouped first) and outputs the mixed
+    # height (StoneHeightMix -> relief + seam roughness) and mixed colour
+    # (StoneColorMix -> surface grain). One-directional (pattern -> profile ->
+    # relief/finish/grain), so no subgraph cycle.
+    group_into_subgraph(g, ["dome_curve", "dome_flatten", "dome_smooth",
+                             "voronoi_fine", "dome_curve_f", "dome_flatten_f",
+                             "dome_smooth_f", "dome_fine_low", "dome_mix",
+                             "sel_fine", "colorize_fine", "blend_layer_color"],
+                         "stone_profile", "Stone Profile",
+                         [("voronoi_fine", "scale_x", "param0", "Small stone size"),
+                          ("dome_fine_low", "default_in2", "param1", "Small stone height"),
+                          ("dome_flatten", "default_in2", "param2", "Top flatness")],
+                         catalog)
     group_into_subgraph(g, ["perlin_grain", "colorize_grain", "blend_grain"],
                          "surface_grain", "Surface Grain",
                          [("perlin_grain", "scale_x", "param0", "Grain scale"),
                           ("perlin_grain", "iterations", "param1", "Grain detail")],
                          catalog)
-    group_into_subgraph(g, ["colorize_1", "colorize_2", "perlin_0"],
+    group_into_subgraph(g, ["colorize_1", "colorize_2", "perlin_0",
+                             "colorize_rough_seam", "blend_rough"],
                          "material_finish", "Material Finish",
-                         [("colorize_2", "gradient", "param0", "Roughness")],
+                         [("colorize_2", "gradient", "param0", "Stone roughness"),
+                          ("colorize_rough_seam", "gradient", "param1", "Seam roughness")],
                          catalog)
-    # relief now derives from voronoi_0 (inside pebble_pattern): the normal is
-    # the only member, group_into_subgraph auto-creates a gen_inputs port fed
-    # by pebble_pattern's extra output, the same multi-consumer boundary
-    # mechanism granite's fix uses.
-    group_into_subgraph(g, ["dome_curve", "normal_map_0"],
+    # relief holds the grain-into-normal math + normal_map_0. It consumes
+    # StoneHeightMix from Stone Profile (grouped above), so the dome apparatus
+    # is NOT in relief -- that would make dome_mix (feeding height_relief) a
+    # back-edge into relief and a subgraph cycle.
+    group_into_subgraph(g, ["grain_scaled", "height_relief", "normal_map_0"],
                          "relief", "Relief",
                          [("normal_map_0", "param1", "param0", "Relief strength")],
                          catalog)
@@ -482,7 +587,22 @@ def build_s06_river_pebbles(catalog: dict) -> str:
         "perlin_grain": "GrainNoise",
         "colorize_grain": "GrainContrast",
         "blend_grain": "GrainOverPebbles",
-        "dome_curve": "DomeCurve",
+        "colorize_rough_seam": "SeamRoughness",
+        "blend_rough": "RoughnessComposite",
+        "dome_curve": "BigDomeCurve",
+        "dome_flatten": "BigDomeFlatten",
+        "dome_smooth": "BigDomeSmooth",
+        "voronoi_fine": "SmallStoneCells",
+        "dome_curve_f": "SmallDomeCurve",
+        "dome_flatten_f": "SmallDomeFlatten",
+        "dome_smooth_f": "SmallDomeSmooth",
+        "dome_fine_low": "SmallStoneHeight",
+        "dome_mix": "StoneHeightMix",
+        "sel_fine": "SmallStoneMask",
+        "colorize_fine": "SmallStoneColor",
+        "blend_layer_color": "StoneColorMix",
+        "grain_scaled": "GrainHeight",
+        "height_relief": "ReliefHeight",
         "normal_map_0": "PebbleNormal",
     })
     return save_variant(g, _LABEL, "s06_river_pebbles", 1)
