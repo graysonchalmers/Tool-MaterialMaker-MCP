@@ -22,6 +22,8 @@ extends Node3D
 #   backlit; 'azimuth' is the old full 360-degree orbit. Rim/fill stay fixed.
 
 const OBJECT_RADIUS := 0.85  # half-height of the cube / sphere radius, for ground placement
+const CUBE_BEVEL := 0.14  # fillet radius on the cube's edges (modeled, not a shader)
+const CUBE_BEVEL_SEGMENTS := 6  # arc segments across the fillet -> smooth, not a single facet
 const GROUND_TILE_MULTIPLIER := 8.0
 # Ground plane extent. The old 60x60 plane's far edge sat only ~30 units from
 # the camera, where exponential fog (density 0.07) reaches just ~88% -- so the
@@ -96,12 +98,20 @@ func _ready() -> void:
 	sphere.set_surface_override_material(0, mat)
 	add_child(sphere)
 
+	# Beveled cube with TRIPLANAR mapping. The stock BoxMesh gives each face an
+	# independent 0..1 UV, so the texture restarts (seams) at every edge and the
+	# relief does not wrap around corners. Triplanar projects along the object
+	# axes and blends by normal, so albedo/normal tile continuously across the
+	# faces AND the modeled chamfer. A dedicated cube material keeps this off the
+	# sphere/ground/core, which read fine on their own UVs.
+	var cube_mat := _make_material(albedo_tex, normal_tex, orm_tex, tile)
+	cube_mat.uv1_triplanar = true
+	cube_mat.cull_mode = BaseMaterial3D.CULL_DISABLED  # winding-agnostic for the hand-built mesh
 	var cube := MeshInstance3D.new()
-	cube.mesh = BoxMesh.new()
-	cube.mesh.size = Vector3(OBJECT_RADIUS * 2, OBJECT_RADIUS * 2, OBJECT_RADIUS * 2)
+	cube.mesh = _rounded_box(OBJECT_RADIUS * 2, CUBE_BEVEL, CUBE_BEVEL_SEGMENTS)
 	cube.position = Vector3(0, 0, 0)
 	cube.rotation_degrees = Vector3(0, 45, 0)
-	cube.set_surface_override_material(0, mat)
+	cube.set_surface_override_material(0, cube_mat)
 	add_child(cube)
 
 	# Cutaway ball: a wedge subtracted from a sphere, revealing an inner core.
@@ -303,3 +313,46 @@ func _make_material(albedo_tex: ImageTexture, normal_tex: ImageTexture,
 	mat.uv1_scale = Vector3(tile, tile, 1)
 	mat.texture_repeat = true
 	return mat
+
+
+func _rounded_box(size: float, radius: float, segments: int) -> ArrayMesh:
+	# A cube with smoothly ROUNDED (filleted) edges, not a single-facet chamfer.
+	# Method: take a densely-subdivided cube surface and push each vertex onto
+	# the Minkowski sum of a box (half-extent `inner`) and a sphere (`radius`):
+	#   core = clamp(p, -inner, inner);  surface = core + radius * normalize(p-core)
+	# The surface normal is exactly normalize(p-core), so it is analytic and
+	# smooth -- flat faces stay flat (core == p there), edges/corners bulge into
+	# arcs. Adjacent faces' shared edge verts map to the same arc points, so the
+	# fillet is seamless. No UVs (the cube material is triplanar). `segments` is
+	# how many grid cells fall inside the `radius` band -> arc smoothness.
+	var h := size * 0.5
+	var inner := maxf(h - radius, 0.0)
+	var subdiv := int(ceil(segments * size / maxf(radius, 1e-3)))
+	var box := BoxMesh.new()
+	box.size = Vector3(size, size, size)
+	box.subdivide_width = subdiv
+	box.subdivide_height = subdiv
+	box.subdivide_depth = subdiv
+	var arrays := box.surface_get_arrays(0)
+	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	var normals := PackedVector3Array()
+	normals.resize(verts.size())
+	for i in verts.size():
+		var p: Vector3 = verts[i]
+		var core := Vector3(
+			clampf(p.x, -inner, inner),
+			clampf(p.y, -inner, inner),
+			clampf(p.z, -inner, inner))
+		var d := p - core
+		var dl := d.length()
+		var n := d / dl if dl > 1e-6 else p.normalized()
+		verts[i] = core + n * radius
+		normals[i] = n
+	var out := []
+	out.resize(Mesh.ARRAY_MAX)
+	out[Mesh.ARRAY_VERTEX] = verts
+	out[Mesh.ARRAY_NORMAL] = normals
+	out[Mesh.ARRAY_INDEX] = arrays[Mesh.ARRAY_INDEX]
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, out)
+	return mesh
