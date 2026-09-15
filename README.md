@@ -3,7 +3,7 @@
 > Part of [gProdDevKit](https://kit.graysonchalmers.com), Grayson Chalmers' game production / dev kit.
 
 <p align="center">
-  <img src="docs/images/hero.png" alt="Cobblestone, moss, and ceramic-tile materials authored by the server and rendered in 3D" width="100%">
+  <img src="docs/images/hero.png" alt="Cobblestone, marble, and raw-crystal materials authored by the server and rendered in 3D" width="100%">
 </p>
 
 An [MCP](https://modelcontextprotocol.io) server that lets an AI assistant
@@ -48,22 +48,31 @@ Why this project exists and what it's actually optimizing for is in
 
 ## Gallery
 
-Each material below was authored by the server from the one-line prompt beside
-it, then its rendered maps were composited onto a sphere, a cube, and a cutaway
-ball on a lit ground plane, so the normal-map relief reads under real lighting
-instead of as a flat swatch. The bottom-right one is a round-trip example: the
-server drafted the graph, then I finished it by hand in Material Maker. Full
-graphs live in the cookbook below (`s02_gray_granite`, `f01_woven_denim`,
-`man02_ceramic_hex_tiles`, `m02_brushed_aluminum`, `o01_mossy_forest_floor`,
-`o03_tree_bark`, `w05_dark_walnut`); the hand-finished one is
-[`saved_graphs/bricks_grayson_edit.ptex`](saved_graphs/bricks_grayson_edit.ptex).
+Each material below was authored by the server, then its rendered maps were
+composited onto a sphere, a rounded-bevel cube, and a lathed chess rook on a
+lit ground plane, so the normal-map relief reads under real lighting instead of
+as a flat swatch. Full graphs live in the cookbook below (`s07_cobblestone`,
+`s09_ashlar_wall`, `s11_marble`, `gl04_raw_crystal_cluster`,
+`sf02_hazard_stripe_panel`, `f07_herringbone_tweed`, `t05_cracked_ice`,
+`t08_riverbed_pebbles`).
 
 | | |
 |:--:|:--:|
-| ![polished gray granite](docs/images/gallery/s02_gray_granite.png) | ![blue denim fabric](docs/images/gallery/f01_woven_denim.png) |
-| ![tree bark](docs/images/gallery/o03_tree_bark.png) | ![dark walnut wood](docs/images/gallery/w05_dark_walnut.png) |
-| ![white ceramic hexagon tiles](docs/images/gallery/man02_ceramic_hex_tiles.png) | ![brushed aluminum](docs/images/gallery/m02_brushed_aluminum.png) |
-| ![mossy forest floor](docs/images/gallery/o01_mossy_forest_floor.png) | ![mossy cobblestone, hand-finished in Material Maker](docs/images/gallery/bricks_grayson_edit.png) |
+| ![irregular cobblestone](docs/images/gallery/s07_cobblestone.png) | ![coursed ashlar stone wall](docs/images/gallery/s09_ashlar_wall.png) |
+| ![veined marble](docs/images/gallery/s11_marble.png) | ![raw purple crystal cluster](docs/images/gallery/gl04_raw_crystal_cluster.png) |
+| ![yellow and black hazard stripe panel](docs/images/gallery/sf02_hazard_stripe_panel.png) | ![herringbone tweed fabric](docs/images/gallery/f07_herringbone_tweed.png) |
+| ![cracked ice](docs/images/gallery/t05_cracked_ice.png) | ![riverbed pebbles](docs/images/gallery/t08_riverbed_pebbles.png) |
+
+### In motion
+
+The static frame hides how relief plays with light. These sweep the key light
+across five materials so the normal-map depth reads as it moves.
+
+| | |
+|:--:|:--:|
+| ![cobblestone under a moving light](docs/images/gallery/s07_cobblestone.gif) | ![raw crystal under a moving light](docs/images/gallery/gl04_raw_crystal_cluster.gif) |
+| ![cracked ice under a moving light](docs/images/gallery/t05_cracked_ice.gif) | ![hazard stripe panel under a moving light](docs/images/gallery/sf02_hazard_stripe_panel.gif) |
+| ![ashlar wall under a moving light](docs/images/gallery/s09_ashlar_wall.gif) | |
 
 ## Material cookbook
 

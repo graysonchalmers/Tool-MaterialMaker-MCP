@@ -31,6 +31,25 @@ _ROOT = Path(__file__).resolve().parent.parent
 _GALLERY_DIR = _ROOT / "docs" / "images" / "gallery"
 _HERO_PATH = _ROOT / "docs" / "images" / "hero.png"
 
+# Per-material triplanar tile scale for the showcase rig. Materials bake in
+# different feature sizes, so one global tile can't fit all -- fine patterns
+# (herringbone, ashlar) need a lower value (bigger physical cells) to read at
+# the rig's scale. Anything not listed uses the render_preview default (0.45).
+_TILE_OVERRIDES = {
+    "s07_cobblestone": 0.40,
+    "s09_ashlar_wall": 0.32,
+    "s11_marble": 0.40,
+    "gl04_raw_crystal_cluster": 0.40,
+    "sf02_hazard_stripe_panel": 0.32,
+    "f07_herringbone_tweed": 0.24,
+    "t05_cracked_ice": 0.40,
+    "t08_riverbed_pebbles": 0.40,
+}
+
+
+def _tile_for(basename: str) -> float:
+    return _TILE_OVERRIDES.get(basename, 0.45)
+
 STILL_SIZE = (1024, 576)
 
 
@@ -116,7 +135,8 @@ def _render_still(ident: str):
         normal = next(p for p in render_result.images if p.endswith("_normal.png"))
         orm = next(p for p in render_result.images if p.endswith("_orm.png"))
 
-        preview_result = render_preview(albedo, normal, orm, outdir=outdir, basename=basename, cfg=cfg)
+        preview_result = render_preview(albedo, normal, orm, outdir=outdir,
+                                         basename=basename, tile=_tile_for(basename), cfg=cfg)
         if not preview_result.ok:
             raise RuntimeError(f"preview render failed for '{ident}': {preview_result.error}")
 
@@ -174,29 +194,41 @@ def cmd_gif(ident: str, width: int, frames: int, duration: int) -> int:
 
         sweep_result = render_preview_sweep(
             albedo, normal, orm, outdir=outdir, basename=basename,
+            tile=_tile_for(basename),
             frames=frames, frame_duration_ms=duration, cfg=cfg,
         )
         if not sweep_result.ok:
             raise RuntimeError(f"preview sweep failed for '{ident}': {sweep_result.error}")
 
         # The sweep GIF is already assembled; re-extract, downscale, reassemble.
-        gif_im = Image.open(sweep_result.image)
+        # Close the source handle before the temp dir is cleaned up, or Windows
+        # refuses to delete the still-open file (WinError 32).
         raw_frame_dir = Path(tmpdir) / "raw_frames"
         raw_frame_dir.mkdir()
         frame_paths = []
-        for i in range(sweep_result.frame_count):
-            gif_im.seek(i)
-            fp = raw_frame_dir / f"frame_{i:03d}.png"
-            gif_im.convert("RGB").save(fp)
-            frame_paths.append(fp)
+        with Image.open(sweep_result.image) as gif_im:
+            for i in range(sweep_result.frame_count):
+                gif_im.seek(i)
+                fp = raw_frame_dir / f"frame_{i:03d}.png"
+                gif_im.convert("RGB").save(fp)
+                frame_paths.append(fp)
 
         scaled = downscale_gif_frames(frame_paths, width=width)
+
+        # Quantize every frame to one shared adaptive 128-colour palette, then
+        # save with optimize=True. A shared palette keeps inter-frame diffs
+        # small (the light moves, most pixels are unchanged) and 128 colours is
+        # plenty for these mostly-monochrome relief sweeps -- together this
+        # roughly halves the file vs a full 256-colour per-frame GIF.
+        pal = scaled[0].quantize(colors=128, method=Image.MEDIANCUT)
+        quant = [f.quantize(colors=128, palette=pal, dither=Image.FLOYDSTEINBERG)
+                 for f in scaled]
 
         stem = Path(ident).stem
         out_path = _GALLERY_DIR / f"{stem}.gif"
         out_path.parent.mkdir(parents=True, exist_ok=True)
-        scaled[0].save(out_path, save_all=True, append_images=scaled[1:],
-                        duration=duration, loop=0)
+        quant[0].save(out_path, save_all=True, append_images=quant[1:],
+                      duration=duration, loop=0, optimize=True)
 
     size_bytes = out_path.stat().st_size
     print(f"{ident}: {out_path} ({size_bytes} bytes)")
