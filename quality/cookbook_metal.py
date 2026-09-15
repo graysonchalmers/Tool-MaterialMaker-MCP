@@ -300,12 +300,95 @@ def build_m05_polished_chrome(catalog: dict) -> str:
     return save_variant(g, _LABEL, "m05_polished_chrome", 1)
 
 
+_M06_NAMES = {
+    "perlin_0": "MicroNoise",
+    "colorize_0": "CarPaintColor",
+    "colorize_rough": "RoughnessVariation",
+    "voronoi_0": "FlakeCells",
+    "colorize_flake": "FlakeMask",
+    "blend_0": "RoughnessWithFlake",
+    "normal_map_0": "MicroNormal",
+}
+
+
+def build_m06_car_paint(catalog: dict) -> str:
+    """Candy-red car paint: `m05_polished_chrome`'s minimal metallic skeleton
+    (from-scratch perlin -> colorize -> Material, metallic=1.0 scalar,
+    roughness held low and fed as a texture not a bare scalar) recolored to a
+    saturated, deeply-chromatic red instead of chrome's near-neutral gray --
+    this is the whole point of the task: prove the grazing-angle Fresnel
+    brightening is real PBR on a COLORED metal, not just chrome's white-on-
+    white case. Albedo gradient stays in the red band throughout (R roughly
+    3-4x G/B, both endpoints deep and saturated) so the base coat itself
+    reads as candy paint even before any clearcoat garnish is added in the
+    preview.
+
+    roughness is slightly higher than chrome's (0.12-0.20 vs chrome's
+    0.06-0.14) since automotive base-coat lacquer is glossy but not a bare
+    mirror; the metallic-flake sparkle is a second signal layered on top of
+    that roughness texture rather than replacing it: a small-scale `voronoi`
+    (FlakeCells) thresholded hard via a second colorize (FlakeMask) into a
+    sparse, tiny bright-spot mask, then `blend`ed additively onto
+    RoughnessVariation so only the flake specks get punched toward glossier
+    (lower) roughness -- the rest of the panel keeps its even base-coat
+    sheen. normal_amount stays at chrome's 0.04 (not 0, which bakes Godot's
+    dead-flat default per the m03/m04/m05 precedent): the paint's own
+    surface is still near mirror-smooth, the flake sparkle is a
+    roughness/albedo-scale effect, not a bump."""
+    g = _from_scratch_noise_material(
+        {"scale_x": 8, "scale_y": 8},
+        [(0.0, 0.45, 0.03, 0.05), (1.0, 0.62, 0.05, 0.08)],
+        metallic=1.0, roughness=0.16, normal_amount=0.04)
+    add_node(g, "colorize_rough", "colorize",
+             {"gradient": _grad([(0.0, 0.12, 0.12, 0.12), (1.0, 0.20, 0.20, 0.20)])})
+    g["connections"].append(
+        {"from": "perlin_0", "from_port": 0, "to": "colorize_rough", "to_port": 0})
+
+    # Metallic-flake sparkle: voronoi port 0 ("Nodes") is a grayscale
+    # distance-to-cell-center field, near 0 at each cell's center and
+    # growing outward -- a hard low-end threshold on that field isolates a
+    # small bright disc at each cell center (a sparse fleck pattern) rather
+    # than the cell borders. FlakeMask inverts that (low value = 0.05 at the
+    # flecks, 1.0 everywhere else) so it can be Darken-blended onto
+    # RoughnessVariation: Darken picks min(c1, c2), so it punches roughness
+    # down to ~0.05 (a glossy sparkle) only where the mask is low, and
+    # passes RoughnessVariation through unchanged everywhere else.
+    add_node(g, "voronoi_0", "voronoi", {"scale_x": 48, "scale_y": 48})
+    add_node(g, "colorize_flake", "colorize",
+             {"gradient": _grad([(0.0, 0.05, 0.05, 0.05), (0.15, 0.05, 0.05, 0.05),
+                                  (0.16, 1, 1, 1), (1.0, 1, 1, 1)])})
+    add_node(g, "blend_0", "blend", {"blend_type": 10, "amount": 1})
+    g["connections"].append(
+        {"from": "voronoi_0", "from_port": 0, "to": "colorize_flake", "to_port": 0})
+    g["connections"].append(
+        {"from": "colorize_flake", "from_port": 0, "to": "blend_0", "to_port": 0})
+    g["connections"].append(
+        {"from": "colorize_rough", "from_port": 0, "to": "blend_0", "to_port": 1})
+    g["connections"].append(
+        {"from": "blend_0", "from_port": 0, "to": "Material", "to_port": 2})
+
+    group_into_subgraph(
+        g, ["perlin_0", "colorize_0", "colorize_rough", "voronoi_0",
+            "colorize_flake", "blend_0", "normal_map_0"],
+        "car_paint_finish", "Car Paint Finish",
+        [("perlin_0", "scale_x", "param0", "Micro-variation scale"),
+         ("colorize_0", "gradient", "param1", "Paint color"),
+         ("colorize_rough", "gradient", "param2", "Base roughness"),
+         ("voronoi_0", "scale_x", "param3", "Flake size"),
+         ("normal_map_0", "param1", "param4", "Micro relief")],
+        catalog,
+    )
+    rename_nodes(g, _M06_NAMES)
+    return save_variant(g, _LABEL, "m06_car_paint", 1)
+
+
 BUILDERS = {
     "m01_weathered_copper": build_m01_weathered_copper,
     "m02_brushed_aluminum": build_m02_brushed_aluminum,
     "m03_brushed_titanium": build_m03_brushed_titanium,
     "m04_scratched_steel": build_m04_scratched_steel,
     "m05_polished_chrome": build_m05_polished_chrome,
+    "m06_car_paint": build_m06_car_paint,
 }
 
 

@@ -1,0 +1,472 @@
+{
+ "connections": [
+  {
+   "from": "car_paint_finish",
+   "from_port": 0,
+   "to": "Material",
+   "to_port": 0
+  },
+  {
+   "from": "car_paint_finish",
+   "from_port": 1,
+   "to": "Material",
+   "to_port": 4
+  },
+  {
+   "from": "car_paint_finish",
+   "from_port": 2,
+   "to": "Material",
+   "to_port": 2
+  }
+ ],
+ "nodes": [
+  {
+   "name": "Material",
+   "type": "material",
+   "node_position": {
+    "x": 620,
+    "y": 40
+   },
+   "export_paths": {},
+   "parameters": {
+    "albedo_color": {
+     "a": 1,
+     "r": 1,
+     "g": 1,
+     "b": 1,
+     "type": "Color"
+    },
+    "ao": 1,
+    "depth_scale": 1,
+    "emission_energy": 1,
+    "metallic": 1.0,
+    "normal": 1,
+    "roughness": 0.16,
+    "size": 11,
+    "sss": 0
+   }
+  },
+  {
+   "name": "car_paint_finish",
+   "label": "Car Paint Finish",
+   "type": "graph",
+   "node_position": {
+    "x": 85.71428571428571,
+    "y": 14.285714285714286
+   },
+   "parameters": {
+    "param0": 8,
+    "param1": {
+     "interpolation": 1,
+     "type": "Gradient",
+     "points": [
+      {
+       "a": 1,
+       "r": 0.45,
+       "g": 0.03,
+       "b": 0.05,
+       "pos": 0.0
+      },
+      {
+       "a": 1,
+       "r": 0.62,
+       "g": 0.05,
+       "b": 0.08,
+       "pos": 1.0
+      }
+     ]
+    },
+    "param2": {
+     "interpolation": 1,
+     "type": "Gradient",
+     "points": [
+      {
+       "a": 1,
+       "r": 0.12,
+       "g": 0.12,
+       "b": 0.12,
+       "pos": 0.0
+      },
+      {
+       "a": 1,
+       "r": 0.2,
+       "g": 0.2,
+       "b": 0.2,
+       "pos": 1.0
+      }
+     ]
+    },
+    "param3": 48,
+    "param4": 0.04
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": -314.2857142857143,
+      "y": 14.285714285714286
+     },
+     "parameters": {},
+     "ports": [],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 485.7142857142857,
+      "y": 14.285714285714286
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "out0",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "out1",
+       "type": "rgb",
+       "group_size": 0
+      },
+      {
+       "name": "out2",
+       "type": "rgba",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -314.2857142857143,
+      "y": 214.28571428571428
+     },
+     "parameters": {
+      "param0": 8,
+      "param1": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.45,
+         "g": 0.03,
+         "b": 0.05,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.62,
+         "g": 0.05,
+         "b": 0.08,
+         "pos": 1.0
+        }
+       ]
+      },
+      "param2": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.12,
+         "g": 0.12,
+         "b": 0.12,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.2,
+         "g": 0.2,
+         "b": 0.2,
+         "pos": 1.0
+        }
+       ]
+      },
+      "param3": 48,
+      "param4": 0.04
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Micro-variation scale",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "MicroNoise",
+         "widget": "scale_x"
+        }
+       ]
+      },
+      {
+       "name": "param1",
+       "shortdesc": "Paint color",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "CarPaintColor",
+         "widget": "gradient"
+        }
+       ]
+      },
+      {
+       "name": "param2",
+       "shortdesc": "Base roughness",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "RoughnessVariation",
+         "widget": "gradient"
+        }
+       ]
+      },
+      {
+       "name": "param3",
+       "shortdesc": "Flake size",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "FlakeCells",
+         "widget": "scale_x"
+        }
+       ]
+      },
+      {
+       "name": "param4",
+       "shortdesc": "Micro relief",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "MicroNormal",
+         "widget": "param1"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "MicroNoise",
+     "type": "perlin",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "scale_x": 8,
+      "scale_y": 8
+     }
+    },
+    {
+     "name": "CarPaintColor",
+     "type": "colorize",
+     "node_position": {
+      "x": 300,
+      "y": -60
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.45,
+         "g": 0.03,
+         "b": 0.05,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.62,
+         "g": 0.05,
+         "b": 0.08,
+         "pos": 1.0
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "MicroNormal",
+     "type": "normal_map",
+     "node_position": {
+      "x": 300,
+      "y": 160
+     },
+     "parameters": {
+      "param0": 10,
+      "param1": 0.04,
+      "param2": 0,
+      "param4": 1
+     }
+    },
+    {
+     "name": "RoughnessVariation",
+     "type": "colorize",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.12,
+         "g": 0.12,
+         "b": 0.12,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.2,
+         "g": 0.2,
+         "b": 0.2,
+         "pos": 1.0
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "FlakeCells",
+     "type": "voronoi",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "scale_x": 48,
+      "scale_y": 48
+     }
+    },
+    {
+     "name": "FlakeMask",
+     "type": "colorize",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.05,
+         "g": 0.05,
+         "b": 0.05,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.05,
+         "g": 0.05,
+         "b": 0.05,
+         "pos": 0.15
+        },
+        {
+         "a": 1,
+         "r": 1,
+         "g": 1,
+         "b": 1,
+         "pos": 0.16
+        },
+        {
+         "a": 1,
+         "r": 1,
+         "g": 1,
+         "b": 1,
+         "pos": 1.0
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "RoughnessWithFlake",
+     "type": "blend",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "blend_type": 10,
+      "amount": 1
+     }
+    }
+   ],
+   "connections": [
+    {
+     "from": "MicroNoise",
+     "from_port": 0,
+     "to": "CarPaintColor",
+     "to_port": 0
+    },
+    {
+     "from": "MicroNoise",
+     "from_port": 0,
+     "to": "MicroNormal",
+     "to_port": 0
+    },
+    {
+     "from": "MicroNoise",
+     "from_port": 0,
+     "to": "RoughnessVariation",
+     "to_port": 0
+    },
+    {
+     "from": "FlakeCells",
+     "from_port": 0,
+     "to": "FlakeMask",
+     "to_port": 0
+    },
+    {
+     "from": "FlakeMask",
+     "from_port": 0,
+     "to": "RoughnessWithFlake",
+     "to_port": 0
+    },
+    {
+     "from": "RoughnessVariation",
+     "from_port": 0,
+     "to": "RoughnessWithFlake",
+     "to_port": 1
+    },
+    {
+     "from": "CarPaintColor",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    },
+    {
+     "from": "MicroNormal",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 1
+    },
+    {
+     "from": "RoughnessWithFlake",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 2
+    }
+   ]
+  }
+ ]
+}
