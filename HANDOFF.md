@@ -1,10 +1,10 @@
 # 🧭 Session Handoff: Tool-MaterialMaker-MCP
 
-_Last updated: 2026-09-14 18:51 CT (America/Chicago) -- the round-3 follow-up
-(`task_73027cd8`) landed on `claude/nervous-mahavira-e778a5`, pushed. `main`
-itself is also now confirmed pushed (a concurrent session fast-forwarded it
-mid-session; the prior "not pushed" note below was stale the moment it was
-written)._
+_Last updated: 2026-09-14 21:30 CT (America/Chicago) -- the round-3 follow-up
+(`task_73027cd8`) is fixed and open as PR #11
+(`claude/nervous-mahavira-e778a5` -> `main`); a separate housekeeping session
+cleared a stuck worktree lock, no MM-MCP code changed. `main` itself (round 3
++ the preview lighting overhaul) is confirmed pushed to `origin`._
 
 The session baton. Read at pickup, rewrite at wrap-up. **Shape rule (2026-09-05,
 teardown #3):** "Current state" describes the latest session only; anything
@@ -47,15 +47,22 @@ pre-fix file) to genuinely fail `None == 0` without the fix. Fast suite:
 
 ## 📌 Where we stopped
 
-Fix is committed (`948a8e7`) and pushed to
-`origin/claude/nervous-mahavira-e778a5`. Not merged to `main`, no PR
-opened yet. `main`/`origin/main` confirmed in sync at `825c9fa`.
+`task_73027cd8`'s fix is committed (`948a8e7`) and open as
+[PR #11](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/pull/11)
+(`claude/nervous-mahavira-e778a5` -> `main`). The PR hit a merge conflict
+with `main` (a concurrent session's own wrap-up commit touched the same
+`HANDOFF.md`/`STATUS.md` lines this session had just written), blocking CI
+from even starting -- reconciled by merging `main` into the branch and
+hand-resolving both files, same precedent as round 3's own concurrent-session
+collision. Round 3 and the preview lighting overhaul are already on `main`
+and confirmed pushed; a separate housekeeping session also cleared a stuck
+worktree lock (`worktree-noise-vocabulary-round-3`'s directory, orphaned by a
+failed `git worktree remove`), dismissing `task_86ba47bd` as no longer needed.
 
 ## ▶️ Next concrete step
 
-Open a PR for `claude/nervous-mahavira-e778a5` (or have Grayson merge it
-directly) to land the `task_73027cd8` fix on `main`. Alternatives, either
-of which Grayson can pick up instead:
+Get CI green on PR #11 and merge it. Other open items, any of which Grayson
+can pick up instead:
 - Promote the interactive lighting slider lab (`scratchpad/lighting_lab/`) to a tracked dev tool, or leave it as throwaway scratchpad.
 - Audit the broader compound-default flaw class beyond the two nodes tested here (crystal, normal_map, clouds_noise) -- not exhaustively checked.
 
@@ -76,11 +83,11 @@ of which Grayson can pick up instead:
   in its recipe card); it was chosen as the best of the node's three
   internal modes, not a claim of a photo-real corduroy read. Revisit if a
   future session finds a way to regularize the banding further.
-- `task_73027cd8` (catalog `default`-field accuracy) is fixed this session
-  but not yet merged to `main` -- open a PR / merge `claude/nervous-mahavira-e778a5`.
-  The broader 44/61-parameter compound-default flaw class beyond the two
-  nodes tested (crystal, normal_map, clouds_noise) has not been audited
-  exhaustively; may be worth a follow-up sweep.
+- `task_73027cd8` (catalog `default`-field accuracy) is fixed and open as
+  PR #11, not yet merged to `main`. The broader 44/61-parameter
+  compound-default flaw class beyond the two nodes tested (crystal,
+  normal_map, clouds_noise) has not been audited exhaustively; may be
+  worth a follow-up sweep.
 
 ## ⚠️ Heads-up for the next agent
 
@@ -190,11 +197,28 @@ of which Grayson can pick up instead:
 Newest first. Keep at most 8 entries; older ones are in `git log` (search the
 commit subjects, every session ends with a `docs:` wrap-up commit).
 
-### 2026-09-14 (`task_73027cd8` catalog default-field fix, pushed, not yet merged): dispatched task with an exact fix location and a pre-diagnosed bug. First RED attempt against plain `main` came back unreproducible (`None == 16`, not `4 == 16`) because the bug only exists once round-3's type-referenced-link resolution is present, and round-3 was still sitting on its own unmerged worktree branch -- merged `worktree-noise-vocabulary-round-3` in locally to reproduce it for real (confirmed via `advisor`). Fix: `_parse_generic_node` now prefers the remote node's own `parameters[pname]` for `default` over the linked inner node's. Corrected `normal_map.param1`'s pinned test default (0.5 -> 1, same bug). Added a `clouds_noise`-based test empirically verified (against a pre-fix copy of the file) to fail without the change. Mid-session a concurrent session fast-forwarded `main`/`origin/main` to include round-3, so rebuilt the branch as one clean commit (`948a8e7`) on the new `main` instead of carrying a redundant merge. Fast suite 1165 passed. Pushed `origin/claude/nervous-mahavira-e778a5`; not merged to `main`, no PR yet.
+### 2026-09-14 (`task_73027cd8` catalog default-field fix, PR #11 open): dispatched task with an exact fix location and a pre-diagnosed bug. First RED attempt against plain `main` came back unreproducible (`None == 16`, not `4 == 16`) because the bug only exists once round-3's type-referenced-link resolution is present, and round-3 was still sitting on its own unmerged worktree branch -- merged `worktree-noise-vocabulary-round-3` in locally to reproduce it for real (confirmed via `advisor`). Fix: `_parse_generic_node` now prefers the remote node's own `parameters[pname]` for `default` over the linked inner node's. Corrected `normal_map.param1`'s pinned test default (0.5 -> 1, same bug). Added a `clouds_noise`-based test empirically verified (against a pre-fix copy of the file) to fail without the change. Mid-session a concurrent session fast-forwarded `main`/`origin/main` to include round-3, so rebuilt the branch as one clean commit (`948a8e7`) on the new `main` instead of carrying a redundant merge. Fast suite 1165 passed, pushed, opened as PR #11. A second concurrent-session collision hit the PR itself: another session's own wrap-up commit landed on `main` touching the same HANDOFF.md/STATUS.md lines, blocking CI with a merge conflict -- reconciled by merging `main` in and hand-resolving both files (this entry included).
+### 2026-09-14 (worktree hygiene, no MM-MCP code changed): a prior session's
+`git worktree remove` on `.claude\worktrees\noise-vocabulary-round-3` had
+failed with a Windows "Device or resource busy" error; git had already
+forgotten the worktree (its `.git\worktrees\` admin entry was gone) but the
+directory was still on disk and locked. `handle.exe` isn't installed on this
+box, so root-caused it with a PEB-read scan across every running process
+(`NtQueryInformationProcess` + `ReadProcessMemory` on each process's
+`RTL_USER_PROCESS_PARAMETERS.CurrentDirectory`) rather than guessing from
+command lines. Found the lock wasn't Godot/Python at all: two orphaned
+`bash.exe` wrappers plus a hung `find /` filesystem search (parented from a
+`using-superpowers` sdd-workspace lookup) that had been running for hours
+with its own parent process already dead. Killed the `find.exe`, the two
+`bash.exe`s exited on their own, `rm -rf` + `git worktree prune` + `git
+branch -d worktree-noise-vocabulary-round-3` all then succeeded cleanly.
+Swept the rest of the repo for the same failure mode afterward (no
+locked/prunable worktrees, no other orphaned directories, no stray process
+handles beyond the two genuinely live sessions) -- clean. Commons log:
+`2026-09-14-claude-code-mm-mcp-worktree-lock-cleanup.md`.
 ### 2026-09-14 (noise-vocabulary round 3 + catalog fix, MERGED to `main`): `pickup` -> `writing-plans` -> `subagent-driven-development` for a 6-material round Grayson approved (scope-corrected before dispatch: `custom_tiles` swapped for `skewed_bricks`). Refined the implementer/controller split: implementer authors + validates + isolated verification renders only; controller renders all six, self-screens, batches one `SendUserFile`, gets Grayson's real approval before writing cards/promoting. All 6 materials + 2 README/AUTHORING tasks landed, only Task 2 (`f11_corduroy`) needed a fix round (an overstated "clean ribbing" claim caught by the task reviewer). Task 8 surfaced a real pre-existing `catalog_builder.py` bug (compound-node param range resolution) fixed as its own TDD'd task, itself needing one fix round (a fixpoint loop replacing an order-dependent two-pass sweep). Final whole-branch review (opus) came back "ready to merge with fixes": one fix wave (a fabricated-numbers card fix matching Task 2's own error class, catalog dead-code cleanup, an aliasing fix, a card tidy), re-reviewed clean. One finding spawned as a follow-up instead of fixed (`task_73027cd8`: catalog default-field accuracy for 17 params). Cookbook 65 -> 71 materials, 12 categories. Merged `main` into this branch first (a concurrent session had landed `6ce84c6`/`6051eed` on `main` after this branch forked), hand-reconciling HANDOFF.md/STATUS.md conflicts; then merged this branch into `main`. Full suite 1161+ passed throughout.
-### 2026-09-14 (preview lighting overhaul, MERGED `6ce84c6`, NOT pushed): `pickup` on the lighting worktree; a long live visual-iteration session (advisor-guided). Prototyped soft-shadow/bounce/AO/precession options in a throwaway scratchpad Godot project + an interactive slider lab (`lab.bat`), sending PNG/GIF comparisons each pass; Grayson converged over ~10 rounds to: soft distance key shadow (angular 5.0), boosted rim (2.0) casting a soft shadow (load-bearing for contact grounding), cool bounce fill, procedural-sky ambient+reflections (fixes dark metals), SSAO contacts, and a precession-default sweep (cone 18, rim still). Landed into production `preview.gd` + `preview.py` + `server.py` + `tests/test_preview.py`. Fast suite 1112, preview integration 4. The planned 65-preview regen was found MOOT (tracked thumbnails are flat albedo, not lit renders). Merged `--ff-only` to `main`. Gotchas hit: Godot launcher hangs on raw-pipe/parse-error; `var x := a and b` Variant-inference failure.
+### 2026-09-14 (preview lighting overhaul, MERGED `6ce84c6`, pushed with round 3): `pickup` on the lighting worktree; a long live visual-iteration session (advisor-guided). Prototyped soft-shadow/bounce/AO/precession options in a throwaway scratchpad Godot project + an interactive slider lab (`lab.bat`), sending PNG/GIF comparisons each pass; Grayson converged over ~10 rounds to: soft distance key shadow (angular 5.0), boosted rim (2.0) casting a soft shadow (load-bearing for contact grounding), cool bounce fill, procedural-sky ambient+reflections (fixes dark metals), SSAO contacts, and a precession-default sweep (cone 18, rim still). Landed into production `preview.gd` + `preview.py` + `server.py` + `tests/test_preview.py`. Fast suite 1112, preview integration 4. The planned 65-preview regen was found MOOT (tracked thumbnails are flat albedo, not lit renders). Merged `--ff-only` to `main`. Gotchas hit: Godot launcher hangs on raw-pipe/parse-error; `var x := a and b` Variant-inference failure.
 ### 2026-09-14 (pickup, render_preview_sweep verified): ran the sweep tool for real through the live MCP tool surface (`render_graph` on cookbook's `f01_woven_denim`, piped into `render_preview_sweep`), sent Grayson the resulting GIF, he confirmed it read fine. Promoted `render_preview_sweep` 🔌 -> ✅ in STATUS.md.
 ### 2026-09-14 (noise-vocabulary round 2, MERGED to `main`): `pickup` resumed at Task 5's pending approval; `subagent-driven-development` drove Tasks 5-11 to completion (cookbook 59 -> 65 across 12 categories, README/AUTHORING count integration). Task 8 found + parked a real pre-existing bug (shared `wood` donor bleeds GrainMask into Material's metallic port, w04/w05/w06); a follow-up session fixed w04/w05, then w06 was fixed on this round's branch before merging. Merged with HANDOFF.md's session log hand-reconciled.
 ### 2026-09-14 (rotating-key-light preview mode, `render_preview_sweep`, MERGED `58e35ab`): brainstorming -> TDD. `preview.gd` azimuth sweep mode (one Godot process, N frames, 360 key-light rotation) + `render_preview_sweep()` (Pillow GIF assembly, runtime dep) + 11th MCP tool. Advisor review caught a thin test and the verified/wired state mismatch; added a real frames-differ assertion, measured a real brightness curve. Merged same session.
 ### 2026-09-13 (enum-index validation enforcement, MERGED to main): `pickup`; the hole was ENFORCEMENT (out-of-range enum was a `warning`). Fix: out-of-range enum index -> `error` with an intended-index hint; ratchet test. TDD red->green, fast suite 1039->1045. A sibling branch fixing the same thing was folded in.
-### 2026-09-13 (noise/distortion vocabulary + core toolbox, MERGED `0169446`): `subagent-driven-development`, all 14 tasks. Shipped 6 proof materials on unused bases (cookbook 53->59), 19 diagnostic swatches, README "Core toolbox" section, AUTHORING distortion note. Fast suite 1039.
