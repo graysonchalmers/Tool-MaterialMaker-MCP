@@ -77,12 +77,14 @@ def _group_rock_family(g, catalog, *, pattern_name, pattern_label, density_label
     untouched by any of these three builders. Per the task's blend caution,
     its port sources were traced from each material's serialized
     connections before grouping:
-      pm01/pm04: port0 <- voronoi_0:0, port1 <- voronoi_0:1,
+      pm01:      port0 <- voronoi_0:0, port1 <- voronoi_0:1,
                  port2(mask) <- perlin_0:0, output -> colorize_0 (albedo).
-      pm02:      same port0/1/2 sources, but colorize_0 was rewired to read
-                 voronoi_0:2 directly instead, so blend_0's output feeds
-                 NOTHING (a harmless dead end, not a wiring bug introduced
-                 here -- see build_pm02_automotive_enamel's docstring).
+      pm02/pm04: same port0/1/2 sources, but colorize_0 was rewired to read
+                 a different source directly instead (pm02: voronoi_0:2 for
+                 the flake speckle; pm04: warp_0:0 for the dimple-locked
+                 mottle -- the 2026-09-14 normal/albedo alignment fix), so
+                 blend_0's output feeds NOTHING (a harmless dead end, not a
+                 wiring bug introduced here -- see each builder's docstring).
     In every case all three of blend_0's inputs (voronoi_0, perlin_0) are
     placed in the SAME group as blend_0 itself, so port0/port1/port2 are
     all internal to the collapsed subgraph -- only blend_0's single output
@@ -348,12 +350,30 @@ def build_pm04_hammertone(catalog: dict) -> str:
     orange peel, smaller than rock's lumps), with a deeper relief than any other
     material in this family -- the dimples are the whole point. Bronze-gray
     albedo with per-cell tonal variation so dimples catch the light; metallic 0
-    (it is paint), semi-gloss roughness for the metallic-looking sheen."""
+    (it is paint), semi-gloss roughness for the metallic-looking sheen.
+
+    2026-09-14 normal/albedo alignment fix -- the OTHER direction from the
+    stone/gravel fixes, because here the NORMAL (the hammer dimples) is the
+    hero and must stay deep. Rock's donor drives the albedo colorize off
+    voronoi_0/blend_0 but the relief off a SEPARATE voronoi_1 (warped by
+    perlin_1), so the bronze mottling used to sit on an unrelated cell field,
+    not in the dimples. Fix: feed colorize_0 (albedo) from warp_0's output --
+    the EXACT warped height field that also drives normal_map_0 -- so the dark
+    pit / lit crest tones land precisely in the dimples. voronoi_0/blend_0 go
+    dead-for-output (the same harmless dead-end pm02 already carries; perlin_0
+    still drives roughness/metallic, so it stays live). The dimple depth
+    (param1=0.42) is untouched. Look note: albedo mottling is now strictly
+    dimple-locked; the incidental voronoi_0 tonal variation is gone from
+    albedo (roughness variation from perlin_0 survives)."""
     g = load_example("rock")
     set_param(g, "voronoi_1", "scale_x", 14)   # medium dimples (the structure)
     set_param(g, "voronoi_1", "scale_y", 14)
     set_param(g, "voronoi_0", "scale_x", 14)
     set_param(g, "voronoi_0", "scale_y", 14)
+    # albedo <- the warped dimple height field (warp_0:0), the same signal that
+    # drives the normal, so the tones sit IN the dimples. gradient 0.0=pit ->
+    # 1.0=crest maps onto that field's low->high range.
+    rewire(g, "colorize_0", 0, "warp_0", 0)
     set_gradient(g, "colorize_0", [            # bronze-gray, dimples catch light
         (0.0, 0.20, 0.18, 0.14),               # dimple pit (shaded)
         (0.5, 0.34, 0.30, 0.23),
@@ -369,9 +389,11 @@ def build_pm04_hammertone(catalog: dict) -> str:
         pattern_label="Hammer Dimple Pattern", density_label="Dimple size",
         finish_roughness_label="Sheen", relief_label="Dimple depth",
     )
+    # voronoi_1 is the real dimple generator (now feeds BOTH normal and albedo
+    # via warp_0); voronoi_0/blend_0 are the dead-for-output donor mix.
     rename_nodes(g, _rock_family_names(
-        pattern_cells="HammerDimples", normal_cells="DimpleNormalCells",
-        cell_mix="CellMix", mix_noise="MixNoise", warp_noise="WarpNoise",
+        pattern_cells="CellMixCellsUnused", normal_cells="HammerDimples",
+        cell_mix="CellMixUnused", mix_noise="MixNoise", warp_noise="WarpNoise",
         pattern_warp="DimpleWarp", normal_name="HammerNormal",
     ))
     return save_variant(g, _LABEL, "pm04_hammertone", 1)

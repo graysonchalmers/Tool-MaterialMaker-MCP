@@ -12,8 +12,8 @@ Then `python -m quality.render_cookbook` renders each variant for inspection.
 import sys
 
 from quality.author_helpers import (load_example, set_gradient, set_param, save_variant,
-                             add_node, rewire, retype, node, _grad, group_into_subgraph,
-                             take_variant, rename_nodes)
+                             add_node, rewire, drop_conn, retype, node, _grad,
+                             group_into_subgraph, take_variant, rename_nodes)
 from quality import author  # shared builder base; regression guard is promote_cookbook --check
 
 from mm_mcp.catalog_builder import build_catalog
@@ -118,15 +118,22 @@ def build_s04_scattered_river_stones(catalog: dict) -> str:
     gradient -- softer/lighter than s06's darker slate-to-brown spread, per
     "softer." Sand fills the gaps with perlin-driven warm tan variation.
     Normal relief kept gentle (`param1` ~0.35, lower than s06's 0.6) for
-    smooth, water-worn stones rather than s06's more pronounced bulge."""
+    smooth, water-worn stones rather than s06's more pronounced bulge.
+
+    2026-09-14 normal/albedo alignment fix (mirrors s02 granite / s06): the
+    normal now derives from the SAME voronoi_0 (port 1, the `.w` distance
+    field rock's donor already routed to its normal chain) instead of a
+    separate voronoi_1/perlin_1/warp_0 relief chain. Material Maker seeds
+    voronoi from node position, so two voronoi nodes never share a cell layout
+    even at matching scale -- the old chain bumped nowhere near the stones.
+    Switching the generator (not the port/polarity) keeps the rounded bulge
+    but now on the same cells the mask carves into stone-vs-sand. Look note:
+    dropping warp_0 makes the stone silhouettes cleanly voronoi-geometric (the
+    water-worn edge distortion is gone)."""
     g = load_example("rock")
     set_param(g, "voronoi_0", "scale_x", 9)
     set_param(g, "voronoi_0", "scale_y", 9)
     set_param(g, "voronoi_0", "randomness", 1)
-    set_param(g, "voronoi_1", "scale_x", 9)
-    set_param(g, "voronoi_1", "scale_y", 9)
-    set_param(g, "voronoi_1", "randomness", 1)
-    set_param(g, "voronoi_1", "intensity", 1)
 
     # stone-vs-sand mask straight from the distance field, thresholded hard.
     # voronoi_0 port0 is F1 (distance to nearest seed): LOW at cell centers,
@@ -172,7 +179,14 @@ def build_s04_scattered_river_stones(catalog: dict) -> str:
     rewire(g, "Material", 0, "blend_stones", 0)
     rewire(g, "Material", 2, "blend_rgh", 0)
     set_gradient(g, "colorize_1", [(0.0, 0, 0, 0), (1.0, 0, 0, 0)])   # non-metal
-    set_param(g, "warp_0", "amount", 0.12)
+    # normal from voronoi_0 port 1 (same generator as the mask/stone albedo)
+    # so the bulge sits on the stones; the old separate voronoi_1/perlin_1/
+    # warp_0 relief chain is dead -- drop its connections and remove it.
+    rewire(g, "normal_map_0", 0, "voronoi_0", 1)
+    drop_conn(g, "warp_0", 0)
+    drop_conn(g, "warp_0", 1)
+    g["nodes"] = [n for n in g["nodes"]
+                  if n["name"] not in ("voronoi_1", "perlin_1", "warp_0")]
     set_param(g, "normal_map_0", "param4", 0)
     set_param(g, "normal_map_0", "param1", 0.35)   # gentler bulge than s06's 0.6
 
@@ -197,7 +211,11 @@ def build_s04_scattered_river_stones(catalog: dict) -> str:
                          [("colorize_rgh_stone", "gradient", "param0", "Stone roughness"),
                           ("colorize_rgh_sand", "gradient", "param1", "Sand roughness")],
                          catalog)
-    group_into_subgraph(g, ["perlin_1", "voronoi_1", "warp_0", "normal_map_0"],
+    # relief now derives from voronoi_0 (inside mask_pattern, grouped first):
+    # normal_map_0 is the only member, group_into_subgraph auto-creates a
+    # gen_inputs port fed by mask_pattern's extra output (granite's
+    # multi-consumer boundary mechanism).
+    group_into_subgraph(g, ["normal_map_0"],
                          "relief", "Relief",
                          [("normal_map_0", "param1", "param0", "Relief strength")],
                          catalog)
@@ -215,9 +233,6 @@ def build_s04_scattered_river_stones(catalog: dict) -> str:
         "colorize_rgh_sand": "SandRoughness",
         "colorize_rgh_stone": "StoneRoughness",
         "blend_rgh": "RoughnessComposite",
-        "perlin_1": "ReliefWarpNoise",
-        "voronoi_1": "ReliefCells",
-        "warp_0": "ContactWarp",
         "normal_map_0": "PebbleNormal",
     })
     return save_variant(g, _LABEL, "s04_scattered_river_stones", 1)
@@ -333,34 +348,43 @@ def build_s06_river_pebbles(catalog: dict) -> str:
     """Natural river stones / pebbles: rounded, tightly-packed smooth stones
     in varied natural tones, the organic counterpart to s05's regular hex
     tile. CLONE `rock` (same donor as s02 granite -- it already has a voronoi
-    albedo chain AND a working voronoi->warp->normal_map relief chain), but
-    tune for BIG rounded cells instead of granite's fine flecks:
+    albedo chain), but tune for BIG rounded cells instead of granite's fine
+    flecks:
 
-    - voronoi_0/voronoi_1 scale dropped to ~7 (big pebble-sized cells, vs
-      granite's 40+ fine flecks). A voronoi distance field bulges high at
-      cell centers and drops to a crevice at borders, so at this scale each
-      cell reads as one rounded stone with a dark gap around it.
+    - voronoi_0 scale dropped to ~7 (big pebble-sized cells, vs granite's 40+
+      fine flecks). A voronoi distance field bulges high at cell centers and
+      drops to a crevice at borders, so at this scale each cell reads as one
+      rounded stone with a dark gap around it.
     - albedo fed from voronoi_0 PORT 2 (rand3 per-cell random) through a
       multi-tone natural-stone gradient, so each pebble is a genuinely
       different tone (gray, tan, brown, slate) rather than one flat color --
       the same per-cell-random lever s02 granite v2 and s05 hex tile use.
-    - normal strength raised (param1 ~0.6, param4=0 for the directly-fed
-      analytic source) so the pebbles visibly bulge, not the near-flat
-      relief granite/concrete want.
+    - normal fed from the SAME voronoi_0 (port 1, the `.w` distance field that
+      rock's donor already routed to its normal chain), so the relief bulge
+      lands on the very cells the albedo colors instead of a disjoint second
+      voronoi. This is the 2026-09-14 normal/albedo alignment fix (mirrors the
+      s02 granite root-cause fix): because Material Maker seeds voronoi from
+      node position, two different voronoi nodes never share a cell layout
+      even at matching scale, so the old separate voronoi_1/perlin_1/warp_0
+      relief chain bumped nowhere near the pebble colors. Switching the
+      generator (not the port or polarity) keeps rock's proven rounded-bulge
+      relief but now co-located with the color. param1 ~0.6 / param4=0 for a
+      pronounced directly-fed analytic bulge (controller-tunable).
     - a fine perlin grain multiplied over albedo for per-stone surface
       texture, same detail lever added to s05 after Grayson's "needs another
       level of detail" note -- a smooth pebble still has fine mineral grain.
     Non-metal, moderate roughness (wet-looking river stone is a touch
-    glossier than dry fieldstone, kept mid-range)."""
+    glossier than dry fieldstone, kept mid-range).
+
+    Look note: dropping warp_0 makes the pebble silhouettes cleanly
+    voronoi-geometric -- the water-worn organic edge distortion the separate
+    warped relief used to add is gone; re-add a voronoi_0-fed warp if a softer
+    edge is wanted."""
     g = load_example("rock")
-    # big pebble-sized cells on both the albedo and the normal voronoi
+    # big pebble-sized cells (albedo AND normal now share this one voronoi)
     set_param(g, "voronoi_0", "scale_x", 7)
     set_param(g, "voronoi_0", "scale_y", 7)
     set_param(g, "voronoi_0", "randomness", 1)
-    set_param(g, "voronoi_1", "scale_x", 7)
-    set_param(g, "voronoi_1", "scale_y", 7)
-    set_param(g, "voronoi_1", "randomness", 1)
-    set_param(g, "voronoi_1", "intensity", 1)
     # albedo <- per-cell random -> varied natural stone tones per pebble
     rewire(g, "colorize_0", 0, "voronoi_0", 2)
     set_gradient(g, "colorize_0", [
@@ -373,8 +397,15 @@ def build_s06_river_pebbles(catalog: dict) -> str:
     set_gradient(g, "colorize_1", [(0.0, 0, 0, 0), (1.0, 0, 0, 0)])   # non-metal
     set_gradient(g, "colorize_2", [            # mid roughness, faint wet sheen
         (0.0, 0.42, 0.42, 0.42), (1.0, 0.60, 0.60, 0.60)])
-    # pronounced rounded pebble relief (directly-fed analytic -> param4=0)
-    set_param(g, "warp_0", "amount", 0.2)
+    # pronounced rounded pebble relief (directly-fed analytic -> param4=0),
+    # now derived from voronoi_0 port 1 (same generator as the albedo) so the
+    # bulge registers with the color. The old separate voronoi_1/perlin_1/
+    # warp_0 relief chain is dead -- drop its connections and remove it.
+    rewire(g, "normal_map_0", 0, "voronoi_0", 1)
+    drop_conn(g, "warp_0", 0)
+    drop_conn(g, "warp_0", 1)
+    g["nodes"] = [n for n in g["nodes"]
+                  if n["name"] not in ("voronoi_1", "perlin_1", "warp_0")]
     set_param(g, "normal_map_0", "param4", 0)
     set_param(g, "normal_map_0", "param1", 0.6)
     # fine per-stone surface grain, multiplied over the albedo (no mask, so
@@ -411,7 +442,11 @@ def build_s06_river_pebbles(catalog: dict) -> str:
                          "material_finish", "Material Finish",
                          [("colorize_2", "gradient", "param0", "Roughness")],
                          catalog)
-    group_into_subgraph(g, ["perlin_1", "voronoi_1", "warp_0", "normal_map_0"],
+    # relief now derives from voronoi_0 (inside pebble_pattern): the normal is
+    # the only member, group_into_subgraph auto-creates a gen_inputs port fed
+    # by pebble_pattern's extra output, the same multi-consumer boundary
+    # mechanism granite's fix uses.
+    group_into_subgraph(g, ["normal_map_0"],
                          "relief", "Relief",
                          [("normal_map_0", "param1", "param0", "Relief strength")],
                          catalog)
@@ -425,9 +460,6 @@ def build_s06_river_pebbles(catalog: dict) -> str:
         "perlin_grain": "GrainNoise",
         "colorize_grain": "GrainContrast",
         "blend_grain": "GrainOverPebbles",
-        "perlin_1": "ReliefWarpNoise",
-        "voronoi_1": "ReliefCells",
-        "warp_0": "ContactWarp",
         "normal_map_0": "PebbleNormal",
     })
     return save_variant(g, _LABEL, "s06_river_pebbles", 1)

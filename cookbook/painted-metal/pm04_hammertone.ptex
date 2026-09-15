@@ -218,7 +218,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "HammerDimples",
+         "node": "CellMixCellsUnused",
          "widget": "scale_x"
         }
        ]
@@ -291,7 +291,7 @@
      "type": "perlin"
     },
     {
-     "name": "DimpleNormalCells",
+     "name": "HammerDimples",
      "node_position": {
       "x": 115,
       "y": 63
@@ -320,7 +320,7 @@
      "type": "warp"
     },
     {
-     "name": "HammerDimples",
+     "name": "CellMixCellsUnused",
      "node_position": {
       "x": 117,
       "y": 448
@@ -336,7 +336,7 @@
      "type": "voronoi"
     },
     {
-     "name": "CellMix",
+     "name": "CellMixUnused",
      "node_position": {
       "x": 327,
       "y": 411
@@ -350,25 +350,25 @@
    ],
    "connections": [
     {
-     "from": "HammerDimples",
+     "from": "CellMixCellsUnused",
      "from_port": 0,
-     "to": "CellMix",
+     "to": "CellMixUnused",
      "to_port": 0
     },
     {
-     "from": "HammerDimples",
+     "from": "CellMixCellsUnused",
      "from_port": 1,
-     "to": "CellMix",
+     "to": "CellMixUnused",
      "to_port": 1
     },
     {
      "from": "MixNoise",
      "from_port": 0,
-     "to": "CellMix",
+     "to": "CellMixUnused",
      "to_port": 2
     },
     {
-     "from": "CellMix",
+     "from": "DimpleWarp",
      "from_port": 0,
      "to": "PaintColor",
      "to_port": 0
@@ -380,7 +380,7 @@
      "to_port": 1
     },
     {
-     "from": "DimpleNormalCells",
+     "from": "HammerDimples",
      "from_port": 1,
      "to": "DimpleWarp",
      "to_port": 0

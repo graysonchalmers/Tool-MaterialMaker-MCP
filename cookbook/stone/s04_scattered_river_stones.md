@@ -8,6 +8,8 @@ Rounded river stones sitting loose in a sand bed, with visible sand gaps between
 
 Clones `rock`, then thresholds `voronoi_0`'s own distance field (port 0) directly into a stone-vs-sand mask, so stones sit in a connected sand matrix with visible gaps rather than filling the whole frame with cells. The stone zone is widened so each masked region reads as a real rounded pebble, not a pinprick.
 
+The normal derives from that **same** `voronoi_0` (port 1, the distance field) rather than a separate relief voronoi, so the rounded bulge lands on the same cells the mask carves into stone-vs-sand; kept gentle (`param1` about 0.35) for smooth water-worn stones.
+
 Pitfall specific to this material: the first attempt had the mask backwards. It assumed port 0 (F1, distance to the nearest voronoi seed) was high at cell centers, when it is actually low at centers and rises toward the inter-cell network. Thresholding on that wrong assumption painted tiny sand-colored dots at the cell centers with stone filling everywhere else, the exact inverse of the intended look. The fix was flipping the gradient direction (low F1 maps to stone, high F1 maps to sand). Because this is relief-driven, confirm the result with `render_preview` rather than judging the flat albedo swatch.
 
 ## Subgraph structure
@@ -24,7 +26,7 @@ material's own pitfall note is about); per the sf03/pm03 precedent, a mask
 gradient stays internal and is never exposed as a friendly parameter, and
 both blends' `amount` is pinned at 1 (a pure mask-driven split, not a
 dimmer), so neither is exposed either. Opening the graph shows 4 top-level
-groups instead of the raw 17-node graph:
+groups instead of the raw 14-node graph:
 
 - **Stone/Sand Mask** -- `PebbleCells`, `GapMask` (the mask). Exposed:
   `Stone size` (`PebbleCells.scale_x`).
@@ -34,13 +36,17 @@ groups instead of the raw 17-node graph:
 - **Material Finish** -- `NonMetallic` (metallic, zeroed), `StoneRoughness`,
   `SandRoughness`, `RoughnessComposite`, `SurfaceNoise`. Exposed: `Stone roughness`,
   `Sand roughness`.
-- **Relief** -- `ReliefWarpNoise`, `ReliefCells`, `ContactWarp`, `PebbleNormal`. Exposed:
-  `Relief strength` (`PebbleNormal.param1`) only -- `ContactWarp.amount` stays
-  internal.
+- **Relief** -- `PebbleNormal` only. Its input is fed from `Stone/Sand Mask`'s
+  `PebbleCells` (port 1) across the group boundary, so the relief shares the
+  mask/albedo generator. Exposed: `Relief strength` (`PebbleNormal.param1`).
 
-Verified after building: `renders_match` against this material's own
-pre-retrofit baseline came back at an exact `grid_mean_abs_diff` of `0.0` on
-all three exported maps (albedo, normal, orm).
+2026-09-14 normal/albedo alignment fix: the normal used to come from a
+separate relief voronoi (warped by its own perlin) that could never share
+`PebbleCells`' position-seeded cell layout, so the bumps landed nowhere near
+the stones the mask draws. Feeding `PebbleNormal` from `PebbleCells` port 1
+(and deleting the dead `ReliefCells`/`ReliefWarpNoise`/`ContactWarp` chain)
+puts the relief on the same cells; the flat-map albedo/normal edges now
+coincide (confirmed by `quality/normal_albedo_audit.py` and a pixel overlay).
 
 ## See also
 
@@ -74,7 +80,4 @@ do not edit by hand. Open the `.ptex` and look for these names.
 | material_finish | StoneRoughness | colorize |
 | material_finish | RoughnessComposite | blend |
 | relief | PebbleNormal | normal_map |
-| relief | ReliefWarpNoise | perlin |
-| relief | ReliefCells | voronoi |
-| relief | ContactWarp | warp |
 <!-- nodes:end -->

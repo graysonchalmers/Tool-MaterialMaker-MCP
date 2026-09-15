@@ -187,7 +187,18 @@ def build_t03_gravel(catalog: dict) -> str:
     at PEBBLE scale (14, vs granite's fine-fleck 44) and a wider earthy
     gray/tan/brown palette instead of granite's grayscale. Stronger
     param4=0 relief than granite -- loose gravel is bumpier than a
-    polished slab."""
+    polished slab.
+
+    2026-09-14 normal/albedo alignment fix (mirrors s02 granite): the normal
+    now derives from the SAME voronoi_0 (port 1, the `.w` distance field rock's
+    donor already routed to its normal chain) instead of a separate
+    voronoi_1/perlin_1/warp_0 relief chain. Because Material Maker seeds
+    voronoi from node position, two voronoi nodes never share a cell layout
+    even at matching scale, so the old chain bumped nowhere near the gravel
+    colors; switching the generator (not the port/polarity) keeps rock's
+    rounded-bulge relief but co-located with the color. Look note: dropping
+    warp_0 makes gravel silhouettes cleanly voronoi-geometric (the water-worn
+    edge distortion is gone)."""
     g = load_example("rock")
     set_param(g, "voronoi_0", "scale_x", 14)
     set_param(g, "voronoi_0", "scale_y", 14)
@@ -205,13 +216,23 @@ def build_t03_gravel(catalog: dict) -> str:
         (0.0, 0.55, 0.55, 0.55),
         (1.0, 0.82, 0.82, 0.82),
     ])
+    # normal now derives from voronoi_0 port 1 (same generator as the albedo)
+    # so the bulge registers with the color; the old separate voronoi_1/
+    # perlin_1/warp_0 relief chain is dead -- drop its connections, remove it.
+    rewire(g, "normal_map_0", 0, "voronoi_0", 1)
+    drop_conn(g, "warp_0", 0)
+    drop_conn(g, "warp_0", 1)
+    g["nodes"] = [n for n in g["nodes"]
+                  if n["name"] not in ("voronoi_1", "perlin_1", "warp_0")]
     set_param(g, "normal_map_0", "param4", 0)
     set_param(g, "normal_map_0", "param1", 0.55)
 
     # Subgraph grouping, the exact s06_river_pebbles template (Task 10):
     # colorize_0 was rewired to read voronoi_0 PORT 2 (rand3) directly,
     # orphaning blend_0 -- still present with no consumer, folded into
-    # Pebble Pattern since it shares voronoi_0 as a source.
+    # Pebble Pattern since it shares voronoi_0 as a source. voronoi_0 now also
+    # feeds the normal externally, so group_into_subgraph auto-creates the
+    # second gen_outputs port (granite's multi-consumer boundary mechanism).
     group_into_subgraph(g, ["voronoi_0", "colorize_0", "blend_0"],
                          "pebble_pattern", "Pebble Pattern",
                          [("voronoi_0", "scale_x", "param0", "Pebble size"),
@@ -221,7 +242,7 @@ def build_t03_gravel(catalog: dict) -> str:
                          "material_finish", "Material Finish",
                          [("colorize_2", "gradient", "param0", "Roughness")],
                          catalog)
-    group_into_subgraph(g, ["perlin_1", "voronoi_1", "warp_0", "normal_map_0"],
+    group_into_subgraph(g, ["normal_map_0"],
                          "relief", "Relief",
                          [("normal_map_0", "param1", "param0", "Relief strength")],
                          catalog)
@@ -232,9 +253,6 @@ def build_t03_gravel(catalog: dict) -> str:
         "colorize_1": "NonMetallic",
         "colorize_2": "GravelRoughness",
         "perlin_0": "SurfaceNoise",
-        "perlin_1": "ReliefWarpNoise",
-        "voronoi_1": "ReliefCells",
-        "warp_0": "ContactWarp",
         "normal_map_0": "GravelNormal",
     })
     return save_variant(g, _LABEL, "t03_gravel", 1)

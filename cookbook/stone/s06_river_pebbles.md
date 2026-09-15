@@ -6,7 +6,7 @@ Tightly packed rounded river pebbles, the organic counterpart to s05's regular h
 
 ## Recipe
 
-Clones `rock` (the same donor as `s02` granite) and tunes it for big rounded cells instead of granite's fine flecks: both voronoi scales dropped to about 7 (pebble-sized cells), albedo fed from `voronoi_0` port 2 (per-cell random) through a multi-tone natural-stone gradient so each pebble is a different tone, and normal strength raised (`param1` about 0.6, `param4=0`) so each cell bulges into a rounded stone. The same fine-perlin-grain multiply used in s05 adds per-stone surface texture.
+Clones `rock` (the same donor as `s02` granite) and tunes it for big rounded cells instead of granite's fine flecks: the voronoi scale dropped to about 7 (pebble-sized cells), albedo fed from `voronoi_0` port 2 (per-cell random) through a multi-tone natural-stone gradient so each pebble is a different tone. The normal derives from that **same** `voronoi_0` (port 1, the distance field) rather than a separate relief voronoi, so the rounded bulge lands on the very cells the albedo colors; normal strength raised (`param1` about 0.6, `param4=0`) so each cell bulges into a rounded stone. The same fine-perlin-grain multiply used in s05 adds per-stone surface texture.
 
 Pitfall specific to this material: the albedo map alone looks like flat angular polygons; the rounding lives entirely in the normal map, so the flat swatch badly undersells it. This is a relief-driven material, so it can only be confirmed correct by running `render_preview` (the sphere/cube/ground 3D composite); under real lighting the cells read as tightly packed rounded natural stones, even though the underlying cells are still voronoi-angular.
 
@@ -19,7 +19,7 @@ builder rewired `PebbleColor` to read `PebbleCells` port 2 directly instead of
 into the pattern group since it shares `PebbleCells`/the same conceptual
 "color source" step. `GrainOverPebbles` carries no port2 mask (unconnected -> a
 uniform 1.0), a plain full-strength Multiply, no polarity to trace.
-Opening the graph shows 4 top-level groups instead of the raw 13-node
+Opening the graph shows 4 top-level groups instead of the raw 10-node
 graph:
 
 - **Pebble Pattern** -- `PebbleCells`, `PebbleColor`, and the orphaned
@@ -30,13 +30,17 @@ graph:
   (`GrainNoise.iterations`).
 - **Material Finish** -- `NonMetallic` (metallic, zeroed), `PebbleRoughness`
   (roughness), `SurfaceNoise`. Exposed: `Roughness` (`PebbleRoughness.gradient`).
-- **Relief** -- `ReliefWarpNoise`, `ReliefCells`, `ContactWarp`, `PebbleNormal`. Exposed:
-  `Relief strength` (`PebbleNormal.param1`) only -- `ContactWarp.amount` stays
-  internal.
+- **Relief** -- `PebbleNormal` only. Its input is fed from `Pebble Pattern`'s
+  `PebbleCells` (port 1) across the group boundary, so the relief shares the
+  albedo's generator. Exposed: `Relief strength` (`PebbleNormal.param1`).
 
-Verified after building: `renders_match` against this material's own
-pre-retrofit baseline came back at an exact `grid_mean_abs_diff` of `0.0` on
-all three exported maps (albedo, normal, orm).
+2026-09-14 normal/albedo alignment fix: the normal used to come from a
+separate relief voronoi (warped by its own perlin) that could never share
+`PebbleCells`' position-seeded cell layout, so the bumps landed nowhere near
+the pebble colors. Feeding `PebbleNormal` from `PebbleCells` port 1 (and
+deleting the dead `ReliefCells`/`ReliefWarpNoise`/`ContactWarp` chain) puts the
+relief on the same cells as the color; the flat-map albedo/normal edges now
+coincide (confirmed by `quality/normal_albedo_audit.py` and a pixel overlay).
 
 ## See also
 
@@ -66,7 +70,4 @@ do not edit by hand. Open the `.ptex` and look for these names.
 | material_finish | PebbleRoughness | colorize |
 | material_finish | SurfaceNoise | perlin |
 | relief | PebbleNormal | normal_map |
-| relief | ReliefWarpNoise | perlin |
-| relief | ReliefCells | voronoi |
-| relief | ContactWarp | warp |
 <!-- nodes:end -->

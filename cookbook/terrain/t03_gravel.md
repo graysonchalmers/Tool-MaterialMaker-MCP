@@ -6,7 +6,7 @@ Loose scattered gravel at pebble scale with a wide earthy palette.
 
 ## Recipe
 
-Clones `rock` and reuses `s02` granite's flat-per-cell-random lever (`voronoi_0` port 2, bypassing the smooth blend), but at pebble scale (14, versus granite's fine-fleck 44) with a wider earthy gray/tan/brown palette instead of granite's grayscale. `param4=0` relief is set stronger than granite's, since loose gravel is bumpier than a polished slab.
+Clones `rock` and reuses `s02` granite's flat-per-cell-random lever (`voronoi_0` port 2, bypassing the smooth blend), but at pebble scale (14, versus granite's fine-fleck 44) with a wider earthy gray/tan/brown palette instead of granite's grayscale. The normal derives from that **same** `voronoi_0` (port 1, the distance field) rather than a separate relief voronoi, so each gravel cell's bulge lands on its own color; `param4=0` relief is set stronger than granite's, since loose gravel is bumpier than a polished slab.
 
 No pitfall pass was needed; this is a direct scale-and-palette retune of a proven lever from `s02` granite.
 
@@ -22,13 +22,17 @@ exact `s06_river_pebbles` template (stone category):
   (`GravelColor.gradient`).
 - **Material Finish** -- `NonMetallic`, `GravelRoughness`, `SurfaceNoise`.
   Exposed: `Roughness` (`GravelRoughness.gradient`).
-- **Relief** -- `GravelNormal`, `ReliefWarpNoise`, `ReliefCells`,
-  `ContactWarp`. Exposed: `Relief strength` (`GravelNormal.param1`).
-  `ContactWarp.amount` is not exposed.
+- **Relief** -- `GravelNormal` only. Its input is fed from `Pebble Pattern`'s
+  `GravelCells` (port 1) across the group boundary, so the relief shares the
+  albedo's generator. Exposed: `Relief strength` (`GravelNormal.param1`).
 
-Verified after building: `renders_match` against this material's own
-pre-retrofit baseline came back at an exact `grid_mean_abs_diff` of `0.0`
-on all three exported maps (albedo, normal, orm).
+2026-09-14 normal/albedo alignment fix: the normal used to come from a
+separate relief voronoi (warped by its own perlin) that could never share
+`GravelCells`' position-seeded cell layout, so the bumps landed nowhere near
+the gravel colors. Feeding `GravelNormal` from `GravelCells` port 1 (and
+deleting the dead `ReliefCells`/`ReliefWarpNoise`/`ContactWarp` chain) puts
+the relief on the same cells; the flat-map albedo/normal edges now coincide
+(confirmed by `quality/normal_albedo_audit.py` and a pixel overlay).
 
 ## See also
 
@@ -54,7 +58,4 @@ do not edit by hand. Open the `.ptex` and look for these names.
 | material_finish | GravelRoughness | colorize |
 | material_finish | SurfaceNoise | perlin |
 | relief | GravelNormal | normal_map |
-| relief | ReliefWarpNoise | perlin |
-| relief | ReliefCells | voronoi |
-| relief | ContactWarp | warp |
 <!-- nodes:end -->
