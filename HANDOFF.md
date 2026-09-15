@@ -1,10 +1,12 @@
 # 🧭 Session Handoff: Tool-MaterialMaker-MCP
 
-_Last updated: 2026-09-14 21:15 CT (round 3 of the noise-vocabulary expansion
-merged to `main` and pushed to `origin`; the preview lighting rig overhaul
-merged earlier the same day from a concurrent session, `6ce84c6`, pushed
-along with it; a separate housekeeping session then cleared a stuck
-worktree lock, no MM-MCP code changed) (America/Chicago)_
+_Last updated: 2026-09-14 19:08 CT (America/Chicago) -- the round-3 follow-up
+(`task_73027cd8`) is fixed, open as PR #11
+(`claude/nervous-mahavira-e778a5` -> `main`), and CI is now green
+(`mergeable: MERGEABLE`, `mergeStateStatus: CLEAN`) -- ready for Grayson to
+merge. A separate housekeeping session cleared a stuck worktree lock, no
+MM-MCP code changed. `main` itself (round 3 + the preview lighting overhaul)
+is confirmed pushed to `origin`._
 
 The session baton. Read at pickup, rewrite at wrap-up. **Shape rule (2026-09-05,
 teardown #3):** "Current state" describes the latest session only; anything
@@ -14,164 +16,59 @@ archive; there is no separate archive file.
 
 ## 🎯 Current state
 
-**Round 3 of the noise-vocabulary expansion, MERGED to `main`.** Started
-from a `pickup` that verified `render_preview_sweep` for real and answered
-"what's next?" by kicking off round 3. `subagent-driven-development` drove
-all 6 material tasks plus the 2 README/AUTHORING integration tasks through
-to completion; every task reviewed clean on the first pass except Task 2
-(one fix round). Plan at
-`docs/superpowers/plans/2026-09-14-noise-vocabulary-round-3.md`, SDD ledger
-at `.superpowers/sdd/2026-09-14-noise-vocabulary-round-3/progress.md`.
+**The `task_73027cd8` follow-up (compound-node param `default` accuracy) is
+fixed, tested, and open as [PR #11](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/pull/11)
+with CI green.** Round 3 and the preview lighting overhaul (prior session,
+detailed in the log below) are already on `main`, which this session
+confirmed is itself pushed.
 
-**Scope correction found during planning, before any code was written:**
-the originally-discussed sixth target, `custom_tiles`, needs an
-`sdf2d`-typed shape input that only the out-of-scope SDF family can
-produce (verified via `describe_node`). Swapped for `skewed_bricks`
-(all three inputs are genuinely optional `f` maps, so it works
-standalone) before Task 6 was ever dispatched.
+Bug: `_parse_generic_node` in `catalog_builder.py` sourced a resolved
+compound param's `default` from whichever inner node its widget's
+`linked_widgets` pointed at (e.g. `crystal.param0` resolved against
+`voronoi.scale_x`, default 4) instead of the compound node's own
+`remote`/`gen_parameters` block, which declares the real default (16 for
+`crystal`). This is only reproducible on top of round-3's type-referenced-
+link resolution (`aca9939`/`60e2700`), which at session start was still
+sitting on the unmerged `worktree-noise-vocabulary-round-3` branch, not
+`main` -- the very first RED attempt against plain `main` came back
+`None == 16` (unreproducible) rather than `4 == 16`; merging round-3's
+branch in locally was required to reproduce it at all. Mid-session, a
+concurrent session/Grayson fast-forwarded `main`/`origin/main` to include
+round-3, so the branch was rebuilt as one clean commit on top of the
+now-current `main` rather than carrying a redundant merge commit.
 
-Six materials landed, one per unused catalog node, each authored by an
-implementer (builder + validate + isolated verification render only,
-no full preview/promote) then rendered, self-screened, and sent to
-Grayson as a batch by the controller (only the controller has the chat
-channel for approval):
-
-- **Task 1** `m04_scratched_steel` (`scratches`, metal): discrete
-  layered scratch marks, distinct from `m02`/`m03`'s continuous brushed
-  streaks. Reviewed clean, no fix round. Commit `fb436af`.
-- **Task 2** `f11_corduroy` (`directional_noise`, fabrics): the one
-  task needing a fix round. First pass claimed the retyped node's
-  render showed "clean parallel ribbing" when the pixels actually
-  showed irregular anisotropic streaking -- caught by the task reviewer
-  opening the actual PNG. Fix rendered and compared all three internal
-  modes with a measured band-regularity metric (coefficient of
-  variation) rather than trusting the first render; kept mode 0 as
-  genuinely the best of three, with the docstring rewritten to describe
-  the real pixels, not an idealized look. Commits `d029c7e`, `41d1b36`.
-- **Task 3** `t10_packed_dirt` (`dirt`, terrain): a new irregular
-  blotchy-patch topology this category never had. Implementer's own
-  self-review (with advisor) caught a gradient-stop/histogram mismatch
-  before it ever reached task review and fixed it in the same commit.
-  Reviewed clean. Commit `fef670e`.
-- **Task 4** `gl04_raw_crystal_cluster` (`crystal`, glass): a fourth
-  glass topology (two-voronoi composite reading as a raw crystal
-  cluster), distinct from the category's existing crack-network/
-  faceted/fracture-field siblings. Reviewed clean. Commit `9638930`.
-- **Task 5** `pm06_splatter_finish` (`splatter`, painted-metal): the
-  only task needing real multi-node wiring rather than a bare retype
-  (`splatter` needs a real pattern feeding its `in` port, so a `shape`
-  node is spliced in front of it). The brief's literal `shape` defaults
-  produced 3-4 tile-filling overlapping blobs; diagnosed against
-  `splatter.mmg`'s actual shader and fixed by shrinking the shape's
-  radius. Reviewed clean, wiring independently re-verified against the
-  saved graph's actual connections. Commit `40ea494`.
-- **Task 6** `man03_mosaic_tile` (`skewed_bricks`, ceramic): per-tile
-  positional jitter distinguishes it from `man02`'s perfectly regular
-  hex grid. Reused `man02`'s face-vs-grout roughness-inversion
-  technique rather than a flat roughness constant. Reviewed clean.
-  Commit `1c15120`.
-
-All six got a rendered 3D preview batched into one `SendUserFile` and
-Grayson's live "approved" with zero iteration requested (including the
-corduroy one the controller's self-screen specifically flagged as
-reading more like wood grain than fabric). Recipe cards written,
-`promote_cookbook` run per category, `promote_cookbook --check` and
-`naming --cookbook` both clean at 71/71. Cookbook is now 71 materials
-across 12 categories, up from 65.
-
-**A real, pre-existing infra bug surfaced during Task 8, unrelated to
-any of the six materials' own correctness, fixed as its own dispatched
-task.** Running the full suite for the first time after promotion
-surfaced 3 `test_play_sliders.py` failures: `f11_corduroy`,
-`gl04_raw_crystal_cluster`, and `t10_packed_dirt` all came back "missing
-numeric range" on an exposed slider. Root cause: `src/mm_mcp/catalog_builder.py`'s
-`_resolve_widget_range` had two real gaps this round's compound-node
-retype choices were simply the first to exercise -- it required
-`linked_widgets` to exist at all (missing the `named_parameter`-style
-widgets `directional_noise.n_scale` and `dirt.d_scale` use, which carry
-their own min/max directly), and it only followed a link to an inner
-node with an INLINE `shader_model` (missing `crystal.param0`/`param1`'s
-links to plain TYPE-REFERENCE nodes like `voronoi`). Dispatched as its
-own fix task with full TDD. First pass fixed both gaps but introduced a
-subtler one: its two-pass `build_catalog` restructuring ran pass 2 as a
-single sweep, which is order-dependent for a compound node linking to
-ANOTHER compound node that itself only resolves in pass 2 -- the opus
-reviewer reproduced this concretely (`binary_smooth.smooth` ->
-`fast_blur.param1` resolves differently under forward vs. reversed glob
-order). One fix round replaced the single sweep with a bounded fixpoint
-loop (converges in 2-3 rounds against a cap of 10, warns loudly rather
-than silently half-resolving if the cap is hit), plus a committed
-order-independence regression test. Re-review independently re-derived
-the old buggy behavior from scratch to confirm the fix's necessity.
-
-**Final whole-branch review (opus) came back "ready to merge with
-fixes."** Independently rebuilt the catalog under base vs. HEAD and
-diffed every entry (34 entries/22 node types resolved, zero
-regressions); independently re-verified every material's sibling
-numeric cross-references against the real graphs (all correct except
-one). One fix wave: `t10_packed_dirt`'s card and docstring had fabricated,
-self-contradictory sibling relief numbers (the same error class that
-cost Task 2 its fix round) -- fixed, prose-only, no re-render needed.
-Also included in the same wave since already touching the file: removed
-dead `full_catalog` parameter plumbing plus a now-false docstring claim
-in `catalog_builder.py`, closed a shallow-copy aliasing hazard on
-resolved enum params (`copy.deepcopy` instead of `dict()`), and fixed
-`gl04`'s card mischaracterizing a sibling as "turbulent." Re-review
-confirmed all four addressed, zero new breakage. One finding was
-explicitly ruled NOT a merge blocker and spawned as a follow-up instead
-(`task_73027cd8`): the catalog fix's `default` field is resolved from
-the wrong (inner leaf) node for 17 parameters including `crystal`
-(reports 4, real default is 16) -- an amplification of a pre-existing
-flaw (44 -> 61 wrong compound defaults), not a new defect class.
-
-**Merged to `main` while `main` had moved.** A concurrent session (the
-preview lighting rig overhaul, below) landed two commits on `main`
-after this branch had already forked from it. Merging `main` into this
-branch surfaced conflicts in exactly `HANDOFF.md` and `STATUS.md` (no
-code conflicts -- the two sessions touched entirely disjoint files
-otherwise); hand-reconciled preserving both sessions' content, matching
-this project's established precedent for concurrent-session baton
-conflicts. Full suite re-verified green post-merge before the final
-merge to `main`.
-
-Below, compressed to one entry each in the session log: the preview
-lighting rig overhaul (a separate concurrent session, merged to `main`
-earlier the same day as `6ce84c6`) reworked `render_preview`'s 3D
-lighting -- soft distance key shadow, a boosted rim light that
-deliberately casts its own shadow for contact grounding, a cool bounce
-fill, procedural-sky ambient/reflections (fixes metals reading
-dead-black), SSAO, and changed `render_preview_sweep`'s default motion
-from a full 360 azimuth orbit to a precession (key aim wobbles in an
-18-degree cone, rim/fill held still) so highlights circle relief without
-ever going backlit. Verified end-to-end on cobblestone (Grayson's
-approved pick) plus an out-of-category glass render. No tracked
-thumbnail regeneration was needed (`docs/images/cookbook-*/*.png` are
-flat albedo downscales, not lit 3D renders, so the lighting change
-touches nothing tracked).
+Fix: prefer the remote node's own `parameters[pname]` for `default` when
+present, sourced from the raw file data (not catalog state) so the
+existing fixpoint-resolution pass stays idempotent/order-independent.
+Also corrected `normal_map.param1`'s pinned test default (was asserting
+the inner `edge_detect_1.amount` default of 0.5; the real default, from
+`normal_map`'s own remote node, is 1) -- same bug, different node. Added a
+`clouds_noise`-based regression test verified (against a copy of the
+pre-fix file) to genuinely fail `None == 0` without the fix. Fast suite:
+1165 passed, zero regressions.
 
 ## 📌 Where we stopped
 
-Both sessions' work is on `main` AND pushed to `origin` (confirmed synced,
-`git rev-list --left-right --count origin/main...HEAD` reads `0  0`): round
-3's six materials plus the catalog_builder fix, and the preview lighting rig
-overhaul. Full suite 1163 passed in the primary checkout post-merge,
-`promote_cookbook --check` and `naming --cookbook` both clean (71/71). The
-scratchpad lighting prototype (`scratchpad/preview_variant/`,
-`scratchpad/lighting_lab/`) is untracked, still on disk. The merged-away
-worktree (`worktree-noise-vocabulary-round-3`) hit a Windows file-lock on
-`git worktree remove`; **resolved in a follow-up housekeeping session**
-(see the session log entry below) by finding the actual lock holder via a
-PEB-read process scan rather than assuming it was Godot/Python, so
-`task_86ba47bd` was dismissed as no longer needed.
+`task_73027cd8`'s fix is committed (`948a8e7`) and open as
+[PR #11](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/pull/11)
+(`claude/nervous-mahavira-e778a5` -> `main`). The PR hit a merge conflict
+with `main` (a concurrent session's own wrap-up commit touched the same
+`HANDOFF.md`/`STATUS.md` lines this session had just written), blocking CI
+from even starting -- reconciled by merging `main` into the branch and
+hand-resolving both files, same precedent as round 3's own concurrent-session
+collision. Round 3 and the preview lighting overhaul are already on `main`
+and confirmed pushed; a separate housekeeping session also cleared a stuck
+worktree lock (`worktree-noise-vocabulary-round-3`'s directory, orphaned by a
+failed `git worktree remove`), dismissing `task_86ba47bd` as no longer needed.
+**CI on PR #11 is now green** (1 check passing, `mergeable: MERGEABLE`,
+`mergeStateStatus: CLEAN`) -- ready to merge whenever Grayson wants.
 
 ## ▶️ Next concrete step
 
-No pressing next MM-MCP step queued. Open items, any of which Grayson
-can pick up next:
-- The spawned follow-up (`task_73027cd8`, already running as of this
-  writing): fix the catalog's resolved `default` field for compound-node
-  parameters.
+Merge PR #11 (Grayson's call on timing). Other open items, any of which
+Grayson can pick up instead:
 - Promote the interactive lighting slider lab (`scratchpad/lighting_lab/`) to a tracked dev tool, or leave it as throwaway scratchpad.
+- Audit the broader compound-default flaw class beyond the two nodes tested here (crystal, normal_map, clouds_noise) -- not exhaustively checked.
 
 ## ❓ Open questions
 
@@ -190,9 +87,11 @@ can pick up next:
   in its recipe card); it was chosen as the best of the node's three
   internal modes, not a claim of a photo-real corduroy read. Revisit if a
   future session finds a way to regularize the banding further.
-- Follow-up spawned (`task_73027cd8`): the catalog_builder fix's `default`
-  field is resolved from the wrong node for 17 compound-node parameters
-  (see Current state); not a merge blocker, worth fixing properly later.
+- `task_73027cd8` (catalog `default`-field accuracy) is fixed and open as
+  PR #11, not yet merged to `main`. The broader 44/61-parameter
+  compound-default flaw class beyond the two nodes tested (crystal,
+  normal_map, clouds_noise) has not been audited exhaustively; may be
+  worth a follow-up sweep.
 
 ## ⚠️ Heads-up for the next agent
 
@@ -218,9 +117,9 @@ can pick up next:
   now does a bounded fixpoint pass for this, fixed 2026-09-14). If a new
   material's exposed slider ever fails `test_play_sliders.py` with "missing
   numeric range," check which of these two widget shapes it is before assuming
-  the node just lacks catalog data. Known remaining gap: the resolved
-  parameter's `default` field can still be wrong (taken from the inner node,
-  not the compound node's own declared default) -- see the spawned follow-up.
+  the node just lacks catalog data. The resolved parameter's `default` field
+  now comes from the remote node's own `parameters` block, not the linked
+  inner node -- fixed 2026-09-14 (`task_73027cd8`, commit `948a8e7`).
 - **A compositing node like `splatter` needs a real pattern wired into its
   input** (its `in` port has a literal `"0.0"` shader default, so leaving it
   unconnected renders blank) -- retype the from-scratch skeleton's placeholder
@@ -302,6 +201,7 @@ can pick up next:
 Newest first. Keep at most 8 entries; older ones are in `git log` (search the
 commit subjects, every session ends with a `docs:` wrap-up commit).
 
+### 2026-09-14 (`task_73027cd8` catalog default-field fix, PR #11 open): dispatched task with an exact fix location and a pre-diagnosed bug. First RED attempt against plain `main` came back unreproducible (`None == 16`, not `4 == 16`) because the bug only exists once round-3's type-referenced-link resolution is present, and round-3 was still sitting on its own unmerged worktree branch -- merged `worktree-noise-vocabulary-round-3` in locally to reproduce it for real (confirmed via `advisor`). Fix: `_parse_generic_node` now prefers the remote node's own `parameters[pname]` for `default` over the linked inner node's. Corrected `normal_map.param1`'s pinned test default (0.5 -> 1, same bug). Added a `clouds_noise`-based test empirically verified (against a pre-fix copy of the file) to fail without the change. Mid-session a concurrent session fast-forwarded `main`/`origin/main` to include round-3, so rebuilt the branch as one clean commit (`948a8e7`) on the new `main` instead of carrying a redundant merge. Fast suite 1165 passed, pushed, opened as PR #11. A second concurrent-session collision hit the PR itself: another session's own wrap-up commit landed on `main` touching the same HANDOFF.md/STATUS.md lines, blocking CI with a merge conflict -- reconciled by merging `main` in and hand-resolving both files (a third concurrent PR, #12, also merged to `main` during this window; unrelated files, no further conflict). Fast suite re-verified 1165 passed post-merge, pushed (`4cb1e47`), CI came back green (1 check passing, `mergeable: MERGEABLE`) -- PR #11 ready to merge.
 ### 2026-09-14 (worktree hygiene, no MM-MCP code changed): a prior session's
 `git worktree remove` on `.claude\worktrees\noise-vocabulary-round-3` had
 failed with a Windows "Device or resource busy" error; git had already
@@ -326,4 +226,3 @@ handles beyond the two genuinely live sessions) -- clean. Commons log:
 ### 2026-09-14 (noise-vocabulary round 2, MERGED to `main`): `pickup` resumed at Task 5's pending approval; `subagent-driven-development` drove Tasks 5-11 to completion (cookbook 59 -> 65 across 12 categories, README/AUTHORING count integration). Task 8 found + parked a real pre-existing bug (shared `wood` donor bleeds GrainMask into Material's metallic port, w04/w05/w06); a follow-up session fixed w04/w05, then w06 was fixed on this round's branch before merging. Merged with HANDOFF.md's session log hand-reconciled.
 ### 2026-09-14 (rotating-key-light preview mode, `render_preview_sweep`, MERGED `58e35ab`): brainstorming -> TDD. `preview.gd` azimuth sweep mode (one Godot process, N frames, 360 key-light rotation) + `render_preview_sweep()` (Pillow GIF assembly, runtime dep) + 11th MCP tool. Advisor review caught a thin test and the verified/wired state mismatch; added a real frames-differ assertion, measured a real brightness curve. Merged same session.
 ### 2026-09-13 (enum-index validation enforcement, MERGED to main): `pickup`; the hole was ENFORCEMENT (out-of-range enum was a `warning`). Fix: out-of-range enum index -> `error` with an intended-index hint; ratchet test. TDD red->green, fast suite 1039->1045. A sibling branch fixing the same thing was folded in.
-### 2026-09-13 (noise/distortion vocabulary + core toolbox, MERGED `0169446`): `subagent-driven-development`, all 14 tasks. Shipped 6 proof materials on unused bases (cookbook 53->59), 19 diagnostic swatches, README "Core toolbox" section, AUTHORING distortion note. Fast suite 1039.

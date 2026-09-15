@@ -6,11 +6,19 @@
 
 Gate ledger. Three states only: ✅ verified · 🔌 wired · ⬜ not started.
 
-_Last updated: 2026-09-14 (round 3 of the noise-vocabulary expansion merged to
-`main`, 71 materials/12 categories; the preview lighting rig overhaul merged
-earlier the same day, `6ce84c6`, from a concurrent session -- both landed on
-`main` and pushed to `origin`)._
+_Last updated: 2026-09-14 (`task_73027cd8` catalog default-field fix, open as
+PR #11 with CI green, ready to merge). `main` itself (round 3 + the preview
+lighting overhaul) is confirmed pushed to `origin`._
 
+> ✅ **`task_73027cd8` fixed:** the round-3 catalog fix's resolved `default`
+> field was taken from the wrong (linked inner leaf) node for compound-node
+> params (e.g. `crystal.param0` reported 4, real default 16, from its own
+> `remote`/`gen_parameters` block). `_parse_generic_node` now prefers the
+> remote node's own declared default. Commit `948a8e7`, open as
+> [PR #11](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/pull/11)
+> with CI green, ready to merge. Fast suite 1165 passed. See `HANDOFF.md`'s
+> session log for detail.
+>
 > ✅ **Round 3 MERGED to `main`:** six more proof materials on
 > previously-unused catalog nodes, all Grayson-approved: `m04_scratched_steel`
 > (scratches), `f11_corduroy` (directional_noise), `t10_packed_dirt` (dirt),
@@ -21,10 +29,7 @@ earlier the same day, `6ce84c6`, from a concurrent session -- both landed on
 > `catalog_builder.py` bug this round surfaced (compound-node param range
 > resolution for `named_parameter` widgets and type-referenced `linked_control`
 > links, plus a fixpoint-loop fix for compound-to-compound reference chains
-> after the first pass proved order-dependent). A follow-up was spawned
-> (`task_73027cd8`) for a related-but-separate, non-blocking issue: the fix's
-> resolved `default` field is taken from the wrong (inner leaf) node for 17
-> parameters, including `crystal`. Full task-by-task ledger at
+> after the first pass proved order-dependent). Full task-by-task ledger at
 > `.superpowers/sdd/2026-09-14-noise-vocabulary-round-3/progress.md`; see
 > `HANDOFF.md`'s session log for the summary. Plan:
 > `docs/superpowers/plans/2026-09-14-noise-vocabulary-round-3.md`. Prior
@@ -53,7 +58,7 @@ row points at.
 
 | Component | State | What it is / evidence |
 |---|---|---|
-| `src/mm_mcp/catalog_builder.py` | ✅ | `.mmg` -> `catalog.json`, incl. compound-node param ranges (a bounded fixpoint pass over compound-to-compound reference chains, 2026-09-14, order-independence regression-tested). `tests/test_catalog_*.py` |
+| `src/mm_mcp/catalog_builder.py` | ✅ | `.mmg` -> `catalog.json`, incl. compound-node param ranges (a bounded fixpoint pass over compound-to-compound reference chains, 2026-09-14, order-independence regression-tested) and defaults sourced from the remote node's own block, not the linked inner node (`task_73027cd8`, 2026-09-14, PR #11 open). `tests/test_catalog_*.py` |
 | `src/mm_mcp/validator.py`, `graph.py` | ✅ | Graph validation (errors as data), recurses into subgraphs (2026-09-06, `577592f`), + pure helpers. `tests/test_validator.py`, `tests/test_graph.py` |
 | `src/mm_mcp/render.py` | ✅ | Headless Godot runner, `--target` profiles (Godot, Unity/URP verified; Unreal UE5 file-level only), process-tree kill, temp-file IO. `tests/test_render.py` |
 | `src/mm_mcp/server.py` (+ `idle.py`) | ✅ | 11 batch tools + 7 live tools + `catalog://nodes` + `guide://authoring`; opt-in idle exit (`MM_IDLE_EXIT_MINUTES`, 2026-09-06). `tests/test_server_tools.py`, `tests/test_server_live.py`, `tests/test_server_idle.py`, `tests/test_idle.py`; counts enforced by `tests/test_readme_counts.py` |
