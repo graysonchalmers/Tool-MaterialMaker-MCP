@@ -219,7 +219,11 @@ func _ready() -> void:
 	var sky := Sky.new()
 	sky.sky_material = sky_mat
 	env.sky = sky
-	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+	# Ambient is pinned to an explicit color (matched to what the sky above
+	# derived) so enriching the reflection sky (below / next change) does NOT
+	# re-light the matte materials. Reflection still reads the sky.
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env.ambient_light_color = Color(0.4, 0.42, 0.46)
 	env.ambient_light_energy = 1.0
 	env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
 	env.fog_enabled = true
