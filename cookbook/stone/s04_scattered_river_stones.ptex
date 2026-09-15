@@ -14,13 +14,13 @@
   },
   {
    "from": "mask_pattern",
-   "from_port": 2,
+   "from_port": 3,
    "to": "stone_sand_color",
    "to_port": 5
   },
   {
    "from": "mask_pattern",
-   "from_port": 3,
+   "from_port": 4,
    "to": "stone_sand_color",
    "to_port": 6
   },
@@ -32,7 +32,7 @@
   },
   {
    "from": "mask_pattern",
-   "from_port": 4,
+   "from_port": 5,
    "to": "material_finish",
    "to_port": 0
   },
@@ -65,6 +65,12 @@
    "from_port": 4,
    "to": "stone_sand_color",
    "to_port": 2
+  },
+  {
+   "from": "mask_pattern",
+   "from_port": 2,
+   "to": "relief",
+   "to_port": 0
   },
   {
    "from": "relief",
@@ -152,16 +158,21 @@
       },
       {
        "name": "out2",
-       "type": "rgb",
+       "type": "f",
        "group_size": 0
       },
       {
        "name": "out3",
-       "type": "rgba",
+       "type": "rgb",
        "group_size": 0
       },
       {
        "name": "out4",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "out5",
        "type": "rgba",
        "group_size": 0
       }
@@ -262,13 +273,13 @@
     },
     {
      "from": "PebbleCells",
-     "from_port": 2,
+     "from_port": 1,
      "to": "gen_outputs",
      "to_port": 2
     },
     {
-     "from": "GapMask",
-     "from_port": 0,
+     "from": "PebbleCells",
+     "from_port": 2,
      "to": "gen_outputs",
      "to_port": 3
     },
@@ -277,6 +288,12 @@
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 4
+    },
+    {
+     "from": "GapMask",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 5
     }
    ]
   },
@@ -1119,8 +1136,8 @@
    "label": "Relief",
    "type": "graph",
    "node_position": {
-    "x": 279.25,
-    "y": 207.75
+    "x": 583.0,
+    "y": 463.0
    },
    "parameters": {
     "param0": 0.35
@@ -1131,11 +1148,17 @@
      "name": "gen_inputs",
      "type": "ios",
      "node_position": {
-      "x": -120.75,
-      "y": 207.75
+      "x": 183.0,
+      "y": 463.0
      },
      "parameters": {},
-     "ports": [],
+     "ports": [
+      {
+       "name": "in0",
+       "type": "f",
+       "group_size": 0
+      }
+     ],
      "seed": 0,
      "seed_locked": true
     },
@@ -1143,8 +1166,8 @@
      "name": "gen_outputs",
      "type": "ios",
      "node_position": {
-      "x": 679.25,
-      "y": 207.75
+      "x": 983.0,
+      "y": 463.0
      },
      "parameters": {},
      "ports": [
@@ -1160,8 +1183,8 @@
      "name": "gen_parameters",
      "type": "remote",
      "node_position": {
-      "x": -120.75,
-      "y": 407.75
+      "x": 183.0,
+      "y": 663.0
      },
      "parameters": {
       "param0": 0.35
@@ -1198,66 +1221,11 @@
       "size": 2
      },
      "type": "normal_map"
-    },
-    {
-     "name": "ReliefWarpNoise",
-     "node_position": {
-      "x": 102,
-      "y": 166
-     },
-     "parameters": {
-      "iterations": 3,
-      "persistence": 0.65,
-      "scale_x": 4,
-      "scale_y": 4
-     },
-     "type": "perlin"
-    },
-    {
-     "name": "ReliefCells",
-     "node_position": {
-      "x": 115,
-      "y": 63
-     },
-     "parameters": {
-      "intensity": 1,
-      "randomness": 1,
-      "scale_x": 9,
-      "scale_y": 9,
-      "stretch_x": 1,
-      "stretch_y": 1
-     },
-     "type": "voronoi"
-    },
-    {
-     "name": "ContactWarp",
-     "node_position": {
-      "x": 317,
-      "y": 139
-     },
-     "parameters": {
-      "amount": 0.12,
-      "eps": 0.045,
-      "epsilon": 0
-     },
-     "type": "warp"
     }
    ],
    "connections": [
     {
-     "from": "ReliefWarpNoise",
-     "from_port": 0,
-     "to": "ContactWarp",
-     "to_port": 1
-    },
-    {
-     "from": "ReliefCells",
-     "from_port": 1,
-     "to": "ContactWarp",
-     "to_port": 0
-    },
-    {
-     "from": "ContactWarp",
+     "from": "gen_inputs",
      "from_port": 0,
      "to": "PebbleNormal",
      "to_port": 0

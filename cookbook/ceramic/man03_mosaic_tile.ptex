@@ -1,0 +1,574 @@
+{
+ "connections": [
+  {
+   "from": "mosaic_pattern",
+   "from_port": 1,
+   "to": "Material",
+   "to_port": 0
+  },
+  {
+   "from": "mosaic_pattern",
+   "from_port": 0,
+   "to": "mosaic_finish",
+   "to_port": 0
+  },
+  {
+   "from": "mosaic_pattern",
+   "from_port": 2,
+   "to": "mosaic_finish",
+   "to_port": 1
+  },
+  {
+   "from": "mosaic_finish",
+   "from_port": 0,
+   "to": "Material",
+   "to_port": 4
+  },
+  {
+   "from": "mosaic_finish",
+   "from_port": 1,
+   "to": "Material",
+   "to_port": 2
+  }
+ ],
+ "nodes": [
+  {
+   "name": "Material",
+   "type": "material",
+   "node_position": {
+    "x": 620,
+    "y": 40
+   },
+   "export_paths": {},
+   "parameters": {
+    "albedo_color": {
+     "a": 1,
+     "r": 1,
+     "g": 1,
+     "b": 1,
+     "type": "Color"
+    },
+    "ao": 1,
+    "depth_scale": 1,
+    "emission_energy": 1,
+    "metallic": 0.0,
+    "normal": 1,
+    "roughness": 0.5,
+    "size": 11,
+    "sss": 0
+   }
+  },
+  {
+   "name": "mosaic_pattern",
+   "label": "Mosaic Pattern",
+   "type": "graph",
+   "node_position": {
+    "x": 150.0,
+    "y": -30.0
+   },
+   "parameters": {
+    "param0": 6,
+    "param1": 1,
+    "param2": {
+     "interpolation": 1,
+     "points": [
+      {
+       "a": 1,
+       "r": 0.1,
+       "g": 0.09,
+       "b": 0.08,
+       "pos": 0.0
+      },
+      {
+       "a": 1,
+       "r": 0.1,
+       "g": 0.09,
+       "b": 0.08,
+       "pos": 0.12
+      },
+      {
+       "a": 1,
+       "r": 0.85,
+       "g": 0.79,
+       "b": 0.66,
+       "pos": 0.3
+      },
+      {
+       "a": 1,
+       "r": 0.92,
+       "g": 0.87,
+       "b": 0.74,
+       "pos": 1.0
+      }
+     ],
+     "type": "Gradient"
+    }
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": -250.0,
+      "y": -30.0
+     },
+     "parameters": {},
+     "ports": [],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 550.0,
+      "y": -30.0
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "out0",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "out1",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "out2",
+       "type": "f",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -250.0,
+      "y": 170.0
+     },
+     "parameters": {
+      "param0": 6,
+      "param1": 1,
+      "param2": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0.1,
+         "g": 0.09,
+         "b": 0.08,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.1,
+         "g": 0.09,
+         "b": 0.08,
+         "pos": 0.12
+        },
+        {
+         "a": 1,
+         "r": 0.85,
+         "g": 0.79,
+         "b": 0.66,
+         "pos": 0.3
+        },
+        {
+         "a": 1,
+         "r": 0.92,
+         "g": 0.87,
+         "b": 0.74,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      }
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Rows",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "MosaicTiles",
+         "widget": "rows"
+        }
+       ]
+      },
+      {
+       "name": "param1",
+       "shortdesc": "Jitter",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "MosaicTiles",
+         "widget": "randomness"
+        }
+       ]
+      },
+      {
+       "name": "param2",
+       "shortdesc": "Tile and grout color",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "TileColor",
+         "widget": "gradient"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "MosaicTiles",
+     "type": "skewed_bricks",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "rows": 6,
+      "columns": 3,
+      "offset": 0.5,
+      "randomness": 1,
+      "mortar": 0.1,
+      "bevel": 0.1,
+      "round": 0,
+      "corner": 0.3
+     }
+    },
+    {
+     "name": "TileColor",
+     "type": "colorize",
+     "node_position": {
+      "x": 300,
+      "y": -60
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0.1,
+         "g": 0.09,
+         "b": 0.08,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.1,
+         "g": 0.09,
+         "b": 0.08,
+         "pos": 0.12
+        },
+        {
+         "a": 1,
+         "r": 0.85,
+         "g": 0.79,
+         "b": 0.66,
+         "pos": 0.3
+        },
+        {
+         "a": 1,
+         "r": 0.92,
+         "g": 0.87,
+         "b": 0.74,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      }
+     }
+    }
+   ],
+   "connections": [
+    {
+     "from": "MosaicTiles",
+     "from_port": 0,
+     "to": "TileColor",
+     "to_port": 0
+    },
+    {
+     "from": "MosaicTiles",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    },
+    {
+     "from": "TileColor",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 1
+    },
+    {
+     "from": "MosaicTiles",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 2
+    }
+   ]
+  },
+  {
+   "name": "mosaic_finish",
+   "label": "Mosaic Finish",
+   "type": "graph",
+   "node_position": {
+    "x": 150.0,
+    "y": 80.0
+   },
+   "parameters": {
+    "param0": 0.4,
+    "param1": {
+     "interpolation": 1,
+     "type": "Gradient",
+     "points": [
+      {
+       "a": 1,
+       "r": 0.78,
+       "g": 0.78,
+       "b": 0.78,
+       "pos": 0.0
+      },
+      {
+       "a": 1,
+       "r": 0.78,
+       "g": 0.78,
+       "b": 0.78,
+       "pos": 0.12
+      },
+      {
+       "a": 1,
+       "r": 0.14,
+       "g": 0.14,
+       "b": 0.14,
+       "pos": 0.3
+      },
+      {
+       "a": 1,
+       "r": 0.08,
+       "g": 0.08,
+       "b": 0.08,
+       "pos": 1.0
+      }
+     ]
+    }
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": -250.0,
+      "y": 80.0
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "in0",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "in1",
+       "type": "f",
+       "group_size": 0
+      }
+     ],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 550.0,
+      "y": 80.0
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "out0",
+       "type": "rgb",
+       "group_size": 0
+      },
+      {
+       "name": "out1",
+       "type": "rgba",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -250.0,
+      "y": 280.0
+     },
+     "parameters": {
+      "param0": 0.4,
+      "param1": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.78,
+         "g": 0.78,
+         "b": 0.78,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.78,
+         "g": 0.78,
+         "b": 0.78,
+         "pos": 0.12
+        },
+        {
+         "a": 1,
+         "r": 0.14,
+         "g": 0.14,
+         "b": 0.14,
+         "pos": 0.3
+        },
+        {
+         "a": 1,
+         "r": 0.08,
+         "g": 0.08,
+         "b": 0.08,
+         "pos": 1.0
+        }
+       ]
+      }
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Grout depth",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "MosaicNormal",
+         "widget": "param1"
+        }
+       ]
+      },
+      {
+       "name": "param1",
+       "shortdesc": "Roughness",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "RoughnessConst",
+         "widget": "gradient"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "MosaicNormal",
+     "type": "normal_map",
+     "node_position": {
+      "x": 300,
+      "y": 160
+     },
+     "parameters": {
+      "param0": 10,
+      "param1": 0.4,
+      "param2": 0,
+      "param4": 0
+     }
+    },
+    {
+     "name": "RoughnessConst",
+     "type": "colorize",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.78,
+         "g": 0.78,
+         "b": 0.78,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.78,
+         "g": 0.78,
+         "b": 0.78,
+         "pos": 0.12
+        },
+        {
+         "a": 1,
+         "r": 0.14,
+         "g": 0.14,
+         "b": 0.14,
+         "pos": 0.3
+        },
+        {
+         "a": 1,
+         "r": 0.08,
+         "g": 0.08,
+         "b": 0.08,
+         "pos": 1.0
+        }
+       ]
+      }
+     }
+    }
+   ],
+   "connections": [
+    {
+     "from": "gen_inputs",
+     "from_port": 0,
+     "to": "MosaicNormal",
+     "to_port": 0
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 1,
+     "to": "RoughnessConst",
+     "to_port": 0
+    },
+    {
+     "from": "MosaicNormal",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    },
+    {
+     "from": "RoughnessConst",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 1
+    }
+   ]
+  }
+ ]
+}
