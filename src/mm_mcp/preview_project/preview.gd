@@ -266,6 +266,15 @@ func _ready() -> void:
 	env.ssao_horizon = 0.02
 	env.ssao_light_affect = 0.7
 	env.ssao_ao_channel_affect = 1.0
+	# Screen-space reflections: objects reflect each OTHER and the ground
+	# reflects them, on top of the sky-only image-based reflection above.
+	# Roughness-weighted by the renderer, so rough matte materials barely
+	# pick it up; only smooth/metal surfaces show a visible object reflection.
+	env.ssr_enabled = true
+	env.ssr_max_steps = 64
+	env.ssr_fade_in = 0.15
+	env.ssr_fade_out = 2.0
+	env.ssr_depth_tolerance = 0.2
 	env_node.environment = env
 	add_child(env_node)
 
