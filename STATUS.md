@@ -6,10 +6,19 @@
 
 Gate ledger. Three states only: ✅ verified · 🔌 wired · ⬜ not started.
 
-_Last updated: 2026-09-14 (round 3 of the noise-vocabulary expansion merged to
-`main`, 71 materials/12 categories; the preview lighting rig overhaul merged
-earlier the same day, `6ce84c6`, from a concurrent session -- both landed on
-`main` and pushed to `origin`)._
+_Last updated: 2026-09-14 (evening: normal/albedo registration audit + 5 material
+fixes on branch `showcase-lighting-refresh`, NOT yet merged to `main`. Earlier the
+same day: round 3 (71 materials) + the preview lighting overhaul both merged to `main`.)_
+
+> 🔧 **On branch `showcase-lighting-refresh` (NOT merged):** two new `quality/` tools +
+> 5 material normal-registration fixes. An audit found 8/71 materials whose normal relief
+> was built from a different noise source than their albedo (relief did not register with
+> color). Fixed: `s02_gray_granite`, `s06_river_pebbles`, `s04_scattered_river_stones`,
+> `t03_gravel`, `pm04_hammertone` (all audit-clean, full suite green). Left as fine-by-design:
+> `t02_fresh_snow`, `pm01_powder_coat`, `pm02_automotive_enamel`. Pending on the branch:
+> soften s06/t03 relief to domes (Grayson request), cube triplanar+bevel, and the original
+> front-page showcase regen (hero+gallery stills on the new rig + a top-5 GIF strip). See
+> `HANDOFF.md` + `.superpowers/sdd/2026-09-14-showcase-lighting-refresh/progress.md`.
 
 > ✅ **Round 3 MERGED to `main`:** six more proof materials on
 > previously-unused catalog nodes, all Grayson-approved: `m04_scratched_steel`
@@ -67,6 +76,8 @@ row points at.
 | `quality/debug_swatches.py` | ✅ | 19 single-node diagnostic swatches with pixel assertions (merged to `main` with round 1; slope_blur structural-only, buffer node cannot render headless). Surfaced in README's "Core toolbox" section as a swatch contact sheet. `tests/test_debug_swatches.py`; `docs/DEBUG_SWATCHES.md` |
 | `quality/` package (builders, helpers, naming checker, render_tracked, promote/check, swatches) | ✅ | Importable package, `python -m quality.<module>`; `author.py` is the shared builder base, guarded by `--check`. `tests/test_quality_package.py`, `tests/test_cookbook_builders_signature.py`; `quality/README.md` |
 | `quality/node_usage_audit.py` | ✅ | Recurses cookbook subgraphs, reports live noise/pattern node coverage against a curated 53-node list (`_NOISE_PATTERN_NODES`); replaces the old one-time manual histogram. AUTHORING.md's coverage line is test-enforced against its live output. `tests/test_node_usage_audit.py`, `tests/test_authoring_counts.py` |
+| `quality/normal_albedo_audit.py` | ✅ (branch) | Static audit: traces albedo(port 0)/normal(port 4) source generators across subgraph proxies, flags materials where the sets are disjoint (relief does not register with color). Reviewer hand-verified traversal. `tests/test_normal_albedo_audit.py` (branch `showcase-lighting-refresh`, commit `9678006`) |
+| `quality/_make_showcase.py` | ✅ (branch) | Reproducible front-page render pipeline (still 1024x576 / hero 3-panel montage / gif modes); import-safe (Godot lazy). `tests/test_make_showcase.py` (branch `showcase-lighting-refresh`, commit `7d9f2a2`). Not yet used to regen the tracked gallery. |
 | `docs/evidence/phase3/` | ✅ | Frozen Phase-3 test set, rubric, and both scorecards, archived 2026-09-05; runner retired. `tests/test_phase3_evidence.py` |
 | Packaging (wheel/sdist, CI, release-please) | 🔌 | `twine`-clean, clean-venv verified, windows-latest CI green, release PRs auto-opened. PyPI on hold; macOS/Linux untested |
 | Backup (nightly `backup-ops` mirror to V:) | ✅ | Regenerable render output and the overlay excluded 2026-09-05 (`C:\Projects-local\backup-ops\projects.psd1`, `Tool-MaterialMaker-MCP` override) |
