@@ -26,17 +26,24 @@ class PreviewSweepResult:
 
 
 def _build_command(cfg: Config, albedo_path: str, normal_path: str, orm_path: str,
-                    out_path: str, tile: float) -> list[str]:
-    return [
+                    out_path: str, tile: float, clearcoat: float = 0.0,
+                    clearcoat_roughness: float = 0.5) -> list[str]:
+    cmd = [
         cfg.console_binary, "--path", _PREVIEW_PROJECT, "--",
         f"--albedo={albedo_path}", f"--normal={normal_path}",
         f"--orm={orm_path}", f"--out={out_path}", f"--tile={tile}",
     ]
+    if clearcoat > 0:
+        cmd.append(f"--clearcoat={clearcoat}")
+        cmd.append(f"--clearcoat-roughness={clearcoat_roughness}")
+    return cmd
 
 
 def render_preview(albedo_path: str, normal_path: str, orm_path: str,
                     outdir: str | None = None, basename: str = "preview",
-                    tile: float = 0.45, cfg: Config | None = None) -> PreviewResult:
+                    tile: float = 0.45, clearcoat: float = 0.0,
+                    clearcoat_roughness: float = 0.5,
+                    cfg: Config | None = None) -> PreviewResult:
     """Composite a material's already-rendered maps onto a lit sphere + cube.
 
     Takes paths from a prior render_graph call (albedo/normal/orm), not a
@@ -44,6 +51,14 @@ def render_preview(albedo_path: str, normal_path: str, orm_path: str,
     visualizes maps that already exist. tile controls the UV repeat count on
     the sphere/cube/cutaway ball; the ground plane always tiles finer than
     that so its own repeat is visible regardless of the chosen value.
+
+    clearcoat/clearcoat_roughness add an optional glossy clearcoat lobe to
+    the preview material for a car-paint-style showcase look. This is
+    PREVIEW-ONLY garnish -- Material Maker itself cannot export a clearcoat
+    lobe, so this never reaches the real render() output. Defaults to 0.0
+    (off) and is a true no-op at that default: no extra Godot arg is even
+    appended, so every existing caller and the no-regress gate render
+    byte-for-byte identically to before this param existed.
     """
     for label, path in (("albedo", albedo_path), ("normal", normal_path),
                          ("orm", orm_path)):
@@ -66,7 +81,8 @@ def render_preview(albedo_path: str, normal_path: str, orm_path: str,
     if os.path.exists(out_path):
         os.remove(out_path)
 
-    cmd = _build_command(cfg, albedo_path, normal_path, orm_path, out_path, tile)
+    cmd = _build_command(cfg, albedo_path, normal_path, orm_path, out_path, tile,
+                          clearcoat=clearcoat, clearcoat_roughness=clearcoat_roughness)
 
     try:
         proc = _run_godot(cmd, 60)

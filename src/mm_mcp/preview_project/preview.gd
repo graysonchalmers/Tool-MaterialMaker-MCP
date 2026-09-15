@@ -55,6 +55,18 @@ func _ready() -> void:
 	if args.has("tile"):
 		tile = args["tile"].to_float()
 
+	# Opt-in preview-only clearcoat lobe (car-paint-style showcase garnish).
+	# Material Maker itself cannot export a clearcoat lobe, so this never
+	# reaches the real render() output -- it only affects this preview
+	# composite. Defaults to 0.0, a true no-op: _make_material only enables
+	# the feature flag when clearcoat > 0.
+	var clearcoat := 0.0
+	if args.has("clearcoat"):
+		clearcoat = args["clearcoat"].to_float()
+	var clearcoat_roughness := 0.5
+	if args.has("clearcoat-roughness"):
+		clearcoat_roughness = args["clearcoat-roughness"].to_float()
+
 	var albedo_tex := _load_tex(args["albedo"])
 	var normal_tex := _load_tex(args["normal"])
 	var orm_tex := _load_tex(args["orm"])
@@ -69,7 +81,7 @@ func _ready() -> void:
 	# mesh's own UVs -- the old rig gave the sphere (one wrap) and ground (8x
 	# multiplier) different tile scales. It also wraps seamlessly across the
 	# cube's faces and rounded edges and up the rook's turned profile.
-	var mat := _make_material(albedo_tex, normal_tex, orm_tex, tile)
+	var mat := _make_material(albedo_tex, normal_tex, orm_tex, tile, clearcoat, clearcoat_roughness)
 	mat.uv1_triplanar = true
 
 	var ground := MeshInstance3D.new()
@@ -340,7 +352,8 @@ func _load_tex(path: String) -> ImageTexture:
 
 
 func _make_material(albedo_tex: ImageTexture, normal_tex: ImageTexture,
-		orm_tex: ImageTexture, tile: float) -> ORMMaterial3D:
+		orm_tex: ImageTexture, tile: float, clearcoat: float = 0.0,
+		clearcoat_roughness: float = 0.5) -> ORMMaterial3D:
 	var mat := ORMMaterial3D.new()
 	mat.albedo_texture = albedo_tex
 	mat.normal_enabled = true
@@ -348,6 +361,13 @@ func _make_material(albedo_tex: ImageTexture, normal_tex: ImageTexture,
 	mat.orm_texture = orm_tex
 	mat.uv1_scale = Vector3(tile, tile, 1)
 	mat.texture_repeat = true
+	# Opt-in preview-only clearcoat lobe -- see call site. clearcoat<=0.0 must
+	# be a true no-op, so the feature flag itself stays off at the default
+	# rather than being enabled with a 0.0 value.
+	if clearcoat > 0.0:
+		mat.clearcoat_enabled = true
+		mat.clearcoat = clearcoat
+		mat.clearcoat_roughness = clearcoat_roughness
 	return mat
 
 
