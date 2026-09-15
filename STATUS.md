@@ -6,9 +6,21 @@
 
 Gate ledger. Three states only: ✅ verified · 🔌 wired · ⬜ not started.
 
-_Last updated: 2026-09-14 (evening: normal/albedo registration audit + 5 material fixes
-MERGED to `main`; the concurrent `task_73027cd8` catalog default-field fix (PR #11) also on
-`main`. Earlier the same day: round 3 (71 materials) + the preview lighting overhaul.)_
+_Last updated: 2026-09-15 (reflections cycle on branch `reflections`, UNMERGED — see callout).
+Prior: 2026-09-14 normal/albedo audit + 5 fixes and `task_73027cd8` fix, both on `main`._
+
+> 🪞 **Reflections cycle — branch `reflections`, 14 commits, UNMERGED, fast suite 1217 green:**
+> Rig gained ambient/reflection decouple, a `SKY_ONLY` sun-disc reflection, SSR
+> (`ssr_enabled`), and an opt-in preview-only clearcoat param (`render_preview(clearcoat=)`,
+> default 0.0 no-op). New objective gate `quality/preview_regress.py` diffs the 3D preview
+> COMPOSITE. Three reflective materials added (cookbook 71→74 ON THIS BRANCH): `m05_polished_chrome`,
+> `s14_wet_river_stone` (dielectric, roughness-masked), `m06_car_paint`. A global normal
+> green-flip attempt was REVERTED (`4e239da`) after it inverted the approved materials — the
+> triplanar rig is fine, m04's raised scratches are an isolated pre-existing m04 quirk.
+> **Not final:** Grayson wants s14 pebbles to reflect on faces + vary size + less-flat tops, and
+> the car-paint clearcoat to gain surface detail. Final whole-branch review + merge deferred to
+> next session. Ledger: `.superpowers/sdd/2026-09-14-reflections/progress.md`. Spec/plan under
+> `docs/superpowers/`.
 
 > 🔧 **Normal/albedo registration audit + 5 fixes (MERGED):** two new `quality/` tools +
 > 5 material normal-registration fixes. An audit found 8/71 materials whose normal relief

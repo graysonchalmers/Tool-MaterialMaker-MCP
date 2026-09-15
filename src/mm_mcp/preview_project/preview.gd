@@ -55,6 +55,18 @@ func _ready() -> void:
 	if args.has("tile"):
 		tile = args["tile"].to_float()
 
+	# Opt-in preview-only clearcoat lobe (car-paint-style showcase garnish).
+	# Material Maker itself cannot export a clearcoat lobe, so this never
+	# reaches the real render() output -- it only affects this preview
+	# composite. Defaults to 0.0, a true no-op: _make_material only enables
+	# the feature flag when clearcoat > 0.
+	var clearcoat := 0.0
+	if args.has("clearcoat"):
+		clearcoat = args["clearcoat"].to_float()
+	var clearcoat_roughness := 0.5
+	if args.has("clearcoat-roughness"):
+		clearcoat_roughness = args["clearcoat-roughness"].to_float()
+
 	var albedo_tex := _load_tex(args["albedo"])
 	var normal_tex := _load_tex(args["normal"])
 	var orm_tex := _load_tex(args["orm"])
@@ -69,7 +81,7 @@ func _ready() -> void:
 	# mesh's own UVs -- the old rig gave the sphere (one wrap) and ground (8x
 	# multiplier) different tile scales. It also wraps seamlessly across the
 	# cube's faces and rounded edges and up the rook's turned profile.
-	var mat := _make_material(albedo_tex, normal_tex, orm_tex, tile)
+	var mat := _make_material(albedo_tex, normal_tex, orm_tex, tile, clearcoat, clearcoat_roughness)
 	mat.uv1_triplanar = true
 
 	var ground := MeshInstance3D.new()
@@ -203,6 +215,21 @@ func _ready() -> void:
 	fill.light_color = Color(0.6, 0.62, 0.7)
 	add_child(fill)
 
+	# Reflection-only "sun": contributes ONLY to the procedural sky's sun disc
+	# (sky_mode = SKY_ONLY means it casts no direct light/shadow on any object,
+	# so matte diffuse shading is completely untouched). Aimed near the key's
+	# direction so the highlight it produces on smooth metal reads as the same
+	# light source, just with enough radiance to survive the roughness blur of
+	# the environment-reflection convolution. This is the "concentrated bright
+	# region" the sky reflects -- kept off the key/rim/fill so it cannot leak
+	# into direct lighting no matter how bright it is tuned.
+	var reflection_sun := DirectionalLight3D.new()
+	reflection_sun.rotation_degrees = Vector3(-35, 60, 0)
+	reflection_sun.light_energy = 26.0
+	reflection_sun.light_color = Color(1.0, 0.98, 0.94)
+	reflection_sun.sky_mode = DirectionalLight3D.SKY_MODE_SKY_ONLY
+	add_child(reflection_sun)
+
 	var env_node := WorldEnvironment.new()
 	var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR
@@ -216,10 +243,22 @@ func _ready() -> void:
 	sky_mat.ground_bottom_color = Color(0.22, 0.20, 0.18)
 	sky_mat.ground_horizon_color = Color(0.4, 0.4, 0.42)
 	sky_mat.sky_energy_multiplier = 1.0
+	# Localized bright spot instead of raising sky energy globally: a wide-ish
+	# but still bounded sun disc (not the ~100deg default, which blends into
+	# the whole-hemisphere gradient) that the reflection_sun above lights up.
+	# Wide enough to survive scratched_steel's rough (~0.6) GGX blur as a
+	# visible reflection catch; still bounded enough that rough matte
+	# materials (near-zero specular response) barely move.
+	sky_mat.sun_angle_max = 45.0
+	sky_mat.sun_curve = 0.2
 	var sky := Sky.new()
 	sky.sky_material = sky_mat
 	env.sky = sky
-	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+	# Ambient is pinned to an explicit color (matched to what the sky above
+	# derived) so enriching the reflection sky (below / next change) does NOT
+	# re-light the matte materials. Reflection still reads the sky.
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env.ambient_light_color = Color(0.4, 0.42, 0.46)
 	env.ambient_light_energy = 1.0
 	env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
 	env.fog_enabled = true
@@ -239,6 +278,15 @@ func _ready() -> void:
 	env.ssao_horizon = 0.02
 	env.ssao_light_affect = 0.7
 	env.ssao_ao_channel_affect = 1.0
+	# Screen-space reflections: objects reflect each OTHER and the ground
+	# reflects them, on top of the sky-only image-based reflection above.
+	# Roughness-weighted by the renderer, so rough matte materials barely
+	# pick it up; only smooth/metal surfaces show a visible object reflection.
+	env.ssr_enabled = true
+	env.ssr_max_steps = 64
+	env.ssr_fade_in = 0.15
+	env.ssr_fade_out = 2.0
+	env.ssr_depth_tolerance = 0.2
 	env_node.environment = env
 	add_child(env_node)
 
@@ -304,7 +352,8 @@ func _load_tex(path: String) -> ImageTexture:
 
 
 func _make_material(albedo_tex: ImageTexture, normal_tex: ImageTexture,
-		orm_tex: ImageTexture, tile: float) -> ORMMaterial3D:
+		orm_tex: ImageTexture, tile: float, clearcoat: float = 0.0,
+		clearcoat_roughness: float = 0.5) -> ORMMaterial3D:
 	var mat := ORMMaterial3D.new()
 	mat.albedo_texture = albedo_tex
 	mat.normal_enabled = true
@@ -312,6 +361,13 @@ func _make_material(albedo_tex: ImageTexture, normal_tex: ImageTexture,
 	mat.orm_texture = orm_tex
 	mat.uv1_scale = Vector3(tile, tile, 1)
 	mat.texture_repeat = true
+	# Opt-in preview-only clearcoat lobe -- see call site. clearcoat<=0.0 must
+	# be a true no-op, so the feature flag itself stays off at the default
+	# rather than being enabled with a 0.0 value.
+	if clearcoat > 0.0:
+		mat.clearcoat_enabled = true
+		mat.clearcoat = clearcoat
+		mat.clearcoat_roughness = clearcoat_roughness
 	return mat
 
 

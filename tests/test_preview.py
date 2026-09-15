@@ -24,6 +24,21 @@ def test_build_command_defaults_tile_to_one():
     assert "--tile=1.0" in cmd
 
 
+def test_build_command_omits_clearcoat_when_zero():
+    cmd = _build_command(cfg, "/a/albedo.png", "/a/normal.png", "/a/orm.png",
+                          "/out/x_preview.png", tile=1.0, clearcoat=0.0,
+                          clearcoat_roughness=0.5)
+    assert not any(c.startswith("--clearcoat") for c in cmd)
+
+
+def test_build_command_includes_clearcoat_when_positive():
+    cmd = _build_command(cfg, "/a/albedo.png", "/a/normal.png", "/a/orm.png",
+                          "/out/x_preview.png", tile=1.0, clearcoat=0.6,
+                          clearcoat_roughness=0.3)
+    assert "--clearcoat=0.6" in cmd
+    assert "--clearcoat-roughness=0.3" in cmd
+
+
 def test_render_preview_missing_albedo_returns_error(tmp_path):
     normal = tmp_path / "normal.png"
     orm = tmp_path / "orm.png"
