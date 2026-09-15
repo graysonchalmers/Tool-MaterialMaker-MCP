@@ -1339,6 +1339,113 @@ def build_s12_eroded_sandstone(catalog: dict) -> str:
     return save_variant(g, _LABEL, "s12_eroded_sandstone", 1)
 
 
+def build_s14_wet_river_stone(catalog: dict) -> str:
+    """Wet dark river stone -- the DIELECTRIC reflection proof for the
+    reflections cycle (m05_polished_chrome already covers the metallic
+    path). Same physical idea as s06_river_pebbles (CLONE `rock`, big
+    voronoi cells for rounded pebbles, the coin-profile analytic dome for
+    relief) but re-tuned for "just came out of the water": dark, glossy,
+    metallic=0 -- so any reflection Godot renders on this comes from the
+    default dielectric specular response, not a metallic tint.
+
+    Reuses s06's coin-profile dome chain verbatim (voronoi_0 port0 ->
+    dome_curve (cos) -> dome_flatten (clamp) -> dome_smooth (smoothstep) ->
+    normal_map_0 with param4=0/param1=0.6) since that chain is the proven
+    working normal/relief path for this donor -- no two-scale mix, no
+    surface-grain overlay, this is deliberately the single-scale version
+    (the extra detail layers aren't needed to prove the reflection path and
+    would just be more surface to re-verify).
+
+    - Albedo (colorize_0, fed from voronoi_0 port2 per-cell random, same
+      lever as s06): darkened hard across the whole ramp -- wet stone reads
+      almost black-brown/slate, not s06's lighter dry tan/gray spread.
+    - Roughness (colorize_2): LOW and roughly uniform (0.12-0.20) rather
+      than s06's mid-range 0.42-0.60 -- this is the whole point, a wet sheen
+      that lets Godot's SSR/specular actually show. Driven by the SAME
+      dome_smooth height field (not a separate noise) so it varies with the
+      relief: glossiest on the raised pebble tops (dome_smooth high ->
+      lowest roughness) and a touch duller in the recessed seams
+      (dome_smooth low -> slightly higher roughness, water-pooled grit
+      rather than a bare mirror), instead of a flat scalar.
+    - Metallic (colorize_1): forced to 0, unchanged from s06's non-metal
+      setup -- dielectric, reflection must come from Godot's default
+      specular term."""
+    g = load_example("rock")
+    set_param(g, "voronoi_0", "scale_x", 7)
+    set_param(g, "voronoi_0", "scale_y", 7)
+    set_param(g, "voronoi_0", "randomness", 1)
+    # albedo <- per-cell random -> DARK wet stone tones (near-black slate to
+    # dark wet brown -- much darker than s06's dry daylight pebble spread)
+    rewire(g, "colorize_0", 0, "voronoi_0", 2)
+    set_gradient(g, "colorize_0", [
+        (0.0,  0.05, 0.05, 0.05),   # near-black wet slate
+        (0.28, 0.10, 0.08, 0.07),   # dark wet brown
+        (0.52, 0.14, 0.13, 0.12),   # dark warm gray
+        (0.74, 0.09, 0.10, 0.11),   # dark cool blue-gray
+        (1.0,  0.06, 0.05, 0.05),   # near-black
+    ])
+    set_gradient(g, "colorize_1", [(0.0, 0, 0, 0), (1.0, 0, 0, 0)])   # non-metal
+    # coin-profile analytic dome (verbatim s06 recipe -- proven working
+    # normal chain for this donor): cos bell -> clamp flatten -> smoothstep,
+    # all zero-control-point math nodes so no ring/banding artifacts.
+    add_node(g, "dome_curve", "math",
+             {"op": 16, "default_in2": 2.6, "clamp": True})   # 16 = cos(A*B)
+    add_node(g, "dome_flatten", "math",
+             {"op": 2, "default_in2": 1.5, "clamp": True})    # 2 = A*B, clamp [0,1]
+    add_node(g, "dome_smooth", "math", {"op": 20, "clamp": True})  # 20 = smoothstep(0,1,A)
+    g["connections"] += [
+        {"from": "voronoi_0", "from_port": 0, "to": "dome_curve", "to_port": 0},
+        {"from": "dome_curve", "from_port": 0, "to": "dome_flatten", "to_port": 0},
+        {"from": "dome_flatten", "from_port": 0, "to": "dome_smooth", "to_port": 0},
+    ]
+    rewire(g, "normal_map_0", 0, "dome_smooth", 0)
+    drop_conn(g, "warp_0", 0)
+    drop_conn(g, "warp_0", 1)
+    g["nodes"] = [n for n in g["nodes"]
+                  if n["name"] not in ("voronoi_1", "perlin_1", "warp_0")]
+    set_param(g, "normal_map_0", "param4", 0)
+    set_param(g, "normal_map_0", "param1", 0.6)
+    # roughness <- SAME dome_smooth height field: glossy wet sheen on the
+    # raised tops, a touch duller in the recessed seams (water-pooled grit,
+    # not a bare mirror everywhere) -- a genuine roughness TEXTURE, not a
+    # flat scalar, low and roughly uniform across the whole range per the
+    # brief (0.12 top .. 0.20 seam, vs s06's 0.42-0.60 dry mid-range).
+    set_gradient(g, "colorize_2", [(0.0, 0.20, 0.20, 0.20), (1.0, 0.12, 0.12, 0.12)])
+    rewire(g, "colorize_2", 0, "dome_smooth", 0)
+
+    # Subgraph grouping, mirroring s06's shape.
+    group_into_subgraph(g, ["voronoi_0", "colorize_0", "blend_0", "perlin_0"],
+                         "pebble_pattern", "Pebble Pattern",
+                         [("voronoi_0", "scale_x", "param0", "Pebble size"),
+                          ("colorize_0", "gradient", "param1", "Pebble color")],
+                         catalog)
+    group_into_subgraph(g, ["dome_curve", "dome_flatten", "dome_smooth"],
+                         "stone_profile", "Stone Profile",
+                         [("dome_flatten", "default_in2", "param0", "Top flatness")],
+                         catalog)
+    group_into_subgraph(g, ["colorize_1", "colorize_2"],
+                         "material_finish", "Material Finish",
+                         [("colorize_2", "gradient", "param0", "Wet sheen roughness")],
+                         catalog)
+    group_into_subgraph(g, ["normal_map_0"],
+                         "relief", "Relief",
+                         [("normal_map_0", "param1", "param0", "Relief strength")],
+                         catalog)
+    rename_nodes(g, {
+        "voronoi_0": "PebbleCells",
+        "colorize_0": "WetStoneColor",
+        "blend_0": "PebbleBlendUnused",
+        "perlin_0": "PebbleNoiseUnused",
+        "colorize_1": "NonMetallic",
+        "colorize_2": "WetSheenRoughness",
+        "dome_curve": "DomeCurve",
+        "dome_flatten": "DomeFlatten",
+        "dome_smooth": "DomeSmooth",
+        "normal_map_0": "PebbleNormal",
+    })
+    return save_variant(g, _LABEL, "s14_wet_river_stone", 1)
+
+
 BUILDERS = {
     "s02_gray_granite": build_s02_gray_granite,
     "s04_scattered_river_stones": build_s04_scattered_river_stones,
@@ -1351,6 +1458,7 @@ BUILDERS = {
     "s11_marble": build_s11_marble,
     "s12_eroded_sandstone": build_s12_eroded_sandstone,
     "s13_polished_marble": build_s13_polished_marble,
+    "s14_wet_river_stone": build_s14_wet_river_stone,
 }
 
 
