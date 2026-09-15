@@ -106,3 +106,39 @@ count wording in README recomputes from the tree — change the tree, then the n
   `emission_tex` is connected — decides whether `render.py` must tolerate its absence.
 - Emission subjects when we get there: lava (dark crust + glowing molten veins) + one more
   (heated metal / glowing runes / bioluminescence).
+
+---
+
+## Cycle expansion (2026-09-15, Grayson request mid-execution)
+
+After the sun-disc reflection baseline (Task 3) landed and was approved, Grayson asked for
+more reflective character: grazing-angle "car paint" Fresnel, and "proper ray traced
+reflections". Honest scoping:
+
+- **True path-traced RT is out of scope.** The Godot headless preview is not a path tracer;
+  real RT would mean a different renderer (Blender Cycles etc.), a separate track. Not built.
+- **SSR (screen-space reflections) IS the practical closest** and is added. Forward+ confirmed
+  in `preview_project/project.godot`.
+- **Clearcoat is preview-only.** MM's material node has no clearcoat channel (albedo/metallic/
+  roughness/emission/normal/ao/depth/opacity/sss) and the Godot export writes no clearcoat map,
+  so a Godot clearcoat lobe cannot round-trip. Grayson chose **both**: deliver the grazing look
+  through a *real* low-roughness colored-metallic car-paint material (exports faithfully) AND
+  add an **opt-in, default-off** preview clearcoat param for the flashy showcase look, labeled
+  preview-only.
+
+### Added work
+
+- **SSR (rig):** `Environment.ssr_enabled` + tuned params. Gate-check: SSR reflects on-screen
+  geometry into surfaces, roughness-weighted; matte materials must stay within the no-regress
+  tolerance (≤3). If SSR trips matte, tune fade/steps or accept with Grayson's eye.
+- **Clearcoat preview param:** add optional `clearcoat` (and `clearcoat_roughness`) to
+  `render_preview`/`render_preview_sweep` (`preview.py`) → `preview.gd` → `ORMMaterial3D`
+  clearcoat. **Default 0.0**, so every existing render and the matte gate are unaffected by
+  construction. Set >0 only for a car-paint showcase render. Verify the exact Godot 4.7 clearcoat
+  API (`clearcoat` float + `clearcoat_roughness`; enable flag if the version needs one).
+- **Car-paint material (authoring):** a real low-roughness colored-metallic material (e.g.
+  `m06_car_paint` under `metal/`, or a `plastics`/`scifi` home if a flake look fits better) whose
+  grazing Fresnel is genuine and exports. Optionally rendered with the preview clearcoat on for
+  the showcase.
+
+Non-goal reaffirmed: true path-traced RT (different renderer). Emission still a later cycle.

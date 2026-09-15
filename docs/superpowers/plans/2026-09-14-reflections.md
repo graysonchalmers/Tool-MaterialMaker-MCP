@@ -401,3 +401,126 @@ Flip nothing to ✅ that Grayson hasn't approved. Record: reflections rig decoup
 **Placeholder scan:** Authoring Tasks 4/5 Step 1 describe the material target rather than giving an exact node graph — this is intended: material authoring is visual iteration against Grayson's eye, not a deterministic function, and the objective gates (promote --check, naming/card/README) plus his approval are the real acceptance. Not a hidden-code placeholder; the builder pattern, helpers, registration, and gates are all concrete.
 
 **Type consistency:** `render_matte_previews`/`compare_previews`/`MATTE_SET` used consistently across Task 1 and referenced in Task 3. `build_<id>(catalog) -> str` + `save_variant(..., 1)` + `BUILDERS` registration consistent across Tasks 4/5, matching `cookbook_metal.py`/`cookbook_stone.py`. RenderResult/`.ok`/`.images` and PreviewResult/`.ok`/`.image` match the real signatures read from `render.py`/`_make_showcase.py`. ✓
+
+---
+
+## Cycle expansion tasks (2026-09-15) — SSR + clearcoat param + car paint
+
+Execution order after Task 3: **Task 7 (SSR) → Task 8 (clearcoat param) → Task 4 (chrome) → Task 5 (wet stone) → Task 9 (car paint) → Task 6 (suite/showcase)**. Rig changes (7,8) land before authoring so materials render against the final rig. Same Global Constraints apply.
+
+### Task 7: SSR — screen-space object reflections (rig)
+
+Enable Godot SSR so objects reflect each other and the ground reflects them. Forward+ is confirmed in `preview_project/project.godot`, so SSR is available. Gate-check that matte materials stay within tolerance (SSR is roughness-weighted; rough matte should barely pick it up).
+
+**Files:**
+- Modify: `src/mm_mcp/preview_project/preview.gd` (the `Environment` block ~206-243)
+
+- [ ] **Step 1: Enable SSR on the environment**
+
+Add after the SSAO block (tune against the render):
+
+```gdscript
+	env.ssr_enabled = true
+	env.ssr_max_steps = 64
+	env.ssr_fade_in = 0.15
+	env.ssr_fade_out = 2.0
+	env.ssr_depth_tolerance = 0.2
+```
+
+- [ ] **Step 2: Matte gate must still pass**
+
+Run: `& "C:\Program Files\Python313\python.exe" -m quality.preview_regress --out scratchpad/reflect-ssr --compare scratchpad/reflect-baseline`
+Expected: `4 preview(s), 0 problem(s)`. If matte trips (SSR bleeding onto rough surfaces past tol 3), lower `ssr_max_steps`/raise `ssr_depth_tolerance` or accept-with-Grayson. If it can't stay under tol without killing the effect, STOP and report the tradeoff — do not silently loosen the gate.
+
+- [ ] **Step 3: Render the metal check — then STOP for approval**
+
+Render `m04_scratched_steel` via `render_matte_previews(["m04_scratched_steel"], Path("scratchpad/reflect-ssr-metal"))` (script file, not python -c). Read it: the sphere/rook should now reflect the cube/ground, not just the sky.
+
+- [ ] **Step 4: Controller — send render, get Grayson approval; iterate**
+
+Controller SendUserFile + wait. Iterate SSR params until approved.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add src/mm_mcp/preview_project/preview.gd
+git commit -m "feat(preview): SSR screen-space object reflections (Grayson-approved)"
+```
+
+### Task 8: Clearcoat preview param (opt-in, default off)
+
+Add an optional clearcoat lobe to the preview material, plumbed as a param that defaults to 0.0 so every existing render and the matte gate are unaffected by construction. Preview-only (MM can't export clearcoat) — this is a showcase garnish, labeled as such.
+
+**Files:**
+- Modify: `src/mm_mcp/preview.py` (`render_preview` — add `clearcoat: float = 0.0`, `clearcoat_roughness: float = 0.5`; pass as `--clearcoat=`/`--clearcoat-roughness=` Godot args)
+- Modify: `src/mm_mcp/preview_project/preview.gd` (parse the two args in `_make_material`, set on the ORMMaterial3D; verify the exact Godot 4.7 clearcoat API — `mat.clearcoat` float + `mat.clearcoat_roughness`, plus any enable flag the version needs)
+- Test: `tests/test_preview.py` (add a param-plumbing assertion)
+
+**Interfaces:**
+- Consumes: existing `render_preview(albedo, normal, orm, outdir=, basename=, tile=, cfg=) -> PreviewResult`.
+- Produces: `render_preview(..., clearcoat: float = 0.0, clearcoat_roughness: float = 0.5)` — extra kwargs, default 0.0 is a no-op.
+
+- [ ] **Step 1: Write the failing test**
+
+In `tests/test_preview.py`, assert that `render_preview` accepts `clearcoat`/`clearcoat_roughness` kwargs and that the built Godot command includes `--clearcoat=` when clearcoat>0 (inspect the command via the same seam existing preview tests use — check how they assert on the built args; mirror that). If the tests render for real, keep it a command-construction assertion, not a full render.
+
+- [ ] **Step 2: Run to verify it fails**
+
+Run: `& "C:\Program Files\Python313\python.exe" -m pytest tests/test_preview.py -k clearcoat -v`
+Expected: FAIL (unexpected kwarg / arg absent).
+
+- [ ] **Step 3: Implement**
+
+`preview.py`: add the two kwargs to `render_preview` (and `render_preview_sweep` if trivial), append `--clearcoat=<v>` and `--clearcoat-roughness=<v>` to the Godot arg list only when clearcoat>0. `preview.gd`: in `_make_material`, read the args (default 0.0) and set `mat.clearcoat = <v>` / `mat.clearcoat_roughness = <v>` (confirm the 4.7 property names first by checking Godot docs or a quick probe; ORMMaterial3D extends BaseMaterial3D which has clearcoat). clearcoat=0.0 must be a true no-op.
+
+- [ ] **Step 4: Run to verify it passes**
+
+Run: `& "C:\Program Files\Python313\python.exe" -m pytest tests/test_preview.py -k clearcoat -v`
+Expected: PASS.
+
+- [ ] **Step 5: Gate — default-off is a no-op**
+
+Run: `& "C:\Program Files\Python313\python.exe" -m quality.preview_regress --out scratchpad/reflect-cc --compare scratchpad/reflect-baseline`
+Expected: `4 preview(s), 0 problem(s)` (the matte set renders with clearcoat defaulting 0.0 — must be byte-for-byte the same behavior).
+
+- [ ] **Step 6: Render a clearcoat demo — then STOP for approval**
+
+Render `m04_scratched_steel` (or the chrome once it exists) with `clearcoat=0.6` via a script file into `scratchpad/reflect-clearcoat`. Read it: a glossy car-paint sheen over the base. Controller SendUserFile + wait for Grayson.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add src/mm_mcp/preview.py src/mm_mcp/preview_project/preview.gd tests/test_preview.py
+git commit -m "feat(preview): opt-in clearcoat param (default off, preview-only)"
+```
+
+### Task 9: Car-paint material — real Fresnel (visual)
+
+A genuine low-roughness colored-metallic material whose grazing Fresnel is real PBR and exports faithfully. Optionally shown with the Task-8 clearcoat param on for the flashy version.
+
+**Files:**
+- Modify: `quality/cookbook_metal.py` (add `build_m06_car_paint(catalog) -> str`; register in `BUILDERS`)
+- Create (gitignored): `quality/authored/cookbook-metal/m06_car_paint/v1.ptex`
+- Create (tracked): `cookbook/metal/m06_car_paint.ptex` + `.md`
+
+- [ ] **Step 1: Write the builder** — colored metallic base (a saturated hue, e.g. deep red/blue), `metallic`≈1.0, low `roughness` (~0.1–0.2) with subtle flake variation, minimal normal. Role-name nodes. `save_variant(g, _LABEL, "m06_car_paint", 1)`; register in `BUILDERS`.
+- [ ] **Step 2: Build + promote** — `& "C:\Program Files\Python313\python.exe" -m quality.cookbook_metal ; & "C:\Program Files\Python313\python.exe" -m quality.promote_cookbook cookbook-metal` ; `git checkout --` unrelated `.md` churn.
+- [ ] **Step 3: Render preview (both plain and with clearcoat=0.6) — STOP for approval.** Subagent renders both, stops.
+- [ ] **Step 4: Controller — send both renders, get approval; iterate.**
+- [ ] **Step 5: Objective gates** — `promote_cookbook --check` + naming/card/README gates green.
+- [ ] **Step 6: Commit** — `git add quality/cookbook_metal.py cookbook/metal/m06_car_paint.* cookbook/README.md ; git commit -m "feat(cookbook): m06_car_paint — real grazing Fresnel (Grayson-approved)"`
+
+---
+
+### Task 10: Fix triplanar normal green-channel inversion (bug found mid-cycle)
+
+Godot's `uv1_triplanar` normal path interprets the normal green channel opposite its standard-UV path, so MM's OpenGL-convention normals render with INVERTED relief under the triplanar rig (grooves read as ridges — Grayson spotted it on m04's scratches). Root cause proven: non-triplanar render of the same material shows correct recession; a green-channel flip under triplanar corrects it. Preview-only — the exported PBR maps are untouched and correct.
+
+**Files:**
+- Modify: `src/mm_mcp/preview_project/preview.gd` (add a normal-specific loader that flips green; use it for the normal texture at the `_load_tex(args["normal"])` call site ~line 71)
+
+- [ ] **Step 1: Add a green-flipping normal loader.** In `preview.gd`, add `_load_normal_tex(path)` that loads the image, converts to RGBA8, flips the green byte of every pixel (`data[i*4+1] = 255 - data[i*4+1]`), and returns an ImageTexture. Comment it as the triplanar-green-inversion workaround, preview-only. Change the normal load site (`var normal_tex := _load_tex(args["normal"])`) to `_load_normal_tex(args["normal"])`. Leave albedo/orm on `_load_tex`.
+- [ ] **Step 2: Recapture the no-regress baseline** (relief now flips on ALL materials, so the old baseline is stale by design): `& "C:\Program Files\Python313\python.exe" -m quality.preview_regress --out scratchpad/reflect-baseline`. Overwrites the 4 baseline PNGs. This is expected — it's a correctness fix, not a regression.
+- [ ] **Step 3: Render m04 + two approved materials** (e.g. `s07_cobblestone`, `s02_gray_granite`) to `scratchpad/normalfix` for controller/Grayson visual check (scratches recess; approved materials still read right). STOP for approval.
+- [ ] **Step 4: Controller — SendUserFile, get Grayson approval.**
+- [ ] **Step 5: Commit** `src/mm_mcp/preview_project/preview.gd` (message: `fix(preview): flip normal green under triplanar so relief isn't inverted`).
