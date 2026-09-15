@@ -7,7 +7,7 @@
 Gate ledger. Three states only: ✅ verified · 🔌 wired · ⬜ not started.
 
 _Last updated: 2026-09-14 (`task_73027cd8` catalog default-field fix, open as
-PR #11, not yet merged to `main`). `main` itself (round 3 + the preview
+PR #11 with CI green, ready to merge). `main` itself (round 3 + the preview
 lighting overhaul) is confirmed pushed to `origin`._
 
 > ✅ **`task_73027cd8` fixed:** the round-3 catalog fix's resolved `default`
@@ -15,8 +15,8 @@ lighting overhaul) is confirmed pushed to `origin`._
 > params (e.g. `crystal.param0` reported 4, real default 16, from its own
 > `remote`/`gen_parameters` block). `_parse_generic_node` now prefers the
 > remote node's own declared default. Commit `948a8e7`, open as
-> [PR #11](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/pull/11),
-> not yet merged to `main`. Fast suite 1165 passed. See `HANDOFF.md`'s
+> [PR #11](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/pull/11)
+> with CI green, ready to merge. Fast suite 1165 passed. See `HANDOFF.md`'s
 > session log for detail.
 >
 > ✅ **Round 3 MERGED to `main`:** six more proof materials on

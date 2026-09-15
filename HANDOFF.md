@@ -1,10 +1,12 @@
 # 🧭 Session Handoff: Tool-MaterialMaker-MCP
 
-_Last updated: 2026-09-14 21:30 CT (America/Chicago) -- the round-3 follow-up
-(`task_73027cd8`) is fixed and open as PR #11
-(`claude/nervous-mahavira-e778a5` -> `main`); a separate housekeeping session
-cleared a stuck worktree lock, no MM-MCP code changed. `main` itself (round 3
-+ the preview lighting overhaul) is confirmed pushed to `origin`._
+_Last updated: 2026-09-14 19:08 CT (America/Chicago) -- the round-3 follow-up
+(`task_73027cd8`) is fixed, open as PR #11
+(`claude/nervous-mahavira-e778a5` -> `main`), and CI is now green
+(`mergeable: MERGEABLE`, `mergeStateStatus: CLEAN`) -- ready for Grayson to
+merge. A separate housekeeping session cleared a stuck worktree lock, no
+MM-MCP code changed. `main` itself (round 3 + the preview lighting overhaul)
+is confirmed pushed to `origin`._
 
 The session baton. Read at pickup, rewrite at wrap-up. **Shape rule (2026-09-05,
 teardown #3):** "Current state" describes the latest session only; anything
@@ -15,10 +17,10 @@ archive; there is no separate archive file.
 ## 🎯 Current state
 
 **The `task_73027cd8` follow-up (compound-node param `default` accuracy) is
-fixed, tested, and pushed** on branch `claude/nervous-mahavira-e778a5`
-(commit `948a8e7`), not yet merged to `main` or opened as a PR. Round 3 and
-the preview lighting overhaul (prior session, detailed in the log below)
-are already on `main`, which this session confirmed is itself pushed.
+fixed, tested, and open as [PR #11](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/pull/11)
+with CI green.** Round 3 and the preview lighting overhaul (prior session,
+detailed in the log below) are already on `main`, which this session
+confirmed is itself pushed.
 
 Bug: `_parse_generic_node` in `catalog_builder.py` sourced a resolved
 compound param's `default` from whichever inner node its widget's
@@ -58,11 +60,13 @@ collision. Round 3 and the preview lighting overhaul are already on `main`
 and confirmed pushed; a separate housekeeping session also cleared a stuck
 worktree lock (`worktree-noise-vocabulary-round-3`'s directory, orphaned by a
 failed `git worktree remove`), dismissing `task_86ba47bd` as no longer needed.
+**CI on PR #11 is now green** (1 check passing, `mergeable: MERGEABLE`,
+`mergeStateStatus: CLEAN`) -- ready to merge whenever Grayson wants.
 
 ## ▶️ Next concrete step
 
-Get CI green on PR #11 and merge it. Other open items, any of which Grayson
-can pick up instead:
+Merge PR #11 (Grayson's call on timing). Other open items, any of which
+Grayson can pick up instead:
 - Promote the interactive lighting slider lab (`scratchpad/lighting_lab/`) to a tracked dev tool, or leave it as throwaway scratchpad.
 - Audit the broader compound-default flaw class beyond the two nodes tested here (crystal, normal_map, clouds_noise) -- not exhaustively checked.
 
@@ -197,7 +201,7 @@ can pick up instead:
 Newest first. Keep at most 8 entries; older ones are in `git log` (search the
 commit subjects, every session ends with a `docs:` wrap-up commit).
 
-### 2026-09-14 (`task_73027cd8` catalog default-field fix, PR #11 open): dispatched task with an exact fix location and a pre-diagnosed bug. First RED attempt against plain `main` came back unreproducible (`None == 16`, not `4 == 16`) because the bug only exists once round-3's type-referenced-link resolution is present, and round-3 was still sitting on its own unmerged worktree branch -- merged `worktree-noise-vocabulary-round-3` in locally to reproduce it for real (confirmed via `advisor`). Fix: `_parse_generic_node` now prefers the remote node's own `parameters[pname]` for `default` over the linked inner node's. Corrected `normal_map.param1`'s pinned test default (0.5 -> 1, same bug). Added a `clouds_noise`-based test empirically verified (against a pre-fix copy of the file) to fail without the change. Mid-session a concurrent session fast-forwarded `main`/`origin/main` to include round-3, so rebuilt the branch as one clean commit (`948a8e7`) on the new `main` instead of carrying a redundant merge. Fast suite 1165 passed, pushed, opened as PR #11. A second concurrent-session collision hit the PR itself: another session's own wrap-up commit landed on `main` touching the same HANDOFF.md/STATUS.md lines, blocking CI with a merge conflict -- reconciled by merging `main` in and hand-resolving both files (this entry included).
+### 2026-09-14 (`task_73027cd8` catalog default-field fix, PR #11 open): dispatched task with an exact fix location and a pre-diagnosed bug. First RED attempt against plain `main` came back unreproducible (`None == 16`, not `4 == 16`) because the bug only exists once round-3's type-referenced-link resolution is present, and round-3 was still sitting on its own unmerged worktree branch -- merged `worktree-noise-vocabulary-round-3` in locally to reproduce it for real (confirmed via `advisor`). Fix: `_parse_generic_node` now prefers the remote node's own `parameters[pname]` for `default` over the linked inner node's. Corrected `normal_map.param1`'s pinned test default (0.5 -> 1, same bug). Added a `clouds_noise`-based test empirically verified (against a pre-fix copy of the file) to fail without the change. Mid-session a concurrent session fast-forwarded `main`/`origin/main` to include round-3, so rebuilt the branch as one clean commit (`948a8e7`) on the new `main` instead of carrying a redundant merge. Fast suite 1165 passed, pushed, opened as PR #11. A second concurrent-session collision hit the PR itself: another session's own wrap-up commit landed on `main` touching the same HANDOFF.md/STATUS.md lines, blocking CI with a merge conflict -- reconciled by merging `main` in and hand-resolving both files (a third concurrent PR, #12, also merged to `main` during this window; unrelated files, no further conflict). Fast suite re-verified 1165 passed post-merge, pushed (`4cb1e47`), CI came back green (1 check passing, `mergeable: MERGEABLE`) -- PR #11 ready to merge.
 ### 2026-09-14 (worktree hygiene, no MM-MCP code changed): a prior session's
 `git worktree remove` on `.claude\worktrees\noise-vocabulary-round-3` had
 failed with a Windows "Device or resource busy" error; git had already
