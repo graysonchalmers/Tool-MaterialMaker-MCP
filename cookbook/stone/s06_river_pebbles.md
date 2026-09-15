@@ -57,18 +57,34 @@ do not edit by hand. Open the `.ptex` and look for these names.
 | Subgraph | Node | Type |
 |---|---|---|
 | (top level) | pebble_pattern | graph |
+| (top level) | stone_profile | graph |
 | (top level) | surface_grain | graph |
 | (top level) | material_finish | graph |
 | (top level) | relief | graph |
 | pebble_pattern | PebbleColor | colorize |
 | pebble_pattern | PebbleCells | voronoi |
 | pebble_pattern | PebbleBlendUnused | blend |
+| stone_profile | BigDomeCurve | math |
+| stone_profile | BigDomeFlatten | math |
+| stone_profile | BigDomeSmooth | math |
+| stone_profile | SmallStoneCells | voronoi |
+| stone_profile | SmallDomeCurve | math |
+| stone_profile | SmallDomeFlatten | math |
+| stone_profile | SmallDomeSmooth | math |
+| stone_profile | SmallStoneHeight | math |
+| stone_profile | StoneHeightMix | math |
+| stone_profile | SmallStoneMask | math |
+| stone_profile | SmallStoneColor | colorize |
+| stone_profile | StoneColorMix | blend |
 | surface_grain | GrainNoise | perlin |
 | surface_grain | GrainContrast | colorize |
 | surface_grain | GrainOverPebbles | blend |
 | material_finish | NonMetallic | colorize |
 | material_finish | PebbleRoughness | colorize |
 | material_finish | SurfaceNoise | perlin |
+| material_finish | SeamRoughness | colorize |
+| material_finish | RoughnessComposite | blend |
 | relief | PebbleNormal | normal_map |
-| relief | DomeCurve | math |
+| relief | GrainHeight | math |
+| relief | ReliefHeight | math |
 <!-- nodes:end -->
