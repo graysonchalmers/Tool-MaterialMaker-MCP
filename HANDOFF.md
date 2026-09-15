@@ -1,9 +1,8 @@
 # 🧭 Session Handoff: Tool-MaterialMaker-MCP
 
-_Last updated: 2026-09-14 (evening CT) — normal/albedo registration audit + 5 material
-fixes, merged to `main`. This began as a front-page "re-render the showcase with the new
-lighting rig" task and pivoted into a cookbook-quality fix after Grayson's eye caught a real
-normal bug. The concurrent `task_73027cd8` compound-default fix (PR #11) is also on `main`._
+_Last updated: 2026-09-14 (late evening CT) — s06/t03 shape tuning: coin profile,
+grit-into-normal + seam substrate, two-scale size mix. Committed `4b0948f` and pushed to
+branch `claude/unruffled-brattain-3ed050` (NOT yet merged to `main`)._
 
 The session baton. Read at pickup, rewrite at wrap-up. **Shape rule (2026-09-05,
 teardown #3):** "Current state" describes the latest session only; anything older is one
@@ -12,58 +11,51 @@ archive.
 
 ## 🎯 Current state
 
-Merged to `main` (branch `showcase-lighting-refresh`), five commits + two new `quality/` tools:
-- `7d9f2a2` `quality/_make_showcase.py` — reproducible front-page render pipeline
-  (still / hero-montage / gif modes) + 6 unit tests. Replaces the ad-hoc way hero+gallery
-  were made. NOT yet used to regen the tracked gallery.
-- `9678006` `quality/normal_albedo_audit.py` — static audit that traces each material's
-  albedo-source vs normal-source generators (across subgraph gen_inputs/gen_outputs proxies)
-  and flags materials where the two sets are DISJOINT (relief built from a different noise
-  than the color, so it does not register). Reviewer hand-verified the traversal.
-- `ee7a6eb` granite fix — `s02_gray_granite` normal now derives from the fleck voronoi
-  (was a separate coarse voronoi). Audit flagged=False. Grayson-approved (param1=0.3).
-- `644e820` 4 more fixes — `s06_river_pebbles`, `s04_scattered_river_stones`, `t03_gravel`
-  (normal from the albedo cell source), `pm04_hammertone` (inverted: albedo from the dimple
-  warp field, dimples stay hero). All audit flagged=False, full suite green.
+`s06_river_pebbles` + `t03_gravel` shape tuning fully landed on branch
+`claude/unruffled-brattain-3ed050` (commit `4b0948f`, pushed, **not yet merged to `main`**),
+all Grayson visual-approved across the session, fast suite 1217 green:
+- **Coin profile**: `cos(port0*B)` bell → `clamp(cos*1.5)` plateau → `smoothstep` bevel.
+  Flat-topped stones with a rounded rim. smoothstep removes the clamp's C1 kinks that
+  otherwise ring as washers under the param4=0 edge-detect normal.
+- **Grit into the normal** (not just albedo): 0.15 of `perlin_grain` added onto the dome
+  height before edge-detect. t03 also gained the grain-over-albedo it lacked.
+- **Seam substrate**: dome field masks a rougher matte grit into the recessed seams; stone
+  tops keep the wetter sheen (distinct roughness, not a dark gradient).
+- **Two-scale mix**: a second finer voronoi (`voronoi_fine`, s06 scale 18 / t03 36) with its
+  own nestled coin chain, `max`-composited so small stones fill the big ones' seams
+  (tiny/medium/bigger). Breaks s06's old regular seam network. Fine layer carries its own
+  per-cell colour via the same selection the height uses (NOT colourless bumps).
+- **Grouping**: the two-scale apparatus is one `Stone Profile` subgraph (exposes Small stone
+  size / Small stone height / Top flatness); kept OUT of Relief to avoid a subgraph cycle
+  (dome_mix reads the coarse dome and feeds height_relief).
 
-The audit found **8/71** materials with this normal/albedo mismatch, all sharing the
-"separate relief subgraph" idiom. Triage (visual, since the r-metric alone over-flags
-smooth-albedo materials) sorted them: **fixed** = granite + the 4 above; **left as fine by
-design** = `t02_fresh_snow`, `pm01_powder_coat`, `pm02_automotive_enamel` (smooth/uniform
-albedo, relief is the intended feature, nothing to misregister).
-
-Grayson approved `pm04_hammertone` and `s04_scattered_river_stones` as-is. He wants
-`s06_river_pebbles` and `t03_gravel` **softened to domes** (they currently read faceted
-because raw voronoi cells feed the normal as flat-topped facets) — NOT done yet.
+`normal_albedo_audit` flagged=False on both (relief shares the albedo's voronoi + voronoi_fine).
 
 The original showcase work (regen hero + 8 gallery stills with the new rig, top-5 GIF strip,
-cube triplanar + bevel) is all still **pending**.
+cube triplanar + bevel) is still **pending** from the prior session — untouched here.
 
 ## 📌 Where we stopped
 
-Merged `showcase-lighting-refresh` into `main` (reconciled HANDOFF/STATUS conflicts against
-the concurrent `task_73027cd8` work) and pushed. pm04 + s04 approved; s06 + t03 need
-dome-softening next.
+Committed `4b0948f` (coin + grit + seam + two-scale for s06/t03) and pushed the branch. Wrap-up
+in progress. Branch is NOT merged to `main` — no PR opened yet.
 
 ## ▶️ Next concrete step
 
-**Soften `s06_river_pebbles` + `t03_gravel` relief to domes**: in their builders
-(`quality/cookbook_stone.py`, `quality/cookbook_terrain.py`), feed the normal from the
-voronoi DISTANCE field (port 0, domed) instead of the hard per-cell value (port 1, flat
-facets), or add a light warp back; re-render previews, get Grayson's ok. Audit must stay
-flagged=False. Then:
-- Alt A: **cube triplanar + bevel** in `preview.gd` (Grayson's other request: seamless
-  tiling around the cube corners + a modeled bevel; the per-face BoxMesh UVs seam at every
-  edge today).
-- Alt B: **resume the showcase plan** (`docs/superpowers/plans/2026-09-14-showcase-lighting-refresh.md`):
-  regen all 8 gallery stills + hero via `_make_showcase`, pick 5 GIF favorites, add a README
-  motion strip.
+**Open a PR for `claude/unruffled-brattain-3ed050` → `main`** (or merge it) so s06/t03 land on
+`main`. Then, options:
+- Alt A: **note 3b** — a seam-substrate ALBEDO tint (darker muddy grit colour in the gaps),
+  the one deferred piece of Grayson's "not just a dark gradient" ask. Small add: a
+  dome_mix-masked blend darkening the seam albedo, mirror of `blend_rough`.
+- Alt B: **cube triplanar + bevel** in `preview.gd` (seamless tiling around cube corners +
+  modeled bevel; per-face BoxMesh UVs seam at every edge today).
+- Alt C: **resume the showcase plan** (`docs/superpowers/plans/2026-09-14-showcase-lighting-refresh.md`):
+  regen all 8 gallery stills + hero via `_make_showcase`, pick 5 GIF favorites, README motion strip.
 
 ## ❓ Open questions
 
-- s06/t03 dome method: voronoi distance-field vs a re-added light warp (visual preference).
-- The 3 "fine by design" flagged materials (snow, powder-coat, enamel): confirmed leave-as-is
-  this session; revisit only if a future eye disagrees.
+- Size spread: Grayson OK'd s06 fine=18 / t03 fine=36 and nestle 0.65; note that t03 reads
+  finer overall than s06 (different base scales) — not flagged as a problem, revisit if it is.
+- note 3b seam-albedo tint: build it, or is roughness-only enough? (deferred, not decided).
 - Original showcase open items still stand: which 5 materials become GIFs, GIF size budget,
   hero trio.
 
@@ -89,6 +81,14 @@ flagged=False. Then:
   flat ALBEDO downscales. Only the former need regen for a lighting/rig change.
 - **`promote_cookbook` full-category runs churn every card's line endings (autocrlf)**;
   `git checkout --` the unintended `.md` churn so only the changed material's files stage.
+- **A git worktree needs its own `.env`** (copy from the main checkout). Without it
+  `cfg.nodes_dir` resolves to a relative path that doesn't exist and `render_one` aborts at
+  validation with a wall of "unknown node type 'material'" — the catalog silently failed to
+  load, not a real graph error.
+- **`normal_albedo_audit` is blind to per-LAYER misregistration.** It only checks whether the
+  albedo and normal source-generator SETS are disjoint. A two-layer material whose fine relief
+  layer has no matching fine COLOUR still passes (both share the coarse voronoi). Judge fine
+  layers by eye, not the audit.
 - Standing render gotchas: one Godot at a time; `render()` needs ABSOLUTE outdir; in Git Bash
   `taskkill //F //IM Godot_v4.7.1-stable_win64_console.exe` (double slashes) to recover a hang;
   every session spawns its own `mm-mcp.exe`.
@@ -98,6 +98,8 @@ flagged=False. Then:
 
 Newest first. Keep at most 8; older ones are in `git log` (search commit subjects).
 
+### 2026-09-14 (late evening: s06/t03 coin + grit + two-scale, committed `4b0948f`, pushed, NOT merged)
+Follow-up shape tuning after 206b730's dome-softening, all Grayson visual-approved iteration by iteration. Coin profile = `clamp(cos(port0*B)*1.5)` plateau + `smoothstep` bevel (raw clamp alone rang as washer rings — the C1 kink under param4=0 edge-detect, same family as the earlier banding; smoothstep's zero-slope endpoints kill both kinks). Grit into the normal via 0.15*perlin_grain added onto the dome height; t03 also got the albedo grain it lacked. Seam substrate = dome-masked matte grit roughness. Two-scale = a finer `voronoi_fine` with its own nestled (*0.65) coin chain, `max`-composited so small stones fill the coarse seams (tiny/medium/bigger) and s06's regular seam network breaks up; the fine layer needs its OWN per-cell colour composited by the same selection or the small stones are colourless bumps (the audit is BLIND to that — both layers share voronoi_0). Grouping cleanup: one `Stone Profile` subgraph, kept out of Relief to avoid a subgraph cycle (dome_mix reads the coarse dome AND feeds height_relief). Committed 4b0948f, pushed branch. See memory [[coin-profile-two-scale-gravel]].
 ### 2026-09-14 (evening: normal/albedo audit + 5 fixes, MERGED to main)
 Started as "re-render the front-page showcase with the new lighting rig". Built `_make_showcase.py`. Granite drift-check passed, but Grayson's eye caught the normal not registering with the surface. A/B green-flip test proved it was NOT a normal-convention flip. A no-render albedo-vs-normal pixel overlay + reading the builder found the cause: normal built from a SEPARATE coarse voronoi than the fleck albedo (MM position-seeding means they can't align). Built `normal_albedo_audit.py` to size it (8/71 flagged). Fixed granite + 4 siblings (normal derives from albedo source; pm04 inverted). Grayson approved granite/pm04/s04; s06+t03 to be softened to domes next; snow/powder-coat/enamel left fine-by-design. Merged main in first (reconciling HANDOFF/STATUS vs the concurrent task_73027cd8 work), then merged to main. Backlog idea logged: a "quality ops" runner to do these multi-step flows in fewer agent tokens.
 ### 2026-09-14 (task_73027cd8 compound-default fix, MERGED PR #11 `948a8e7`): `_parse_generic_node` now sources a compound param's `default` from the node's own remote/gen_parameters block, not the linked inner leaf (crystal.param0 was 4, real 16). Concurrent session.
@@ -106,4 +108,3 @@ Started as "re-render the front-page showcase with the new lighting rig". Built 
 ### 2026-09-14 (preview lighting overhaul, MERGED `6ce84c6`): render_preview rig reworked (soft key shadow, shadow-casting rim, sky bounce, SSAO, precession sweep). Tracked thumbnails are flat albedo so no regen needed.
 ### 2026-09-14 (pickup): ran `render_preview_sweep` for real, Grayson confirmed the GIF; promoted it ✅.
 ### 2026-09-14 (noise-vocabulary round 2, MERGED): 6 materials (cookbook 59->65), `node_usage_audit.py`, wood-donor metallic bug closed.
-### 2026-09-14 (rotating-key-light sweep, MERGED `58e35ab`): `render_preview_sweep` azimuth mode + 11th MCP tool, TDD.
