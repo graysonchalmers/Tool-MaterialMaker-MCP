@@ -130,10 +130,14 @@ def test_subgraph_traversal():
     assert trace_sources(ptex, 4) == {"ExtA"}
 
 
-def test_granite_is_flagged():
-    """Real-anchor regression test: the actual root-caused bug. If this does
-    not flag, the traversal logic is wrong -- fix it before trusting the
-    cookbook-wide report."""
+def test_granite_normal_matches_albedo():
+    """Real-anchor regression test. Originally the root-caused bug (albedo
+    from FleckCells/voronoi_0, normal from a separate ReliefCells/voronoi_1
+    that could never share a cell layout -- flagged True). Fixed 2026-09-14
+    by feeding normal_map_0 from voronoi_0 port 2, the same per-cell random
+    already driving the albedo, so the relief now registers with the color.
+    If this ever flags again, the fix regressed -- someone rewired the
+    normal back onto a disjoint source."""
     import json
 
     repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -141,4 +145,8 @@ def test_granite_is_flagged():
     with open(path, encoding="utf-8") as fh:
         ptex = json.load(fh)
     result = audit_graph(ptex)
-    assert result["flagged"] is True
+    assert result["flagged"] is False
+    albedo = set(result["albedo_sources"])
+    normal = set(result["normal_sources"])
+    assert albedo and normal
+    assert albedo & normal

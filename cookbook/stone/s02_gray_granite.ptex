@@ -37,6 +37,12 @@
    "to_port": 2
   },
   {
+   "from": "fleck_color",
+   "from_port": 1,
+   "to": "stone_relief",
+   "to_port": 0
+  },
+  {
    "from": "stone_relief",
    "from_port": 0,
    "to": "Material",
@@ -167,6 +173,11 @@
       {
        "name": "out0",
        "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "out1",
+       "type": "rgb",
        "group_size": 0
       }
      ],
@@ -347,6 +358,12 @@
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
+    },
+    {
+     "from": "FleckCells",
+     "from_port": 2,
+     "to": "gen_outputs",
+     "to_port": 1
     }
    ]
   },
@@ -565,12 +582,11 @@
    "label": "Stone Relief",
    "type": "graph",
    "node_position": {
-    "x": 279.25,
-    "y": 207.75
+    "x": 583.0,
+    "y": 463.0
    },
    "parameters": {
-    "param0": 4,
-    "param1": 0.35
+    "param1": 0.3
    },
    "seed_int": 0,
    "nodes": [
@@ -578,11 +594,17 @@
      "name": "gen_inputs",
      "type": "ios",
      "node_position": {
-      "x": -120.75,
-      "y": 207.75
+      "x": 183.0,
+      "y": 463.0
      },
      "parameters": {},
-     "ports": [],
+     "ports": [
+      {
+       "name": "in0",
+       "type": "f",
+       "group_size": 0
+      }
+     ],
      "seed": 0,
      "seed_locked": true
     },
@@ -590,8 +612,8 @@
      "name": "gen_outputs",
      "type": "ios",
      "node_position": {
-      "x": 679.25,
-      "y": 207.75
+      "x": 983.0,
+      "y": 463.0
      },
      "parameters": {},
      "ports": [
@@ -607,27 +629,14 @@
      "name": "gen_parameters",
      "type": "remote",
      "node_position": {
-      "x": -120.75,
-      "y": 407.75
+      "x": 183.0,
+      "y": 663.0
      },
      "parameters": {
-      "param0": 4,
-      "param1": 0.35
+      "param1": 0.3
      },
      "seed": 0,
      "widgets": [
-      {
-       "name": "param0",
-       "shortdesc": "Relief cell size",
-       "label": "",
-       "type": "linked_control",
-       "linked_widgets": [
-        {
-         "node": "ReliefCells",
-         "widget": "scale_x"
-        }
-       ]
-      },
       {
        "name": "param1",
        "shortdesc": "Relief strength",
@@ -651,73 +660,18 @@
      "parameters": {
       "amount": 0.5,
       "param0": 11,
-      "param1": 0.35,
+      "param1": 0.3,
       "param2": 0,
       "param3": 0,
       "param4": 0,
       "size": 2
      },
      "type": "normal_map"
-    },
-    {
-     "name": "ReliefWarpNoise",
-     "node_position": {
-      "x": 102,
-      "y": 166
-     },
-     "parameters": {
-      "iterations": 3,
-      "persistence": 0.65,
-      "scale_x": 4,
-      "scale_y": 4
-     },
-     "type": "perlin"
-    },
-    {
-     "name": "ReliefCells",
-     "node_position": {
-      "x": 115,
-      "y": 63
-     },
-     "parameters": {
-      "intensity": 0.85,
-      "randomness": 1,
-      "scale_x": 4,
-      "scale_y": 4,
-      "stretch_x": 1,
-      "stretch_y": 1
-     },
-     "type": "voronoi"
-    },
-    {
-     "name": "ReliefWarp",
-     "node_position": {
-      "x": 317,
-      "y": 139
-     },
-     "parameters": {
-      "amount": 0.3,
-      "eps": 0.045,
-      "epsilon": 0
-     },
-     "type": "warp"
     }
    ],
    "connections": [
     {
-     "from": "ReliefWarpNoise",
-     "from_port": 0,
-     "to": "ReliefWarp",
-     "to_port": 1
-    },
-    {
-     "from": "ReliefCells",
-     "from_port": 1,
-     "to": "ReliefWarp",
-     "to_port": 0
-    },
-    {
-     "from": "ReliefWarp",
+     "from": "gen_inputs",
      "from_port": 0,
      "to": "GraniteNormal",
      "to_port": 0

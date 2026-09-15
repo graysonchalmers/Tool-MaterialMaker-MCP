@@ -19,12 +19,21 @@ voronoi with smooth fbm and read as low-frequency fog). The ramp runs dark
 biotite through mid feldspar to light quartz. Metallic is forced to zero
 (`colorize_1`), roughness is low and narrow (`colorize_2`) for a polished slab.
 
-Relief: `rock`'s normal chain (`voronoi_1` -> `warp_0` -> `normal_map_0`) is a
+Relief (fixed 2026-09-14): the normal used to come from `rock`'s own coarse
+relief voronoi (`voronoi_1` -> `warp_0` -> `normal_map_0`), a SEPARATE
+generator from the albedo's fleck voronoi. Material Maker seeds a voronoi
+node from its node position, so two different voronoi nodes never share a
+cell layout even at matching scale -- the relief bumps landed nowhere near
+the color flecks (confirmed by `quality/normal_albedo_audit.py` and a pixel
+overlay of the exported maps). The fix feeds `normal_map_0` from the SAME
+source as the albedo, `voronoi_0` port 2 (the per-cell random already driving
+`FleckColor`), so every mineral fleck carries matching micro-relief; the
+dead `voronoi_1`/`warp_0`/`perlin_1` chain was removed. `normal_map_0` is a
 directly-fed analytic generator, so the default `param4=1` (buffered
-edge_detect) renders flat. `param4=0` edge-detects the raw warped voronoi and
-gives real polished-stone micro-relief; strength (`param1`) is kept at 0.35 so
-it reads as a subtle speckle, not craggy rock. See the `param4=0` fix in the
-guide (`guide://authoring`).
+edge_detect) renders flat; `param4=0` edge-detects the raw voronoi and gives
+real polished-stone micro-relief. Strength (`param1`) starts at 0.3 so it
+reads as a subtle speckle, not craggy rock -- tune to taste. See the
+`param4=0` fix in the guide (`guide://authoring`).
 
 ## Subgraph structure
 
@@ -38,11 +47,14 @@ groups, `Material`) instead of the raw 11:
   this variant.
 - **Surface Finish** (`NonMetallic`, `PolishRoughness`). Exposed: `Polish
   (roughness)`.
-- **Stone Relief** (`ReliefCells`, `ReliefWarpNoise`, `ReliefWarp`, `GraniteNormal`).
-  Exposed: `Relief cell size`, `Relief strength`.
+- **Stone Relief** (`GraniteNormal`). Exposed: `Relief strength`.
 
 `SurfaceNoise` stays top-level: it feeds both the color group and the finish
 group, so folding it into either would just add a boundary port.
+`FleckCells` (`voronoi_0`) stays INSIDE `Fleck Color` -- it now has two
+outputs, one feeding `FleckColor`'s albedo internally and a second (the same
+per-cell random) feeding `Stone Relief`'s normal externally, the same
+multi-consumer boundary-port mechanism that already handled `SurfaceNoise`.
 
 ## See also
 
@@ -68,7 +80,4 @@ do not edit by hand. Open the `.ptex` and look for these names.
 | surface_finish | NonMetallic | colorize |
 | surface_finish | PolishRoughness | colorize |
 | stone_relief | GraniteNormal | normal_map |
-| stone_relief | ReliefWarpNoise | perlin |
-| stone_relief | ReliefCells | voronoi |
-| stone_relief | ReliefWarp | warp |
 <!-- nodes:end -->

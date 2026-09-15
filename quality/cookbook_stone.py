@@ -787,9 +787,20 @@ def build_s02_gray_granite(catalog: dict) -> str:
     at a fine cell scale, so each cell is a flat random gray fleck, with the
     normal_map param4=0 fix for real polished-stone micro-relief. This
     builder only GROUPS it: three named subgraphs so a person opening it sees
-    fleck color, surface finish, and relief instead of 11 raw nodes.
+    fleck color, surface finish, and relief instead of 8 raw nodes.
     perlin_0 stays top-level because it feeds both the color group (blend_0)
-    and the finish group (colorize_1, colorize_2)."""
+    and the finish group (colorize_1, colorize_2).
+
+    2026-09-14 normal/albedo alignment fix (see author.py's docstring for the
+    root cause): the normal now derives from voronoi_0 port 2 too -- the same
+    per-cell random already driving FleckColor -- instead of a separate
+    relief voronoi that could never share its cell layout. voronoi_0 stays
+    INSIDE fleck_color (group_into_subgraph auto-creates a second gen_outputs
+    port for its second external consumer, the same mechanism that already
+    lets it feed both blend_0 internally and normal_map_0 externally), so
+    fleck_color now has two outputs: FleckColor's albedo and the raw per-cell
+    random feeding stone_relief. stone_relief shrinks to just normal_map_0
+    (voronoi_1/perlin_1/warp_0 no longer exist, see author.py)."""
     g = take_variant(author.build_s02_gray_granite, _LABEL, 2)
     group_into_subgraph(
         g, ["voronoi_0", "blend_0", "colorize_0"],
@@ -805,10 +816,9 @@ def build_s02_gray_granite(catalog: dict) -> str:
         catalog,
     )
     group_into_subgraph(
-        g, ["voronoi_1", "perlin_1", "warp_0", "normal_map_0"],
+        g, ["normal_map_0"],
         "stone_relief", "Stone Relief",
-        [("voronoi_1", "scale_x", "param0", "Relief cell size"),
-         ("normal_map_0", "param1", "param1", "Relief strength")],
+        [("normal_map_0", "param1", "param1", "Relief strength")],
         catalog,
     )
     rename_nodes(g, {
@@ -817,9 +827,6 @@ def build_s02_gray_granite(catalog: dict) -> str:
         "colorize_0": "FleckColor",
         "colorize_1": "NonMetallic",
         "colorize_2": "PolishRoughness",
-        "voronoi_1": "ReliefCells",
-        "perlin_1": "ReliefWarpNoise",
-        "warp_0": "ReliefWarp",
         "normal_map_0": "GraniteNormal",
         "perlin_0": "SurfaceNoise",
     })

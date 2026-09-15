@@ -213,8 +213,23 @@ def build_s02_gray_granite(iter_label: str) -> list[str]:
     set_gradient(g, "colorize_1", [(0.0, 0, 0, 0), (1.0, 0, 0, 0)])
     set_gradient(g, "colorize_2",
                  [(0.0, 0.14, 0.14, 0.14), (1.0, 0.28, 0.28, 0.28)])
+    # Root-cause fix (2026-09-14): the normal used to come from a SEPARATE
+    # voronoi_1 (rock's coarse relief voronoi, warped by perlin_1). Because MM
+    # seeds voronoi from node position, two different voronoi nodes never
+    # share a cell layout even at matching scale, so the relief bumps landed
+    # nowhere near the albedo flecks (confirmed by
+    # quality/normal_albedo_audit.py and a pixel overlay). Feed the normal
+    # from the SAME source as the albedo flecks (voronoi_0 port 2, the
+    # per-cell random already driving colorize_0) so each mineral fleck
+    # carries matching micro-relief. voronoi_1 / perlin_1 / warp_0 are now
+    # dead -- drop their connections and remove them so no orphans remain.
+    rewire(g, "normal_map_0", 0, "voronoi_0", 2)
+    drop_conn(g, "warp_0", 0)
+    drop_conn(g, "warp_0", 1)
+    g["nodes"] = [n for n in g["nodes"]
+                  if n["name"] not in ("voronoi_1", "perlin_1", "warp_0")]
     set_param(g, "normal_map_0", "param4", 0)
-    set_param(g, "normal_map_0", "param1", 0.35)
+    set_param(g, "normal_map_0", "param1", 0.3)
     paths.append(save_variant(g, iter_label, "s02_gray_granite", 2))
     return paths
 
