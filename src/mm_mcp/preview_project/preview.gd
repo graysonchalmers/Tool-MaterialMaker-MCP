@@ -7,10 +7,10 @@ extends Node3D
 # ambient + reflections and screen-space AO, with a touch of depth of field,
 # screenshotted headfully and quit.
 # Args (after --): --albedo=<path> --normal=<path> --orm=<path>
-# --tile=<float, default 1.0>  UV repeat count on the sphere/cube/cutaway ball;
-#   the ground plane always tiles at 8x that so its own repeat is visible at a
-#   glance, and the cutaway ball's inner core tiles at CORE_RADIUS_FRACTION x
-#   that so its brick density visually matches the rest.
+# --tile=<float, default 1.0>  Triplanar UV scale, applied uniformly to every
+#   object (sphere, cube, ground, cutaway ball + core), so all of them tile at
+#   the same world-space density (~1 repeat per unit at tile=1). Raise it for a
+#   finer/smaller physical tile, lower it for a coarser one.
 #
 # Two output modes, same rig either way:
 # --out=<path>  Single static frame (render_preview).
@@ -24,16 +24,14 @@ extends Node3D
 const OBJECT_RADIUS := 0.85  # half-height of the cube / sphere radius, for ground placement
 const CUBE_BEVEL := 0.14  # fillet radius on the cube's edges (modeled, not a shader)
 const CUBE_BEVEL_SEGMENTS := 6  # arc segments across the fillet -> smooth, not a single facet
-const GROUND_TILE_MULTIPLIER := 8.0
 # Ground plane extent. The old 60x60 plane's far edge sat only ~30 units from
 # the camera, where exponential fog (density 0.07) reaches just ~88% -- so the
 # ground's hard geometric edge stayed faintly visible against the background as
 # a horizon seam. At 400 units the edge is ~200 units out, where fog is
 # effectively 100%: the ground has fully dissolved into BG_COLOR before its edge
-# is ever reached, so there is no seam left to see. Reference size for keeping
-# the tile density constant regardless of this value.
+# is ever reached, so there is no seam left to see. Tile density is now uniform
+# world-space via triplanar, independent of this value.
 const GROUND_SIZE := 400.0
-const GROUND_SIZE_REFERENCE := 60.0
 const CORE_RADIUS_FRACTION := 0.55  # cutaway ball's inner core, relative to OBJECT_RADIUS
 # 240 (top-down/Y-axis spin) is the locked-in cutaway-ball orientation after
 # visual review comparing multiple rotation angles.
@@ -69,15 +67,16 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 
+	# One TRIPLANAR material for every object, so the texture tiles at a single
+	# consistent world-space density (~1 repeat per unit at uv1_scale=tile)
+	# across the sphere, cube, ground and cutaway ball. Triplanar projects by
+	# position and blends by normal instead of using each mesh's own UVs -- the
+	# old rig gave the sphere (one wrap), ground (8x multiplier) and core three
+	# different tile scales. It also wraps seamlessly across the cube's faces and
+	# rounded edges. A smaller object (the core) now matches automatically: it is
+	# the same physical cell size, just fewer cells, no per-object scaling.
 	var mat := _make_material(albedo_tex, normal_tex, orm_tex, tile)
-	# Scale the UV repeat with the plane so a bigger plane keeps the same
-	# physical tile size near the camera -- otherwise enlarging the plane would
-	# stretch each tile and change the tuned look.
-	var ground_tile := tile * GROUND_TILE_MULTIPLIER * (GROUND_SIZE / GROUND_SIZE_REFERENCE)
-	var ground_mat := _make_material(albedo_tex, normal_tex, orm_tex, ground_tile)
-	# Same physical brick size as the outer shell, not the same repeat count:
-	# a smaller sphere needs fewer repeats to read at a matching density.
-	var core_mat := _make_material(albedo_tex, normal_tex, orm_tex, tile * CORE_RADIUS_FRACTION)
+	mat.uv1_triplanar = true
 
 	var ground := MeshInstance3D.new()
 	ground.mesh = PlaneMesh.new()
@@ -85,7 +84,7 @@ func _ready() -> void:
 	ground.mesh.subdivide_width = 1
 	ground.mesh.subdivide_depth = 1
 	ground.position = Vector3(0, -OBJECT_RADIUS, 0)
-	ground.set_surface_override_material(0, ground_mat)
+	ground.set_surface_override_material(0, mat)
 	add_child(ground)
 
 	var sphere := MeshInstance3D.new()
@@ -98,20 +97,14 @@ func _ready() -> void:
 	sphere.set_surface_override_material(0, mat)
 	add_child(sphere)
 
-	# Beveled cube with TRIPLANAR mapping. The stock BoxMesh gives each face an
-	# independent 0..1 UV, so the texture restarts (seams) at every edge and the
-	# relief does not wrap around corners. Triplanar projects along the object
-	# axes and blends by normal, so albedo/normal tile continuously across the
-	# faces AND the modeled chamfer. A dedicated cube material keeps this off the
-	# sphere/ground/core, which read fine on their own UVs.
-	var cube_mat := _make_material(albedo_tex, normal_tex, orm_tex, tile)
-	cube_mat.uv1_triplanar = true
-	cube_mat.cull_mode = BaseMaterial3D.CULL_DISABLED  # winding-agnostic for the hand-built mesh
+	# Rounded-bevel cube. The modeled fillet (see _rounded_box) plus the shared
+	# triplanar material means the texture tiles continuously across the faces
+	# AND over the rounded edges, at the same density as every other object.
 	var cube := MeshInstance3D.new()
 	cube.mesh = _rounded_box(OBJECT_RADIUS * 2, CUBE_BEVEL, CUBE_BEVEL_SEGMENTS)
 	cube.position = Vector3(0, 0, 0)
 	cube.rotation_degrees = Vector3(0, 45, 0)
-	cube.set_surface_override_material(0, cube_mat)
+	cube.set_surface_override_material(0, mat)
 	add_child(cube)
 
 	# Cutaway ball: a wedge subtracted from a sphere, revealing an inner core.
@@ -141,7 +134,7 @@ func _ready() -> void:
 	core.radius = OBJECT_RADIUS * CORE_RADIUS_FRACTION
 	core.radial_segments = 32
 	core.rings = 16
-	core.material = core_mat
+	core.material = mat
 	core.smooth_faces = true
 	cutaway.add_child(core)
 	add_child(cutaway)
