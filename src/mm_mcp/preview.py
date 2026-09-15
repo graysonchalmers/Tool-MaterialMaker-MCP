@@ -36,7 +36,7 @@ def _build_command(cfg: Config, albedo_path: str, normal_path: str, orm_path: st
 
 def render_preview(albedo_path: str, normal_path: str, orm_path: str,
                     outdir: str | None = None, basename: str = "preview",
-                    tile: float = 1.0, cfg: Config | None = None) -> PreviewResult:
+                    tile: float = 0.45, cfg: Config | None = None) -> PreviewResult:
     """Composite a material's already-rendered maps onto a lit sphere + cube.
 
     Takes paths from a prior render_graph call (albedo/normal/orm), not a
@@ -102,7 +102,7 @@ def _frames_to_gif(frame_paths: list[str], gif_path: str, frame_duration_ms: int
 
 def render_preview_sweep(albedo_path: str, normal_path: str, orm_path: str,
                           outdir: str | None = None, basename: str = "preview",
-                          tile: float = 1.0, frames: int = 18,
+                          tile: float = 0.45, frames: int = 18,
                           frame_duration_ms: int = 80,
                           sweep_kind: str = "precess", cone: float = 18.0,
                           cfg: Config | None = None) -> PreviewSweepResult:

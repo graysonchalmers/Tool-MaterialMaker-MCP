@@ -1,16 +1,16 @@
 extends Node3D
 
-# Fixed preview rig for mm_mcp's render_preview tool: a sphere, a cube (turned
-# 45deg), and a cutaway ball (revealing an inner core), resting on a tiled
+# Fixed preview rig for mm_mcp's render_preview tool: a sphere, a rounded-bevel
+# cube (turned 45deg), and a lathed chess rook, resting on a tiled
 # ground plane that runs off into a fogged distance. Lit by a soft-shadowed key,
 # a boosted shadow-casting rim/kick, and a low bounce fill, over procedural-sky
 # ambient + reflections and screen-space AO, with a touch of depth of field,
 # screenshotted headfully and quit.
 # Args (after --): --albedo=<path> --normal=<path> --orm=<path>
-# --tile=<float, default 1.0>  Triplanar UV scale, applied uniformly to every
-#   object (sphere, cube, ground, cutaway ball + core), so all of them tile at
-#   the same world-space density (~1 repeat per unit at tile=1). Raise it for a
-#   finer/smaller physical tile, lower it for a coarser one.
+# --tile=<float, default 0.45>  Triplanar UV scale, applied uniformly to every
+#   object (sphere, cube, ground, rook), so all of them tile at the same
+#   world-space density. Raise it for a finer/smaller physical tile, lower it
+#   for a coarser one.
 #
 # Two output modes, same rig either way:
 # --out=<path>  Single static frame (render_preview).
@@ -32,10 +32,6 @@ const CUBE_BEVEL_SEGMENTS := 6  # arc segments across the fillet -> smooth, not 
 # is ever reached, so there is no seam left to see. Tile density is now uniform
 # world-space via triplanar, independent of this value.
 const GROUND_SIZE := 400.0
-const CORE_RADIUS_FRACTION := 0.55  # cutaway ball's inner core, relative to OBJECT_RADIUS
-# 240 (top-down/Y-axis spin) is the locked-in cutaway-ball orientation after
-# visual review comparing multiple rotation angles.
-const CUTAWAY_ROTATION_DEGREES := 240.0
 
 func _ready() -> void:
 	var args := {}
@@ -55,7 +51,7 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 
-	var tile := 1.0
+	var tile := 0.45
 	if args.has("tile"):
 		tile = args["tile"].to_float()
 
@@ -68,13 +64,11 @@ func _ready() -> void:
 		return
 
 	# One TRIPLANAR material for every object, so the texture tiles at a single
-	# consistent world-space density (~1 repeat per unit at uv1_scale=tile)
-	# across the sphere, cube, ground and cutaway ball. Triplanar projects by
-	# position and blends by normal instead of using each mesh's own UVs -- the
-	# old rig gave the sphere (one wrap), ground (8x multiplier) and core three
-	# different tile scales. It also wraps seamlessly across the cube's faces and
-	# rounded edges. A smaller object (the core) now matches automatically: it is
-	# the same physical cell size, just fewer cells, no per-object scaling.
+	# consistent world-space density across the sphere, cube, ground and rook.
+	# Triplanar projects by position and blends by normal instead of using each
+	# mesh's own UVs -- the old rig gave the sphere (one wrap) and ground (8x
+	# multiplier) different tile scales. It also wraps seamlessly across the
+	# cube's faces and rounded edges and up the rook's turned profile.
 	var mat := _make_material(albedo_tex, normal_tex, orm_tex, tile)
 	mat.uv1_triplanar = true
 
@@ -107,47 +101,50 @@ func _ready() -> void:
 	cube.set_surface_override_material(0, mat)
 	add_child(cube)
 
-	# Cutaway ball: a wedge subtracted from a sphere, revealing an inner core.
-	# An honest approximation of a studio material-test ball, not a true
-	# beveled asset (Godot's CSG booleans cut sharp edges; real bevels would
-	# need a modeled mesh, see the preview_project README note).
-	var cutaway := CSGCombiner3D.new()
-	cutaway.position = Vector3(2.0, 0, 0)
-	cutaway.rotation_degrees = Vector3(0, CUTAWAY_ROTATION_DEGREES, 0)
-	var outer := CSGSphere3D.new()
-	outer.radius = OBJECT_RADIUS
-	outer.radial_segments = 48
-	outer.rings = 24
-	outer.material = mat
-	outer.smooth_faces = true
-	cutaway.add_child(outer)
-	# Rounded-box cutter instead of a sharp CSGBox3D: the boolean's interior
-	# corners and the cutter-edge lines it carves into the sphere come out
-	# filleted (soft) rather than razor-sharp, matching the cube's bevel feel.
-	# Godot CSG cannot fillet a boolean result directly, so we soften the tool.
-	var wedge := CSGMesh3D.new()
-	var cut_size := OBJECT_RADIUS * 2.2
-	# Large cutter fillet: not just to soften the interior corner but so the whole
-	# near-sphere cutting surface is a rounded SHOULDER, not a flat face. A sharp
-	# box face crosses the outer sphere at a knife-edge rim; a broad rounded
-	# shoulder rolls that outer lip over instead. Radius drives how soft the lip
-	# reads (CSG cannot truly fillet a boolean rim, so we widen the roll).
-	wedge.mesh = _rounded_box(cut_size, cut_size * 0.64, CUBE_BEVEL_SEGMENTS)
-	wedge.operation = CSGShape3D.OPERATION_SUBTRACTION
-	wedge.position = Vector3(OBJECT_RADIUS * 0.75, OBJECT_RADIUS * 0.75, 0)
-	wedge.rotation_degrees = Vector3(0, 45, 0)
-	# Without a material, the flat faces this subtraction exposes render as
-	# plain white (no UVs assigned) instead of picking up the shell's texture.
-	wedge.material = mat
-	cutaway.add_child(wedge)
-	var core := CSGSphere3D.new()
-	core.radius = OBJECT_RADIUS * CORE_RADIUS_FRACTION
-	core.radial_segments = 32
-	core.rings = 16
-	core.material = mat
-	core.smooth_faces = true
-	cutaway.add_child(core)
-	add_child(cutaway)
+	# Chess rook: a lathed (surface-of-revolution) body with a bold molding
+	# silhouette (Catmull-Rom profile, smooth normals) and a plain circular top.
+	# Sized to the cube's height (2*OBJECT_RADIUS), base resting on the ground.
+	var rook := Node3D.new()
+	rook.position = Vector3(2.0, 0, 0)
+	# Cull-disabled clone of the shared material: the lathe is a hand-built mesh,
+	# so double-sided sidesteps any triangle-winding mistake showing as holes.
+	var rook_mat := mat.duplicate()
+	rook_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	# Profile: Vector2(radius, y), bottom to top; r==0 endpoints cap the axis.
+	# y spans -OBJECT_RADIUS (base on the ground) to +0.72*OBJECT_RADIUS (crown
+	# platform); the merlons carry the silhouette up to the cube height.
+	# Control points for a bold molding silhouette (r, y). A Catmull-Rom spline
+	# is threaded through these and sampled densely, so the outline FLOWS through
+	# its curves (ogee/cove/ovolo, like a cornice) instead of faceting at each
+	# turn -- combined with the lathe's smooth vertex normals, the whole profile
+	# reads soft. Bold base torus + big crown cornice for a strong silhouette.
+	var yb := -OBJECT_RADIUS
+	var ctrl := PackedVector2Array([
+		Vector2(0.00, yb),          # bottom center (cap)
+		Vector2(0.56, yb),          # foot outer (wide, strong base)
+		Vector2(0.58, yb + 0.09),   # base torus bulge (rolls out)
+		Vector2(0.50, yb + 0.20),   # ovolo rolls back in
+		Vector2(0.42, yb + 0.30),   # down into the shaft
+		Vector2(0.35, yb + 0.48),   # cove neck
+		Vector2(0.34, yb + 0.82),   # shaft body
+		Vector2(0.37, yb + 1.02),   # gentle swell
+		Vector2(0.40, yb + 1.13),   # rise
+		Vector2(0.36, yb + 1.19),   # small cove (detail)
+		Vector2(0.44, yb + 1.26),   # astragal bead out (detail)
+		Vector2(0.39, yb + 1.31),   # fillet back in (detail)
+		Vector2(0.53, yb + 1.41),   # cornice bulge (big crown molding)
+		Vector2(0.47, yb + 1.47),   # cove back in
+		Vector2(0.58, yb + 1.56),   # crown rim (widest, top)
+		Vector2(0.58, yb + 1.61),   # crown top edge
+		Vector2(0.46, yb + 1.65),   # soft roll onto the top
+		Vector2(0.00, yb + 1.66),   # circular flat top (cap) -- no merlons
+	])
+	var profile := _catmull_profile(ctrl, 12)
+	var body := MeshInstance3D.new()
+	body.mesh = _lathe(profile, 64)
+	body.set_surface_override_material(0, rook_mat)
+	rook.add_child(body)
+	add_child(rook)
 
 	var cam := Camera3D.new()
 	cam.position = Vector3(0, 1.4, 6.5)
@@ -386,3 +383,97 @@ func _rounded_box(size: float, radius: float, segments: int) -> ArrayMesh:
 	var mesh := ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, out)
 	return mesh
+
+
+func _lathe(profile: PackedVector2Array, segments: int) -> ArrayMesh:
+	# Surface of revolution: revolve a 2D profile (Vector2(radius, y), bottom to
+	# top) around the Y axis. Normals are SMOOTH around the axis but computed
+	# per profile SEGMENT (each ring band uses its segment's outward normal), so
+	# the profile's corners -- collars, grooves, lip flares -- read as crisp
+	# edges instead of being rounded away. r==0 endpoints cap the axis (the ring
+	# collapses to an apex, so those bands are triangle fans). Material is
+	# double-sided, so winding is not load-bearing.
+	var rows := profile.size() - 1
+	# Smooth per-vertex profile normals: average the two adjacent segment normals
+	# so the revolved surface has no facets along its length (the "flowy" read).
+	# The perpendicular sign (-dy, dr) is the outward orientation verified in the
+	# render (a plain (dy,-dr) lit the body from the inside -> near black).
+	var pnorm := []
+	pnorm.resize(profile.size())
+	for i in range(profile.size()):
+		var acc := Vector2.ZERO
+		if i > 0:
+			var s := profile[i] - profile[i - 1]
+			acc += Vector2(-s.y, s.x).normalized()
+		if i < profile.size() - 1:
+			var s := profile[i + 1] - profile[i]
+			acc += Vector2(-s.y, s.x).normalized()
+		pnorm[i] = acc.normalized()
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for k in range(rows):
+		var p0 := profile[k]
+		var p1 := profile[k + 1]
+		var pn0: Vector2 = pnorm[k]
+		var pn1: Vector2 = pnorm[k + 1]
+		var vy0 := float(k) / rows
+		var vy1 := float(k + 1) / rows
+		for j in range(segments):
+			var a0 := TAU * j / segments
+			var a1 := TAU * (j + 1) / segments
+			var u0 := float(j) / segments
+			var u1 := float(j + 1) / segments
+			var c0 := cos(a0); var s0 := sin(a0)
+			var c1 := cos(a1); var s1 := sin(a1)
+			var v00 := Vector3(p0.x * c0, p0.y, p0.x * s0)
+			var v01 := Vector3(p0.x * c1, p0.y, p0.x * s1)
+			var v10 := Vector3(p1.x * c0, p1.y, p1.x * s0)
+			var v11 := Vector3(p1.x * c1, p1.y, p1.x * s1)
+			var n00 := Vector3(pn0.x * c0, pn0.y, pn0.x * s0)
+			var n01 := Vector3(pn0.x * c1, pn0.y, pn0.x * s1)
+			var n10 := Vector3(pn1.x * c0, pn1.y, pn1.x * s0)
+			var n11 := Vector3(pn1.x * c1, pn1.y, pn1.x * s1)
+			# UVs (u = angle, v = height) exist only so generate_tangents() can
+			# build a tangent basis -- the triplanar material samples by position,
+			# not these UVs, but its normal mapping needs the tangents.
+			if p0.x <= 1e-6:
+				st.set_normal(n10); st.set_uv(Vector2(u0, vy1)); st.add_vertex(v10)
+				st.set_normal(n11); st.set_uv(Vector2(u1, vy1)); st.add_vertex(v11)
+				st.set_normal(n00); st.set_uv(Vector2(u0, vy0)); st.add_vertex(v00)
+			elif p1.x <= 1e-6:
+				st.set_normal(n00); st.set_uv(Vector2(u0, vy0)); st.add_vertex(v00)
+				st.set_normal(n01); st.set_uv(Vector2(u1, vy0)); st.add_vertex(v01)
+				st.set_normal(n10); st.set_uv(Vector2(u0, vy1)); st.add_vertex(v10)
+			else:
+				st.set_normal(n00); st.set_uv(Vector2(u0, vy0)); st.add_vertex(v00)
+				st.set_normal(n10); st.set_uv(Vector2(u0, vy1)); st.add_vertex(v10)
+				st.set_normal(n11); st.set_uv(Vector2(u1, vy1)); st.add_vertex(v11)
+				st.set_normal(n00); st.set_uv(Vector2(u0, vy0)); st.add_vertex(v00)
+				st.set_normal(n11); st.set_uv(Vector2(u1, vy1)); st.add_vertex(v11)
+				st.set_normal(n01); st.set_uv(Vector2(u1, vy0)); st.add_vertex(v01)
+	st.generate_tangents()
+	return st.commit()
+
+
+func _catmull_pt(p0: Vector2, p1: Vector2, p2: Vector2, p3: Vector2, t: float) -> Vector2:
+	var t2 := t * t
+	var t3 := t2 * t
+	return 0.5 * ((2.0 * p1) + (-p0 + p2) * t
+		+ (2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3) * t2
+		+ (-p0 + 3.0 * p1 - 3.0 * p2 + p3) * t3)
+
+
+func _catmull_profile(ctrl: PackedVector2Array, steps: int) -> PackedVector2Array:
+	# Catmull-Rom spline through the control points, sampled `steps` per span, so
+	# the lathe profile is a smooth flowing curve instead of straight facets.
+	var out := PackedVector2Array()
+	var n := ctrl.size()
+	for i in range(n - 1):
+		var p0: Vector2 = ctrl[maxi(i - 1, 0)]
+		var p1: Vector2 = ctrl[i]
+		var p2: Vector2 = ctrl[i + 1]
+		var p3: Vector2 = ctrl[mini(i + 2, n - 1)]
+		for s in range(steps):
+			out.append(_catmull_pt(p0, p1, p2, p3, float(s) / steps))
+	out.append(ctrl[n - 1])
+	return out
