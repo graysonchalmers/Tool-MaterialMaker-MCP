@@ -203,6 +203,21 @@ func _ready() -> void:
 	fill.light_color = Color(0.6, 0.62, 0.7)
 	add_child(fill)
 
+	# Reflection-only "sun": contributes ONLY to the procedural sky's sun disc
+	# (sky_mode = SKY_ONLY means it casts no direct light/shadow on any object,
+	# so matte diffuse shading is completely untouched). Aimed near the key's
+	# direction so the highlight it produces on smooth metal reads as the same
+	# light source, just with enough radiance to survive the roughness blur of
+	# the environment-reflection convolution. This is the "concentrated bright
+	# region" the sky reflects -- kept off the key/rim/fill so it cannot leak
+	# into direct lighting no matter how bright it is tuned.
+	var reflection_sun := DirectionalLight3D.new()
+	reflection_sun.rotation_degrees = Vector3(-35, 60, 0)
+	reflection_sun.light_energy = 26.0
+	reflection_sun.light_color = Color(1.0, 0.98, 0.94)
+	reflection_sun.sky_mode = DirectionalLight3D.SKY_MODE_SKY_ONLY
+	add_child(reflection_sun)
+
 	var env_node := WorldEnvironment.new()
 	var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR
@@ -216,6 +231,14 @@ func _ready() -> void:
 	sky_mat.ground_bottom_color = Color(0.22, 0.20, 0.18)
 	sky_mat.ground_horizon_color = Color(0.4, 0.4, 0.42)
 	sky_mat.sky_energy_multiplier = 1.0
+	# Localized bright spot instead of raising sky energy globally: a wide-ish
+	# but still bounded sun disc (not the ~100deg default, which blends into
+	# the whole-hemisphere gradient) that the reflection_sun above lights up.
+	# Wide enough to survive scratched_steel's rough (~0.6) GGX blur as a
+	# visible reflection catch; still bounded enough that rough matte
+	# materials (near-zero specular response) barely move.
+	sky_mat.sun_angle_max = 45.0
+	sky_mat.sun_curve = 0.2
 	var sky := Sky.new()
 	sky.sky_material = sky_mat
 	env.sky = sky
