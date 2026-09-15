@@ -6,20 +6,29 @@
 
 Gate ledger. Three states only: ✅ verified · 🔌 wired · ⬜ not started.
 
-_Last updated: 2026-09-14 (evening: normal/albedo registration audit + 5 material
-fixes on branch `showcase-lighting-refresh`, NOT yet merged to `main`. Earlier the
-same day: round 3 (71 materials) + the preview lighting overhaul both merged to `main`.)_
+_Last updated: 2026-09-14 (evening: normal/albedo registration audit + 5 material fixes
+MERGED to `main`; the concurrent `task_73027cd8` catalog default-field fix (PR #11) also on
+`main`. Earlier the same day: round 3 (71 materials) + the preview lighting overhaul.)_
 
-> 🔧 **On branch `showcase-lighting-refresh` (NOT merged):** two new `quality/` tools +
+> 🔧 **Normal/albedo registration audit + 5 fixes (MERGED):** two new `quality/` tools +
 > 5 material normal-registration fixes. An audit found 8/71 materials whose normal relief
 > was built from a different noise source than their albedo (relief did not register with
 > color). Fixed: `s02_gray_granite`, `s06_river_pebbles`, `s04_scattered_river_stones`,
 > `t03_gravel`, `pm04_hammertone` (all audit-clean, full suite green). Left as fine-by-design:
-> `t02_fresh_snow`, `pm01_powder_coat`, `pm02_automotive_enamel`. Pending on the branch:
-> soften s06/t03 relief to domes (Grayson request), cube triplanar+bevel, and the original
+> `t02_fresh_snow`, `pm01_powder_coat`, `pm02_automotive_enamel`. Still pending: soften
+> s06/t03 relief to domes (Grayson request), cube triplanar+bevel, and the original
 > front-page showcase regen (hero+gallery stills on the new rig + a top-5 GIF strip). See
 > `HANDOFF.md` + `.superpowers/sdd/2026-09-14-showcase-lighting-refresh/progress.md`.
 
+> ✅ **`task_73027cd8` fixed:** the round-3 catalog fix's resolved `default`
+> field was taken from the wrong (linked inner leaf) node for compound-node
+> params (e.g. `crystal.param0` reported 4, real default 16, from its own
+> `remote`/`gen_parameters` block). `_parse_generic_node` now prefers the
+> remote node's own declared default. Commit `948a8e7`, open as
+> [PR #11](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/pull/11)
+> with CI green, ready to merge. Fast suite 1165 passed. See `HANDOFF.md`'s
+> session log for detail.
+>
 > ✅ **Round 3 MERGED to `main`:** six more proof materials on
 > previously-unused catalog nodes, all Grayson-approved: `m04_scratched_steel`
 > (scratches), `f11_corduroy` (directional_noise), `t10_packed_dirt` (dirt),
@@ -30,10 +39,7 @@ same day: round 3 (71 materials) + the preview lighting overhaul both merged to 
 > `catalog_builder.py` bug this round surfaced (compound-node param range
 > resolution for `named_parameter` widgets and type-referenced `linked_control`
 > links, plus a fixpoint-loop fix for compound-to-compound reference chains
-> after the first pass proved order-dependent). A follow-up was spawned
-> (`task_73027cd8`) for a related-but-separate, non-blocking issue: the fix's
-> resolved `default` field is taken from the wrong (inner leaf) node for 17
-> parameters, including `crystal`. Full task-by-task ledger at
+> after the first pass proved order-dependent). Full task-by-task ledger at
 > `.superpowers/sdd/2026-09-14-noise-vocabulary-round-3/progress.md`; see
 > `HANDOFF.md`'s session log for the summary. Plan:
 > `docs/superpowers/plans/2026-09-14-noise-vocabulary-round-3.md`. Prior
@@ -62,7 +68,7 @@ row points at.
 
 | Component | State | What it is / evidence |
 |---|---|---|
-| `src/mm_mcp/catalog_builder.py` | ✅ | `.mmg` -> `catalog.json`, incl. compound-node param ranges (a bounded fixpoint pass over compound-to-compound reference chains, 2026-09-14, order-independence regression-tested). `tests/test_catalog_*.py` |
+| `src/mm_mcp/catalog_builder.py` | ✅ | `.mmg` -> `catalog.json`, incl. compound-node param ranges (a bounded fixpoint pass over compound-to-compound reference chains, 2026-09-14, order-independence regression-tested) and defaults sourced from the remote node's own block, not the linked inner node (`task_73027cd8`, 2026-09-14, PR #11 open). `tests/test_catalog_*.py` |
 | `src/mm_mcp/validator.py`, `graph.py` | ✅ | Graph validation (errors as data), recurses into subgraphs (2026-09-06, `577592f`), + pure helpers. `tests/test_validator.py`, `tests/test_graph.py` |
 | `src/mm_mcp/render.py` | ✅ | Headless Godot runner, `--target` profiles (Godot, Unity/URP verified; Unreal UE5 file-level only), process-tree kill, temp-file IO. `tests/test_render.py` |
 | `src/mm_mcp/server.py` (+ `idle.py`) | ✅ | 11 batch tools + 7 live tools + `catalog://nodes` + `guide://authoring`; opt-in idle exit (`MM_IDLE_EXIT_MINUTES`, 2026-09-06). `tests/test_server_tools.py`, `tests/test_server_live.py`, `tests/test_server_idle.py`, `tests/test_idle.py`; counts enforced by `tests/test_readme_counts.py` |

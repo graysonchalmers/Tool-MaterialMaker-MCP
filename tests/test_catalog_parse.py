@@ -60,7 +60,11 @@ def test_compound_param_resolves_range_from_linked_inner_shader_node():
     assert strength["min"] == 0
     assert strength["max"] == 2
     assert strength["step"] == 0.01
-    assert strength["default"] == 0.5
+    # The real default is normal_map's own remote-node value (1), not
+    # edge_detect_1.amount's default (0.5) -- see
+    # test_compound_param_default_comes_from_remote_node_not_linked_inner_node
+    # in test_catalog_build.py for the general rule.
+    assert strength["default"] == 1
 
 
 def test_compound_param_falls_back_to_none_when_inner_node_unresolvable():

@@ -99,6 +99,51 @@ def test_build_catalog_resolves_compound_to_compound_links_order_independently(m
     assert cat_forward == cat_reversed
 
 
+def test_compound_param_default_comes_from_remote_node_not_linked_inner_node():
+    """crystal's param0/param1 ("Scale X"/"Scale Y") link to voronoi's
+    scale_x/scale_y for their range (min=1/max=32), but voronoi's own
+    default for scale_x/scale_y is 4 -- crystal's remote ('gen_parameters')
+    node declares its own real defaults of 16 for both in its own
+    'parameters' block, which is what Material Maker actually uses when
+    crystal is dropped fresh into a graph. This only reproduces once the
+    linked_control -> type-referenced-inner-node range resolution (this
+    same commit's `test_linked_control_resolves_through_a_type_referenced_
+    inner_node`) is in place -- before that, param0/param1 had no range or
+    default at all and this bug was invisible.
+
+    The compound param's default must come from the remote node's own
+    parameters, not from the linked inner shader node it borrows
+    min/max/step from."""
+    cat = build_catalog(cfg.nodes_dir)
+    params = {p["name"]: p for p in cat["crystal"]["parameters"]}
+    assert params["param0"]["default"] == 16
+    assert params["param1"]["default"] == 16
+    # range still resolves from the linked inner node, unaffected
+    assert params["param0"]["min"] == 1
+    assert params["param0"]["max"] == 32
+
+
+def test_remote_default_override_applies_even_when_range_is_unresolvable():
+    """clouds_noise mixes two widget shapes on the same remote node, and its
+    remote 'parameters' block is {n_scale: 1, param0: 11, param1: 0}:
+
+    - 'n_scale' is a named_parameter widget whose own default (1) already
+      equals the remote block's value -- a real check, not a tautology,
+      because it proves the override doesn't clobber an already-correct
+      named_parameter default with some other value.
+    - 'param1' ("Type") is a config_control widget linked to 'switch.source',
+      which has no catalog entry ('switch' is a SPECIAL_TYPE, not a .mmg
+      file) -- so `_resolve_widget_range` returns None for it and, before
+      this fix, its default stayed None. The remote-node override must still
+      apply here, turning an otherwise-unresolvable param's default into the
+      real value (0) instead of leaving it null."""
+    cat = build_catalog(cfg.nodes_dir)
+    params = {p["name"]: p for p in cat["clouds_noise"]["parameters"]}
+    assert params["n_scale"]["default"] == 1
+    assert params["param1"]["type"] is None  # range genuinely unresolvable
+    assert params["param1"]["default"] == 0
+
+
 def test_build_catalog_skips_malformed_files(capsys):
     """Verify that malformed .mmg files are skipped with a warning, and valid ones are included."""
     with tempfile.TemporaryDirectory() as tmpdir:

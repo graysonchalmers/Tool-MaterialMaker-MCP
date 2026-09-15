@@ -1,9 +1,9 @@
 # 🧭 Session Handoff: Tool-MaterialMaker-MCP
 
-_Last updated: 2026-09-14 (evening CT) — normal/albedo registration audit + fixes on a
-feature branch `showcase-lighting-refresh`, NOT yet merged to `main`. This began as a
-front-page "re-render the showcase with the new lighting rig" task and pivoted into a
-cookbook-quality fix after Grayson's eye caught a real normal bug._
+_Last updated: 2026-09-14 (evening CT) — normal/albedo registration audit + 5 material
+fixes, merged to `main`. This began as a front-page "re-render the showcase with the new
+lighting rig" task and pivoted into a cookbook-quality fix after Grayson's eye caught a real
+normal bug. The concurrent `task_73027cd8` compound-default fix (PR #11) is also on `main`._
 
 The session baton. Read at pickup, rewrite at wrap-up. **Shape rule (2026-09-05,
 teardown #3):** "Current state" describes the latest session only; anything older is one
@@ -12,7 +12,7 @@ archive.
 
 ## 🎯 Current state
 
-On branch **`showcase-lighting-refresh`** (off `main` at `341a212`), four commits, **not merged**:
+Merged to `main` (branch `showcase-lighting-refresh`), five commits + two new `quality/` tools:
 - `7d9f2a2` `quality/_make_showcase.py` — reproducible front-page render pipeline
   (still / hero-montage / gif modes) + 6 unit tests. Replaces the ad-hoc way hero+gallery
   were made. NOT yet used to regen the tracked gallery.
@@ -37,12 +37,13 @@ Grayson approved `pm04_hammertone` and `s04_scattered_river_stones` as-is. He wa
 because raw voronoi cells feed the normal as flat-topped facets) — NOT done yet.
 
 The original showcase work (regen hero + 8 gallery stills with the new rig, top-5 GIF strip,
-cube triplanar + bevel) is all still **pending** behind this normal detour.
+cube triplanar + bevel) is all still **pending**.
 
 ## 📌 Where we stopped
 
-Grayson said wrap up. pm04 + s04 approved; s06 + t03 need dome-softening next. Nothing
-merged; branch is clean (this wrap-up commits the plan doc + a scratch-file cleanup).
+Merged `showcase-lighting-refresh` into `main` (reconciled HANDOFF/STATUS conflicts against
+the concurrent `task_73027cd8` work) and pushed. pm04 + s04 approved; s06 + t03 need
+dome-softening next.
 
 ## ▶️ Next concrete step
 
@@ -57,13 +58,9 @@ flagged=False. Then:
 - Alt B: **resume the showcase plan** (`docs/superpowers/plans/2026-09-14-showcase-lighting-refresh.md`):
   regen all 8 gallery stills + hero via `_make_showcase`, pick 5 GIF favorites, add a README
   motion strip.
-- Alt C: **merge `showcase-lighting-refresh` to `main`** once the material work is signed off
-  (norm-ask gate; not yet requested).
 
 ## ❓ Open questions
 
-- Merge the branch to `main` now (5 material fixes + 2 new tools are done and green) or hold
-  until the s06/t03 dome pass + the showcase renders are also on it? Grayson to call.
 - s06/t03 dome method: voronoi distance-field vs a re-added light warp (visual preference).
 - The 3 "fine by design" flagged materials (snow, powder-coat, enamel): confirmed leave-as-is
   this session; revisit only if a future eye disagrees.
@@ -89,12 +86,9 @@ flagged=False. Then:
   visual contact sheet, not the number alone.
 - **Front-page hero + `docs/images/gallery/*.png` ARE lit 3D `render_preview` renders** (still
   on the OLD rig), UNLIKE the cookbook thumbnails `docs/images/cookbook-*/*.png` which are
-  flat ALBEDO downscales. Only the former need regen for a lighting/rig change. (Corrects the
-  earlier baton implication that "no regen needed".)
+  flat ALBEDO downscales. Only the former need regen for a lighting/rig change.
 - **`promote_cookbook` full-category runs churn every card's line endings (autocrlf)**;
   `git checkout --` the unintended `.md` churn so only the changed material's files stage.
-- **Branch not merged**: `showcase-lighting-refresh` holds all this session's work; `main` is
-  untouched. Don't assume `main` has the fixes.
 - Standing render gotchas: one Godot at a time; `render()` needs ABSOLUTE outdir; in Git Bash
   `taskkill //F //IM Godot_v4.7.1-stable_win64_console.exe` (double slashes) to recover a hang;
   every session spawns its own `mm-mcp.exe`.
@@ -104,12 +98,12 @@ flagged=False. Then:
 
 Newest first. Keep at most 8; older ones are in `git log` (search commit subjects).
 
-### 2026-09-14 (evening: normal/albedo audit + fixes, branch showcase-lighting-refresh, NOT merged)
-Started as "re-render the front-page showcase with the new lighting rig". Built `_make_showcase.py` (Task 1). Drift-check on granite passed, but Grayson's eye caught the normal not registering with the surface. Ran controlled A/B (green-channel flip) on hex + granite: flip barely changed anything => NOT a global normal-convention bug. New hypothesis via a no-render albedo-vs-normal pixel overlay + reading the builder: granite's normal came from a SEPARATE coarse voronoi than its fleck albedo (MM position-seeding means they can never align). Built `normal_albedo_audit.py` (Task A) to size it: 8/71 flagged. Fixed granite (Task B) + 4 siblings (Task C, opus): normal derives from the albedo source; pm04 inverted (albedo from dimple field). Grayson approved granite/pm04/s04; s06+t03 to be softened to domes next; snow/powder-coat/enamel left as fine-by-design. All fixes audit-clean + full suite green. Backlog idea logged (commons ideas file): a "quality ops" runner to do these multi-step flows in fewer agent tokens.
-### 2026-09-14 (worktree hygiene, no MM-MCP code): PEB-read process scan cleared a stuck Windows worktree lock (a hung `find /` + orphaned bash wrappers, not Godot/Python); `task_86ba47bd` dismissed.
-### 2026-09-14 (noise-vocabulary round 3 + catalog fix, MERGED): 6 materials (cookbook 65->71), real catalog_builder compound-node range fix (fixpoint loop). `task_73027cd8` spawned for compound default-field accuracy.
-### 2026-09-14 (preview lighting overhaul, MERGED `6ce84c6`): render_preview rig reworked (soft key shadow, shadow-casting rim, sky bounce fixing dark metals, SSAO, precession-default sweep). Tracked thumbnails are flat albedo so no regen was needed.
-### 2026-09-14 (pickup): ran `render_preview_sweep` for real through the MCP surface, Grayson confirmed the GIF; promoted it ✅.
-### 2026-09-14 (noise-vocabulary round 2, MERGED): 6 materials (cookbook 59->65), `node_usage_audit.py`, wood-donor metallic bug closed w04/w05/w06.
+### 2026-09-14 (evening: normal/albedo audit + 5 fixes, MERGED to main)
+Started as "re-render the front-page showcase with the new lighting rig". Built `_make_showcase.py`. Granite drift-check passed, but Grayson's eye caught the normal not registering with the surface. A/B green-flip test proved it was NOT a normal-convention flip. A no-render albedo-vs-normal pixel overlay + reading the builder found the cause: normal built from a SEPARATE coarse voronoi than the fleck albedo (MM position-seeding means they can't align). Built `normal_albedo_audit.py` to size it (8/71 flagged). Fixed granite + 4 siblings (normal derives from albedo source; pm04 inverted). Grayson approved granite/pm04/s04; s06+t03 to be softened to domes next; snow/powder-coat/enamel left fine-by-design. Merged main in first (reconciling HANDOFF/STATUS vs the concurrent task_73027cd8 work), then merged to main. Backlog idea logged: a "quality ops" runner to do these multi-step flows in fewer agent tokens.
+### 2026-09-14 (task_73027cd8 compound-default fix, MERGED PR #11 `948a8e7`): `_parse_generic_node` now sources a compound param's `default` from the node's own remote/gen_parameters block, not the linked inner leaf (crystal.param0 was 4, real 16). Concurrent session.
+### 2026-09-14 (worktree hygiene, no MM-MCP code): PEB-read process scan cleared a stuck Windows worktree lock (a hung `find /` + orphaned bash wrappers).
+### 2026-09-14 (noise-vocabulary round 3 + catalog range fix, MERGED): 6 materials (cookbook 65->71), catalog_builder compound-node range fixpoint fix.
+### 2026-09-14 (preview lighting overhaul, MERGED `6ce84c6`): render_preview rig reworked (soft key shadow, shadow-casting rim, sky bounce, SSAO, precession sweep). Tracked thumbnails are flat albedo so no regen needed.
+### 2026-09-14 (pickup): ran `render_preview_sweep` for real, Grayson confirmed the GIF; promoted it ✅.
+### 2026-09-14 (noise-vocabulary round 2, MERGED): 6 materials (cookbook 59->65), `node_usage_audit.py`, wood-donor metallic bug closed.
 ### 2026-09-14 (rotating-key-light sweep, MERGED `58e35ab`): `render_preview_sweep` azimuth mode + 11th MCP tool, TDD.
-### 2026-09-13 (enum-index validation enforcement, MERGED): out-of-range enum index -> hard error with intended-index hint; ratchet test.
