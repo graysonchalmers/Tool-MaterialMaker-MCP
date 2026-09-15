@@ -398,10 +398,32 @@ def build_s06_river_pebbles(catalog: dict) -> str:
     set_gradient(g, "colorize_2", [            # mid roughness, faint wet sheen
         (0.0, 0.42, 0.42, 0.42), (1.0, 0.60, 0.60, 0.60)])
     # pronounced rounded pebble relief (directly-fed analytic -> param4=0),
-    # now derived from voronoi_0 port 1 (same generator as the albedo) so the
-    # bulge registers with the color. The old separate voronoi_1/perlin_1/
+    # derived from voronoi_0 (same generator as the albedo) so the bulge
+    # registers with the color. DOME FIX (2026-09-14): feed the normal from
+    # voronoi_0 PORT 0 (.z, distance-to-cell-center: smooth, radial around each
+    # seed) through a REVERSED height ramp, NOT port 1 (.w, distance-to-borders,
+    # which peaks along each cell's medial axis -> a sharp crease that reads
+    # faceted). Reversed ramp: centers (low port0) -> high ground, borders (high
+    # port0) -> recessed seam. This is the Grayson-approved _dome_the_cells
+    # recipe from the leather cookbook. The old separate voronoi_1/perlin_1/
     # warp_0 relief chain is dead -- drop its connections and remove it.
-    rewire(g, "normal_map_0", 0, "voronoi_0", 1)
+    # CONVEX dome profile (h ~= sqrt(1-(r/0.618)^2), a spherical cap): FLAT at
+    # the apex (low port0) so the normal points straight up at the top, then
+    # steepening toward the seam. A straight ramp would make port0's LINEAR
+    # distance field a CONE -- constant slope to a singular point at the tip
+    # (the "point in the middle" Grayson caught). Holding the top flat rounds it.
+    # Smooth ANALYTIC dome via a single math node, NOT a stepped colorize: a
+    # colorize gradient has a control point at every stop, and the analytic
+    # normal (param4=0) turns each into a concentric contour RING on the
+    # near-flat apex (the "banding" Grayson caught). cos(port0*B) is one smooth
+    # expression -> zero control points -> zero rings. cos=1 at the cell center
+    # (A=0, apex) curving to ~0 at the border (A~0.6, B=2.6 -> cos(~1.57)~0 =
+    # recessed seam); the zero slope at A=0 rounds the top (no cone point).
+    add_node(g, "dome_curve", "math",
+             {"op": 16, "default_in2": 2.6, "clamp": True})   # 16 = cos(A*B)
+    g["connections"].append(
+        {"from": "voronoi_0", "from_port": 0, "to": "dome_curve", "to_port": 0})
+    rewire(g, "normal_map_0", 0, "dome_curve", 0)
     drop_conn(g, "warp_0", 0)
     drop_conn(g, "warp_0", 1)
     g["nodes"] = [n for n in g["nodes"]
@@ -446,7 +468,7 @@ def build_s06_river_pebbles(catalog: dict) -> str:
     # the only member, group_into_subgraph auto-creates a gen_inputs port fed
     # by pebble_pattern's extra output, the same multi-consumer boundary
     # mechanism granite's fix uses.
-    group_into_subgraph(g, ["normal_map_0"],
+    group_into_subgraph(g, ["dome_curve", "normal_map_0"],
                          "relief", "Relief",
                          [("normal_map_0", "param1", "param0", "Relief strength")],
                          catalog)
@@ -460,6 +482,7 @@ def build_s06_river_pebbles(catalog: dict) -> str:
         "perlin_grain": "GrainNoise",
         "colorize_grain": "GrainContrast",
         "blend_grain": "GrainOverPebbles",
+        "dome_curve": "DomeCurve",
         "normal_map_0": "PebbleNormal",
     })
     return save_variant(g, _LABEL, "s06_river_pebbles", 1)

@@ -58,4 +58,5 @@ do not edit by hand. Open the `.ptex` and look for these names.
 | material_finish | GravelRoughness | colorize |
 | material_finish | SurfaceNoise | perlin |
 | relief | GravelNormal | normal_map |
+| relief | DomeCurve | math |
 <!-- nodes:end -->

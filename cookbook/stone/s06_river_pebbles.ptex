@@ -356,7 +356,7 @@
     },
     {
      "from": "PebbleCells",
-     "from_port": 1,
+     "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
@@ -768,8 +768,8 @@
    "label": "Relief",
    "type": "graph",
    "node_position": {
-    "x": 583.0,
-    "y": 463.0
+    "x": 291.5,
+    "y": 231.5
    },
    "parameters": {
     "param0": 0.6
@@ -780,8 +780,8 @@
      "name": "gen_inputs",
      "type": "ios",
      "node_position": {
-      "x": 183.0,
-      "y": 463.0
+      "x": -108.5,
+      "y": 231.5
      },
      "parameters": {},
      "ports": [
@@ -798,8 +798,8 @@
      "name": "gen_outputs",
      "type": "ios",
      "node_position": {
-      "x": 983.0,
-      "y": 463.0
+      "x": 691.5,
+      "y": 231.5
      },
      "parameters": {},
      "ports": [
@@ -815,8 +815,8 @@
      "name": "gen_parameters",
      "type": "remote",
      "node_position": {
-      "x": 183.0,
-      "y": 663.0
+      "x": -108.5,
+      "y": 431.5
      },
      "parameters": {
       "param0": 0.6
@@ -853,13 +853,32 @@
       "size": 2
      },
      "type": "normal_map"
+    },
+    {
+     "name": "DomeCurve",
+     "type": "math",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "op": 16,
+      "default_in2": 2.6,
+      "clamp": true
+     }
     }
    ],
    "connections": [
     {
-     "from": "gen_inputs",
+     "from": "DomeCurve",
      "from_port": 0,
      "to": "PebbleNormal",
+     "to_port": 0
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 0,
+     "to": "DomeCurve",
      "to_port": 0
     },
     {

@@ -70,4 +70,5 @@ do not edit by hand. Open the `.ptex` and look for these names.
 | material_finish | PebbleRoughness | colorize |
 | material_finish | SurfaceNoise | perlin |
 | relief | PebbleNormal | normal_map |
+| relief | DomeCurve | math |
 <!-- nodes:end -->

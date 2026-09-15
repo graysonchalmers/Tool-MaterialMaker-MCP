@@ -216,10 +216,30 @@ def build_t03_gravel(catalog: dict) -> str:
         (0.0, 0.55, 0.55, 0.55),
         (1.0, 0.82, 0.82, 0.82),
     ])
-    # normal now derives from voronoi_0 port 1 (same generator as the albedo)
-    # so the bulge registers with the color; the old separate voronoi_1/
-    # perlin_1/warp_0 relief chain is dead -- drop its connections, remove it.
-    rewire(g, "normal_map_0", 0, "voronoi_0", 1)
+    # normal derives from voronoi_0 (same generator as the albedo) so the bulge
+    # registers with the color. DOME FIX (2026-09-14): feed the normal from
+    # voronoi_0 PORT 0 (.z, distance-to-cell-center: smooth, radial around each
+    # seed) through a REVERSED height ramp, NOT port 1 (.w, distance-to-borders,
+    # which peaks along each cell's medial axis -> a sharp crease that reads
+    # faceted). Reversed ramp: centers (low port0) -> high, borders (high port0)
+    # -> recessed seam -- the Grayson-approved _dome_the_cells leather recipe.
+    # The old separate voronoi_1/perlin_1/warp_0 relief chain is dead.
+    # CONVEX dome profile (spherical cap): FLAT at the apex (low port0) so the
+    # top rounds, steepening toward the seam. A straight ramp would make port0's
+    # LINEAR distance field a CONE with a singular point at the tip (the "point
+    # in the middle" Grayson caught). Holding the top flat rounds it.
+    # Smooth ANALYTIC dome via a single math node, NOT a stepped colorize: a
+    # colorize gradient has a control point at every stop, and the analytic
+    # normal (param4=0) turns each into a concentric contour RING on the
+    # near-flat apex (the banding). cos(port0*B) is one smooth expression ->
+    # zero control points -> zero rings. cos=1 at the cell center (apex) curving
+    # to ~0 at the border (B=2.6 -> cos(~1.57)~0 = recessed seam); zero slope at
+    # the apex rounds the top (no cone point).
+    add_node(g, "dome_curve", "math",
+             {"op": 16, "default_in2": 2.6, "clamp": True})   # 16 = cos(A*B)
+    g["connections"].append(
+        {"from": "voronoi_0", "from_port": 0, "to": "dome_curve", "to_port": 0})
+    rewire(g, "normal_map_0", 0, "dome_curve", 0)
     drop_conn(g, "warp_0", 0)
     drop_conn(g, "warp_0", 1)
     g["nodes"] = [n for n in g["nodes"]
@@ -242,7 +262,7 @@ def build_t03_gravel(catalog: dict) -> str:
                          "material_finish", "Material Finish",
                          [("colorize_2", "gradient", "param0", "Roughness")],
                          catalog)
-    group_into_subgraph(g, ["normal_map_0"],
+    group_into_subgraph(g, ["dome_curve", "normal_map_0"],
                          "relief", "Relief",
                          [("normal_map_0", "param1", "param0", "Relief strength")],
                          catalog)
@@ -253,6 +273,7 @@ def build_t03_gravel(catalog: dict) -> str:
         "colorize_1": "NonMetallic",
         "colorize_2": "GravelRoughness",
         "perlin_0": "SurfaceNoise",
+        "dome_curve": "DomeCurve",
         "normal_map_0": "GravelNormal",
     })
     return save_variant(g, _LABEL, "t03_gravel", 1)
