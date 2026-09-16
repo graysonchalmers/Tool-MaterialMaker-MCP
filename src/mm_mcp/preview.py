@@ -27,7 +27,8 @@ class PreviewSweepResult:
 
 def _build_command(cfg: Config, albedo_path: str, normal_path: str, orm_path: str,
                     out_path: str, tile: float, clearcoat: float = 0.0,
-                    clearcoat_roughness: float = 0.5) -> list[str]:
+                    clearcoat_roughness: float = 0.5, heightmap_path: str | None = None,
+                    heightmap_scale: float = 0.05) -> list[str]:
     cmd = [
         cfg.console_binary, "--path", _PREVIEW_PROJECT, "--",
         f"--albedo={albedo_path}", f"--normal={normal_path}",
@@ -36,6 +37,9 @@ def _build_command(cfg: Config, albedo_path: str, normal_path: str, orm_path: st
     if clearcoat > 0:
         cmd.append(f"--clearcoat={clearcoat}")
         cmd.append(f"--clearcoat-roughness={clearcoat_roughness}")
+    if heightmap_path:
+        cmd.append(f"--heightmap={heightmap_path}")
+        cmd.append(f"--heightmap-scale={heightmap_scale}")
     return cmd
 
 
@@ -43,6 +47,7 @@ def render_preview(albedo_path: str, normal_path: str, orm_path: str,
                     outdir: str | None = None, basename: str = "preview",
                     tile: float = 0.45, clearcoat: float = 0.0,
                     clearcoat_roughness: float = 0.5,
+                    heightmap_path: str | None = None, heightmap_scale: float = 0.05,
                     cfg: Config | None = None) -> PreviewResult:
     """Composite a material's already-rendered maps onto a lit sphere + cube.
 
@@ -59,6 +64,12 @@ def render_preview(albedo_path: str, normal_path: str, orm_path: str,
     (off) and is a true no-op at that default: no extra Godot arg is even
     appended, so every existing caller and the no-regress gate render
     byte-for-byte identically to before this param existed.
+
+    heightmap_path/heightmap_scale opt into Godot's native Deep Parallax
+    (parallax occlusion mapping) on the same preview material, using a
+    heightmap PNG produced separately (e.g. a material's depth_tex output).
+    Defaults to None/off and is a true no-op at that default: same treatment
+    as clearcoat, no extra Godot arg appended when absent.
     """
     for label, path in (("albedo", albedo_path), ("normal", normal_path),
                          ("orm", orm_path)):
@@ -72,6 +83,8 @@ def render_preview(albedo_path: str, normal_path: str, orm_path: str,
     albedo_path = os.path.abspath(albedo_path)
     normal_path = os.path.abspath(normal_path)
     orm_path = os.path.abspath(orm_path)
+    if heightmap_path:
+        heightmap_path = os.path.abspath(heightmap_path)
 
     cfg = cfg or load_config()
     outdir = outdir or cfg.output_dir
@@ -82,7 +95,8 @@ def render_preview(albedo_path: str, normal_path: str, orm_path: str,
         os.remove(out_path)
 
     cmd = _build_command(cfg, albedo_path, normal_path, orm_path, out_path, tile,
-                          clearcoat=clearcoat, clearcoat_roughness=clearcoat_roughness)
+                          clearcoat=clearcoat, clearcoat_roughness=clearcoat_roughness,
+                          heightmap_path=heightmap_path, heightmap_scale=heightmap_scale)
 
     try:
         proc = _run_godot(cmd, 60)
