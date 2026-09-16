@@ -6,20 +6,35 @@
 
 Gate ledger. Three states only: ✅ verified · 🔌 wired · ⬜ not started.
 
-_Last updated: 2026-09-15 (reflections cycle MERGED to `main` `007d493`, pushed — see callout).
-Prior: 2026-09-14 normal/albedo audit + 5 fixes and `task_73027cd8` fix, both on `main`._
+_Last updated: 2026-09-16 (iteration-and-parallax cycle MERGED to `main`, pushed — see callout).
+Prior: 2026-09-15 reflections cycle, also on `main`._
 
-> 🪞 **Reflections cycle — MERGED to `main` (`007d493`, pushed), fast suite 1217 green:**
-> Rig gained ambient/reflection decouple, a `SKY_ONLY` sun-disc reflection, SSR
-> (`ssr_enabled`), and an opt-in preview-only clearcoat param (`render_preview(clearcoat=)`,
-> default 0.0 no-op). New objective gate `quality/preview_regress.py` diffs the 3D preview
-> COMPOSITE. Three reflective materials added (cookbook 71→74): `m05_polished_chrome`,
-> `s14_wet_river_stone` (dielectric, roughness-masked), `m06_car_paint`. A global normal
-> green-flip attempt was REVERTED (`4e239da`) after it inverted the approved materials — the
-> triplanar rig is fine, m04's raised scratches are an isolated pre-existing m04 quirk.
-> **Not final:** Grayson wants s14 pebbles to reflect on faces + vary size + less-flat tops, and
-> the car-paint clearcoat to gain surface detail (next session). Ledger:
-> `.superpowers/sdd/2026-09-14-reflections/progress.md`. Spec/plan under `docs/superpowers/`.
+> 🔩 **Deep Parallax prototype — MERGED to `main`, pushed, fast suite 1254 green:** confirmed
+> (by reading the pristine MM checkout) that Material Maker's `depth_tex` input + its
+> "Godot/Godot 4 Standard" export target already produce a real, round-trip native
+> `heightmap_enabled`/`heightmap_deep_parallax` material — not a preview-only effect. Added
+> opt-in `heightmap_path`/`heightmap_scale` to the preview rig; discovered Godot 4.7 cannot
+> compose heightmap/parallax with triplanar UV mapping (engine warning + byte-identical render,
+> not a bug); the rig's sphere now swaps to a non-triplanar material only when a heightmap is
+> given (Grayson: "same shaped objects, no new object"), with a `parallax_spin` sweep mode
+> (rotates the object, not the light — parallax is camera-angle-dependent) and cube/rook/ground
+> tile-density matched to the sphere. `s09_ashlar_wall` now exports real Deep Parallax
+> (`depth_tex` repointed to the correct-polarity `colorize_6`; the donor already had an
+> accidental, unexamined connection here — made deliberate). Grayson-approved after 4 rounds of
+> live visual iteration; final whole-branch review found 2 Important + 3 Minor, one fix wave
+> closed all but one parked cosmetic edge case. **s14/m06 iteration retunes shipped in the same
+> merge, code-review clean, but Grayson's visual sign-off is still outstanding** — see
+> `HANDOFF.md`. Contact sheet regen deferred (still stale, cosmetic). Ledger was at
+> `.superpowers/sdd/2026-09-15-iteration-and-parallax/progress.md`, deleted post-merge (history
+> in `git log`). Spec/plan under `docs/superpowers/`.
+>
+> 🪞 **Reflections cycle — MERGED to `main` (`007d493`), fast suite 1217 green (RESOLVED
+> above):** rig gained ambient/reflection decouple, a `SKY_ONLY` sun-disc reflection, SSR, and an
+> opt-in preview-only clearcoat param. Three reflective materials added (cookbook 71→74):
+> `m05_polished_chrome`, `s14_wet_river_stone`, `m06_car_paint`. A global normal green-flip
+> attempt was REVERTED (`4e239da`) after it inverted the approved materials — the triplanar rig
+> is fine, m04's raised scratches are an isolated pre-existing quirk. Ledger:
+> `.superpowers/sdd/2026-09-14-reflections/progress.md`.
 
 > 🔧 **Normal/albedo registration audit + 5 fixes (MERGED):** two new `quality/` tools +
 > 5 material normal-registration fixes. An audit found 8/71 materials whose normal relief
@@ -84,11 +99,11 @@ row points at.
 | `src/mm_mcp/render.py` | ✅ | Headless Godot runner, `--target` profiles (Godot, Unity/URP verified; Unreal UE5 file-level only), process-tree kill, temp-file IO. `tests/test_render.py` |
 | `src/mm_mcp/server.py` (+ `idle.py`) | ✅ | 11 batch tools + 7 live tools + `catalog://nodes` + `guide://authoring`; opt-in idle exit (`MM_IDLE_EXIT_MINUTES`, 2026-09-06). `tests/test_server_tools.py`, `tests/test_server_live.py`, `tests/test_server_idle.py`, `tests/test_idle.py`; counts enforced by `tests/test_readme_counts.py` |
 | `src/mm_mcp/doctor.py`, `paths.py`, `inspect.py`, `config.py` | ✅ | Setup preflight, opt-in path bounding (`MM_ALLOWED_ROOTS`), `.ptex` metrics, env config. Matching `tests/test_*.py` |
-| `src/mm_mcp/preview.py` + `preview_project/` | ✅ | `render_preview` 3D composite. Rig reworked 2026-09-14 (`24ff854`): sphere + `_rounded_box` bevel cube + lathed chess rook (`_lathe`/`_catmull_profile` molding), ALL on one triplanar material at a unified world-space density (default tile 0.45, per-material `_make_showcase._TILE_OVERRIDES`). Lighting rig (`6ce84c6`): soft key shadow, boosted shadow-casting rim, sky bounce+reflections, SSAO. Front-page gallery/hero regenerated on this rig; all Grayson visual-approved. `tests/test_preview.py` |
-| `render_preview_sweep` (`preview.py` + `preview_project/`) | ✅ | 2026-09-14: default sweep changed from the azimuth 360 orbit to a PRECESSION (`6ce84c6`) -- key aim wobbles in a cone (default 18 deg, rim/fill held still) so highlights circle relief without going backlit; `sweep_kind="azimuth"`/`cone` still reachable. Motion integration test now exercises precession, clears its floor empirically. One Godot process, looping GIF, `Pillow` runtime dep. `tests/test_preview.py` |
+| `src/mm_mcp/preview.py` + `preview_project/` | ✅ | `render_preview` 3D composite. Rig reworked 2026-09-14 (`24ff854`): sphere + `_rounded_box` bevel cube + lathed chess rook, ALL on one triplanar material at a unified world-space density (default tile 0.45). Lighting rig (`6ce84c6`): soft key shadow, rim, sky bounce+reflections, SSAO. Reflections (2026-09-15): sun-disc + SSR + opt-in clearcoat. Deep Parallax (2026-09-16): opt-in `heightmap_path`/`heightmap_scale`; the sphere swaps to its own non-triplanar material ONLY when a heightmap is given (Godot 4.7 cannot compose heightmap with triplanar UV — confirmed via engine warning), with its own tuned UV scale (`SPHERE_HEIGHTMAP_UV_SCALE`) and a matched shared-material tile density (`SPHERE_MATCHED_TRIPLANAR_TILE`) so cube/rook/ground read consistently in the same demo. Front-page gallery/hero unaffected (still the original rig for non-heightmap renders, no-op verified by `quality/preview_regress.py`). `tests/test_preview.py` |
+| `render_preview_sweep` (`preview.py` + `preview_project/`) | ✅ | 2026-09-14: default sweep is a PRECESSION (`6ce84c6`) -- key aim wobbles in a cone so highlights circle relief without going backlit; `sweep_kind="azimuth"` still reachable. 2026-09-16: `sweep_kind="parallax_spin"` (opt-in, only meaningful with `heightmap_path`) rotates the demo sphere itself instead of the light, since parallax is camera-angle- not light-angle-dependent. One Godot process, looping GIF, `Pillow` runtime dep. `tests/test_preview.py` |
 | `src/mm_mcp/overlay.py` + `addons/mm_live/` + `src/mm_mcp/live.py` | ✅ | Disposable MM overlay with a GDScript socket addon (port 8765); client with `connect_or_launch`, 8 commands incl. `load_graph`. `tests/test_overlay.py`, `tests/test_live.py` |
 | `src/mm_mcp/play/` (`mm-play`, `play.bat`) | ✅ | Slider web page over cookbook subgraph params with a WebGL sphere; Grayson ran `play.bat` hands-on 2026-09-05. Refuses to start beside a stale listener and names the PID (2026-09-05). `tests/test_play_*.py`; `docs/superpowers/specs/2026-09-04-play-surface-design.md` |
-| `cookbook/` + `quality/cookbook_*.py` + `promote_cookbook.py` | ✅ | 71 tracked materials on `main`, 12 categories (all six round-3 materials merged), subgraph-grouped, every node role-named (2026-09-06, render-identical), each card carrying a generated node table; builders are the source, `--check` is the regression baseline for graphs and card tables. `tests/test_cookbook*.py` incl. `test_cookbook_naming_gate.py`, `test_cookbook_card_table_gate.py`; `cookbook/README.md` |
+| `cookbook/` + `quality/cookbook_*.py` + `promote_cookbook.py` | ✅ | 74 tracked materials on `main`, 12 categories, subgraph-grouped, every node role-named (render-identical), each card carrying a generated node table; builders are the source, `--check` is the regression baseline. `s09_ashlar_wall` is the first material with a deliberate `depth_tex` (Deep Parallax) connection (2026-09-16, real round-trip export, not preview-only). `s14_wet_river_stone`/`m06_car_paint` retuned per Grayson feedback (2026-09-16), code-review clean, visual sign-off outstanding (see `HANDOFF.md`). `tests/test_cookbook*.py` incl. `test_cookbook_naming_gate.py`, `test_cookbook_card_table_gate.py`; `cookbook/README.md` |
 | `docs/AUTHORING.md` + `guide://authoring` | ✅ | Invariant authoring guide served as an MCP resource; per-material recipes are cards beside each `.ptex`. `tests/test_guide_resource.py` |
 | `quality/debug_swatches.py` | ✅ | 19 single-node diagnostic swatches with pixel assertions (merged to `main` with round 1; slope_blur structural-only, buffer node cannot render headless). Surfaced in README's "Core toolbox" section as a swatch contact sheet. `tests/test_debug_swatches.py`; `docs/DEBUG_SWATCHES.md` |
 | `quality/` package (builders, helpers, naming checker, render_tracked, promote/check, swatches) | ✅ | Importable package, `python -m quality.<module>`; `author.py` is the shared builder base, guarded by `--check`. `tests/test_quality_package.py`, `tests/test_cookbook_builders_signature.py`; `quality/README.md` |

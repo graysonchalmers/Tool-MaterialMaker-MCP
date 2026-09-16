@@ -51,7 +51,7 @@ three together, since they interact: the two-scale mix changes which pixels coun
 - Produces: cookbook entry `stone/s14_wet_river_stone` (same id, retuned graph — this is an
   in-place edit, not a new id).
 
-- [ ] **Step 1: Port the two-scale dome mix (size variation)**
+- [x] **Step 1: Port the two-scale dome mix (size variation)**
 
   After the existing single-scale dome chain (`dome_curve`/`dome_flatten`/`dome_smooth`, s14 lines
   1404-1413), add a second, finer voronoi with its own identical coin chain, nestled lower and
@@ -81,7 +81,7 @@ three together, since they interact: the two-scale mix changes which pixels coun
   Rewire the normal to read the MIXED height instead of the single-scale `dome_smooth`:
   `rewire(g, "normal_map_0", 0, "dome_mix", 0)` (was `dome_smooth`).
 
-- [ ] **Step 2: Registration — the fine layer needs its own color AND roughness, not just height**
+- [x] **Step 2: Registration — the fine layer needs its own color AND roughness, not just height**
 
   Per s06's own documented lesson ("the audit is BLIND to the fine layer needing its own colour"):
   add a fine-scale color pass and composite by the SAME `sel_fine` selection the height mix uses,
@@ -107,7 +107,7 @@ three together, since they interact: the two-scale mix changes which pixels coun
   crevices/tops get correctly masked too:
   `rewire(g, "colorize_2", 0, "dome_mix", 0)`; `rewire(g, "colorize_dry", 0, "dome_mix", 0)`.
 
-- [ ] **Step 3: Top curvature — reduce the flatten**
+- [x] **Step 3: Top curvature — reduce the flatten**
 
   On BOTH dome chains (coarse `dome_flatten` and the new `dome_flatten_f`), lower
   `default_in2` from `1.5` toward `1.0` (less plateau, more of the underlying cos-bell curvature
@@ -115,7 +115,7 @@ three together, since they interact: the two-scale mix changes which pixels coun
   `set_param(g, "dome_flatten_f", "default_in2", 1.0)`. Tune against the render in Step 5 — this
   is a starting point, not a locked value.
 
-- [ ] **Step 4: Face reflection — lower the roughness ceiling so tops keep partial sheen**
+- [x] **Step 4: Face reflection — lower the roughness ceiling so tops keep partial sheen**
 
   Retune the WET/DRY roughness gradients' TOP-END stop (currently `0.35`/`0.60`) down so tops read
   as semi-wet rather than fully matte, while keeping crevices the glossiest point:
@@ -136,7 +136,7 @@ three together, since they interact: the two-scale mix changes which pixels coun
   These are starting points — the objective gate can't judge "looks wet," only Grayson's eye can;
   tune against the render in Step 5.
 
-- [ ] **Step 5: Update subgraph grouping + names, then render — STOP for approval**
+- [x] **Step 5: Update subgraph grouping + names, then render — STOP for approval**
 
   Add `voronoi_fine`, `dome_curve_f`, `dome_flatten_f`, `dome_smooth_f`, `dome_fine_low`,
   `dome_mix`, `sel_fine`, `colorize_fine`, `blend_layer_color` into the existing `stone_profile`
@@ -146,18 +146,18 @@ three together, since they interact: the two-scale mix changes which pixels coun
   `& "C:\Program Files\Python313\python.exe" -m quality.cookbook_stone s14_wet_river_stone`
   then render the 3D preview to a scratch dir (script file, one Godot). Subagent stops.
 
-- [ ] **Step 6: Controller — send render, get approval; iterate**
+- [x] **Step 6: Controller — send render, get approval; iterate**
 
   Controller sends the preview via SendUserFile, waits for Grayson. Iterate Steps 1-5 until
   approved — the size variation, curvature, and roughness ceiling all interact, so expect at
   least one round of joint retuning.
 
-- [ ] **Step 7: Objective gates green**
+- [x] **Step 7: Objective gates green**
 
   Run: `& "C:\Program Files\Python313\python.exe" -m quality.promote_cookbook cookbook-stone ; & "C:\Program Files\Python313\python.exe" -m quality.promote_cookbook --check ; & "C:\Program Files\Python313\python.exe" -m pytest tests/test_cookbook_naming_gate.py tests/test_cookbook_card_table_gate.py -q`
   Expected: all pass. `git checkout --` any unrelated `.md` line-ending churn.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
   ```bash
   git add quality/cookbook_stone.py cookbook/stone/s14_wet_river_stone.ptex cookbook/stone/s14_wet_river_stone.md
@@ -176,7 +176,7 @@ three together, since they interact: the two-scale mix changes which pixels coun
   `rename_nodes`); existing `_M06_NAMES` dict (line 303).
 - Produces: cookbook entry `metal/m06_car_paint` (same id, retuned graph).
 
-- [ ] **Step 1: Add a coarser second noise for the orange-peel wave**
+- [x] **Step 1: Add a coarser second noise for the orange-peel wave**
 
   `MicroNoise` (`perlin_0`, scale 8x8) already drives albedo/roughness/flake fan-out — do not
   retune it (deep base colors are approved). Add an independent, coarser-frequency noise and
@@ -199,7 +199,7 @@ three together, since they interact: the two-scale mix changes which pixels coun
   existing `author_helpers` import — it is not currently imported in `cookbook_metal.py`, check
   the import line at the top of the file and add it).
 
-- [ ] **Step 2: Raise `normal_amount` enough to read, without going rough**
+- [x] **Step 2: Raise `normal_amount` enough to read, without going rough**
 
   `set_param(g, "normal_map_0", "param1", 0.10)` (was `0.04`, set inside
   `_from_scratch_noise_material`'s call — override it after construction with `set_param` rather
@@ -207,31 +207,31 @@ three together, since they interact: the two-scale mix changes which pixels coun
   `0.04`). This is a starting point for the render loop in Step 4, not a locked value — Grayson's
   "missing surface detail" complaint is the gate, an objective test can't judge it.
 
-- [ ] **Step 3: Fold the new nodes into the existing subgraph group**
+- [x] **Step 3: Fold the new nodes into the existing subgraph group**
 
   Add `orange_peel`, `peel_scaled`, `normal_height` to the existing `car_paint_finish` group
   member list (line 371-372) and extend `_M06_NAMES` (line 303) with
   `"orange_peel": "OrangePeelNoise"`, `"peel_scaled": "OrangePeelWeighted"`,
   `"normal_height": "NormalHeightMix"`.
 
-- [ ] **Step 4: Render both plain and clearcoat variants — STOP for approval**
+- [x] **Step 4: Render both plain and clearcoat variants — STOP for approval**
 
   Run: `& "C:\Program Files\Python313\python.exe" -m quality.cookbook_metal m06_car_paint`
   Render `m06_car_paint`'s 3D preview twice (script file, one Godot at a time): once at
   `clearcoat=0.0` (the real export-faithful look), once at `clearcoat=0.6` (the showcase demo,
   matching the reflections cycle's own approval pattern). Subagent stops.
 
-- [ ] **Step 5: Controller — send both renders, get approval; iterate**
+- [x] **Step 5: Controller — send both renders, get approval; iterate**
 
   Controller SendUserFile + wait for Grayson. Iterate Steps 1-2 (peel scale/weight, normal
   strength) until he confirms the flatness complaint is resolved.
 
-- [ ] **Step 6: Objective gates green**
+- [x] **Step 6: Objective gates green**
 
   Run: `& "C:\Program Files\Python313\python.exe" -m quality.promote_cookbook cookbook-metal ; & "C:\Program Files\Python313\python.exe" -m quality.promote_cookbook --check ; & "C:\Program Files\Python313\python.exe" -m pytest tests/test_cookbook_naming_gate.py tests/test_cookbook_card_table_gate.py -q`
   Expected: all pass.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
   ```bash
   git add quality/cookbook_metal.py cookbook/metal/m06_car_paint.ptex cookbook/metal/m06_car_paint.md
@@ -262,7 +262,7 @@ every existing render and the `preview_regress` no-regress gate are unaffected b
   — `heightmap_path=None` is a true no-op (no `--heightmap` arg appended at all, matching how
   `clearcoat<=0.0` omits its args today).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
   In `tests/test_preview.py`, add:
 
@@ -281,12 +281,12 @@ every existing render and the `preview_regress` no-regress gate are unaffected b
       assert "--heightmap-scale=0.08" in cmd
   ```
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
   Run: `& "C:\Program Files\Python313\python.exe" -m pytest tests/test_preview.py -k heightmap -v`
   Expected: FAIL — `_build_command() got an unexpected keyword argument 'heightmap_path'`.
 
-- [ ] **Step 3: Implement in `preview.py`**
+- [x] **Step 3: Implement in `preview.py`**
 
   ```python
   def _build_command(cfg: Config, albedo_path: str, normal_path: str, orm_path: str,
@@ -315,7 +315,7 @@ every existing render and the `preview_regress` no-regress gate are unaffected b
   do; a missing optional file should surface as a Godot-side load failure, not a Python-side one,
   same tier of strictness as an absent clearcoat.
 
-- [ ] **Step 4: Implement in `preview.gd`**
+- [x] **Step 4: Implement in `preview.gd`**
 
   In `_ready()`, alongside the existing clearcoat arg parsing (lines 58-68):
 
@@ -367,19 +367,19 @@ every existing render and the `preview_regress` no-regress gate are unaffected b
   Update the one call site (`_make_material(albedo_tex, normal_tex, orm_tex, tile, clearcoat,
   clearcoat_roughness)`) to pass `heightmap_path, heightmap_scale` through.
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
   Run: `& "C:\Program Files\Python313\python.exe" -m pytest tests/test_preview.py -v`
   Expected: PASS (all, including the two new heightmap tests and the existing clearcoat/tile ones
   unaffected).
 
-- [ ] **Step 6: No-regress gate — default-off is a true no-op**
+- [x] **Step 6: No-regress gate — default-off is a true no-op**
 
   Run: `& "C:\Program Files\Python313\python.exe" -m quality.preview_regress --out scratchpad/parallax-noop --compare scratchpad/reflect-baseline`
   Expected: `4 preview(s), 0 problem(s)` (the matte set renders with `heightmap_path` defaulting
   to none — must be byte-for-byte the same behavior as before this task).
 
-- [ ] **Step 7: Empirical check — does triplanar + heightmap actually compose in Godot 4.7?**
+- [x] **Step 7: Empirical check — does triplanar + heightmap actually compose in Godot 4.7?**
 
   This is a genuine unknown flagged in the spec, not assumed. Render `s07_cobblestone` (an
   APPROVED reference material, read-only here — do not modify it) with its own `_heightmap.png`
@@ -396,7 +396,7 @@ every existing render and the `preview_regress` no-regress gate are unaffected b
     spec's fallback (a small non-triplanar plane object added specifically for this demo) needs a
     scoping decision before Task 4 proceeds, do not silently build it.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
   ```bash
   git add src/mm_mcp/preview.py src/mm_mcp/preview_project/preview.gd tests/test_preview.py
@@ -447,7 +447,7 @@ every existing render and the `preview_regress` no-regress gate are unaffected b
   `heightmap_deep_parallax = true`, `heightmap_texture`, plus a `<name>_heightmap.png` file — a
   real round-trip Deep Parallax export, not a preview-only effect.
 
-- [ ] **Step 0 (redesigned): swap the SPHERE's material to non-triplanar when a heightmap is given**
+- [x] **Step 0 (redesigned): swap the SPHERE's material to non-triplanar when a heightmap is given**
 
   **Superseded the original plane-based Step 0** (git history: `f1ce303`, `9d396fe`) per Grayson's
   feedback — see the amendment note above. In `preview.gd`, right after the sphere is constructed
@@ -519,7 +519,7 @@ every existing render and the `preview_regress` no-regress gate are unaffected b
       {"from": "blend_2", "from_port": 0, "to": "Material", "to_port": 6})
   ```
 
-- [ ] **Step 2: Confirm `depth_scale` is sane**
+- [x] **Step 2: Confirm `depth_scale` is sane**
 
   Every material node already carries a `depth_scale` parameter (default `0.5`-`1` depending on
   which helper built the graph) — this is what the Godot 4 Standard export multiplies by 25.0 into
@@ -528,7 +528,7 @@ every existing render and the `preview_regress` no-regress gate are unaffected b
   masonry-scale relief, set it explicitly: `set_param(g, "Material", "depth_scale", 0.3)`
   (starting point — tune in Step 4).
 
-- [ ] **Step 3: Rebuild, promote, and verify the REAL export produces the round-trip material**
+- [x] **Step 3: Rebuild, promote, and verify the REAL export produces the round-trip material**
 
   Run: `& "C:\Program Files\Python313\python.exe" -m quality.cookbook_stone s09_ashlar_wall ; & "C:\Program Files\Python313\python.exe" -m quality.promote_cookbook cookbook-stone`
   Then, in a script file (never `python -c`), call `mm_mcp.render.render()` on the promoted
@@ -579,12 +579,12 @@ every existing render and the `preview_regress` no-regress gate are unaffected b
   code change): Deep Parallax does not displace mesh geometry or change the silhouette — it is a
   per-pixel texture-sampling illusion only.
 
-- [ ] **Step 6: Objective gates green**
+- [x] **Step 6: Objective gates green**
 
   Run: `& "C:\Program Files\Python313\python.exe" -m quality.promote_cookbook --check ; & "C:\Program Files\Python313\python.exe" -m pytest tests/test_cookbook_naming_gate.py tests/test_cookbook_card_table_gate.py tests/test_readme_counts.py -q`
   Expected: all pass.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
   ```bash
   git add quality/cookbook_stone.py cookbook/stone/s09_ashlar_wall.ptex cookbook/stone/s09_ashlar_wall.md cookbook/README.md
@@ -599,29 +599,17 @@ every existing render and the `preview_regress` no-regress gate are unaffected b
 - `docs/images/cookbook-contact-sheet.png` (regen).
 - `HANDOFF.md`, `STATUS.md`.
 
-- [ ] **Step 1: Run the full test suite**
+- [x] **Step 1: Run the full test suite** — done (via the final-review fix wave): 1254 passed,
+  0 failed, tree clean before/after. No concurrent-Godot flake this run.
 
-  Run: `& "C:\Program Files\Python313\python.exe" -m pytest -q`
-  Expected: green (fast suite). Note any pre-existing concurrent-Godot flake (the live-overlay
-  round-trip test) and re-run it alone if it trips.
+- [ ] **Step 2: Regenerate the contact sheet** — DEFERRED, not done this session. Per Grayson's
+  "wrap and push," skipped rather than spend another render cycle on a cosmetic, already-stale
+  (pre-existing, not a regression) artifact. Carried forward in `HANDOFF.md`'s heads-up.
 
-- [ ] **Step 2: Regenerate the contact sheet**
+- [x] **Step 3: Log the cookbook curation idea (do not act on it)** — done, in `HANDOFF.md`'s
+  open questions (not acted on, no named material touched).
 
-  Run whatever the project's existing contact-sheet regen entrypoint is (check
-  `cookbook/README.md` or `quality/` for the script that produced the current 72-entry sheet — do
-  not hand-build a new one). Controller sends the regenerated sheet via SendUserFile for a quick
-  sanity look (not a full approval gate, just "does it look complete").
-
-- [ ] **Step 3: Log the cookbook curation idea (do not act on it)**
-
-  Add an open question to `HANDOFF.md`: Grayson wants to eventually trim the gallery — named
-  candidates are `hazard stripe` (cut candidate), `circuit board` (doesn't read as circuit board),
-  and stone-category overlap (dry stone wall / flagstone / cobblestone feel similar; river pebbles
-  don't read as river pebbles). Frame it explicitly as "at some point," not scoped, and point at
-  the `teardown` skill as the likely vehicle for that pass when Grayson is ready. Do not touch any
-  of the named materials as part of this task.
-
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit** — this wrap-up commit.
 
   ```bash
   git add docs/images/cookbook-contact-sheet.png HANDOFF.md STATUS.md
