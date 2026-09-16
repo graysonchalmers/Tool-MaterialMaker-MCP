@@ -794,10 +794,12 @@ def build_s09_ashlar_wall(catalog: dict) -> str:
     # `renders_match` below. `uniform_0` (metallic constant) and the
     # unnamed "394" shader-preview node are left top-level, matching the
     # precedent for untouched single-purpose nodes feeding one port
-    # directly. The relief/AO/depth chain (blend_2, colorize_6, colorize_4,
+    # directly. The relief/AO/depth chain (blend_2, colorize_4, colorize_6,
     # normal_map_0) carries no builder-set parameter of its own, so it is
     # folded into the color group rather than left standing with zero
-    # exposed parameters.
+    # exposed parameters. Traced against the raw connections: colorize_4
+    # feeds Material port 5 (AO), colorize_6 feeds Material port 6 (depth) --
+    # renamed BlockAO / BlockHeight accordingly, not the reverse.
     group_into_subgraph(g, ["Bricks", "perlin_0", "Warp", "colorize_2", "colorize_7"],
                          "block_layout", "Block Layout",
                          [("Bricks", "columns", "param0", "Block size"),
@@ -805,7 +807,7 @@ def build_s09_ashlar_wall(catalog: dict) -> str:
                           ("Bricks", "bevel", "param2", "Edge chamfer")],
                          catalog)
     group_into_subgraph(g, ["Perlin", "colorize_0", "blend_1", "colorize_1",
-                             "blend_0", "blend_2", "colorize_6", "colorize_4",
+                             "blend_0", "blend_2", "colorize_4", "colorize_6",
                              "normal_map_0"],
                          "block_finish", "Block & Mortar Finish",
                          [("colorize_1", "gradient", "param0", "Block color")],
@@ -822,8 +824,8 @@ def build_s09_ashlar_wall(catalog: dict) -> str:
         "colorize_1": "BlockColor",
         "blend_0": "AlbedoComposite",
         "blend_2": "ReliefComposite",
-        "colorize_4": "BlockHeight",
-        "colorize_6": "BlockAO",
+        "colorize_4": "BlockAO",
+        "colorize_6": "BlockHeight",
         "normal_map_0": "BlockNormal",
         "uniform_0": "NonMetallic",
         "394": "ShaderPreviewUnused",

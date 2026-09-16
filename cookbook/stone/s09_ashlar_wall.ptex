@@ -785,7 +785,7 @@
      "type": "perlin"
     },
     {
-     "name": "BlockAO",
+     "name": "BlockHeight",
      "node_position": {
       "x": 732,
       "y": 195
@@ -827,7 +827,7 @@
      "type": "blend"
     },
     {
-     "name": "BlockHeight",
+     "name": "BlockAO",
      "node_position": {
       "x": 787,
       "y": 296
@@ -905,7 +905,7 @@
     {
      "from": "ReliefComposite",
      "from_port": 0,
-     "to": "BlockAO",
+     "to": "BlockHeight",
      "to_port": 0
     },
     {
@@ -923,7 +923,7 @@
     {
      "from": "ReliefComposite",
      "from_port": 0,
-     "to": "BlockHeight",
+     "to": "BlockAO",
      "to_port": 0
     },
     {
@@ -963,7 +963,7 @@
      "to_port": 0
     },
     {
-     "from": "BlockHeight",
+     "from": "BlockAO",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1
@@ -975,7 +975,7 @@
      "to_port": 2
     },
     {
-     "from": "BlockAO",
+     "from": "BlockHeight",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 3
