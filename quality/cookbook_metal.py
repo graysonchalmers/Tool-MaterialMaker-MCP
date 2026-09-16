@@ -12,7 +12,7 @@ import sys
 from quality import author  # shared builder base; regression guard is promote_cookbook --check
 from quality.author_helpers import (
     save_variant, take_variant, group_into_subgraph, rename_nodes,
-    _from_scratch_noise_material, retype, add_node, _grad, set_param,
+    _from_scratch_noise_material, retype, add_node, _grad, set_param, rewire,
 )
 
 from mm_mcp.catalog_builder import build_catalog
@@ -308,6 +308,9 @@ _M06_NAMES = {
     "colorize_flake": "FlakeMask",
     "blend_0": "RoughnessWithFlake",
     "normal_map_0": "MicroNormal",
+    "orange_peel": "OrangePeelNoise",
+    "peel_scaled": "OrangePeelWeighted",
+    "normal_height": "NormalHeightMix",
 }
 
 
@@ -331,10 +334,14 @@ def build_m06_car_paint(catalog: dict) -> str:
     sparse, tiny bright-spot mask, then `blend`ed additively onto
     RoughnessVariation so only the flake specks get punched toward glossier
     (lower) roughness -- the rest of the panel keeps its even base-coat
-    sheen. normal_amount stays at chrome's 0.04 (not 0, which bakes Godot's
-    dead-flat default per the m03/m04/m05 precedent): the paint's own
-    surface is still near mirror-smooth, the flake sparkle is a
-    roughness/albedo-scale effect, not a bump."""
+    sheen. normal_amount starts at chrome's 0.04 (not 0, which bakes Godot's
+    dead-flat default per the m03/m04/m05 precedent) but is raised to 0.10
+    below, after folding a second, coarser noise ("orange peel") into the
+    normal input -- Grayson's 2026-09-15 iteration feedback on the clearcoat
+    demo was that the surface "feels flat / missing surface detail"; the
+    paint's own surface is still meant to read as glossy lacquer, not a bare
+    bump map, so the added relief is a broad wave layered under the flake
+    sparkle rather than replacing it."""
     g = _from_scratch_noise_material(
         {"scale_x": 8, "scale_y": 8},
         [(0.0, 0.45, 0.03, 0.05), (1.0, 0.62, 0.05, 0.08)],
@@ -367,9 +374,34 @@ def build_m06_car_paint(catalog: dict) -> str:
     g["connections"].append(
         {"from": "blend_0", "from_port": 0, "to": "Material", "to_port": 2})
 
+    # Orange-peel surface detail (2026-09-15, Grayson's iteration feedback:
+    # the clearcoat demo "feels flat / missing surface detail"). MicroNoise
+    # (perlin_0, 8x8) stays untouched -- it still drives albedo/roughness/
+    # flake fan-out and its deep base colors are already approved. Add an
+    # independent, coarser-frequency noise (real automotive orange-peel is a
+    # broader wave than the micro-grain) and fold it into the normal input
+    # via a math add, the same technique s06 (cookbook_stone.py) used to
+    # combine grain_scaled + height_relief before normal_map_0.
+    add_node(g, "orange_peel", "perlin", {"scale_x": 14, "scale_y": 14, "iterations": 2})
+    add_node(g, "peel_scaled", "math", {"op": 2, "default_in2": 0.6})   # 2 = A*B: weight the wave
+    add_node(g, "normal_height", "math", {"op": 0})                    # 0 = A+B: micro + orange peel
+    g["connections"] += [
+        {"from": "orange_peel", "from_port": 0, "to": "peel_scaled", "to_port": 0},
+        {"from": "perlin_0", "from_port": 0, "to": "normal_height", "to_port": 0},
+        {"from": "peel_scaled", "from_port": 0, "to": "normal_height", "to_port": 1},
+    ]
+    rewire(g, "normal_map_0", 0, "normal_height", 0)
+    # Raise relief strength enough for the combined wave to read without
+    # going rough -- was 0.04 (chrome/other from-scratch materials' shared
+    # precedent, set inside _from_scratch_noise_material above); override
+    # here rather than editing that shared helper call. Starting point for
+    # the render-and-look loop, not a locked value.
+    set_param(g, "normal_map_0", "param1", 0.10)
+
     group_into_subgraph(
         g, ["perlin_0", "colorize_0", "colorize_rough", "voronoi_0",
-            "colorize_flake", "blend_0", "normal_map_0"],
+            "colorize_flake", "blend_0", "normal_map_0",
+            "orange_peel", "peel_scaled", "normal_height"],
         "car_paint_finish", "Car Paint Finish",
         [("perlin_0", "scale_x", "param0", "Micro-variation scale"),
          ("colorize_0", "gradient", "param1", "Paint color"),

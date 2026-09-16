@@ -51,8 +51,8 @@
    "label": "Car Paint Finish",
    "type": "graph",
    "node_position": {
-    "x": 85.71428571428571,
-    "y": 14.285714285714286
+    "x": 60.0,
+    "y": 10.0
    },
    "parameters": {
     "param0": 8,
@@ -97,7 +97,7 @@
      ]
     },
     "param3": 48,
-    "param4": 0.04
+    "param4": 0.1
    },
    "seed_int": 0,
    "nodes": [
@@ -105,8 +105,8 @@
      "name": "gen_inputs",
      "type": "ios",
      "node_position": {
-      "x": -314.2857142857143,
-      "y": 14.285714285714286
+      "x": -340.0,
+      "y": 10.0
      },
      "parameters": {},
      "ports": [],
@@ -117,8 +117,8 @@
      "name": "gen_outputs",
      "type": "ios",
      "node_position": {
-      "x": 485.7142857142857,
-      "y": 14.285714285714286
+      "x": 460.0,
+      "y": 10.0
      },
      "parameters": {},
      "ports": [
@@ -144,8 +144,8 @@
      "name": "gen_parameters",
      "type": "remote",
      "node_position": {
-      "x": -314.2857142857143,
-      "y": 214.28571428571428
+      "x": -340.0,
+      "y": 210.0
      },
      "parameters": {
       "param0": 8,
@@ -190,7 +190,7 @@
        ]
       },
       "param3": 48,
-      "param4": 0.04
+      "param4": 0.1
      },
      "seed": 0,
      "widgets": [
@@ -307,7 +307,7 @@
      },
      "parameters": {
       "param0": 10,
-      "param1": 0.04,
+      "param1": 0.1,
       "param2": 0,
       "param4": 1
      }
@@ -409,6 +409,42 @@
       "blend_type": 10,
       "amount": 1
      }
+    },
+    {
+     "name": "OrangePeelNoise",
+     "type": "perlin",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "scale_x": 14,
+      "scale_y": 14,
+      "iterations": 2
+     }
+    },
+    {
+     "name": "OrangePeelWeighted",
+     "type": "math",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "op": 2,
+      "default_in2": 0.6
+     }
+    },
+    {
+     "name": "NormalHeightMix",
+     "type": "math",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "op": 0
+     }
     }
    ],
    "connections": [
@@ -419,7 +455,7 @@
      "to_port": 0
     },
     {
-     "from": "MicroNoise",
+     "from": "NormalHeightMix",
      "from_port": 0,
      "to": "MicroNormal",
      "to_port": 0
@@ -446,6 +482,24 @@
      "from": "RoughnessVariation",
      "from_port": 0,
      "to": "RoughnessWithFlake",
+     "to_port": 1
+    },
+    {
+     "from": "OrangePeelNoise",
+     "from_port": 0,
+     "to": "OrangePeelWeighted",
+     "to_port": 0
+    },
+    {
+     "from": "MicroNoise",
+     "from_port": 0,
+     "to": "NormalHeightMix",
+     "to_port": 0
+    },
+    {
+     "from": "OrangePeelWeighted",
+     "from_port": 0,
+     "to": "NormalHeightMix",
      "to_port": 1
     },
     {

@@ -16,4 +16,7 @@ do not edit by hand. Open the `.ptex` and look for these names.
 | car_paint_finish | FlakeCells | voronoi |
 | car_paint_finish | FlakeMask | colorize |
 | car_paint_finish | RoughnessWithFlake | blend |
+| car_paint_finish | OrangePeelNoise | perlin |
+| car_paint_finish | OrangePeelWeighted | math |
+| car_paint_finish | NormalHeightMix | math |
 <!-- nodes:end -->
