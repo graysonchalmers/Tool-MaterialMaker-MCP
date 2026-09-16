@@ -187,7 +187,13 @@ def render_preview_sweep(albedo_path: str, normal_path: str, orm_path: str,
     aim wobbles in a small cone (radius = cone degrees) so highlights circle the
     relief without the shot ever going backlit -- the best all-round relief
     reveal. sweep_kind='azimuth' is the older full 360-degree orbit (its backlit
-    third reads dark on most materials).
+    third reads dark on most materials). A third kind, 'parallax_spin', also
+    exists on the underlying render_preview_sweep API -- it spins the sphere
+    itself instead of moving any light, and is only useful paired with a
+    heightmap_path/heightmap_scale, which this MCP tool does not expose. Passed
+    through this tool it is a harmless no-op GIF (the sphere just spins with no
+    depth cue to show); it's only useful via the internal Python API used by
+    the quality/ scripts.
 
     Optional and slower than render_preview (one Godot process, but frames
     frames rendered inside it) -- reach for this only when render_preview's

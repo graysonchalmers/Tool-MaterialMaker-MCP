@@ -781,10 +781,9 @@ def build_s09_ashlar_wall(catalog: dict) -> str:
 
     # Deep Parallax: route the relief chain into Material.to_port 6
     # (depth_tex). NOTE: to_port 6 was NOT unconnected before this change --
-    # stone_wall's own donor graph already fed colorize_6 (mislabeled
-    # "BlockAO" below; it actually lands on Material's depth port, not AO)
-    # into depth_tex, so every stone_wall-descended cookbook material has
-    # been silently exporting a real heightmap_enabled=true .tres all along
+    # stone_wall's own donor graph already fed colorize_6 into depth_tex, so
+    # every stone_wall-descended cookbook material has been silently
+    # exporting a real heightmap_enabled=true .tres all along
     # (verified by rendering the pre-this-change committed .ptex). Tried
     # tapping blend_2 directly (the plan's literal suggestion, bypassing the
     # colorize step) and rendered it: WRONG polarity -- blend_2's raw signal
@@ -847,8 +846,8 @@ def build_s09_ashlar_wall(catalog: dict) -> str:
         "colorize_1": "BlockColor",
         "blend_0": "AlbedoComposite",
         "blend_2": "ReliefComposite",
-        "colorize_4": "BlockHeight",
-        "colorize_6": "BlockAO",
+        "colorize_4": "BlockAO",
+        "colorize_6": "BlockHeight",
         "normal_map_0": "BlockNormal",
         "uniform_0": "NonMetallic",
         "394": "ShaderPreviewUnused",

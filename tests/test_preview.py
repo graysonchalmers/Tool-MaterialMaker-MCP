@@ -130,6 +130,21 @@ def test_build_sweep_command_passes_azimuth_and_cone_through():
     assert "--cone=30.0" in cmd
 
 
+def test_build_sweep_command_omits_heightmap_when_none():
+    cmd = _build_sweep_command(cfg, "/a/albedo.png", "/a/normal.png", "/a/orm.png",
+                                "/out/x_sweep_frames", frames=24, tile=1.0,
+                                heightmap_path=None)
+    assert not any(c.startswith("--heightmap") for c in cmd)
+
+
+def test_build_sweep_command_includes_heightmap_when_given():
+    cmd = _build_sweep_command(cfg, "/a/albedo.png", "/a/normal.png", "/a/orm.png",
+                                "/out/x_sweep_frames", frames=24, tile=1.0,
+                                heightmap_path="/a/heightmap.png", heightmap_scale=0.08)
+    assert "--heightmap=/a/heightmap.png" in cmd
+    assert "--heightmap-scale=0.08" in cmd
+
+
 def test_render_preview_sweep_missing_albedo_returns_error(tmp_path):
     normal = tmp_path / "normal.png"
     orm = tmp_path / "orm.png"

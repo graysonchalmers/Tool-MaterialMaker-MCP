@@ -93,9 +93,10 @@ func _ready() -> void:
 	if args.has("clearcoat-roughness"):
 		clearcoat_roughness = args["clearcoat-roughness"].to_float()
 
-	# Opt-in Deep Parallax heightmap (see _make_material for the full note).
-	# Defaults to "" / 0.05, a true no-op: _make_material only enables the
-	# feature flag when a non-empty path is given.
+	# Opt-in Deep Parallax heightmap (see the sphere-material-swap block below
+	# for the full note). Defaults to "" / 0.05, a true no-op: that block only
+	# builds the sphere's own Deep Parallax material when a non-empty path is
+	# given and its texture loads.
 	var heightmap_path := ""
 	if args.has("heightmap"):
 		heightmap_path = args["heightmap"]
@@ -117,8 +118,16 @@ func _ready() -> void:
 	# mesh's own UVs -- the old rig gave the sphere (one wrap) and ground (8x
 	# multiplier) different tile scales. It also wraps seamlessly across the
 	# cube's faces and rounded edges and up the rook's turned profile.
-	var mat := _make_material(albedo_tex, normal_tex, orm_tex, tile, clearcoat, clearcoat_roughness,
-			heightmap_path, heightmap_scale)
+	# When a heightmap is given, the sphere below gets its own non-triplanar
+	# Deep Parallax material at a different (finer) apparent density, so the
+	# shared triplanar material's tile is bumped to match it visually --
+	# computed here, before the shared material is built, so cube/rook/ground
+	# and the later `rook_mat = mat.duplicate()` all see the final value with
+	# no later mutation to worry about.
+	var shared_tile := tile
+	if heightmap_path != "":
+		shared_tile = SPHERE_MATCHED_TRIPLANAR_TILE
+	var mat := _make_material(albedo_tex, normal_tex, orm_tex, shared_tile, clearcoat, clearcoat_roughness)
 	mat.uv1_triplanar = true
 
 	var ground := MeshInstance3D.new()
@@ -168,18 +177,15 @@ func _ready() -> void:
 			sphere_mat.heightmap_min_layers = 8
 			sphere_mat.heightmap_max_layers = 32
 			# uv1_triplanar intentionally left at its default false -- that's the point.
-			# Match cube/rook/ground's shared triplanar density to the sphere's, so the
-			# demo scene doesn't look visually inconsistent (sphere reading finer/denser
-			# than everything else around it, per Grayson's feedback). Triplanar
-			# world-space tiling and equirect UV tiling are not the same units --
-			# SPHERE_MATCHED_TRIPLANAR_TILE was tuned by rendering until the cube's
-			# block scale visually matched the sphere's, not derived from the "same
-			# number" as SPHERE_HEIGHTMAP_UV_SCALE. MUST happen before rook_mat is
-			# built below (`rook_mat = mat.duplicate()`) since duplicate() snapshots
-			# mat's properties at that moment -- ground/cube hold a live reference to
-			# `mat` itself so they pick up the change regardless of order, but rook
-			# would silently keep the old density if this ran after its duplicate().
-			mat.uv1_scale = Vector3(SPHERE_MATCHED_TRIPLANAR_TILE, SPHERE_MATCHED_TRIPLANAR_TILE, 1)
+			# The shared triplanar `mat`'s tile density is already matched to the
+			# sphere's (SPHERE_MATCHED_TRIPLANAR_TILE, computed above before `mat`
+			# was built) so the demo scene doesn't look visually inconsistent
+			# (sphere reading finer/denser than everything else around it, per
+			# Grayson's feedback). Triplanar world-space tiling and equirect UV
+			# tiling are not the same units -- that constant was tuned by
+			# rendering until the cube's block scale visually matched the
+			# sphere's, not derived from the "same number" as
+			# SPHERE_HEIGHTMAP_UV_SCALE.
 	sphere.set_surface_override_material(0, sphere_mat)
 	add_child(sphere)
 
@@ -439,8 +445,7 @@ func _load_tex(path: String) -> ImageTexture:
 
 func _make_material(albedo_tex: ImageTexture, normal_tex: ImageTexture,
 		orm_tex: ImageTexture, tile: float, clearcoat: float = 0.0,
-		clearcoat_roughness: float = 0.5, heightmap_path: String = "",
-		heightmap_scale: float = 0.05) -> ORMMaterial3D:
+		clearcoat_roughness: float = 0.5) -> ORMMaterial3D:
 	var mat := ORMMaterial3D.new()
 	mat.albedo_texture = albedo_tex
 	mat.normal_enabled = true
@@ -455,20 +460,13 @@ func _make_material(albedo_tex: ImageTexture, normal_tex: ImageTexture,
 		mat.clearcoat_enabled = true
 		mat.clearcoat = clearcoat
 		mat.clearcoat_roughness = clearcoat_roughness
-	# Opt-in Deep Parallax (Godot's native parallax occlusion mapping) -- see
-	# docs/superpowers/specs/2026-09-15-iteration-and-parallax-design.md. Mirrors
-	# Material Maker's own "Godot/Godot 4 Standard" export target values
-	# (heightmap_min_layers/max_layers = 8/32) so the preview matches what a
-	# real exported .tres would show. Empty path is a true no-op.
-	if heightmap_path != "":
-		var height_tex := _load_tex(heightmap_path)
-		if height_tex != null:
-			mat.heightmap_enabled = true
-			mat.heightmap_texture = height_tex
-			mat.heightmap_scale = heightmap_scale
-			mat.heightmap_deep_parallax = true
-			mat.heightmap_min_layers = 8
-			mat.heightmap_max_layers = 32
+	# Deep Parallax (Godot's native parallax occlusion mapping) is NOT set
+	# here: this material always ends up with uv1_triplanar = true at the
+	# call site, and Godot does not support heightmap/parallax on a
+	# triplanar material (it silently ignores it and logs a warning). The
+	# sphere-material-swap block in _ready() builds its OWN separate,
+	# non-triplanar material for that -- see docs/superpowers/specs/
+	# 2026-09-15-iteration-and-parallax-design.md.
 	return mat
 
 

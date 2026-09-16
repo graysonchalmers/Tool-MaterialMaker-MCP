@@ -77,9 +77,9 @@ do not edit by hand. Open the `.ptex` and look for these names.
 | block_finish | BlockColor | colorize |
 | block_finish | PerBlockRandom | blend |
 | block_finish | SurfaceNoise | perlin |
-| block_finish | BlockAO | colorize |
-| block_finish | AlbedoComposite | blend |
 | block_finish | BlockHeight | colorize |
+| block_finish | AlbedoComposite | blend |
+| block_finish | BlockAO | colorize |
 | block_finish | BlockNormal | normal_map |
 | block_finish | ReliefComposite | blend |
 <!-- nodes:end -->

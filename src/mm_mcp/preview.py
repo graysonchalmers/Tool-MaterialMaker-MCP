@@ -161,9 +161,12 @@ def render_preview_sweep(albedo_path: str, normal_path: str, orm_path: str,
     given point on its surface from face-on to grazing and back -- pair it
     with heightmap_path/heightmap_scale (same meaning as render_preview) to
     actually show the Deep Parallax depth cue traveling across the surface.
-    Defaults to None/off and is a true no-op at that default, same treatment
-    as render_preview's heightmap params: no extra Godot arg appended, so
-    every existing sweep caller renders byte-for-byte identically to before.
+
+    heightmap_path/heightmap_scale default to None/0.05 and are a true no-op
+    at that default, same treatment as render_preview's heightmap params: no
+    extra Godot arg appended, so every existing sweep caller (including every
+    sweep_kind other than 'parallax_spin') renders byte-for-byte identically
+    to before.
 
     Same inputs as render_preview (already-rendered albedo/normal/orm maps,
     not a .ptex graph). Renders every frame inside ONE Godot process rather
