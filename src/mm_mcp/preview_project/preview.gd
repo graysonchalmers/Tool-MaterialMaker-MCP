@@ -196,8 +196,8 @@ func _ready() -> void:
 			demo_plane.mesh = PlaneMesh.new()
 			demo_plane.mesh.size = Vector2(1.6, 1.6)
 			demo_plane.mesh.orientation = PlaneMesh.FACE_Z   # face the camera, not up
-			demo_plane.position = Vector3(0, 1.6, -1.0)
-			demo_plane.rotation_degrees = Vector3(-15, 0, 0)   # slight tilt for a grazing angle
+			demo_plane.position = Vector3(0, 1.2, -0.3)
+			demo_plane.rotation_degrees = Vector3(-45, 0, 0)   # grazing tilt -- POM displacement grows with view obliqueness, and -15 proved too near head-on to read at all
 			demo_plane.set_surface_override_material(0, demo_mat)
 			add_child(demo_plane)
 
