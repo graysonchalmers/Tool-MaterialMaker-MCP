@@ -1,8 +1,8 @@
 # 🧭 Session Handoff: Tool-MaterialMaker-MCP
 
-_Last updated: 2026-09-15 01:45 CT — reflections cycle MERGED to `main` (`007d493`, pushed):
-rig (ambient decouple + sun-disc reflection + SSR + opt-in clearcoat) + 3 reflective cookbook
-materials. Materials need one more iteration pass next session (Grayson feedback below)._
+_Last updated: 2026-09-15 (later) — small side-fix: swapped backwards BlockAO/BlockHeight
+node names in `s09_ashlar_wall` (`6eb4fda`, this worktree, not yet merged to `main`). Real
+next step is still the reflections-cycle material iteration below, untouched by this fix._
 
 The session baton. Read at pickup, rewrite at wrap-up. **Shape rule (2026-09-05,
 teardown #3):** "Current state" describes the latest session only; anything older is one
@@ -99,6 +99,12 @@ emission cycle instead (reflections is landed).
 
 Newest first. Keep at most 8; older ones are in `git log` (search commit subjects).
 
+### 2026-09-15 (later: BlockAO/BlockHeight rename fix in `s09_ashlar_wall`, `6eb4fda`)
+Grayson-supplied fix: traced `quality/donors/stone_wall.ptex` connections directly —
+`colorize_4` feeds `Material` port 5 (AO), `colorize_6` feeds port 6 (depth). The
+`rename_nodes(...)` call in `build_s09_ashlar_wall` had them backwards. Swapped, rebuilt,
+`promote_cookbook --check` clean, hand-diffed the `.ptex` to confirm pure name swap (no
+wiring change). Committed in this worktree, not yet merged to `main`.
 ### 2026-09-15 (reflections cycle: rig + 3 materials, MERGED to `main` `007d493`)
 Subagent-driven. Rig: ambient decouple (`befb1bf`), sun-disc reflection (`4ec9177`), SSR
 (`fa8c526`), opt-in clearcoat param (`055b2e8`), + no-regress gate `quality/preview_regress.py`
