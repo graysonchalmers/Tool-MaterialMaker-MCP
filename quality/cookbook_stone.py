@@ -1348,35 +1348,57 @@ def build_s14_wet_river_stone(catalog: dict) -> str:
     metallic=0 -- so any reflection Godot renders on this comes from the
     default dielectric specular response, not a metallic tint.
 
-    Reuses s06's coin-profile dome chain verbatim (voronoi_0 port0 ->
-    dome_curve (cos) -> dome_flatten (clamp) -> dome_smooth (smoothstep) ->
-    normal_map_0 with param4=0/param1=0.6) since that chain is the proven
-    working normal/relief path for this donor -- no two-scale mix, no
-    surface-grain overlay, this is deliberately the single-scale version
-    (the extra detail layers aren't needed to prove the reflection path and
-    would just be more surface to re-verify).
+    Reuses s06's coin-profile dome chain (voronoi_0 port0 -> dome_curve (cos)
+    -> dome_flatten (clamp) -> dome_smooth (smoothstep)) as the proven working
+    relief base for this donor, and -- as of the 2026-09-15 iteration pass,
+    Grayson: pebbles need visible size variation, tops are too flat, tops need
+    visible reflection -- ALSO ports s06's TWO-SCALE dome mix on top of it
+    (previously this builder was deliberately the single-scale version; that
+    is no longer true). A second, finer voronoi (`voronoi_fine`) runs its own
+    identical coin chain (`dome_curve_f` -> `dome_flatten_f` -> `dome_smooth_f`),
+    nestled lower via `dome_fine_low` (*0.65) so small stones sit below the
+    big ones, then MAX-composited against the coarse `dome_smooth` via
+    `dome_mix` (math op14) so small stones fill only the big ones' seams
+    without mushing the coin profile flat; `sel_fine` (math op15, A<B) marks
+    where the fine layer wins. `normal_map_0`, `colorize_2` (WetRoughness) and
+    `colorize_dry` (DryRoughness) are all rewired to read `dome_mix` instead
+    of the old single-scale `dome_smooth`, so relief and both roughness
+    variants see the same two-scale height field. Top curvature: `dome_flatten`
+    and `dome_flatten_f`'s `default_in2` were both lowered 1.5 -> 1.0 so the
+    clamp leaves more of the underlying cos-bell curvature intact instead of a
+    hard flat plateau.
 
     - Albedo (colorize_0, fed from voronoi_0 port2 per-cell random, same
       lever as s06): darkened hard across the whole ramp -- wet stone reads
       almost black-brown/slate, not s06's lighter dry tan/gray spread.
-    - Roughness (masked, 2026-09-15 rework): Grayson's call on the first
+      REGISTRATION (s06's documented lesson: the fine layer needs its own
+      colour, not just height): `colorize_fine` gives the small stones the
+      same wet-stone palette from `voronoi_fine` port2, and `blend_layer_color`
+      (Mix) composites it over `colorize_0` selected by the same `sel_fine`
+      mask the height mix uses, so small stones aren't colorless bumps
+      inheriting the big cell's tone. `Material`'s albedo port now reads
+      `blend_layer_color` (was `colorize_0` directly).
+    - Roughness (masked, 2026-09-15 rework): Grayson's call on an earlier
       pass -- uniform low roughness everywhere read as "the whole stone is
       wet plastic," not water pooling. Real puddled water sits in the LOW
       ground and the raised tops dry first, so roughness is now a MASKED
-      field, not a near-uniform scalar: wet/glossy (~0.08) in the low
-      crevices between pebbles, dry/rough (~0.35-0.60) on the raised tops.
-      Both variants are still driven from the SAME dome_smooth height field
-      that feeds the normal (co-located, no separate noise), just through
-      two different gradients (`WetRoughness`/`DryRoughness`) selected by a
-      large-scale `PatchNoise` mask (`PatchMask` blend) so some WHOLE
-      regions read wetter than others -- not every crevice is equally
-      flooded. `WetRoughness` still gets a touch drier toward the tops
-      (0.08 crevice -> 0.35 top) and `DryRoughness` still gets a touch
-      wetter toward the crevices (0.30 crevice -> 0.60 top), so a "dry"
+      field, not a near-uniform scalar: wet/glossy in the low crevices
+      between pebbles, drier on the raised tops. Both variants are driven
+      from the SAME `dome_mix` (two-scale) height field that feeds the
+      normal (co-located, no separate noise), just through two different
+      gradients (`WetRoughness`/`DryRoughness`) selected by a large-scale
+      `PatchNoise` mask (`PatchMask` blend) so some WHOLE regions read wetter
+      than others -- not every crevice is equally flooded. FACE REFLECTION
+      retune (2026-09-15, Grayson: pebbles need visible reflection on their
+      tops, not just crevices): both gradients' TOP-END stop was lowered so
+      tops read semi-wet rather than fully matte while crevices stay the
+      glossiest point -- `WetRoughness` 0.08 crevice -> 0.20 top (was 0.35),
+      `DryRoughness` 0.20 crevice -> 0.38 top (was 0.30 -> 0.60). A "dry"
       patch's crevices are still damper than its own tops, and a "wet"
       patch's tops are still drier than its own crevices -- the pooling
-      shape survives the patchiness, only the baseline shifts.
-      Per the reflections-rig follow-up: the normal/relief chain is
+      shape survives the patchiness, only the baseline (and now the top
+      ceiling) shifts.
+      Per the reflections-rig follow-up: the normal/relief DIRECTION is
       UNTOUCHED here -- the controller reverted a rig-level normal flip, so
       this material's relief direction is already correct on the current
       rig and must not be re-tuned alongside the roughness change.
@@ -1411,13 +1433,59 @@ def build_s14_wet_river_stone(catalog: dict) -> str:
         {"from": "dome_curve", "from_port": 0, "to": "dome_flatten", "to_port": 0},
         {"from": "dome_flatten", "from_port": 0, "to": "dome_smooth", "to_port": 0},
     ]
-    rewire(g, "normal_map_0", 0, "dome_smooth", 0)
+    # TWO-SCALE MIX (2026-09-15, Grayson iteration: pebbles need visible size
+    # variation -- ported verbatim from s06_river_pebbles, see that builder's
+    # docstring for the full registration rationale). A second, finer voronoi
+    # gets its own identical coin chain, nestled lower (*0.65) so small stones
+    # sit below the big ones, MAX-composited so small stones only fill the big
+    # ones' seams instead of mushing the coin profile flat.
+    add_node(g, "voronoi_fine", "voronoi",
+             {"scale_x": 18, "scale_y": 18, "randomness": 1})
+    add_node(g, "dome_curve_f", "math", {"op": 16, "default_in2": 2.6, "clamp": True})
+    add_node(g, "dome_flatten_f", "math", {"op": 2, "default_in2": 1.5, "clamp": True})
+    add_node(g, "dome_smooth_f", "math", {"op": 20, "clamp": True})
+    add_node(g, "dome_fine_low", "math", {"op": 2, "default_in2": 0.65})   # nestle lower
+    add_node(g, "dome_mix", "math", {"op": 14})                            # 14 = max(coarse, fine)
+    add_node(g, "sel_fine", "math", {"op": 15})                            # 15 = A<B (coarse < fine)
+    g["connections"] += [
+        {"from": "voronoi_fine", "from_port": 0, "to": "dome_curve_f", "to_port": 0},
+        {"from": "dome_curve_f", "from_port": 0, "to": "dome_flatten_f", "to_port": 0},
+        {"from": "dome_flatten_f", "from_port": 0, "to": "dome_smooth_f", "to_port": 0},
+        {"from": "dome_smooth_f", "from_port": 0, "to": "dome_fine_low", "to_port": 0},
+        {"from": "dome_smooth", "from_port": 0, "to": "dome_mix", "to_port": 0},
+        {"from": "dome_fine_low", "from_port": 0, "to": "dome_mix", "to_port": 1},
+        {"from": "dome_smooth", "from_port": 0, "to": "sel_fine", "to_port": 0},
+        {"from": "dome_fine_low", "from_port": 0, "to": "sel_fine", "to_port": 1},
+    ]
+    # REGISTRATION (s06's documented lesson: "the audit is BLIND to the fine
+    # layer needing its own colour"): the fine layer needs its own colour AND
+    # roughness, not just height, or small stones read as colorless bumps
+    # inheriting the big cell's tone. Composite by the SAME sel_fine selection
+    # the height mix uses.
+    add_node(g, "colorize_fine", "colorize", {"gradient": _grad([
+        (0.0,  0.05, 0.05, 0.05), (0.28, 0.10, 0.08, 0.07), (0.52, 0.14, 0.13, 0.12),
+        (0.74, 0.09, 0.10, 0.11), (1.0,  0.06, 0.05, 0.05),
+    ])})   # same wet-stone palette as colorize_0
+    add_node(g, "blend_layer_color", "blend", {"blend_type": 0, "amount": 1})
+    g["connections"] += [
+        {"from": "voronoi_fine", "from_port": 2, "to": "colorize_fine", "to_port": 0},
+        {"from": "colorize_0", "from_port": 0, "to": "blend_layer_color", "to_port": 1},
+        {"from": "colorize_fine", "from_port": 0, "to": "blend_layer_color", "to_port": 0},
+        {"from": "sel_fine", "from_port": 0, "to": "blend_layer_color", "to_port": 2},
+    ]
+    rewire(g, "Material", 0, "blend_layer_color", 0)   # albedo <- two-scale colour mix
+    rewire(g, "normal_map_0", 0, "dome_mix", 0)   # relief <- mixed height (was single-scale dome_smooth)
     drop_conn(g, "warp_0", 0)
     drop_conn(g, "warp_0", 1)
     g["nodes"] = [n for n in g["nodes"]
                   if n["name"] not in ("voronoi_1", "perlin_1", "warp_0")]
     set_param(g, "normal_map_0", "param4", 0)
     set_param(g, "normal_map_0", "param1", 0.6)
+    # TOP CURVATURE (Grayson: "tops too flat"): lower the flatten plateau on
+    # BOTH dome chains so more of the underlying cos-bell curvature survives
+    # instead of clamping into a hard plateau. Starting point, tune visually.
+    set_param(g, "dome_flatten", "default_in2", 1.0)
+    set_param(g, "dome_flatten_f", "default_in2", 1.0)
     # Roughness, MASKED (2026-09-15 rework, Grayson: "some of it should be
     # reflective but not all"). colorize_2 becomes the WET variant: low
     # roughness in the crevices (dome_smooth low) rising only a little at
@@ -1430,16 +1498,20 @@ def build_s14_wet_river_stone(catalog: dict) -> str:
     # regions lean wetter or drier, not just individual crevices; a blend
     # (Mix) picks WetRoughness where the patch mask is high, DryRoughness
     # where it's low.
-    set_gradient(g, "colorize_2", [        # WetRoughness: crevice pools, tops drier
+    # FACE REFLECTION (Grayson: "pebbles need visible reflection on their
+    # tops, not just crevices") -- lower the TOP-END roughness stop on both
+    # gradients so tops read semi-wet rather than fully matte, while crevices
+    # stay the glossiest point. Starting point, tune visually.
+    set_gradient(g, "colorize_2", [        # WetRoughness: crevice pools, tops now semi-wet
         (0.0,  0.08, 0.08, 0.08),
         (0.35, 0.14, 0.14, 0.14),
-        (1.0,  0.35, 0.35, 0.35),
+        (1.0,  0.20, 0.20, 0.20),          # was 0.35
     ])
-    rewire(g, "colorize_2", 0, "dome_smooth", 0)
-    add_node(g, "colorize_dry", "colorize", {"gradient": _grad([   # DryRoughness: mostly dry
-        (0.0,  0.30, 0.30, 0.30),
-        (0.35, 0.42, 0.42, 0.42),
-        (1.0,  0.60, 0.60, 0.60),
+    rewire(g, "colorize_2", 0, "dome_mix", 0)   # was dome_smooth -- read the two-scale mix
+    add_node(g, "colorize_dry", "colorize", {"gradient": _grad([   # DryRoughness: mostly dry, tops still catch some sheen
+        (0.0,  0.20, 0.20, 0.20),          # was 0.30
+        (0.35, 0.30, 0.30, 0.30),          # was 0.42
+        (1.0,  0.38, 0.38, 0.38),          # was 0.60
     ])})
     add_node(g, "perlin_patch", "perlin",
              {"scale_x": 3, "scale_y": 3, "iterations": 2})   # large-scale patchiness
@@ -1448,7 +1520,7 @@ def build_s14_wet_river_stone(catalog: dict) -> str:
     ])})   # soft threshold: 1 = wet patch, 0 = dry patch
     add_node(g, "blend_patch", "blend", {"blend_type": 0, "amount": 1})   # Mix
     g["connections"] += [
-        {"from": "dome_smooth", "from_port": 0, "to": "colorize_dry", "to_port": 0},
+        {"from": "dome_mix", "from_port": 0, "to": "colorize_dry", "to_port": 0},   # was dome_smooth
         {"from": "perlin_patch", "from_port": 0, "to": "colorize_patch", "to_port": 0},
         {"from": "colorize_2", "from_port": 0, "to": "blend_patch", "to_port": 0},
         {"from": "colorize_dry", "from_port": 0, "to": "blend_patch", "to_port": 1},
@@ -1462,9 +1534,14 @@ def build_s14_wet_river_stone(catalog: dict) -> str:
                          [("voronoi_0", "scale_x", "param0", "Pebble size"),
                           ("colorize_0", "gradient", "param1", "Pebble color")],
                          catalog)
-    group_into_subgraph(g, ["dome_curve", "dome_flatten", "dome_smooth"],
+    group_into_subgraph(g, ["dome_curve", "dome_flatten", "dome_smooth",
+                             "voronoi_fine", "dome_curve_f", "dome_flatten_f",
+                             "dome_smooth_f", "dome_fine_low", "dome_mix",
+                             "sel_fine", "colorize_fine", "blend_layer_color"],
                          "stone_profile", "Stone Profile",
-                         [("dome_flatten", "default_in2", "param0", "Top flatness")],
+                         [("voronoi_fine", "scale_x", "param0", "Small stone size"),
+                          ("dome_fine_low", "default_in2", "param1", "Small stone height"),
+                          ("dome_flatten", "default_in2", "param2", "Top flatness")],
                          catalog)
     group_into_subgraph(g, ["colorize_1", "colorize_2", "colorize_dry",
                              "perlin_patch", "colorize_patch", "blend_patch"],
@@ -1491,6 +1568,15 @@ def build_s14_wet_river_stone(catalog: dict) -> str:
         "dome_curve": "DomeCurve",
         "dome_flatten": "DomeFlatten",
         "dome_smooth": "DomeSmooth",
+        "voronoi_fine": "SmallStoneCells",
+        "dome_curve_f": "SmallDomeCurve",
+        "dome_flatten_f": "SmallDomeFlatten",
+        "dome_smooth_f": "SmallDomeSmooth",
+        "dome_fine_low": "SmallStoneHeight",
+        "dome_mix": "StoneHeightMix",
+        "sel_fine": "SmallStoneMask",
+        "colorize_fine": "SmallStoneColor",
+        "blend_layer_color": "StoneColorMix",
         "normal_map_0": "PebbleNormal",
     })
     return save_variant(g, _LABEL, "s14_wet_river_stone", 1)

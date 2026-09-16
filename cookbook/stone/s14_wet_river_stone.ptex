@@ -2,49 +2,55 @@
  "connections": [
   {
    "from": "pebble_pattern",
-   "from_port": 0,
-   "to": "Material",
+   "from_port": 1,
+   "to": "stone_profile",
    "to_port": 0
   },
   {
    "from": "pebble_pattern",
    "from_port": 2,
    "to": "stone_profile",
+   "to_port": 1
+  },
+  {
+   "from": "stone_profile",
+   "from_port": 0,
+   "to": "Material",
    "to_port": 0
   },
   {
    "from": "pebble_pattern",
-   "from_port": 1,
+   "from_port": 0,
    "to": "material_finish",
    "to_port": 0
   },
   {
    "from": "stone_profile",
-   "from_port": 0,
+   "from_port": 1,
    "to": "material_finish",
    "to_port": 1
+  },
+  {
+   "from": "stone_profile",
+   "from_port": 3,
+   "to": "material_finish",
+   "to_port": 2
+  },
+  {
+   "from": "material_finish",
+   "from_port": 0,
+   "to": "Material",
+   "to_port": 1
+  },
+  {
+   "from": "material_finish",
+   "from_port": 1,
+   "to": "Material",
+   "to_port": 2
   },
   {
    "from": "stone_profile",
    "from_port": 2,
-   "to": "material_finish",
-   "to_port": 2
-  },
-  {
-   "from": "material_finish",
-   "from_port": 0,
-   "to": "Material",
-   "to_port": 1
-  },
-  {
-   "from": "material_finish",
-   "from_port": 1,
-   "to": "Material",
-   "to_port": 2
-  },
-  {
-   "from": "stone_profile",
-   "from_port": 1,
    "to": "relief",
    "to_port": 0
   },
@@ -165,7 +171,7 @@
      "ports": [
       {
        "name": "out0",
-       "type": "rgba",
+       "type": "f",
        "group_size": 0
       },
       {
@@ -175,7 +181,7 @@
       },
       {
        "name": "out2",
-       "type": "f",
+       "type": "rgba",
        "group_size": 0
       }
      ],
@@ -380,19 +386,19 @@
      "to_port": 0
     },
     {
-     "from": "WetStoneColor",
+     "from": "PebbleNoiseUnused",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
-     "from": "PebbleNoiseUnused",
+     "from": "PebbleCells",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1
     },
     {
-     "from": "PebbleCells",
+     "from": "WetStoneColor",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 2
@@ -408,7 +414,9 @@
     "y": 0.0
    },
    "parameters": {
-    "param0": 1.5
+    "param0": 18,
+    "param1": 0.65,
+    "param2": 1.0
    },
    "seed_int": 0,
    "nodes": [
@@ -424,6 +432,11 @@
       {
        "name": "in0",
        "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "in1",
+       "type": "rgba",
        "group_size": 0
       }
      ],
@@ -441,7 +454,7 @@
      "ports": [
       {
        "name": "out0",
-       "type": "f",
+       "type": "rgba",
        "group_size": 0
       },
       {
@@ -451,6 +464,11 @@
       },
       {
        "name": "out2",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "out3",
        "type": "f",
        "group_size": 0
       }
@@ -465,12 +483,38 @@
       "y": 200.0
      },
      "parameters": {
-      "param0": 1.5
+      "param0": 18,
+      "param1": 0.65,
+      "param2": 1.0
      },
      "seed": 0,
      "widgets": [
       {
        "name": "param0",
+       "shortdesc": "Small stone size",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "SmallStoneCells",
+         "widget": "scale_x"
+        }
+       ]
+      },
+      {
+       "name": "param1",
+       "shortdesc": "Small stone height",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "SmallStoneHeight",
+         "widget": "default_in2"
+        }
+       ]
+      },
+      {
+       "name": "param2",
        "shortdesc": "Top flatness",
        "label": "",
        "type": "linked_control",
@@ -505,7 +549,7 @@
      },
      "parameters": {
       "op": 2,
-      "default_in2": 1.5,
+      "default_in2": 1.0,
       "clamp": true
      }
     },
@@ -519,6 +563,154 @@
      "parameters": {
       "op": 20,
       "clamp": true
+     }
+    },
+    {
+     "name": "SmallStoneCells",
+     "type": "voronoi",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "scale_x": 18,
+      "scale_y": 18,
+      "randomness": 1
+     }
+    },
+    {
+     "name": "SmallDomeCurve",
+     "type": "math",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "op": 16,
+      "default_in2": 2.6,
+      "clamp": true
+     }
+    },
+    {
+     "name": "SmallDomeFlatten",
+     "type": "math",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "op": 2,
+      "default_in2": 1.0,
+      "clamp": true
+     }
+    },
+    {
+     "name": "SmallDomeSmooth",
+     "type": "math",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "op": 20,
+      "clamp": true
+     }
+    },
+    {
+     "name": "SmallStoneHeight",
+     "type": "math",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "op": 2,
+      "default_in2": 0.65
+     }
+    },
+    {
+     "name": "StoneHeightMix",
+     "type": "math",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "op": 14
+     }
+    },
+    {
+     "name": "SmallStoneMask",
+     "type": "math",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "op": 15
+     }
+    },
+    {
+     "name": "SmallStoneColor",
+     "type": "colorize",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.05,
+         "g": 0.05,
+         "b": 0.05,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.1,
+         "g": 0.08,
+         "b": 0.07,
+         "pos": 0.28
+        },
+        {
+         "a": 1,
+         "r": 0.14,
+         "g": 0.13,
+         "b": 0.12,
+         "pos": 0.52
+        },
+        {
+         "a": 1,
+         "r": 0.09,
+         "g": 0.1,
+         "b": 0.11,
+         "pos": 0.74
+        },
+        {
+         "a": 1,
+         "r": 0.06,
+         "g": 0.05,
+         "b": 0.05,
+         "pos": 1.0
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "StoneColorMix",
+     "type": "blend",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "blend_type": 0,
+      "amount": 1
      }
     }
    ],
@@ -536,28 +728,106 @@
      "to_port": 0
     },
     {
+     "from": "SmallStoneCells",
+     "from_port": 0,
+     "to": "SmallDomeCurve",
+     "to_port": 0
+    },
+    {
+     "from": "SmallDomeCurve",
+     "from_port": 0,
+     "to": "SmallDomeFlatten",
+     "to_port": 0
+    },
+    {
+     "from": "SmallDomeFlatten",
+     "from_port": 0,
+     "to": "SmallDomeSmooth",
+     "to_port": 0
+    },
+    {
+     "from": "SmallDomeSmooth",
+     "from_port": 0,
+     "to": "SmallStoneHeight",
+     "to_port": 0
+    },
+    {
+     "from": "DomeSmooth",
+     "from_port": 0,
+     "to": "StoneHeightMix",
+     "to_port": 0
+    },
+    {
+     "from": "SmallStoneHeight",
+     "from_port": 0,
+     "to": "StoneHeightMix",
+     "to_port": 1
+    },
+    {
+     "from": "DomeSmooth",
+     "from_port": 0,
+     "to": "SmallStoneMask",
+     "to_port": 0
+    },
+    {
+     "from": "SmallStoneHeight",
+     "from_port": 0,
+     "to": "SmallStoneMask",
+     "to_port": 1
+    },
+    {
+     "from": "SmallStoneCells",
+     "from_port": 2,
+     "to": "SmallStoneColor",
+     "to_port": 0
+    },
+    {
+     "from": "SmallStoneColor",
+     "from_port": 0,
+     "to": "StoneColorMix",
+     "to_port": 0
+    },
+    {
+     "from": "SmallStoneMask",
+     "from_port": 0,
+     "to": "StoneColorMix",
+     "to_port": 2
+    },
+    {
      "from": "gen_inputs",
      "from_port": 0,
      "to": "DomeCurve",
      "to_port": 0
     },
     {
-     "from": "DomeSmooth",
+     "from": "gen_inputs",
+     "from_port": 1,
+     "to": "StoneColorMix",
+     "to_port": 1
+    },
+    {
+     "from": "StoneColorMix",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
-     "from": "DomeSmooth",
+     "from": "StoneHeightMix",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1
     },
     {
-     "from": "DomeSmooth",
+     "from": "StoneHeightMix",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 2
+    },
+    {
+     "from": "StoneHeightMix",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 3
     }
    ]
   },
@@ -589,9 +859,9 @@
       },
       {
        "a": 1,
-       "r": 0.35,
-       "g": 0.35,
-       "b": 0.35,
+       "r": 0.2,
+       "g": 0.2,
+       "b": 0.2,
        "pos": 1.0
       }
      ],
@@ -603,23 +873,23 @@
      "points": [
       {
        "a": 1,
-       "r": 0.3,
-       "g": 0.3,
-       "b": 0.3,
+       "r": 0.2,
+       "g": 0.2,
+       "b": 0.2,
        "pos": 0.0
       },
       {
        "a": 1,
-       "r": 0.42,
-       "g": 0.42,
-       "b": 0.42,
+       "r": 0.3,
+       "g": 0.3,
+       "b": 0.3,
        "pos": 0.35
       },
       {
        "a": 1,
-       "r": 0.6,
-       "g": 0.6,
-       "b": 0.6,
+       "r": 0.38,
+       "g": 0.38,
+       "b": 0.38,
        "pos": 1.0
       }
      ]
@@ -705,9 +975,9 @@
         },
         {
          "a": 1,
-         "r": 0.35,
-         "g": 0.35,
-         "b": 0.35,
+         "r": 0.2,
+         "g": 0.2,
+         "b": 0.2,
          "pos": 1.0
         }
        ],
@@ -719,23 +989,23 @@
        "points": [
         {
          "a": 1,
-         "r": 0.3,
-         "g": 0.3,
-         "b": 0.3,
+         "r": 0.2,
+         "g": 0.2,
+         "b": 0.2,
          "pos": 0.0
         },
         {
          "a": 1,
-         "r": 0.42,
-         "g": 0.42,
-         "b": 0.42,
+         "r": 0.3,
+         "g": 0.3,
+         "b": 0.3,
          "pos": 0.35
         },
         {
          "a": 1,
-         "r": 0.6,
-         "g": 0.6,
-         "b": 0.6,
+         "r": 0.38,
+         "g": 0.38,
+         "b": 0.38,
          "pos": 1.0
         }
        ]
@@ -838,9 +1108,9 @@
         },
         {
          "a": 1,
-         "r": 0.35,
-         "g": 0.35,
-         "b": 0.35,
+         "r": 0.2,
+         "g": 0.2,
+         "b": 0.2,
          "pos": 1.0
         }
        ],
@@ -863,23 +1133,23 @@
        "points": [
         {
          "a": 1,
-         "r": 0.3,
-         "g": 0.3,
-         "b": 0.3,
+         "r": 0.2,
+         "g": 0.2,
+         "b": 0.2,
          "pos": 0.0
         },
         {
          "a": 1,
-         "r": 0.42,
-         "g": 0.42,
-         "b": 0.42,
+         "r": 0.3,
+         "g": 0.3,
+         "b": 0.3,
          "pos": 0.35
         },
         {
          "a": 1,
-         "r": 0.6,
-         "g": 0.6,
-         "b": 0.6,
+         "r": 0.38,
+         "g": 0.38,
+         "b": 0.38,
          "pos": 1.0
         }
        ]

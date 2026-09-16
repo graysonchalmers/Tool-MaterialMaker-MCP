@@ -19,6 +19,15 @@ do not edit by hand. Open the `.ptex` and look for these names.
 | stone_profile | DomeCurve | math |
 | stone_profile | DomeFlatten | math |
 | stone_profile | DomeSmooth | math |
+| stone_profile | SmallStoneCells | voronoi |
+| stone_profile | SmallDomeCurve | math |
+| stone_profile | SmallDomeFlatten | math |
+| stone_profile | SmallDomeSmooth | math |
+| stone_profile | SmallStoneHeight | math |
+| stone_profile | StoneHeightMix | math |
+| stone_profile | SmallStoneMask | math |
+| stone_profile | SmallStoneColor | colorize |
+| stone_profile | StoneColorMix | blend |
 | material_finish | NonMetallic | colorize |
 | material_finish | WetRoughness | colorize |
 | material_finish | DryRoughness | colorize |
