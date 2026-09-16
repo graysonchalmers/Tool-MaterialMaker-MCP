@@ -42,6 +42,14 @@ const CUBE_BEVEL_SEGMENTS := 6  # arc segments across the fillet -> smooth, not 
 # was tuned by rendering until the ashlar block-and-joint pattern was clearly
 # recognizable, not just "some texture".
 const SPHERE_HEIGHTMAP_UV_SCALE := 6.0
+# Shared triplanar `mat`'s uv1_scale while the sphere's Deep Parallax material is
+# active, replacing the default `tile` (0.45) so cube/rook/ground's block density
+# visually matches the sphere's instead of reading coarser/sparser next to it
+# (Grayson's feedback). Tuned by rendering, not derived from
+# SPHERE_HEIGHTMAP_UV_SCALE's value -- triplanar world-space tiling and the
+# sphere's equirect UV tiling are different units, so there is no formula that
+# makes "the same number" mean "the same visual density" here.
+const SPHERE_MATCHED_TRIPLANAR_TILE := 0.85
 # Ground plane extent. The old 60x60 plane's far edge sat only ~30 units from
 # the camera, where exponential fog (density 0.07) reaches just ~88% -- so the
 # ground's hard geometric edge stayed faintly visible against the background as
@@ -160,6 +168,18 @@ func _ready() -> void:
 			sphere_mat.heightmap_min_layers = 8
 			sphere_mat.heightmap_max_layers = 32
 			# uv1_triplanar intentionally left at its default false -- that's the point.
+			# Match cube/rook/ground's shared triplanar density to the sphere's, so the
+			# demo scene doesn't look visually inconsistent (sphere reading finer/denser
+			# than everything else around it, per Grayson's feedback). Triplanar
+			# world-space tiling and equirect UV tiling are not the same units --
+			# SPHERE_MATCHED_TRIPLANAR_TILE was tuned by rendering until the cube's
+			# block scale visually matched the sphere's, not derived from the "same
+			# number" as SPHERE_HEIGHTMAP_UV_SCALE. MUST happen before rook_mat is
+			# built below (`rook_mat = mat.duplicate()`) since duplicate() snapshots
+			# mat's properties at that moment -- ground/cube hold a live reference to
+			# `mat` itself so they pick up the change regardless of order, but rook
+			# would silently keep the old density if this ran after its duplicate().
+			mat.uv1_scale = Vector3(SPHERE_MATCHED_TRIPLANAR_TILE, SPHERE_MATCHED_TRIPLANAR_TILE, 1)
 	sphere.set_surface_override_material(0, sphere_mat)
 	add_child(sphere)
 
