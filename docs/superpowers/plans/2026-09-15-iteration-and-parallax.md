@@ -407,7 +407,19 @@ every existing render and the `preview_regress` no-regress gate are unaffected b
 
 ### Task 4: Deep Parallax cookbook material — connect `depth_tex`
 
+> **Amended 2026-09-15 after Task 3 landed.** Task 3's Step 7 empirical check came back
+> definitively negative: Godot 4.7 refuses to combine heightmap/parallax with triplanar UV
+> mapping (engine warning: "Height mapping is not supported on triplanar materials. Ignoring
+> height mapping in favor of triplanar mapping."; confirmed by a byte-identical render with vs
+> without the heightmap param). This is the spec's own named contingency ("Open technical risk —
+> triplanar + heightmap composition") now triggered for real. Step 0 below (new) builds that
+> named fallback — a small non-triplanar demo plane, opt-in only when a heightmap path is given —
+> before the rest of this task proceeds. Steps 1-7 below are otherwise unchanged from the
+> original plan text; Step 4's render now targets the new plane instead of the shared triplanar
+> objects.
+
 **Files:**
+- Modify: `src/mm_mcp/preview_project/preview.gd` (Step 0: add the non-triplanar demo plane)
 - Modify: `quality/cookbook_stone.py` (add `build_s09_ashlar_wall`'s `depth_tex` wiring — this is
   an in-place retune of an EXISTING, already-shipped material, not a new id; `s09_ashlar_wall` is
   not on the front-page gallery, so this carries no regression risk to an approved visual
@@ -424,6 +436,57 @@ every existing render and the `preview_regress` no-regress gate are unaffected b
 - Produces: the chosen material's exported `.tres` gains `heightmap_enabled = true`,
   `heightmap_deep_parallax = true`, `heightmap_texture`, plus a `<name>_heightmap.png` file — a
   real round-trip Deep Parallax export, not a preview-only effect.
+
+- [ ] **Step 0 (new): Add an opt-in, non-triplanar demo plane to the rig**
+
+  In `preview.gd`, add a small flat plane (a `PlaneMesh`, real UV1 — no `uv1_triplanar`) spawned
+  ONLY when a heightmap path is given, positioned so it doesn't collide with the existing
+  sphere/cube/rook (e.g. floating above and slightly behind them, angled toward the camera so the
+  parallax reads at a grazing-ish angle — parallax is most visible off-axis). Build a SECOND,
+  non-triplanar material for this plane specifically: same albedo/normal/orm/heightmap textures as
+  the main triplanar material, but `mat2.uv1_triplanar` left `false` (the default) so Godot's
+  heightmap offset math actually has the per-pixel UV basis it needs. The plane needs its own UV2
+  in the mesh (a `PlaneMesh` already has one) and tangents (`PlaneMesh` generates these
+  automatically, unlike the hand-built `_rounded_box`/`_lathe` meshes). This plane must NOT affect
+  any existing render: when `heightmap_path` is empty (every render before Task 4, and every
+  render of a heightmap-less material), the plane is never created, so the `preview_regress`
+  no-regress gate stays a no-op by construction — the same discipline Task 3 already established
+  for the heightmap params themselves.
+
+  ```gdscript
+  # Non-triplanar demo plane for Deep Parallax: Godot 4.7 does not compose
+  # heightmap/parallax offset with triplanar UV projection (confirmed via engine
+  # warning + a byte-identical render, Task 3 Step 7) -- POM needs a real per-pixel
+  # UV basis triplanar doesn't give it. This plane exists ONLY to demonstrate
+  # Deep Parallax and is never created for a normal (non-heightmap) render.
+  if heightmap_path != "":
+      var demo_tex := _load_tex(heightmap_path)
+      if demo_tex != null:
+          var demo_mat := ORMMaterial3D.new()
+          demo_mat.albedo_texture = albedo_tex
+          demo_mat.normal_enabled = true
+          demo_mat.normal_texture = normal_tex
+          demo_mat.orm_texture = orm_tex
+          demo_mat.uv1_scale = Vector3(1.0, 1.0, 1)   # plain UV tiling, not triplanar density
+          demo_mat.heightmap_enabled = true
+          demo_mat.heightmap_texture = demo_tex
+          demo_mat.heightmap_scale = heightmap_scale
+          demo_mat.heightmap_deep_parallax = true
+          demo_mat.heightmap_min_layers = 8
+          demo_mat.heightmap_max_layers = 32
+          var demo_plane := MeshInstance3D.new()
+          demo_plane.mesh = PlaneMesh.new()
+          demo_plane.mesh.size = Vector2(1.6, 1.6)
+          demo_plane.mesh.orientation = PlaneMesh.FACE_Z   # face the camera, not up
+          demo_plane.position = Vector3(0, 1.6, -1.0)
+          demo_plane.rotation_degrees = Vector3(-15, 0, 0)   # slight tilt for a grazing angle
+          demo_plane.set_surface_override_material(0, demo_mat)
+          add_child(demo_plane)
+  ```
+
+  This goes in `_ready()`, after the existing objects are added and after `_make_material`'s
+  `heightmap_path`/`heightmap_scale` locals are parsed (Task 3), so it has the same texture
+  paths/args already in scope — it does not need its own CLI flags.
 
 - [ ] **Step 1: Route an existing height signal into `depth_tex`**
 
@@ -459,12 +522,15 @@ every existing render and the `preview_regress` no-regress gate are unaffected b
   `s09_ashlar_wall_heightmap.png` file exists in the outdir. This is the objective proof the
   round-trip actually works, independent of how it looks in the preview.
 
-- [ ] **Step 4: Render the 3D preview with the new heightmap param — STOP for approval**
+- [ ] **Step 4: Render the demo plane with the new heightmap param — STOP for approval**
 
-  Using Task 3's new `render_preview(..., heightmap_path=<the _heightmap.png from Step 3>)`,
-  render `s09_ashlar_wall` both WITHOUT and WITH the heightmap enabled (same tile, same angle) so
-  the before/after is directly comparable, plus one render at a more oblique angle or via
-  `render_preview_sweep` if the static angle doesn't sell the depth. Subagent stops.
+  Using Task 3's new `render_preview(..., heightmap_path=<the _heightmap.png from Step 3>)`, which
+  now (Step 0) also spawns the non-triplanar demo plane, render `s09_ashlar_wall` twice: once
+  WITHOUT `heightmap_path` (the plane doesn't exist — shows only the familiar triplanar
+  sphere/cube/rook, a sanity check that nothing regressed) and once WITH it (the plane appears,
+  showing real Deep Parallax at its grazing angle). The comparison that matters is the plane
+  itself, not a before/after of the shared triplanar objects (which structurally cannot show this
+  effect, per Task 3 Step 7). Subagent stops.
 
 - [ ] **Step 5: Controller — send both renders, get Grayson's approval; iterate**
 
