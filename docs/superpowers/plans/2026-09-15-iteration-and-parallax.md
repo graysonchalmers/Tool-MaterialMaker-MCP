@@ -412,11 +412,20 @@ every existing render and the `preview_regress` no-regress gate are unaffected b
 > mapping (engine warning: "Height mapping is not supported on triplanar materials. Ignoring
 > height mapping in favor of triplanar mapping."; confirmed by a byte-identical render with vs
 > without the heightmap param). This is the spec's own named contingency ("Open technical risk —
-> triplanar + heightmap composition") now triggered for real. Step 0 below (new) builds that
-> named fallback — a small non-triplanar demo plane, opt-in only when a heightmap path is given —
-> before the rest of this task proceeds. Steps 1-7 below are otherwise unchanged from the
-> original plan text; Step 4's render now targets the new plane instead of the shared triplanar
-> objects.
+> triplanar + heightmap composition") now triggered for real.
+>
+> **Amended again 2026-09-15 after Grayson's visual feedback on the first Step 0 attempt.** The
+> first version of Step 0 (below, superseded — see `f1ce303`/`9d396fe` in git history) added a new
+> floating demo plane. Grayson found the effect nearly invisible on it and explicitly asked to see
+> it on the SAME shaped objects already in the rig, not a new one. Redesigned: instead of a new
+> plane, swap the existing SPHERE's material to a non-triplanar one when a heightmap path is
+> given (leaving cube/rook/ground on the shared triplanar material, unaffected, for visual
+> context). The sphere is a stock `SphereMesh` with real per-vertex UV1 and auto-generated
+> tangents — the same prerequisite the plane needed, but on an object already in every render, and
+> a smaller diff than adding a new mesh. A sphere's continuously-curving surface also means a
+> single static shot already spans a gradient of viewing angles (near-tangent at the limb, face-on
+> at the center), so the effect should read clearly near the sphere's edge without needing the
+> plane's specific tilt/positioning tuning.
 
 **Files:**
 - Modify: `src/mm_mcp/preview_project/preview.gd` (Step 0: add the non-triplanar demo plane)
@@ -437,72 +446,77 @@ every existing render and the `preview_regress` no-regress gate are unaffected b
   `heightmap_deep_parallax = true`, `heightmap_texture`, plus a `<name>_heightmap.png` file — a
   real round-trip Deep Parallax export, not a preview-only effect.
 
-- [ ] **Step 0 (new): Add an opt-in, non-triplanar demo plane to the rig**
+- [ ] **Step 0 (redesigned): swap the SPHERE's material to non-triplanar when a heightmap is given**
 
-  In `preview.gd`, add a small flat plane (a `PlaneMesh`, real UV1 — no `uv1_triplanar`) spawned
-  ONLY when a heightmap path is given, positioned so it doesn't collide with the existing
-  sphere/cube/rook (e.g. floating above and slightly behind them, angled toward the camera so the
-  parallax reads at a grazing-ish angle — parallax is most visible off-axis). Build a SECOND,
-  non-triplanar material for this plane specifically: same albedo/normal/orm/heightmap textures as
-  the main triplanar material, but `mat2.uv1_triplanar` left `false` (the default) so Godot's
-  heightmap offset math actually has the per-pixel UV basis it needs. The plane needs its own UV2
-  in the mesh (a `PlaneMesh` already has one) and tangents (`PlaneMesh` generates these
-  automatically, unlike the hand-built `_rounded_box`/`_lathe` meshes). This plane must NOT affect
-  any existing render: when `heightmap_path` is empty (every render before Task 4, and every
-  render of a heightmap-less material), the plane is never created, so the `preview_regress`
-  no-regress gate stays a no-op by construction — the same discipline Task 3 already established
-  for the heightmap params themselves.
+  **Superseded the original plane-based Step 0** (git history: `f1ce303`, `9d396fe`) per Grayson's
+  feedback — see the amendment note above. In `preview.gd`, right after the sphere is constructed
+  (`sphere.mesh = SphereMesh.new()` ... `sphere.position = Vector3(-2.0, 0, 0)`, before
+  `sphere.set_surface_override_material(0, mat)`), give it its OWN material when a heightmap path
+  is given instead of the shared triplanar `mat` — same albedo/normal/orm textures, `uv1_triplanar`
+  left at its default `false`. Cube/rook/ground keep using the shared `mat` unchanged. When
+  `heightmap_path` is empty (every existing render, and every render of a heightmap-less
+  material), `sphere_mat` is just `mat` itself — a true no-op, same discipline as Task 3's params.
 
   ```gdscript
-  # Non-triplanar demo plane for Deep Parallax: Godot 4.7 does not compose
-  # heightmap/parallax offset with triplanar UV projection (confirmed via engine
-  # warning + a byte-identical render, Task 3 Step 7) -- POM needs a real per-pixel
-  # UV basis triplanar doesn't give it. This plane exists ONLY to demonstrate
-  # Deep Parallax and is never created for a normal (non-heightmap) render.
+  # Deep Parallax demo (opt-in): Godot 4.7 refuses to compose heightmap/parallax
+  # with triplanar UV mapping (confirmed via engine warning + a byte-identical
+  # render, Task 3 Step 7). The sphere is a stock SphereMesh with real,
+  # non-triplanar UV1 and auto-generated tangents (unlike the hand-built
+  # _rounded_box/_lathe meshes) -- the exact prerequisite parallax needs. When a
+  # heightmap is given, give JUST the sphere its own non-triplanar material
+  # carrying it; cube/rook/ground stay on the shared triplanar `mat`, unaffected,
+  # for visual context. Empty heightmap_path is a true no-op: sphere_mat is mat.
+  var sphere_mat := mat
   if heightmap_path != "":
-      var demo_tex := _load_tex(heightmap_path)
-      if demo_tex != null:
-          var demo_mat := ORMMaterial3D.new()
-          demo_mat.albedo_texture = albedo_tex
-          demo_mat.normal_enabled = true
-          demo_mat.normal_texture = normal_tex
-          demo_mat.orm_texture = orm_tex
-          demo_mat.uv1_scale = Vector3(1.0, 1.0, 1)   # plain UV tiling, not triplanar density
-          demo_mat.heightmap_enabled = true
-          demo_mat.heightmap_texture = demo_tex
-          demo_mat.heightmap_scale = heightmap_scale
-          demo_mat.heightmap_deep_parallax = true
-          demo_mat.heightmap_min_layers = 8
-          demo_mat.heightmap_max_layers = 32
-          var demo_plane := MeshInstance3D.new()
-          demo_plane.mesh = PlaneMesh.new()
-          demo_plane.mesh.size = Vector2(1.6, 1.6)
-          demo_plane.mesh.orientation = PlaneMesh.FACE_Z   # face the camera, not up
-          demo_plane.position = Vector3(0, 1.6, -1.0)
-          demo_plane.rotation_degrees = Vector3(-15, 0, 0)   # slight tilt for a grazing angle
-          demo_plane.set_surface_override_material(0, demo_mat)
-          add_child(demo_plane)
+      var height_tex := _load_tex(heightmap_path)
+      if height_tex != null:
+          sphere_mat = ORMMaterial3D.new()
+          sphere_mat.albedo_texture = albedo_tex
+          sphere_mat.normal_enabled = true
+          sphere_mat.normal_texture = normal_tex
+          sphere_mat.orm_texture = orm_tex
+          sphere_mat.uv1_scale = Vector3(tile, tile, 1)
+          sphere_mat.texture_repeat = true
+          sphere_mat.heightmap_enabled = true
+          sphere_mat.heightmap_texture = height_tex
+          sphere_mat.heightmap_scale = heightmap_scale
+          sphere_mat.heightmap_deep_parallax = true
+          sphere_mat.heightmap_min_layers = 8
+          sphere_mat.heightmap_max_layers = 32
+          # uv1_triplanar intentionally left at its default false -- that's the point.
   ```
+
+  Then change `sphere.set_surface_override_material(0, mat)` to
+  `sphere.set_surface_override_material(0, sphere_mat)`. A sphere's continuously-curving surface
+  means a single static shot already spans a gradient of viewing angles — near-tangent at the
+  limb/edge (where parallax is most visible), face-on at the center (where it's least visible) —
+  so render a crop/zoom on the sphere's edge region for the approval renders, not just the full
+  frame at the same scale as before.
 
   This goes in `_ready()`, after the existing objects are added and after `_make_material`'s
   `heightmap_path`/`heightmap_scale` locals are parsed (Task 3), so it has the same texture
   paths/args already in scope — it does not need its own CLI flags.
 
-- [ ] **Step 1: Route an existing height signal into `depth_tex`**
+- [x] **Step 1: Route an existing height signal into `depth_tex`** — done differently than
+  drafted, see note.
 
-  For `s09_ashlar_wall` (`build_s09_ashlar_wall`, `quality/cookbook_stone.py:747-831`): the
-  builder's relief/AO/depth chain already exists (`blend_2`, feeding `normal_map_0` per the
-  docstring's own port trace at lines 782-800). Add one connection tapping that same chain into
-  `Material.to_port 6`:
+  **Executed 2026-09-15, deviated from the draft below after render verification** (commit
+  `26b80d7`): the draft assumed `depth_tex` was unconnected and suggested tapping `blend_2`
+  directly. Investigation found `s09_ashlar_wall`'s donor (`stone_wall`) already had an
+  ACCIDENTAL, undocumented connection into `Material.to_port 6` via `colorize_6` — Deep Parallax
+  export was silently already working before this task touched it. A direct `blend_2` tap was
+  tried and rendered WRONG POLARITY (mortar joints bulging out instead of recessing); `colorize_6`
+  is the correctly-inverted signal the donor already used. Real change:
+  `rewire(g, "Material", 6, "colorize_6", 0)` (repointing the existing edge, not adding a new
+  one — an `append()` would have left two connections into one port) plus
+  `set_param(g, "Material", "depth_scale", 0.3)`. Verified via a real `.tres` round-trip check
+  (`heightmap_enabled = true`, `heightmap_deep_parallax = true`). Original draft, preserved for
+  context (do NOT apply as written — it produces wrong polarity):
 
   ```python
   g["connections"].append(
       {"from": "blend_2", "from_port": 0, "to": "Material", "to_port": 6})
   ```
-
-  (If the empirical check in Task 3 Step 7 pointed at a different material, use that material's
-  own pre-normal height signal instead — the pattern is identical: tap whatever node already
-  feeds the normal chain, one connection to `Material.to_port 6`.)
 
 - [ ] **Step 2: Confirm `depth_scale` is sane**
 
