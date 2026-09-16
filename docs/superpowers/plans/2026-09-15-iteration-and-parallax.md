@@ -428,7 +428,8 @@ every existing render and the `preview_regress` no-regress gate are unaffected b
 > plane's specific tilt/positioning tuning.
 
 **Files:**
-- Modify: `src/mm_mcp/preview_project/preview.gd` (Step 0: add the non-triplanar demo plane)
+- Modify: `src/mm_mcp/preview_project/preview.gd` (Step 0: swap the sphere to a non-triplanar
+  material when a heightmap path is given — superseded the original plane-based approach)
 - Modify: `quality/cookbook_stone.py` (add `build_s09_ashlar_wall`'s `depth_tex` wiring — this is
   an in-place retune of an EXISTING, already-shipped material, not a new id; `s09_ashlar_wall` is
   not on the front-page gallery, so this carries no regression risk to an approved visual
@@ -536,15 +537,26 @@ every existing render and the `preview_regress` no-regress gate are unaffected b
   `s09_ashlar_wall_heightmap.png` file exists in the outdir. This is the objective proof the
   round-trip actually works, independent of how it looks in the preview.
 
-- [ ] **Step 4: Render the demo plane with the new heightmap param — STOP for approval**
+- [x] **Step 4: Render the sphere with the new heightmap param — STOP for approval** — done,
+  see note (supersedes the text below, kept for history).
 
-  Using Task 3's new `render_preview(..., heightmap_path=<the _heightmap.png from Step 3>)`, which
-  now (Step 0) also spawns the non-triplanar demo plane, render `s09_ashlar_wall` twice: once
-  WITHOUT `heightmap_path` (the plane doesn't exist — shows only the familiar triplanar
+  ~~Using Task 3's new `render_preview(..., heightmap_path=<the _heightmap.png from Step 3>)`,
+  which now (Step 0) also spawns the non-triplanar demo plane, render `s09_ashlar_wall` twice:
+  once WITHOUT `heightmap_path` (the plane doesn't exist — shows only the familiar triplanar
   sphere/cube/rook, a sanity check that nothing regressed) and once WITH it (the plane appears,
   showing real Deep Parallax at its grazing angle). The comparison that matters is the plane
   itself, not a before/after of the shared triplanar objects (which structurally cannot show this
-  effect, per Task 3 Step 7). Subagent stops.
+  effect, per Task 3 Step 7). Subagent stops.~~
+
+  **Executed 2026-09-15 per the Step 0 redesign** (commit `588f842`): rendered `s09_ashlar_wall`
+  WITHOUT `heightmap_path` (sphere renders on the shared triplanar `mat`, byte-identical to any
+  normal render — sanity check) and WITH it at `heightmap_scale=0.3` (sphere swaps to its own
+  non-triplanar material). Cropped both to the sphere's edge region for direct comparison
+  (`s09_sanity_zoom.png` vs `s09_scale03_zoom.png`), plus an amplified (6x) pixel diff isolating
+  the pure parallax contribution from the material-switch's own visual change. Sent to Grayson —
+  see the session/ledger for his honest-disclosure caveat (most of the visible difference is the
+  necessary triplanar->real-UV1 switch, not the parallax offset itself, which is real but subtle
+  at this camera distance) and the open question of whether to keep or park the feature.
 
 - [ ] **Step 5: Controller — send both renders, get Grayson's approval; iterate**
 
