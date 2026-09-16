@@ -779,6 +779,31 @@ def build_s09_ashlar_wall(catalog: dict) -> str:
         (1.0,  0.50, 0.43, 0.34),   # tan sandstone (was rustic orange)
     ])
 
+    # Deep Parallax: route the relief chain into Material.to_port 6
+    # (depth_tex). NOTE: to_port 6 was NOT unconnected before this change --
+    # stone_wall's own donor graph already fed colorize_6 (mislabeled
+    # "BlockAO" below; it actually lands on Material's depth port, not AO)
+    # into depth_tex, so every stone_wall-descended cookbook material has
+    # been silently exporting a real heightmap_enabled=true .tres all along
+    # (verified by rendering the pre-this-change committed .ptex). Tried
+    # tapping blend_2 directly (the plan's literal suggestion, bypassing the
+    # colorize step) and rendered it: WRONG polarity -- blend_2's raw signal
+    # is high at the mortar joints, so a raw tap makes joints bulge OUT and
+    # block faces sink IN, backwards for a masonry wall. colorize_6 applies
+    # exactly the inverting gradient (white at low blend_2 / block faces,
+    # black at high blend_2 / joints) that makes the polarity correct: block
+    # faces raised, joints recessed. So the explicit choice here is
+    # colorize_6, not blend_2 -- this makes deliberate and explicit
+    # (independent of whatever the stone_wall donor happens to wire) a
+    # connection that used to be an unexamined accident of that donor graph.
+    # rewire() (not append) because a connection into this port already
+    # exists -- two connections into one to_port would be malformed.
+    rewire(g, "Material", 6, "colorize_6", 0)
+    # depth_scale: donor default (0.2) -> heightmap_scale 5.0 on export
+    # (Godot 4 Standard target multiplies by 25.0). Bumped to a masonry-scale
+    # starting point; tuned for real in Step 4's visual pass.
+    set_param(g, "Material", "depth_scale", 0.3)
+
     # Subgraph grouping. `stone_wall`'s own blend_0 is a genuine masked
     # blend, port sources traced from its raw connections before grouping:
     # port0(s1)=colorize_1 (block tone, fed by blend_1's per-brick random),
