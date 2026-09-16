@@ -558,12 +558,26 @@ every existing render and the `preview_regress` no-regress gate are unaffected b
   necessary triplanar->real-UV1 switch, not the parallax offset itself, which is real but subtle
   at this camera distance) and the open question of whether to keep or park the feature.
 
-- [ ] **Step 5: Controller — send both renders, get Grayson's approval; iterate**
+- [x] **Step 5: Controller — send both renders, get Grayson's approval; iterate** — decision made
+  (KEEP), one more iteration round in progress, see note.
 
   Controller SendUserFile + wait. Iterate `depth_scale` (Step 2) and `heightmap_scale` (the
   preview-side param) until the parallax reads as real depth without obvious texture-swim
   artifacts at the rendered angle. If Grayson prefers a different candidate material entirely,
   redo Step 1 on that material instead — the wiring pattern is generic.
+
+  **Iteration round 2 (2026-09-15), after Grayson's first reply:** he confirmed KEEP the feature,
+  with two real follow-ups to fix before final sign-off — (a) the sphere's UV tile scale reuses
+  the shared triplanar `tile` value, but a `SphereMesh`'s native (equirectangular) UV1 has
+  completely different tiling semantics, so the crop didn't show enough repeats of the ashlar
+  pattern to read clearly — needs its own, independently-tuned scale; (b) he asked to see it "in
+  the sweep" — `render_preview_sweep` only rotates the key LIGHT, which cannot reveal parallax at
+  all (it is camera-angle-dependent, not light-angle-dependent) — instead of building that
+  (it would show nothing), add a new sweep mode that rotates the SPHERE itself across frames
+  (camera/lights fixed), reusing the existing frame-loop/GIF-assembly plumbing with a new
+  `sweep_kind` value rather than new infrastructure. Also clarified for Grayson directly (not a
+  code change): Deep Parallax does not displace mesh geometry or change the silhouette — it is a
+  per-pixel texture-sampling illusion only.
 
 - [ ] **Step 6: Objective gates green**
 
