@@ -14,16 +14,34 @@ extends Node3D
 #
 # Two output modes, same rig either way:
 # --out=<path>  Single static frame (render_preview).
-# --sweep-outdir=<path> --sweep-frames=<int> [--sweep-kind=precess|azimuth]
+# --sweep-outdir=<path> --sweep-frames=<int> [--sweep-kind=precess|azimuth|parallax_spin]
 #   [--cone=<deg>]  Animate the key light, writing one frame_NNN.png per step to
 #   sweep-outdir instead of a single --out (render_preview_sweep -- the caller
 #   assembles the frames into a GIF). Default 'precess' wobbles the key's aim in
 #   a small cone (default 18deg) so highlights circle the relief without going
 #   backlit; 'azimuth' is the old full 360-degree orbit. Rim/fill stay fixed.
+#   'parallax_spin' is unrelated to lighting: parallax is camera-angle-dependent,
+#   not light-angle-dependent, so a light sweep alone can never show it moving.
+#   Instead it spins the SPHERE itself around its own Y axis (camera and every
+#   light held fixed) -- as the sphere rotates, a given point on its (Deep
+#   Parallax-enabled, non-triplanar) surface sweeps from face-on at the center
+#   to grazing at the limb and back, which is exactly where the offset reads.
+#   Only meaningful with --heightmap given (see sphere_mat below); with no
+#   heightmap the sphere still spins but has no depth cue to show.
 
 const OBJECT_RADIUS := 0.85  # half-height of the cube / sphere radius, for ground placement
 const CUBE_BEVEL := 0.14  # fillet radius on the cube's edges (modeled, not a shader)
 const CUBE_BEVEL_SEGMENTS := 6  # arc segments across the fillet -> smooth, not a single facet
+# UV1 repeat count for the sphere's own non-triplanar Deep Parallax material
+# (see the sphere_mat block in _ready()). A SphereMesh's native UV1 is
+# equirectangular -- 0..1 across the WHOLE surface, longitude x latitude --
+# completely different semantics from triplanar's world-space `tile` density,
+# so reusing `tile` here (as the first cut of this feature did) starves the
+# sphere down to a fraction of one texture repeat and reads as "doesn't tile
+# enough" (Grayson's feedback). 6.0 repeats around the equator / top-to-bottom
+# was tuned by rendering until the ashlar block-and-joint pattern was clearly
+# recognizable, not just "some texture".
+const SPHERE_HEIGHTMAP_UV_SCALE := 6.0
 # Ground plane extent. The old 60x60 plane's far edge sat only ~30 units from
 # the camera, where exponential fog (density 0.07) reaches just ~88% -- so the
 # ground's hard geometric edge stayed faintly visible against the background as
@@ -133,7 +151,7 @@ func _ready() -> void:
 			sphere_mat.normal_enabled = true
 			sphere_mat.normal_texture = normal_tex
 			sphere_mat.orm_texture = orm_tex
-			sphere_mat.uv1_scale = Vector3(tile, tile, 1)
+			sphere_mat.uv1_scale = Vector3(SPHERE_HEIGHTMAP_UV_SCALE, SPHERE_HEIGHTMAP_UV_SCALE, 1)
 			sphere_mat.texture_repeat = true
 			sphere_mat.heightmap_enabled = true
 			sphere_mat.heightmap_texture = height_tex
@@ -354,7 +372,13 @@ func _ready() -> void:
 		var base_yaw := key.rotation_degrees.y
 		for i in range(frame_count):
 			var phase := TAU * float(i) / float(frame_count)
-			if kind == "azimuth":
+			if kind == "parallax_spin":
+				# Camera and every light stay exactly as built above -- only the
+				# sphere's own rotation changes, so a fixed point on its surface
+				# sweeps through the full range of viewing angles relative to the
+				# (unmoving) camera.
+				sphere.rotation_degrees = Vector3(0, 360.0 * float(i) / float(frame_count), 0)
+			elif kind == "azimuth":
 				key.rotation_degrees = Vector3(base_pitch, 360.0 * float(i) / float(frame_count), 0)
 			else:
 				key.rotation_degrees = Vector3(

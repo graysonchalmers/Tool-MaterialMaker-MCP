@@ -112,14 +112,20 @@ def render_preview(albedo_path: str, normal_path: str, orm_path: str,
 
 def _build_sweep_command(cfg: Config, albedo_path: str, normal_path: str, orm_path: str,
                           sweep_dir: str, frames: int, tile: float,
-                          sweep_kind: str = "precess", cone: float = 18.0) -> list[str]:
-    return [
+                          sweep_kind: str = "precess", cone: float = 18.0,
+                          heightmap_path: str | None = None,
+                          heightmap_scale: float = 0.05) -> list[str]:
+    cmd = [
         cfg.console_binary, "--path", _PREVIEW_PROJECT, "--",
         f"--albedo={albedo_path}", f"--normal={normal_path}",
         f"--orm={orm_path}", f"--sweep-outdir={sweep_dir}",
         f"--sweep-frames={frames}", f"--tile={tile}",
         f"--sweep-kind={sweep_kind}", f"--cone={cone}",
     ]
+    if heightmap_path:
+        cmd.append(f"--heightmap={heightmap_path}")
+        cmd.append(f"--heightmap-scale={heightmap_scale}")
+    return cmd
 
 
 def _frames_to_gif(frame_paths: list[str], gif_path: str, frame_duration_ms: int) -> None:
@@ -135,6 +141,7 @@ def render_preview_sweep(albedo_path: str, normal_path: str, orm_path: str,
                           tile: float = 0.45, frames: int = 18,
                           frame_duration_ms: int = 80,
                           sweep_kind: str = "precess", cone: float = 18.0,
+                          heightmap_path: str | None = None, heightmap_scale: float = 0.05,
                           cfg: Config | None = None) -> PreviewSweepResult:
     """Animate the key light around the same sphere/cube/cutaway rig
     render_preview uses, and composite the frames into a looping GIF -- relief
@@ -146,6 +153,17 @@ def render_preview_sweep(albedo_path: str, normal_path: str, orm_path: str,
     relief without the shot ever going backlit. sweep_kind='azimuth' is the
     older full 360-degree orbit of the key. The rim/fill are held fixed either
     way.
+
+    sweep_kind='parallax_spin' is unrelated to lighting: parallax is
+    camera-angle-dependent, not light-angle-dependent, so animating the key
+    alone can never show it move. This kind instead spins the sphere itself
+    around its own Y axis (camera and every light held fixed), sweeping a
+    given point on its surface from face-on to grazing and back -- pair it
+    with heightmap_path/heightmap_scale (same meaning as render_preview) to
+    actually show the Deep Parallax depth cue traveling across the surface.
+    Defaults to None/off and is a true no-op at that default, same treatment
+    as render_preview's heightmap params: no extra Godot arg appended, so
+    every existing sweep caller renders byte-for-byte identically to before.
 
     Same inputs as render_preview (already-rendered albedo/normal/orm maps,
     not a .ptex graph). Renders every frame inside ONE Godot process rather
@@ -162,6 +180,8 @@ def render_preview_sweep(albedo_path: str, normal_path: str, orm_path: str,
     albedo_path = os.path.abspath(albedo_path)
     normal_path = os.path.abspath(normal_path)
     orm_path = os.path.abspath(orm_path)
+    if heightmap_path:
+        heightmap_path = os.path.abspath(heightmap_path)
 
     cfg = cfg or load_config()
     outdir = outdir or cfg.output_dir
@@ -176,7 +196,8 @@ def render_preview_sweep(albedo_path: str, normal_path: str, orm_path: str,
         os.remove(gif_path)
 
     cmd = _build_sweep_command(cfg, albedo_path, normal_path, orm_path, sweep_dir,
-                                frames, tile, sweep_kind=sweep_kind, cone=cone)
+                                frames, tile, sweep_kind=sweep_kind, cone=cone,
+                                heightmap_path=heightmap_path, heightmap_scale=heightmap_scale)
 
     timeout = max(90, frames * 8)
     try:
