@@ -111,7 +111,38 @@ func _ready() -> void:
 	sphere.mesh.radial_segments = 48
 	sphere.mesh.rings = 24
 	sphere.position = Vector3(-2.0, 0, 0)
-	sphere.set_surface_override_material(0, mat)
+	# Deep Parallax demo (opt-in): Godot 4.7 refuses to compose heightmap/parallax
+	# with triplanar UV mapping (confirmed via engine warning + a byte-identical
+	# render, Task 3 Step 7). The sphere is a stock SphereMesh with real,
+	# non-triplanar UV1 and auto-generated tangents (unlike the hand-built
+	# _rounded_box/_lathe meshes) -- the exact prerequisite parallax needs. When a
+	# heightmap is given, give JUST the sphere its own non-triplanar material
+	# carrying it; cube/rook/ground stay on the shared triplanar `mat`, unaffected,
+	# for visual context. Empty heightmap_path is a true no-op: sphere_mat is mat.
+	# (Superseded the earlier separate-demo-plane approach -- git history
+	# f1ce303/9d396fe -- per Grayson's feedback: the effect read too faintly on
+	# a new object off to the side; a shape already in every render, whose
+	# continuous curvature spans a full gradient of viewing angles in one static
+	# shot, reads far more clearly.)
+	var sphere_mat := mat
+	if heightmap_path != "":
+		var height_tex := _load_tex(heightmap_path)
+		if height_tex != null:
+			sphere_mat = ORMMaterial3D.new()
+			sphere_mat.albedo_texture = albedo_tex
+			sphere_mat.normal_enabled = true
+			sphere_mat.normal_texture = normal_tex
+			sphere_mat.orm_texture = orm_tex
+			sphere_mat.uv1_scale = Vector3(tile, tile, 1)
+			sphere_mat.texture_repeat = true
+			sphere_mat.heightmap_enabled = true
+			sphere_mat.heightmap_texture = height_tex
+			sphere_mat.heightmap_scale = heightmap_scale
+			sphere_mat.heightmap_deep_parallax = true
+			sphere_mat.heightmap_min_layers = 8
+			sphere_mat.heightmap_max_layers = 32
+			# uv1_triplanar intentionally left at its default false -- that's the point.
+	sphere.set_surface_override_material(0, sphere_mat)
 	add_child(sphere)
 
 	# Rounded-bevel cube. The modeled fillet (see _rounded_box) plus the shared
@@ -168,38 +199,6 @@ func _ready() -> void:
 	body.set_surface_override_material(0, rook_mat)
 	rook.add_child(body)
 	add_child(rook)
-
-	# Non-triplanar demo plane for Deep Parallax: Godot 4.7 does not compose
-	# heightmap/parallax offset with triplanar UV projection (confirmed via engine
-	# warning + a byte-identical render, Task 3 Step 7) -- POM needs a real per-pixel
-	# UV basis triplanar doesn't give it. This plane exists ONLY to demonstrate
-	# Deep Parallax and is never created for a normal (non-heightmap) render, so
-	# every render before this feature (and every heightmap-less render after it)
-	# is unaffected by construction -- the no-regress gate never passes
-	# heightmap_path, so this whole block is dead code from its perspective.
-	if heightmap_path != "":
-		var demo_tex := _load_tex(heightmap_path)
-		if demo_tex != null:
-			var demo_mat := ORMMaterial3D.new()
-			demo_mat.albedo_texture = albedo_tex
-			demo_mat.normal_enabled = true
-			demo_mat.normal_texture = normal_tex
-			demo_mat.orm_texture = orm_tex
-			demo_mat.uv1_scale = Vector3(1.0, 1.0, 1)   # plain UV tiling, not triplanar density
-			demo_mat.heightmap_enabled = true
-			demo_mat.heightmap_texture = demo_tex
-			demo_mat.heightmap_scale = heightmap_scale
-			demo_mat.heightmap_deep_parallax = true
-			demo_mat.heightmap_min_layers = 8
-			demo_mat.heightmap_max_layers = 32
-			var demo_plane := MeshInstance3D.new()
-			demo_plane.mesh = PlaneMesh.new()
-			demo_plane.mesh.size = Vector2(1.6, 1.6)
-			demo_plane.mesh.orientation = PlaneMesh.FACE_Z   # face the camera, not up
-			demo_plane.position = Vector3(0, 1.2, -0.3)
-			demo_plane.rotation_degrees = Vector3(-45, 0, 0)   # grazing tilt -- POM displacement grows with view obliqueness, and -15 proved too near head-on to read at all
-			demo_plane.set_surface_override_material(0, demo_mat)
-			add_child(demo_plane)
 
 	var cam := Camera3D.new()
 	cam.position = Vector3(0, 1.4, 6.5)
