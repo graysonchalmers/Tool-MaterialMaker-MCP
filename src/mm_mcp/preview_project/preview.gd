@@ -169,6 +169,38 @@ func _ready() -> void:
 	rook.add_child(body)
 	add_child(rook)
 
+	# Non-triplanar demo plane for Deep Parallax: Godot 4.7 does not compose
+	# heightmap/parallax offset with triplanar UV projection (confirmed via engine
+	# warning + a byte-identical render, Task 3 Step 7) -- POM needs a real per-pixel
+	# UV basis triplanar doesn't give it. This plane exists ONLY to demonstrate
+	# Deep Parallax and is never created for a normal (non-heightmap) render, so
+	# every render before this feature (and every heightmap-less render after it)
+	# is unaffected by construction -- the no-regress gate never passes
+	# heightmap_path, so this whole block is dead code from its perspective.
+	if heightmap_path != "":
+		var demo_tex := _load_tex(heightmap_path)
+		if demo_tex != null:
+			var demo_mat := ORMMaterial3D.new()
+			demo_mat.albedo_texture = albedo_tex
+			demo_mat.normal_enabled = true
+			demo_mat.normal_texture = normal_tex
+			demo_mat.orm_texture = orm_tex
+			demo_mat.uv1_scale = Vector3(1.0, 1.0, 1)   # plain UV tiling, not triplanar density
+			demo_mat.heightmap_enabled = true
+			demo_mat.heightmap_texture = demo_tex
+			demo_mat.heightmap_scale = heightmap_scale
+			demo_mat.heightmap_deep_parallax = true
+			demo_mat.heightmap_min_layers = 8
+			demo_mat.heightmap_max_layers = 32
+			var demo_plane := MeshInstance3D.new()
+			demo_plane.mesh = PlaneMesh.new()
+			demo_plane.mesh.size = Vector2(1.6, 1.6)
+			demo_plane.mesh.orientation = PlaneMesh.FACE_Z   # face the camera, not up
+			demo_plane.position = Vector3(0, 1.6, -1.0)
+			demo_plane.rotation_degrees = Vector3(-15, 0, 0)   # slight tilt for a grazing angle
+			demo_plane.set_surface_override_material(0, demo_mat)
+			add_child(demo_plane)
+
 	var cam := Camera3D.new()
 	cam.position = Vector3(0, 1.4, 6.5)
 	cam.fov = 36
