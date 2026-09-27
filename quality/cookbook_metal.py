@@ -13,7 +13,7 @@ from quality import author  # shared builder base; regression guard is promote_c
 from quality.author_helpers import (
     save_variant, take_variant, group_into_subgraph, rename_nodes,
     _from_scratch_noise_material, retype, add_node, _grad, set_param, rewire,
-    node,
+    node, place, tidy_ports,
 )
 
 from mm_mcp.catalog_builder import build_catalog
@@ -88,71 +88,6 @@ def build_m01_weathered_copper(catalog: dict) -> str:
     )
     rename_nodes(g, _M01_NAMES)
     return save_variant(g, _LABEL, "m01_weathered_copper", 1)
-
-
-def _place(level: dict, positions: dict) -> None:
-    """Give nodes at one graph level an explicit node_position. add_node parks
-    every new node at (0, 0), and Material Maker seeds a node from its
-    position, so for a noise node a position is also a seed choice."""
-    for name, (x, y) in positions.items():
-        node(level, name)["node_position"] = {"x": x, "y": y}
-
-
-def _output_type(g: dict, name: str, port: int, catalog: dict) -> str:
-    src = node(g, name)
-    if src["type"] == "graph":
-        return node(src, "gen_outputs")["ports"][port]["type"]
-    outs = catalog.get(src["type"], {}).get("outputs", [])
-    return (outs[port].get("type") if port < len(outs) else None) or "f"
-
-
-def _tidy_ports(g: dict, sub_name: str, inputs: list, outputs: list, catalog: dict) -> None:
-    """group_into_subgraph gives every wire that crosses the boundary its own
-    port, so one signal read by two nodes on the far side shows up as two
-    identical ports. Merge the ports that carry the same signal and name
-    them, so the collapsed node reads as "brush in, albedo/roughness/height
-    out" in Material Maker. An input port takes the type its source
-    produces, so the signal is converted (rgba -> f) only where a consumer
-    inside needs it, exactly as before grouping. Local to this file on
-    purpose: changing the shared helper would re-port every other cookbook
-    graph.
-
-    inputs:  [(outer_source_node, outer_source_port, port_name), ...]
-    outputs: [(inner_source_node, inner_source_port, port_name), ...]
-    List order is the new port order; each list must cover exactly the
-    distinct signals that cross the boundary."""
-    sub = node(g, sub_name)
-    gin, gout = node(sub, "gen_inputs"), node(sub, "gen_outputs")
-
-    old_in = {c["to_port"]: (c["from"], c["from_port"])
-              for c in g["connections"] if c["to"] == sub_name}
-    order = [(n, p) for n, p, _ in inputs]
-    assert set(old_in.values()) == set(order), (sub_name, "inputs", old_in, order)
-    in_types = {(n, p): _output_type(g, n, p, catalog) for n, p in order}
-    for c in sub["connections"]:
-        if c["from"] == "gen_inputs":
-            c["from_port"] = order.index(old_in[c["from_port"]])
-    g["connections"] = [c for c in g["connections"] if c["to"] != sub_name] + [
-        {"from": n, "from_port": p, "to": sub_name, "to_port": i}
-        for i, (n, p) in enumerate(order)]
-    gin["ports"] = [{"name": name, "type": in_types[(n, p)], "group_size": 0}
-                    for n, p, name in inputs]
-
-    old_out = {c["to_port"]: (c["from"], c["from_port"])
-               for c in sub["connections"] if c["to"] == "gen_outputs"}
-    order = [(n, p) for n, p, _ in outputs]
-    assert set(old_out.values()) == set(order), (sub_name, "outputs", old_out, order)
-    out_types = {}
-    for old, src in sorted(old_out.items()):
-        out_types.setdefault(src, gout["ports"][old]["type"])
-    for c in g["connections"]:
-        if c["from"] == sub_name:
-            c["from_port"] = order.index(old_out[c["from_port"]])
-    sub["connections"] = [c for c in sub["connections"] if c["to"] != "gen_outputs"] + [
-        {"from": n, "from_port": p, "to": "gen_outputs", "to_port": i}
-        for i, (n, p) in enumerate(order)]
-    gout["ports"] = [{"name": name, "type": out_types[(n, p)], "group_size": 0}
-                     for n, p, name in outputs]
 
 
 # m04's scratch colorway sets the SCRATCH color; the host's scratch layer
@@ -273,7 +208,7 @@ def build_m02_brushed_aluminum(catalog: dict) -> str:
 
     # Seed-bearing noises at (0, 0) of their own subgraph (seed 0 = m03's
     # and m04's field); everything else spaced left to right by data flow.
-    _place(g, {
+    place(g, {
         "HairlineNoise": (0, 0), "HairlineAlign": (300, 0), "BrushComposite": (600, 200),
         "PolishRoughness": (-50, -50), "FlatHeight": (-50, 250), "PolishMask": (-50, 450),
         "PolishRoughnessComposite": (300, 50), "PolishHeightComposite": (300, 330),
@@ -289,14 +224,14 @@ def build_m02_brushed_aluminum(catalog: dict) -> str:
          ("perlin_2", "scale_y", "param1", "Streak density")],
         catalog,
     )
-    _tidy_ports(g, "brushed_finish", [], [("blend_0", 0, "streak")], catalog)
+    tidy_ports(g, "brushed_finish", [], [("blend_0", 0, "streak")], catalog)
     group_into_subgraph(
         g, ["HairlineNoise", "HairlineAlign", "BrushComposite"],
         "hairline_layer", "Hairline Layer",
         [("BrushComposite", "amount", "param0", "Hairline fineness")],
         catalog,
     )
-    _tidy_ports(g, "hairline_layer", [("brushed_finish", 0, "streak")],
+    tidy_ports(g, "hairline_layer", [("brushed_finish", 0, "streak")],
                 [("BrushComposite", 0, "brush")],
                 catalog)
     group_into_subgraph(
@@ -305,7 +240,7 @@ def build_m02_brushed_aluminum(catalog: dict) -> str:
          ("colorize_0", "gradient", "param1", "Roughness")],
         catalog,
     )
-    _tidy_ports(g, "metal_color", [("hairline_layer", 0, "brush")],
+    tidy_ports(g, "metal_color", [("hairline_layer", 0, "brush")],
                 [("colorize_2", 0, "albedo"), ("colorize_0", 0, "roughness")],
                 catalog)
     group_into_subgraph(
@@ -315,7 +250,7 @@ def build_m02_brushed_aluminum(catalog: dict) -> str:
         [("PolishMask", "color", "param0", "Polish")],
         catalog,
     )
-    _tidy_ports(g, "polish_layer",
+    tidy_ports(g, "polish_layer",
                 [("hairline_layer", 0, "brush"), ("metal_color", 1, "roughness")],
                 [("PolishRoughnessComposite", 0, "roughness"),
                  ("PolishHeightComposite", 0, "height")],
@@ -330,7 +265,7 @@ def build_m02_brushed_aluminum(catalog: dict) -> str:
          ("ScratchNoise", "length", "param2", "Scratch length")],
         catalog,
     )
-    _tidy_ports(g, "scratch_wear",
+    tidy_ports(g, "scratch_wear",
                 [("metal_color", 0, "albedo"), ("polish_layer", 0, "roughness"),
                  ("polish_layer", 1, "height")],
                 [("ScratchColorComposite", 0, "albedo"),
@@ -346,16 +281,16 @@ def build_m02_brushed_aluminum(catalog: dict) -> str:
 
     # Inner canvases: the proxies group_into_subgraph centres on the members
     # would overlap the hand-placed nodes, so park them at the edges.
-    _place(node(g, "brushed_finish"), {"gen_outputs": (450, 250)})
-    _place(node(g, "hairline_layer"), {
+    place(node(g, "brushed_finish"), {"gen_outputs": (450, 250)})
+    place(node(g, "hairline_layer"), {
         "gen_inputs": (-350, 250), "gen_parameters": (-350, 450), "gen_outputs": (900, 200)})
-    _place(node(g, "polish_layer"), {
+    place(node(g, "polish_layer"), {
         "gen_inputs": (-400, 200), "gen_parameters": (-400, 450), "gen_outputs": (650, 200)})
-    _place(node(g, "scratch_wear"), {
+    place(node(g, "scratch_wear"), {
         "gen_inputs": (-450, 400), "gen_parameters": (-450, -150), "gen_outputs": (900, 380)})
     # Top level reads as a layer stack, left to right into Material. The
     # collapsed nodes carry seed_int 0, so moving them moves no seeds.
-    _place(g, {
+    place(g, {
         "brushed_finish": (-150, 0), "hairline_layer": (150, 0), "metal_color": (450, -120),
         "polish_layer": (750, 120), "scratch_wear": (1050, 0), "normal_map_0": (1350, 180),
         "Material": (1600, 0),

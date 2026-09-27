@@ -309,3 +309,82 @@ def group_into_subgraph(graph: dict, member_names: list, name: str, label: str,
 
     graph["nodes"] = [n for n in graph["nodes"] if n["name"] not in member_set] + [collapsed]
     graph["connections"] = untouched + outer_incoming + outer_outgoing
+
+
+# --- Host-material layout helpers (lifted from cookbook_metal.py, 2026-09-27,
+# when the second host, s14, needed them). They only tidy a graph that
+# group_into_subgraph already built; they never change what renders. ---
+
+def place(level: dict, positions: dict) -> None:
+    """Give nodes at one graph level an explicit node_position. add_node parks
+    every new node at (0, 0), and Material Maker seeds a node from its
+    position, so for a noise node a position is also a seed choice."""
+    for name, (x, y) in positions.items():
+        node(level, name)["node_position"] = {"x": x, "y": y}
+
+
+def _output_type(g: dict, name: str, port: int, catalog: dict) -> str:
+    src = node(g, name)
+    if src["type"] == "graph":
+        return node(src, "gen_outputs")["ports"][port]["type"]
+    outs = catalog.get(src["type"], {}).get("outputs", [])
+    return (outs[port].get("type") if port < len(outs) else None) or "f"
+
+
+def tidy_ports(g: dict, sub_name: str, inputs: list, outputs: list, catalog: dict) -> None:
+    """group_into_subgraph gives every wire that crosses the boundary its own
+    port, so one signal read by two nodes on the far side shows up as two
+    identical ports. Merge the ports that carry the same signal and name
+    them, so the collapsed node reads as "brush in, albedo/roughness/height
+    out" in Material Maker. An input port takes the type its source
+    produces, so the signal is converted (rgba -> f) only where a consumer
+    inside needs it, exactly as before grouping. A separate helper on
+    purpose: changing group_into_subgraph itself would re-port every other
+    cookbook graph.
+
+    inputs:  [(outer_source_node, outer_source_port, port_name), ...]
+    outputs: [(inner_source_node, inner_source_port, port_name), ...]
+    List order is the new port order; each list must cover exactly the
+    distinct signals that cross the boundary."""
+    sub = node(g, sub_name)
+    gin, gout = node(sub, "gen_inputs"), node(sub, "gen_outputs")
+
+    old_in = {c["to_port"]: (c["from"], c["from_port"])
+              for c in g["connections"] if c["to"] == sub_name}
+    order = [(n, p) for n, p, _ in inputs]
+    assert set(old_in.values()) == set(order), (sub_name, "inputs", old_in, order)
+    in_types = {(n, p): _output_type(g, n, p, catalog) for n, p in order}
+    for c in sub["connections"]:
+        if c["from"] == "gen_inputs":
+            c["from_port"] = order.index(old_in[c["from_port"]])
+    g["connections"] = [c for c in g["connections"] if c["to"] != sub_name] + [
+        {"from": n, "from_port": p, "to": sub_name, "to_port": i}
+        for i, (n, p) in enumerate(order)]
+    gin["ports"] = [{"name": name, "type": in_types[(n, p)], "group_size": 0}
+                    for n, p, name in inputs]
+
+    old_out = {c["to_port"]: (c["from"], c["from_port"])
+               for c in sub["connections"] if c["to"] == "gen_outputs"}
+    order = [(n, p) for n, p, _ in outputs]
+    assert set(old_out.values()) == set(order), (sub_name, "outputs", old_out, order)
+    out_types = {}
+    for old, src in sorted(old_out.items()):
+        out_types.setdefault(src, gout["ports"][old]["type"])
+    for c in g["connections"]:
+        if c["from"] == sub_name:
+            c["from_port"] = order.index(old_out[c["from_port"]])
+    sub["connections"] = [c for c in sub["connections"] if c["to"] != "gen_outputs"] + [
+        {"from": n, "from_port": p, "to": "gen_outputs", "to_port": i}
+        for i, (n, p) in enumerate(order)]
+    gout["ports"] = [{"name": name, "type": out_types[(n, p)], "group_size": 0}
+                     for n, p, name in outputs]
+
+
+def link_also(g: dict, sub_name: str, slot_id: str, node_name: str, widget: str) -> None:
+    """Make one exposed subgraph parameter drive a second inner parameter,
+    e.g. a "Pebble size" that sets both scale_x and scale_y. Material Maker
+    writes a linked_control to every entry of linked_widgets; the first
+    entry stays the primary one (mm-play's slider binds only that one)."""
+    remote = node(node(g, sub_name), "gen_parameters")
+    widget_def = next(w for w in remote["widgets"] if w["name"] == slot_id)
+    widget_def["linked_widgets"].append({"node": node_name, "widget": widget})
