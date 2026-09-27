@@ -1,22 +1,70 @@
 {
  "connections": [
   {
-   "from": "brushed_finish",
+   "from": "SurfaceNormal",
    "from_port": 0,
    "to": "Material",
    "to_port": 4
   },
   {
    "from": "brushed_finish",
+   "from_port": 0,
+   "to": "hairline_layer",
+   "to_port": 0
+  },
+  {
+   "from": "hairline_layer",
+   "from_port": 0,
+   "to": "metal_color",
+   "to_port": 0
+  },
+  {
+   "from": "hairline_layer",
+   "from_port": 0,
+   "to": "polish_layer",
+   "to_port": 0
+  },
+  {
+   "from": "metal_color",
+   "from_port": 1,
+   "to": "polish_layer",
+   "to_port": 1
+  },
+  {
+   "from": "scratch_wear",
+   "from_port": 0,
+   "to": "Material",
+   "to_port": 0
+  },
+  {
+   "from": "scratch_wear",
    "from_port": 1,
    "to": "Material",
    "to_port": 2
   },
   {
-   "from": "brushed_finish",
+   "from": "scratch_wear",
    "from_port": 2,
-   "to": "Material",
+   "to": "SurfaceNormal",
    "to_port": 0
+  },
+  {
+   "from": "metal_color",
+   "from_port": 0,
+   "to": "scratch_wear",
+   "to_port": 0
+  },
+  {
+   "from": "polish_layer",
+   "from_port": 0,
+   "to": "scratch_wear",
+   "to_port": 1
+  },
+  {
+   "from": "polish_layer",
+   "from_port": 1,
+   "to": "scratch_wear",
+   "to_port": 2
   }
  ],
  "label": "Graph",
@@ -29,8 +77,8 @@
   {
    "name": "Material",
    "node_position": {
-    "x": 687,
-    "y": 172
+    "x": 1600,
+    "y": 0
    },
    "parameters": {
     "albedo_color": {
@@ -52,64 +100,30 @@
    "type": "material"
   },
   {
+   "name": "SurfaceNormal",
+   "node_position": {
+    "x": 1350,
+    "y": 180
+   },
+   "parameters": {
+    "param0": 11,
+    "param1": 0.45,
+    "param2": 0,
+    "param4": 0
+   },
+   "type": "normal_map"
+  },
+  {
    "name": "brushed_finish",
    "label": "Brushed Finish",
    "type": "graph",
    "node_position": {
-    "x": 210.07028799999998,
-    "y": 222.0363648
+    "x": -150,
+    "y": 0
    },
    "parameters": {
     "param0": 40,
-    "param1": 2,
-    "param2": {
-     "interpolation": 1,
-     "points": [
-      {
-       "a": 1,
-       "r": 0.56,
-       "g": 0.56,
-       "b": 0.56,
-       "pos": 0.0
-      },
-      {
-       "a": 1,
-       "r": 0.67,
-       "g": 0.67,
-       "b": 0.67,
-       "pos": 0.5
-      },
-      {
-       "a": 1,
-       "r": 0.78,
-       "g": 0.78,
-       "b": 0.78,
-       "pos": 1.0
-      }
-     ],
-     "type": "Gradient"
-    },
-    "param3": {
-     "interpolation": 1,
-     "points": [
-      {
-       "a": 1,
-       "r": 0.2,
-       "g": 0.2,
-       "b": 0.2,
-       "pos": 0.0
-      },
-      {
-       "a": 1,
-       "r": 0.4,
-       "g": 0.4,
-       "b": 0.4,
-       "pos": 1.0
-      }
-     ],
-     "type": "Gradient"
-    },
-    "param4": 0.45
+    "param1": 2
    },
    "seed_int": 0,
    "nodes": [
@@ -117,8 +131,8 @@
      "name": "gen_inputs",
      "type": "ios",
      "node_position": {
-      "x": -189.92971200000002,
-      "y": 222.0363648
+      "x": -505.5,
+      "y": 126.5
      },
      "parameters": {},
      "ports": [],
@@ -129,23 +143,13 @@
      "name": "gen_outputs",
      "type": "ios",
      "node_position": {
-      "x": 610.070288,
-      "y": 222.0363648
+      "x": 450,
+      "y": 250
      },
      "parameters": {},
      "ports": [
       {
-       "name": "out0",
-       "type": "rgb",
-       "group_size": 0
-      },
-      {
-       "name": "out1",
-       "type": "rgba",
-       "group_size": 0
-      },
-      {
-       "name": "out2",
+       "name": "streak",
        "type": "rgba",
        "group_size": 0
       }
@@ -156,60 +160,12 @@
      "name": "gen_parameters",
      "type": "remote",
      "node_position": {
-      "x": -189.92971200000002,
-      "y": 422.0363648
+      "x": -505.5,
+      "y": 326.5
      },
      "parameters": {
       "param0": 40,
-      "param1": 2,
-      "param2": {
-       "interpolation": 1,
-       "points": [
-        {
-         "a": 1,
-         "r": 0.56,
-         "g": 0.56,
-         "b": 0.56,
-         "pos": 0.0
-        },
-        {
-         "a": 1,
-         "r": 0.67,
-         "g": 0.67,
-         "b": 0.67,
-         "pos": 0.5
-        },
-        {
-         "a": 1,
-         "r": 0.78,
-         "g": 0.78,
-         "b": 0.78,
-         "pos": 1.0
-        }
-       ],
-       "type": "Gradient"
-      },
-      "param3": {
-       "interpolation": 1,
-       "points": [
-        {
-         "a": 1,
-         "r": 0.2,
-         "g": 0.2,
-         "b": 0.2,
-         "pos": 0.0
-        },
-        {
-         "a": 1,
-         "r": 0.4,
-         "g": 0.4,
-         "b": 0.4,
-         "pos": 1.0
-        }
-       ],
-       "type": "Gradient"
-      },
-      "param4": 0.45
+      "param1": 2
      },
      "seed": 0,
      "widgets": [
@@ -234,42 +190,6 @@
         {
          "node": "StreakNoise",
          "widget": "scale_y"
-        }
-       ]
-      },
-      {
-       "name": "param2",
-       "shortdesc": "Aluminum color",
-       "label": "",
-       "type": "linked_control",
-       "linked_widgets": [
-        {
-         "node": "AluminumColor",
-         "widget": "gradient"
-        }
-       ]
-      },
-      {
-       "name": "param3",
-       "shortdesc": "Roughness",
-       "label": "",
-       "type": "linked_control",
-       "linked_widgets": [
-        {
-         "node": "RoughnessRamp",
-         "widget": "gradient"
-        }
-       ]
-      },
-      {
-       "name": "param4",
-       "shortdesc": "Scratch depth",
-       "label": "",
-       "type": "linked_control",
-       "linked_widgets": [
-        {
-         "node": "BrushNormal",
-         "widget": "param1"
         }
        ]
       }
@@ -300,9 +220,355 @@
       "blend_type": 2
      },
      "type": "blend"
+    }
+   ],
+   "connections": [
+    {
+     "from": "StreakNoise",
+     "from_port": 0,
+     "to": "StreakComposite",
+     "to_port": 0
     },
     {
-     "name": "AluminumColor",
+     "from": "StreakNoise",
+     "from_port": 0,
+     "to": "StreakComposite",
+     "to_port": 1
+    },
+    {
+     "from": "StreakComposite",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    }
+   ]
+  },
+  {
+   "name": "hairline_layer",
+   "label": "Hairline Layer",
+   "type": "graph",
+   "node_position": {
+    "x": 150,
+    "y": 0
+   },
+   "parameters": {
+    "param0": 0
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": -350,
+      "y": 250
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "streak",
+       "type": "rgba",
+       "group_size": 0
+      }
+     ],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 900,
+      "y": 200
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "brush",
+       "type": "rgba",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -350,
+      "y": 450
+     },
+     "parameters": {
+      "param0": 0
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Hairline fineness",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "BrushComposite",
+         "widget": "amount"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "HairlineNoise",
+     "type": "noise_anisotropic",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "scale_x": 4,
+      "scale_y": 48,
+      "smoothness": 1,
+      "interpolation": 1
+     }
+    },
+    {
+     "name": "HairlineAlign",
+     "type": "rotate",
+     "node_position": {
+      "x": 300,
+      "y": 0
+     },
+     "parameters": {
+      "cx": 0,
+      "cy": 0,
+      "rotate": 90
+     }
+    },
+    {
+     "name": "BrushComposite",
+     "type": "blend",
+     "node_position": {
+      "x": 600,
+      "y": 200
+     },
+     "parameters": {
+      "blend_type": 0,
+      "amount": 0
+     }
+    }
+   ],
+   "connections": [
+    {
+     "from": "HairlineNoise",
+     "from_port": 0,
+     "to": "HairlineAlign",
+     "to_port": 0
+    },
+    {
+     "from": "HairlineAlign",
+     "from_port": 0,
+     "to": "BrushComposite",
+     "to_port": 0
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 0,
+     "to": "BrushComposite",
+     "to_port": 1
+    },
+    {
+     "from": "BrushComposite",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    }
+   ]
+  },
+  {
+   "name": "metal_color",
+   "label": "Metal Color",
+   "type": "graph",
+   "node_position": {
+    "x": 450,
+    "y": -120
+   },
+   "parameters": {
+    "param0": {
+     "interpolation": 1,
+     "points": [
+      {
+       "a": 1,
+       "r": 0.56,
+       "g": 0.56,
+       "b": 0.56,
+       "pos": 0.0
+      },
+      {
+       "a": 1,
+       "r": 0.67,
+       "g": 0.67,
+       "b": 0.67,
+       "pos": 0.5
+      },
+      {
+       "a": 1,
+       "r": 0.78,
+       "g": 0.78,
+       "b": 0.78,
+       "pos": 1.0
+      }
+     ],
+     "type": "Gradient"
+    },
+    "param1": {
+     "interpolation": 1,
+     "points": [
+      {
+       "a": 1,
+       "r": 0.2,
+       "g": 0.2,
+       "b": 0.2,
+       "pos": 0.0
+      },
+      {
+       "a": 1,
+       "r": 0.4,
+       "g": 0.4,
+       "b": 0.4,
+       "pos": 1.0
+      }
+     ],
+     "type": "Gradient"
+    }
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": 15.175720000000013,
+      "y": 216.840912
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "brush",
+       "type": "rgba",
+       "group_size": 0
+      }
+     ],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 815.17572,
+      "y": 216.840912
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "albedo",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "roughness",
+       "type": "rgba",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": 15.175720000000013,
+      "y": 416.840912
+     },
+     "parameters": {
+      "param0": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0.56,
+         "g": 0.56,
+         "b": 0.56,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.67,
+         "g": 0.67,
+         "b": 0.67,
+         "pos": 0.5
+        },
+        {
+         "a": 1,
+         "r": 0.78,
+         "g": 0.78,
+         "b": 0.78,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      },
+      "param1": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0.2,
+         "g": 0.2,
+         "b": 0.2,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.4,
+         "g": 0.4,
+         "b": 0.4,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      }
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Metal color",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "MetalColor",
+         "widget": "gradient"
+        }
+       ]
+      },
+      {
+       "name": "param1",
+       "shortdesc": "Roughness",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "RoughnessRamp",
+         "widget": "gradient"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "MetalColor",
      "node_position": {
       "x": 407.35144,
       "y": 127.181824
@@ -339,20 +605,6 @@
      "type": "colorize"
     },
     {
-     "name": "BrushNormal",
-     "node_position": {
-      "x": 431,
-      "y": 423.5
-     },
-     "parameters": {
-      "param0": 11,
-      "param1": 0.45,
-      "param2": 0,
-      "param4": 0
-     },
-     "type": "normal_map"
-    },
-    {
      "name": "RoughnessRamp",
      "node_position": {
       "x": 423,
@@ -385,37 +637,19 @@
    ],
    "connections": [
     {
-     "from": "StreakNoise",
-     "from_port": 0,
-     "to": "StreakComposite",
-     "to_port": 0
-    },
-    {
-     "from": "StreakComposite",
-     "from_port": 0,
-     "to": "BrushNormal",
-     "to_port": 0
-    },
-    {
-     "from": "StreakComposite",
+     "from": "gen_inputs",
      "from_port": 0,
      "to": "RoughnessRamp",
      "to_port": 0
     },
     {
-     "from": "StreakNoise",
+     "from": "gen_inputs",
      "from_port": 0,
-     "to": "StreakComposite",
-     "to_port": 1
-    },
-    {
-     "from": "StreakComposite",
-     "from_port": 0,
-     "to": "AluminumColor",
+     "to": "MetalColor",
      "to_port": 0
     },
     {
-     "from": "BrushNormal",
+     "from": "MetalColor",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
@@ -425,9 +659,528 @@
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1
+    }
+   ]
+  },
+  {
+   "name": "polish_layer",
+   "label": "Polish Layer",
+   "type": "graph",
+   "node_position": {
+    "x": 750,
+    "y": 120
+   },
+   "parameters": {
+    "param0": 0
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": -400,
+      "y": 200
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "brush",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "roughness",
+       "type": "rgba",
+       "group_size": 0
+      }
+     ],
+     "seed": 0,
+     "seed_locked": true
     },
     {
-     "from": "AluminumColor",
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 650,
+      "y": 200
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "roughness",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "height",
+       "type": "rgba",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -400,
+      "y": 450
+     },
+     "parameters": {
+      "param0": 0
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Polish",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "PolishMask",
+         "widget": "color"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "PolishMask",
+     "type": "uniform_greyscale",
+     "node_position": {
+      "x": -50,
+      "y": 450
+     },
+     "parameters": {
+      "color": 0
+     }
+    },
+    {
+     "name": "PolishRoughness",
+     "type": "colorize",
+     "node_position": {
+      "x": -50,
+      "y": -50
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.06,
+         "g": 0.06,
+         "b": 0.06,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.14,
+         "g": 0.14,
+         "b": 0.14,
+         "pos": 1.0
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "PolishRoughnessComposite",
+     "type": "blend",
+     "node_position": {
+      "x": 300,
+      "y": 50
+     },
+     "parameters": {
+      "blend_type": 0,
+      "amount": 1
+     }
+    },
+    {
+     "name": "FlatHeight",
+     "type": "uniform_greyscale",
+     "node_position": {
+      "x": -50,
+      "y": 250
+     },
+     "parameters": {
+      "color": 0.5
+     }
+    },
+    {
+     "name": "PolishHeightComposite",
+     "type": "blend",
+     "node_position": {
+      "x": 300,
+      "y": 330
+     },
+     "parameters": {
+      "blend_type": 0,
+      "amount": 1
+     }
+    }
+   ],
+   "connections": [
+    {
+     "from": "PolishRoughness",
+     "from_port": 0,
+     "to": "PolishRoughnessComposite",
+     "to_port": 0
+    },
+    {
+     "from": "PolishMask",
+     "from_port": 0,
+     "to": "PolishRoughnessComposite",
+     "to_port": 2
+    },
+    {
+     "from": "FlatHeight",
+     "from_port": 0,
+     "to": "PolishHeightComposite",
+     "to_port": 0
+    },
+    {
+     "from": "PolishMask",
+     "from_port": 0,
+     "to": "PolishHeightComposite",
+     "to_port": 2
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 0,
+     "to": "PolishRoughness",
+     "to_port": 0
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 0,
+     "to": "PolishHeightComposite",
+     "to_port": 1
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 1,
+     "to": "PolishRoughnessComposite",
+     "to_port": 1
+    },
+    {
+     "from": "PolishRoughnessComposite",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    },
+    {
+     "from": "PolishHeightComposite",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 1
+    }
+   ]
+  },
+  {
+   "name": "scratch_wear",
+   "label": "Scratch Wear",
+   "type": "graph",
+   "node_position": {
+    "x": 1050,
+    "y": 0
+   },
+   "parameters": {
+    "param0": 0,
+    "param1": 0.5,
+    "param2": 0.25
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": -450,
+      "y": 400
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "albedo",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "roughness",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "height",
+       "type": "rgba",
+       "group_size": 0
+      }
+     ],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 900,
+      "y": 380
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "albedo",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "roughness",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "height",
+       "type": "rgba",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -450,
+      "y": -150
+     },
+     "parameters": {
+      "param0": 0,
+      "param1": 0.5,
+      "param2": 0.25
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Scratch amount",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "ScratchMask",
+         "widget": "default_in2"
+        }
+       ]
+      },
+      {
+       "name": "param1",
+       "shortdesc": "Scratch randomness",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "ScratchNoise",
+         "widget": "randomness"
+        }
+       ]
+      },
+      {
+       "name": "param2",
+       "shortdesc": "Scratch length",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "ScratchNoise",
+         "widget": "length"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "ScratchNoise",
+     "type": "scratches",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "length": 0.25,
+      "width": 0.5,
+      "layers": 4,
+      "waviness": 0.5,
+      "angle": 0,
+      "randomness": 0.5
+     }
+    },
+    {
+     "name": "ScratchMask",
+     "type": "math",
+     "node_position": {
+      "x": 300,
+      "y": 0
+     },
+     "parameters": {
+      "op": 2,
+      "default_in2": 0
+     }
+    },
+    {
+     "name": "ScratchTint",
+     "type": "uniform",
+     "node_position": {
+      "x": 300,
+      "y": 220
+     },
+     "parameters": {
+      "color": {
+       "a": 1,
+       "r": 0.9,
+       "g": 0.9,
+       "b": 0.9,
+       "type": "Color"
+      }
+     }
+    },
+    {
+     "name": "ScratchColorComposite",
+     "type": "blend",
+     "node_position": {
+      "x": 600,
+      "y": 150
+     },
+     "parameters": {
+      "blend_type": 0,
+      "amount": 0.3
+     }
+    },
+    {
+     "name": "ScratchRoughness",
+     "type": "uniform_greyscale",
+     "node_position": {
+      "x": 300,
+      "y": 400
+     },
+     "parameters": {
+      "color": 0.6
+     }
+    },
+    {
+     "name": "ScratchRoughnessComposite",
+     "type": "blend",
+     "node_position": {
+      "x": 600,
+      "y": 380
+     },
+     "parameters": {
+      "blend_type": 0,
+      "amount": 1
+     }
+    },
+    {
+     "name": "GrooveHeight",
+     "type": "uniform_greyscale",
+     "node_position": {
+      "x": 300,
+      "y": 580
+     },
+     "parameters": {
+      "color": 0
+     }
+    },
+    {
+     "name": "ScratchHeightComposite",
+     "type": "blend",
+     "node_position": {
+      "x": 600,
+      "y": 610
+     },
+     "parameters": {
+      "blend_type": 13,
+      "amount": 0.8
+     }
+    }
+   ],
+   "connections": [
+    {
+     "from": "ScratchNoise",
+     "from_port": 0,
+     "to": "ScratchMask",
+     "to_port": 0
+    },
+    {
+     "from": "ScratchTint",
+     "from_port": 0,
+     "to": "ScratchColorComposite",
+     "to_port": 0
+    },
+    {
+     "from": "ScratchMask",
+     "from_port": 0,
+     "to": "ScratchColorComposite",
+     "to_port": 2
+    },
+    {
+     "from": "ScratchRoughness",
+     "from_port": 0,
+     "to": "ScratchRoughnessComposite",
+     "to_port": 0
+    },
+    {
+     "from": "ScratchMask",
+     "from_port": 0,
+     "to": "ScratchRoughnessComposite",
+     "to_port": 2
+    },
+    {
+     "from": "GrooveHeight",
+     "from_port": 0,
+     "to": "ScratchHeightComposite",
+     "to_port": 0
+    },
+    {
+     "from": "ScratchMask",
+     "from_port": 0,
+     "to": "ScratchHeightComposite",
+     "to_port": 2
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 0,
+     "to": "ScratchColorComposite",
+     "to_port": 1
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 1,
+     "to": "ScratchRoughnessComposite",
+     "to_port": 1
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 2,
+     "to": "ScratchHeightComposite",
+     "to_port": 1
+    },
+    {
+     "from": "ScratchColorComposite",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    },
+    {
+     "from": "ScratchRoughnessComposite",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 1
+    },
+    {
+     "from": "ScratchHeightComposite",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 2
