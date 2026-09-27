@@ -49,7 +49,7 @@ tan highlight) so the ribbing itself carries the color variation rather
 than a flat tint. Soft matte roughness (0.85) fed as a flat texture via
 `rough_const` so an ORM map exports. `normal_map`'s `param4=0` is the
 standing flat-normal fix; `param1=0.55` (relief strength) is stronger
-than `f09_plaid_flannel`'s 0.42 nap and `f04_wool_knit`'s 0.3 soft ribs,
+than `f09_plaid_flannel`'s 0.42 nap (retired into `f07_herringbone_tweed`'s Crosshatch preset) and `f04_wool_knit`'s 0.3 soft ribs,
 since corduroy wales are meant to be a real, pronounced physical ridge.
 
 ## Subgraph structure

@@ -61,7 +61,7 @@ untouched metallic `NonMetallic`) instead of the raw 13-node graph:
   since both inputs to each are external (majority/base from **Grain
   Pattern**/**Surface Finish**, worn tone and mask from **Wear Pattern**) —
   the same all-external-inputs shape `f08_donegal_tweed`'s
-  `fleck_composite` used. Exposed: `Wear blend strength`
+  `fleck_composite` used (now `f07_herringbone_tweed`'s Fleck Layer). Exposed: `Wear blend strength`
   (`AlbedoComposite.amount`).
 
 `group_into_subgraph` preserves each incoming connection's own target port

@@ -25,7 +25,7 @@ now does exactly that with `weave2`'s warp and weft masks (off by default).
 ## Subgraph structure
 
 The woven-pattern host (2026-09-27). It absorbs `f01_woven_denim`,
-`f05_silk_satin`, `f08_donegal_tweed` and `f09_plaid_flannel`. All four
+`f05_silk_satin`, `f08_donegal_tweed` and `f09_plaid_flannel` (all four retired into it 2026-09-27). All four
 are this same `crocodile_skin` shape: one generator feeds the albedo,
 roughness and height colorizes. Only the generator differs, so the host
 carries the other generators in and a Pattern selector picks one. Seven

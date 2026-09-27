@@ -53,7 +53,7 @@ untouched metallic `NonMetallic`) instead of the raw 11-node graph:
 - **Stitch Pattern** — `StitchDashes`, `StitchMask`, and `ThreadColor`
   grouped together, since `ThreadColor`'s only input is `StitchMask`
   (internal) and its only output crosses the group boundary to
-  `AlbedoComposite` — the same shape `f08_donegal_tweed` used to fold
+  `AlbedoComposite` — the same shape `f08_donegal_tweed` (now `f07_herringbone_tweed`'s Fleck Layer) used to fold
   `colorize_fleck_color` in with its mask/generator rather than giving it a
   separate group. Exposed: `Stitch pitch` (`StitchDashes.x_scale`), `Thread
   color` (`ThreadColor.gradient`).
