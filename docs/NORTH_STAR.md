@@ -67,6 +67,21 @@ worth adopting for consistency: `Tool-UnityQA`'s engine probes enforce a
 every asset type it validates — worth matching if/when this project starts
 naming exported files for a specific target engine.
 
+## Library shape: depth over breadth
+
+Adopted 2026-09-27 (teardown #6 amendment, accepted by Grayson). The cookbook
+is a small set of host materials (about 25-30). Each has named, exposed
+feature layers: wear, wetness, growth, polish, parallax, emission. New
+capability lands on an existing host, never as a new material. Node coverage
+is a diagnostic, not a goal.
+
+- A material feature counts only if Material Maker exports it: `depth_tex`
+  qualifies, preview-only clearcoat does not.
+- The preview rig is a judging instrument, not a product.
+- Step 3 of the loop is observable: a hand-edit is a dated `.ptex` in
+  `saved_graphs/` with a card, and HANDOFF carries the count.
+- mm-play is a first-class way into the same graphs, not a side companion.
+
 ## Who this is for
 
 Primarily Grayson, right now — this is a "me-first" tool per the project's
@@ -84,12 +99,12 @@ underlying tool.
 - **Not replacing Material Maker's own UI.** This automates the parts that
   are tedious to start from scratch (blank-canvas node selection), not the
   parts where hands-on tweaking is the point.
-- **A secondary "play surface" companion exists** (`mm-play`, see
+- **A "play surface" exists** (`mm-play`, first-class since 2026-09-27, see
   `docs/superpowers/specs/2026-09-04-play-surface-design.md`): a local web page
   that exposes each cookbook material's author-chosen subgraph parameters as
   friendly sliders for a non-technical person, deliberately hiding the node
-  graph. It is aimed at the secondary audience above and is a companion, not a
-  replacement for Material Maker's UI or the core round-trip loop. Its export
+  graph. It is a first-class way into the same graphs, not a replacement for
+  Material Maker's UI or the core round-trip loop. Its export
   still hands back the real editable `.ptex`, so it does not sever the learning
   loop; it just offers a lower-friction way in.
 - **Not a fully autonomous pipeline.** The human finishing and owning the
