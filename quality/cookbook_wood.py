@@ -13,7 +13,7 @@ import sys
 
 from quality.author_helpers import (load_example, set_gradient, set_param, add_node, rewire,
                              save_variant, _grad, group_into_subgraph, rename_nodes,
-                             retype, drop_conn)
+                             retype, drop_conn, place, link_also)
 
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.config import load_config
@@ -214,8 +214,27 @@ def build_w04_driftwood_gray(catalog: dict) -> str:
 def build_w05_dark_walnut(catalog: dict) -> str:
     """Rich dark walnut, semi-gloss furniture finish: deep saturated brown
     grain with more contrast than oak, lower roughness than barn wood (a
-    finished/sealed surface, not raw weathered timber). Pure recolor of
-    `wood`'s working chain, same lever as w04/w02."""
+    finished/sealed surface, not raw weathered timber). Built on `wood`'s
+    working chain with its two ramps recoloured (same lever as w04/w02).
+
+    WOOD HOST (2026-09-27): absorbs w04_driftwood_gray and w06_burled_wood.
+    w04 is this same graph with two other ramps and no node of its own, so
+    it is a preset of the existing `Wood color` and `Finish sheen` knobs.
+    w06 replaces the ring warp (voronoi-driven `RingWarp`) with a `warp2`
+    driven by a low-frequency perlin, so the host carries that pair in as
+    the Burl Swirl layer, chained AFTER the ring warp:
+    GrainWarp -> RingWarp -> BurlSwirl -> GrainMask. A warp at amount 0
+    samples its input at uv + 0 * offset = uv, so:
+    - default (`Burl swirl` 0): BurlSwirl passes RingWarp through exactly,
+      and the graph renders today's w05;
+    - w06 preset (`Ring figure` 0, `Burl swirl` 0.65, w06's ramp): RingWarp
+      passes GrainWarp through exactly, which is w06's chain.
+    Both can also be on at once (rings bent by the swirl), which neither
+    original could do. `SwirlField` sits at (0, 0) of Wood Grain, where
+    w06 has it: perlin is seeded from node position, so do not move it.
+    `warp`/`warp2` `amount` both run 0..1, so every preset is in slider
+    range. Presets and their values are on the card
+    (cookbook/wood/w05_dark_walnut.md)."""
     g = load_example("wood")
     # Direct normal path (2026-09-27): the donor's buffered param4=1 races to a
     # flat normal headless; param4=0 at the same param1 matches within 0.37/255.
@@ -230,21 +249,41 @@ def build_w05_dark_walnut(catalog: dict) -> str:
 
     # Non-metallic fix (2026-09-14): same donor bug as w04_driftwood_gray --
     # see that function's comment. Drop before grouping.
+    # (Everything above matches w04 except the two ramps and param4.)
     drop_conn(g, "Material", 1)          # remove blend_0 -> metallic wire
     set_param(g, "Material", "metallic", 0)
 
-    # Same grouping as w04_driftwood_gray (both clone `wood`'s identical
-    # 11-node graph, differing only in the two gradients this builder sets)
-    # -- see that function's comment for why colorize_2 rides into wood_grain
-    # alongside blend_0.
+    # Burl Swirl layer (from w06, see docstring): w06's SwirlField perlin
+    # and warp2 values, chained after the ring warp, amount 0 = off.
+    add_node(g, "SwirlField", "perlin",
+             {"scale_x": 2, "scale_y": 2, "iterations": 3, "persistence": 0.5})
+    add_node(g, "BurlSwirl", "warp2", {"mode": 0, "amount": 0})
+    g["connections"] = [c for c in g["connections"]
+                        if not (c["from"] == "warp_1" and c["to"] == "blend_0")]
+    g["connections"] += [
+        {"from": "warp_1", "from_port": 0, "to": "BurlSwirl", "to_port": 0},
+        {"from": "SwirlField", "from_port": 0, "to": "BurlSwirl", "to_port": 1},
+        {"from": "BurlSwirl", "from_port": 0, "to": "blend_0", "to_port": 1},
+    ]
+    # SwirlField stays at add_node's (0, 0): w06's position, so w06's seed.
+    # BurlSwirl has no seed; park it between RingWarp and GrainMask.
+    place(g, {"BurlSwirl": (6, 400)})
+
+    # Same two groups as w04_driftwood_gray (see that function's comment for
+    # why colorize_2 rides into wood_grain alongside blend_0), plus the
+    # burl pair in Wood Grain and the figure levers exposed.
     group_into_subgraph(
         g,
         ["perlin_0", "perlin_1", "perlin_2", "voronoi_0", "colorize_1",
-         "warp_0", "warp_1", "blend_0", "colorize_2"],
+         "warp_0", "warp_1", "SwirlField", "BurlSwirl", "blend_0", "colorize_2"],
         "wood_grain", "Wood Grain",
-        [("colorize_2", "gradient", "param0", "Wood color")],
+        [("colorize_2", "gradient", "param0", "Wood color"),
+         ("warp_1", "amount", "param1", "Ring figure"),
+         ("BurlSwirl", "amount", "param2", "Burl swirl"),
+         ("SwirlField", "scale_x", "param3", "Burl size")],
         catalog,
     )
+    link_also(g, "wood_grain", "param3", "SwirlField", "scale_y")
     group_into_subgraph(
         g,
         ["colorize_0", "normal_map_0"],
