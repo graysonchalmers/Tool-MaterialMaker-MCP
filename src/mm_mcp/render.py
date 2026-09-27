@@ -2,6 +2,7 @@ import json
 import os
 import subprocess
 import tempfile
+from typing import Callable
 from dataclasses import dataclass, field
 from PIL import Image, ImageStat
 from mm_mcp.config import Config, load_config
@@ -55,7 +56,8 @@ def _kill_tree(process) -> None:
         pass
 
 
-def _run_godot(cmd: list, timeout: int) -> subprocess.CompletedProcess:
+def _run_godot(cmd: list, timeout: int, *,
+               before_attempt: Callable[[], None] | None = None) -> subprocess.CompletedProcess:
     """Run a Godot command with capture, retrying up to 3x around the
     transient Windows crash codes above. Raises _GodotTimeout on timeout.
     Shared by render() and preview.render_preview(), which otherwise each had
@@ -77,6 +79,9 @@ def _run_godot(cmd: list, timeout: int) -> subprocess.CompletedProcess:
     harmlessly. This is what the working raw-console path always did."""
     proc = None
     for _ in range(3):
+        # A successful retry must not inherit partial files from a crash.
+        if before_attempt is not None:
+            before_attempt()
         with tempfile.TemporaryFile() as out_f, tempfile.TemporaryFile() as err_f:
             process = subprocess.Popen(cmd, stdout=out_f, stderr=err_f)
             try:
@@ -224,7 +229,11 @@ def render(ptex: dict, size: int = _BAKE_SIZE, outdir: str | None = None,
 
     cmd = _build_command(cfg, ptex_path, target, outdir, size)
 
-    for _ in range(2):  # one retry, for the flat-normal race only
+    # Up to two retries, for the flat-normal race only. Measured 2026-09-27:
+    # 14 of 57 raw renders across the 19 cookbook graphs with a buffered
+    # normal_map baked flat (mostly a graph's first, cold-cache render), and
+    # m06 went flat twice in a row, so one retry was not enough.
+    for _ in range(3):
         # Snapshot existing output files before render to detect fresh outputs
         before = _snapshot_pngs(outdir, basename)
         try:
@@ -247,7 +256,7 @@ def render(ptex: dict, size: int = _BAKE_SIZE, outdir: str | None = None,
             break
     else:
         return RenderResult(ok=False, images=images, log_tail=log_tail, error=(
-            "normal map baked flat twice (Material Maker logged 'invalid shader')"))
+            "normal map baked flat three times (Material Maker logged 'invalid shader')"))
 
     _downsample(images, size)
     return RenderResult(ok=True, images=images, log_tail=log_tail)

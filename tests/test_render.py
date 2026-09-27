@@ -435,14 +435,24 @@ def test_render_retries_once_when_the_normal_bakes_flat_with_an_invalid_shader(m
         assert max(ImageStat.Stat(im.convert("RGB")).stddev) > 1
 
 
-def test_render_fails_when_the_normal_stays_flat_after_the_retry(monkeypatch, tmp_path):
+def test_render_survives_two_flat_normals_in_a_row(monkeypatch, tmp_path):
+    """m06 baked flat twice in a row in the 2026-09-27 survey."""
     bad = {"log": "ERROR: Rendering with invalid shader", "maps": {"normal": _flat_normal(64)}}
     calls = []
-    _fake_export(monkeypatch, [bad, bad], calls)
+    _fake_export(monkeypatch, [bad, bad, {"maps": {"normal": _noise(64)}}], calls)
+    result = render({}, size=64, outdir=str(tmp_path), basename="m", cfg=cfg)
+    assert result.ok, result.error
+    assert len(calls) == 3
+
+
+def test_render_fails_when_the_normal_stays_flat_after_the_retries(monkeypatch, tmp_path):
+    bad = {"log": "ERROR: Rendering with invalid shader", "maps": {"normal": _flat_normal(64)}}
+    calls = []
+    _fake_export(monkeypatch, [bad, bad, bad], calls)
     result = render({}, size=64, outdir=str(tmp_path), basename="m", cfg=cfg)
     assert not result.ok
     assert "flat" in result.error
-    assert len(calls) == 2
+    assert len(calls) == 3
 
 
 def test_render_accepts_a_flat_normal_without_an_invalid_shader_log(monkeypatch, tmp_path):
