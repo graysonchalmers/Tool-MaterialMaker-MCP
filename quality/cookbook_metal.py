@@ -99,7 +99,7 @@ _SCRATCH_TINT = {"a": 1, "r": 0.9, "g": 0.9, "b": 0.9, "type": "Color"}
 _GROOVE_DEPTH = 0.8
 
 
-def build_m02_brushed_aluminum(catalog: dict) -> str:
+def build_m02_brushed_metal(catalog: dict) -> str:
     """Brushed aluminum, and the brushed-metal HOST: one material carrying
     exposed feature layers instead of several one-trick materials. Every
     layer defaults OFF (amount 0), so the default graph renders the same as
@@ -141,7 +141,7 @@ def build_m02_brushed_aluminum(catalog: dict) -> str:
     Noise seeds come from node position, so HairlineNoise and ScratchNoise
     sit at (0, 0) of their own subgraphs: seed 0, the same field m03 and m04
     ship, which makes the original-vs-host comparison like for like."""
-    g = take_variant(author.build_m02_brushed_aluminum, _LABEL, 2)
+    g = take_variant(author.build_m02_brushed_metal, _LABEL, 2)
 
     # --- Hairline layer (m03) ---
     add_node(g, "HairlineNoise", "noise_anisotropic",
@@ -296,7 +296,7 @@ def build_m02_brushed_aluminum(catalog: dict) -> str:
         "Material": (1600, 0),
     })
     rename_nodes(g, _M02_NAMES)
-    return save_variant(g, _LABEL, "m02_brushed_aluminum", 1)
+    return save_variant(g, _LABEL, "m02_brushed_metal", 1)
 
 
 _M06_NAMES = {
@@ -418,7 +418,7 @@ def build_m06_car_paint(catalog: dict) -> str:
 
 BUILDERS = {
     "m01_weathered_copper": build_m01_weathered_copper,
-    "m02_brushed_aluminum": build_m02_brushed_aluminum,
+    "m02_brushed_metal": build_m02_brushed_metal,
     "m06_car_paint": build_m06_car_paint,
 }
 

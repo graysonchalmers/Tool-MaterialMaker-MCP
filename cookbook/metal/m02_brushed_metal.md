@@ -1,6 +1,6 @@
-# m02_brushed_aluminum - Brushed aluminum
+# m02_brushed_metal - Brushed metal
 
-_Category: metal. Open the graph: `cookbook/metal/m02_brushed_aluminum.ptex`._
+_Category: metal. Open the graph: `cookbook/metal/m02_brushed_metal.ptex`._
 
 Prompt: "brushed aluminum". A Phase-3 hero material (frozen 15-case test
 set), folded into the cookbook 2026-09-05 as one of the two founding members

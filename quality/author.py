@@ -252,7 +252,7 @@ def build_o01_mossy_forest_floor(iter_label: str) -> list[str]:
     return paths
 
 
-def build_m02_brushed_aluminum(iter_label: str) -> list[str]:
+def build_m02_brushed_metal(iter_label: str) -> list[str]:
     """Brushed aluminum = neutral light-gray metal + fine PARALLEL directional
     brush streaks with real (shallow) normal relief.
 
@@ -297,11 +297,11 @@ def build_m02_brushed_aluminum(iter_label: str) -> list[str]:
 
     # v1: fine parallel streaks, light aluminum, subtle relief
     g = brushed(32, 3, 0.60, 0.82, 0.24, 0.44, 0.35)
-    paths.append(save_variant(g, iter_label, "m02_brushed_aluminum", 1))
+    paths.append(save_variant(g, iter_label, "m02_brushed_metal", 1))
     # v2: denser/finer streaks, slightly darker, a touch more relief
     g = brushed(32, 2, 0.56, 0.78, 0.20, 0.40, 0.45)
     set_param(g, "perlin_2", "scale_x", 40)      # finer lines (cosmetic warning)
-    paths.append(save_variant(g, iter_label, "m02_brushed_aluminum", 2))
+    paths.append(save_variant(g, iter_label, "m02_brushed_metal", 2))
     return paths
 
 
@@ -451,7 +451,7 @@ BUILDERS = {
     "w01_oak_planks": build_w01_oak_planks,
     "s02_gray_granite": build_s02_gray_granite,
     "o01_mossy_forest_floor": build_o01_mossy_forest_floor,
-    "m02_brushed_aluminum": build_m02_brushed_aluminum,
+    "m02_brushed_metal": build_m02_brushed_metal,
 }
 
 

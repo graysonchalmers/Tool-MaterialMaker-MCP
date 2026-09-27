@@ -139,7 +139,7 @@ anything else around never reshuffles the stones.
 ## See also
 
 `guide://authoring` (or `docs/AUTHORING.md`) for the `param4=0` fix and the
-blend-polarity notes; `cookbook/metal/m02_brushed_aluminum.md` for the first
+blend-polarity notes; `cookbook/metal/m02_brushed_metal.md` for the first
 host material.
 
 <!-- nodes:begin -->
