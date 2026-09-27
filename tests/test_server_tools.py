@@ -1,3 +1,5 @@
+import asyncio
+import inspect
 import json
 import os
 import pytest
@@ -162,6 +164,7 @@ def test_render_graph_defaults_to_godot_target(monkeypatch):
     def fake_render(ptex, size=512, outdir=None, basename="material",
                      target="Godot/Godot 4 Standard", cfg=None):
         captured["target"] = target
+        captured["size"] = size
         from mm_mcp.render import RenderResult
         return RenderResult(ok=True, images=["fake.png"])
 
@@ -169,6 +172,7 @@ def test_render_graph_defaults_to_godot_target(monkeypatch):
     ptex = {"type": "graph", "nodes": [], "connections": []}
     server.render_graph(ptex)
     assert captured["target"] == "Godot/Godot 4 Standard"
+    assert captured["size"] == 2048  # Material Maker's bake size; smaller is a downsample
 
 
 def test_render_preview_missing_map_returns_error_as_data(tmp_path):
@@ -206,6 +210,7 @@ def test_render_node_output_returns_the_albedo_image(monkeypatch):
     def fake_render(ptex, size=512, outdir=None, basename="node_output",
                      target="Godot/Godot 4 Standard", cfg=None):
         captured["ptex"] = ptex
+        captured["size"] = size
         from mm_mcp.render import RenderResult
         return RenderResult(ok=True, images=[
             "out/node_output_albedo.png", "out/node_output_normal.png",
@@ -217,6 +222,7 @@ def test_render_node_output_returns_the_albedo_image(monkeypatch):
     assert result["ok"] is True
     assert result["image"] == "out/node_output_albedo.png"
     assert result["error"] is None
+    assert captured["size"] == 2048
     # the rewired graph, not the original, must be what actually rendered
     conns = captured["ptex"]["connections"]
     assert {"from": "perlin_0", "from_port": 0, "to": "Material", "to_port": 0} in conns
@@ -349,3 +355,27 @@ def test_inspect_project_bad_json(tmp_path):
 def test_inspect_project_registered_as_tool():
     # inspect_project must be in the registered tool set, not just importable.
     assert hasattr(_server, "inspect_project")
+
+
+def _registered_tools():
+    return asyncio.run(_server.mcp.list_tools())
+
+
+def test_every_registered_tool_has_a_description():
+    # MCP clients see a tool's docstring as its description; no docstring
+    # means the tool shows up with nothing telling a model how to call it.
+    tools = _registered_tools()
+    assert tools
+    missing = [t.name for t in tools if not (t.description or "").strip()]
+    assert not missing, f"tools with no description: {missing}"
+
+
+def test_preview_tools_default_tile_matches_library():
+    # What a client sees (the tool schema) must match the library default
+    # the rig and showcase renders are tuned for.
+    from mm_mcp import preview
+    by_name = {t.name: t for t in _registered_tools()}
+    for tool, lib in (("render_preview", preview.render_preview),
+                      ("render_preview_sweep", preview.render_preview_sweep)):
+        schema_default = by_name[tool].input_schema["properties"]["tile"]["default"]
+        assert schema_default == inspect.signature(lib).parameters["tile"].default

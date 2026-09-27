@@ -10,7 +10,7 @@ to PBR texture maps. Units:
   overlay.py          build/refresh the live-control addon overlay (disposable working copy)
   paths.py            client-path guards (allowed-roots bounding, traversal rejection)
   inspect.py          read-only .ptex metrics (for the inspect_project tool)
-  server.py           the MCP server (ten batch tools, seven live tools, catalog + guide resources)
+  server.py           the MCP server (eleven batch tools, seven live tools, catalog + guide resources)
 """
 
 from importlib.metadata import version as _pkg_version, PackageNotFoundError
