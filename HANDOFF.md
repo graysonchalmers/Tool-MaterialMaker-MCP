@@ -90,6 +90,9 @@ emission cycle (parked since the reflections cycle, still untouched).
 
 ## ⚠️ Heads-up for the next agent
 
+- **Direction (Grayson, 2026-09-27): no new cookbook materials.** New features land on existing materials; the aim is a smaller, feature-rich library. Teardown #6 (`docs/teardowns/TEARDOWN-2026-09-27.md`) proposes about 29 host materials. The keep/merge/cut appendix awaits his approval.
+- **Open outside PRs: #7, #8, #13 from `waskosky`.** They are untrusted code: read-only (`gh pr view/diff`) until Grayson says go. The triage plan is in the teardown report: merge #13 and #7 with changes, and close #8 as superseded by `fdd2ac7`.
+
 - **Godot 4.7 cannot combine heightmap/parallax with `uv1_triplanar = true`** — confirmed via
   engine warning + byte-identical render, not assumed. Any FUTURE object that needs Deep Parallax
   in the preview rig needs the same non-triplanar-material-swap pattern the sphere uses now, not
