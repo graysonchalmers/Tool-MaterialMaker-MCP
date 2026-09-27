@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.10.0](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/compare/v0.9.0...v0.10.0) (2026-09-27)
+
+
+### Features
+
+* **cookbook:** f07 plaid overlay multiplies over the weave ([538d975](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/538d9754ebb8da5a848157350fff09c1bbe24db8))
+* **cookbook:** man02 tile host with layout and tone selectors, brick layout and surface grain ([d46807a](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/d46807aed696ac297122c9dfc8a278fcc416adbf))
+* **cookbook:** w05 wood host with ring-figure and burl-swirl layers ([f67c4a3](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/f67c4a397f9bd98e3cf9f53f5d4d1e8df13a3ed4))
+
+
+### Bug Fixes
+
+* **cookbook:** man02 host switches after the colorizes and normals, twin stone-tone chain ([24b4ffa](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/24b4ffa86531e6141e415cf5758e3191a52b64d8))
+* **cookbook:** switch 11 buffered normal_map nodes to the direct path (param4=0) ([fbade2b](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/fbade2b4eb0e8d2a4be09f87499cee413b10eb89))
+* **cookbook:** widen host widget ranges so every preset is reachable ([e2ee322](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/e2ee32244ec2d7c34c08d652a3b020fe52dcb723))
+* **cookbook:** widen remaining out-of-range widgets ([4e1bdae](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/4e1bdaedcf0ca5fac8e8b78f2b91c0fa3a6e4b24))
+
+
+### Documentation
+
+* **cookbook:** man02 card states the hex grout is a raised ridge (measured) ([588bb67](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/588bb67cd4633b58c0e3f0cb8dc8f1f214b6c437))
+* **cookbook:** t01/s09 builder docstrings reflect the param4=0 switch ([816d14d](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/816d14dfb10aa1e64564630ae646911a26d1c66b))
+* **north-star:** adopt 'Library shape: depth over breadth' amendment ([9930809](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/9930809345c88690f95d77e00b606d3923c8503a))
+* wrap up - f07 host + retirements (cookbook 62), param4=0 on 11 normals, v0.9.0 ([5124266](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/5124266ff29f509269000c09aea73cce4db3a76e))
+
 ## [0.9.0](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/compare/v0.8.1...v0.9.0) (2026-09-27)
 
 
