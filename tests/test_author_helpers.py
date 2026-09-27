@@ -233,3 +233,47 @@ def test_take_variant_returns_requested_variant_and_removes_all_files(tmp_path):
 def test_take_variant_raises_when_variant_missing(tmp_path):
     with pytest.raises(FileNotFoundError):
         take_variant(_fake_builder(tmp_path), "lbl", 3)
+
+
+# --- widen_widget: a named_parameter with its own range ---
+from quality.author_helpers import widen_widget
+
+_RANGE_CATALOG = {"voronoi": {"inputs": [], "outputs": [], "parameters": [
+    {"name": "scale_x", "type": "float", "min": 1, "max": 32, "step": 1, "default": 4},
+    {"name": "randomness", "type": "enum", "min": 0, "max": 1, "values": ["a", "b"]}]}}
+
+
+def _linked_sub():
+    return {"nodes": [{
+        "name": "fleck_layer", "type": "graph", "parameters": {"param1": 36},
+        "nodes": [
+            {"name": "Cells", "type": "voronoi", "parameters": {"scale_x": 36, "scale_y": 36}},
+            {"name": "gen_parameters", "type": "remote", "parameters": {"param1": 36},
+             "widgets": [{"name": "param1", "shortdesc": "Fleck density", "label": "",
+                          "type": "linked_control",
+                          "linked_widgets": [{"node": "Cells", "widget": "scale_x"},
+                                             {"node": "Cells", "widget": "scale_y"}]}]},
+        ]}], "connections": []}
+
+
+def test_widen_widget_makes_a_named_parameter_with_its_own_range():
+    g = _linked_sub()
+    widen_widget(g, "fleck_layer", "param1", 48, _RANGE_CATALOG)
+    sub = node(g, "fleck_layer")
+    widget = node(sub, "gen_parameters")["widgets"][0]
+    assert widget == {"name": "param1", "shortdesc": "Fleck density", "label": "",
+                      "type": "named_parameter", "min": 1, "max": 48, "step": 1,
+                      "default": 36}
+    # every former link reads the named value; the stored value is unchanged
+    assert node(sub, "Cells")["parameters"] == {"scale_x": "$param1", "scale_y": "$param1"}
+    assert sub["parameters"]["param1"] == 36
+
+
+def test_widen_widget_refuses_a_max_that_does_not_widen():
+    with pytest.raises(ValueError):
+        widen_widget(_linked_sub(), "fleck_layer", "param1", 32, _RANGE_CATALOG)
+
+
+def test_widen_widget_refuses_a_value_outside_the_new_range():
+    with pytest.raises(ValueError):
+        widen_widget(_linked_sub(), "fleck_layer", "param1", 34, _RANGE_CATALOG)

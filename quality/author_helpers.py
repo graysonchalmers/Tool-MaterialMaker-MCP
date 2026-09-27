@@ -388,3 +388,41 @@ def link_also(g: dict, sub_name: str, slot_id: str, node_name: str, widget: str)
     remote = node(node(g, sub_name), "gen_parameters")
     widget_def = next(w for w in remote["widgets"] if w["name"] == slot_id)
     widget_def["linked_widgets"].append({"node": node_name, "widget": widget})
+
+
+def widen_widget(g: dict, sub_name: str, slot_id: str, maximum: float,
+                 catalog: dict) -> None:
+    """Give one exposed subgraph parameter its own slider range, wider than
+    its inner node type allows (e.g. a "Grain scale" preset of 128 on a
+    perlin whose scale slider stops at 32).
+
+    A linked_control always copies its range from the linked node type's
+    definition, so it cannot be widened. This converts the widget to a
+    Material Maker named_parameter (min, step and the current value taken
+    from the old primary link, `maximum` as the new max) and writes
+    "$<slot_id>" into every inner parameter it was linked to. Material Maker
+    substitutes the named value there, so the graph renders the same
+    numbers; mm-play reads the range off the widget. The linked_widgets key
+    is dropped, not emptied: MM's loader deletes a widget whose
+    linked_widgets resolves to an empty list."""
+    sub = node(g, sub_name)
+    remote = node(sub, "gen_parameters")
+    widget = next(w for w in remote["widgets"] if w["name"] == slot_id)
+    links = widget["linked_widgets"]
+    primary = node(sub, links[0]["node"])
+    pdef = next(p for p in catalog[primary["type"]]["parameters"]
+                if p["name"] == links[0]["widget"])
+    value = remote["parameters"][slot_id]
+    if pdef.get("type") != "float" or maximum <= pdef["max"]:
+        raise ValueError(f"{sub_name}/{slot_id}: only a float widget can be widened, "
+                         f"to a max above its {pdef.get('max')}")
+    if not pdef["min"] <= value <= maximum:
+        raise ValueError(f"{sub_name}/{slot_id}: value {value} outside "
+                         f"[{pdef['min']}, {maximum}]")
+    for link in links:
+        node(sub, link["node"])["parameters"][link["widget"]] = "$" + slot_id
+    shortdesc = widget["shortdesc"]
+    widget.clear()
+    widget.update({"name": slot_id, "shortdesc": shortdesc, "label": "",
+                   "type": "named_parameter", "min": pdef["min"], "max": maximum,
+                   "step": pdef["step"], "default": value})

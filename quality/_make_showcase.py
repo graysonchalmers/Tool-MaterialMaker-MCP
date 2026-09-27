@@ -73,7 +73,9 @@ def apply_showcase_overrides(ptex: dict, basename: str) -> dict:
         remote = next(n for n in sub["nodes"] if n["name"] == "gen_parameters")
         remote["parameters"][slot] = copy.deepcopy(value)
         widget = next(w for w in remote["widgets"] if w["name"] == slot)
-        for lw in widget["linked_widgets"]:
+        # A named_parameter widget has no links: its inner params read
+        # "$<slot>", so the two writes above are all it needs.
+        for lw in widget.get("linked_widgets", []):
             inner = next(n for n in sub["nodes"] if n["name"] == lw["node"])
             inner["parameters"][lw["widget"]] = copy.deepcopy(value)
     return g

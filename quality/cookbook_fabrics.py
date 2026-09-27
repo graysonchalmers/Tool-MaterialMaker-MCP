@@ -13,7 +13,7 @@ import sys
 from quality.author_helpers import (load_example, node, set_gradient, set_param, retype,
                     rewire, add_node, save_variant, group_into_subgraph,
                     rename_nodes, _from_scratch_noise_material, _grad,
-                    place, tidy_ports, link_also)
+                    place, tidy_ports, link_also, widen_widget)
 
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.config import load_config
@@ -446,6 +446,9 @@ def build_f07_herringbone_tweed(catalog: dict) -> str:
         "uniform_0": (600, 200), "Material": (900, 150),
     })
     rename_nodes(g, _F07_HERRINGBONE_TWEED_NAMES)
+    # f08's Fleck density 36 (the default) is past voronoi's 32-stop
+    # slider: own range 1-48.
+    widen_widget(g, "fleck_layer", "param1", 48, catalog)
     return save_variant(g, _LABEL, "f07_herringbone_tweed", 1)
 
 

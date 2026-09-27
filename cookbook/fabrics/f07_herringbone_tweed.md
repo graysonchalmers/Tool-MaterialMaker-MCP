@@ -103,8 +103,8 @@ albedo, normal and ORM for all four.
   0.74, 0.62.
 - `Roughness`: 0.0: 0.82 gray; 1.0: 0.92 gray. `Relief strength` = 0.42.
 
-`Fleck density` 36 is past the voronoi slider's range (it stops at 32), so
-type it into the field; it is already the default.
+`Fleck density` has its own slider range, 1-48 (a named parameter both
+voronoi scales read), so f08's 36, the default, is on the slider.
 
 **Beyond the originals (these use the new layers):**
 - *Woven tartan*: `Plaid strength` = 1 on the default herringbone, or with

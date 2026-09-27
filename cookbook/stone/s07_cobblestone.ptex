@@ -1606,17 +1606,11 @@
        "name": "param0",
        "shortdesc": "Grain scale",
        "label": "",
-       "type": "linked_control",
-       "linked_widgets": [
-        {
-         "node": "GrainNoise",
-         "widget": "scale_x"
-        },
-        {
-         "node": "GrainNoise",
-         "widget": "scale_y"
-        }
-       ]
+       "type": "named_parameter",
+       "min": 1,
+       "max": 64,
+       "step": 1,
+       "default": 40
       },
       {
        "name": "param1",
@@ -1640,8 +1634,8 @@
       "y": 0
      },
      "parameters": {
-      "scale_x": 40,
-      "scale_y": 40,
+      "scale_x": "$param0",
+      "scale_y": "$param0",
       "iterations": 5
      }
     },

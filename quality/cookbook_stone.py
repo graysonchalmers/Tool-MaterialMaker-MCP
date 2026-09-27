@@ -489,6 +489,11 @@ def build_s07_cobblestone(catalog: dict) -> str:
               "stone_surface": (-900, 300), "mortar": (-300, 0),
               "surface_grain": (0, -200), "relief": (0, 200), "Material": (300, 0)})
     rename_nodes(g, _S07_NAMES)
+    # The s08 preset's Grain scale 48 is past perlin's 32-stop slider (the
+    # default 40 already is): own range 1-64. Imported here, not at the top,
+    # to keep this edit inside the s07 builder.
+    from quality.author_helpers import widen_widget
+    widen_widget(g, "surface_grain", "param0", 64, catalog)
     return save_variant(g, _LABEL, "s07_cobblestone", 1)
 
 
@@ -1528,6 +1533,13 @@ def build_s14_wet_river_stone(catalog: dict) -> str:
         "sediment_bed": (900, 0), "relief": (1200, 150), "Material": (1500, 0),
     })
     rename_nodes(g, _S14_NAMES)
+    # Presets past the inner sliders: Top flatness 1.5 (s06) and 4 (t08) on
+    # math's 0-1, Grain scale 128 (t08) on perlin's 1-32 (the default 40
+    # already is). Own ranges 0-5 and 1-160. Imported here, not at the top,
+    # to keep this edit inside the s14 builder.
+    from quality.author_helpers import widen_widget
+    widen_widget(g, "stone_profile", "param2", 5, catalog)
+    widen_widget(g, "surface_grain", "param1", 160, catalog)
     return save_variant(g, _LABEL, "s14_wet_river_stone", 1)
 
 

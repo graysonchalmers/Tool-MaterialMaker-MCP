@@ -135,3 +135,47 @@ def test_live_changes_cover_every_linked_widget():
     changes = api._changes_for(_multi_link_graph(), {}, {"pebble_pattern/param0": 9})
     assert {(c["node"], c["widget"]) for c in changes} == {("Cells", "scale_x"), ("Cells", "scale_y")}
     assert all(c["value"] == 9 for c in changes)
+
+
+def _named_param_graph():
+    """A host widget widened past its inner slider (quality.author_helpers.
+    widen_widget): a named_parameter the inner params read as "$param1"."""
+    return {"nodes": [{
+        "name": "fleck_layer", "type": "graph", "parameters": {"param1": 36},
+        "nodes": [
+            {"name": "Cells", "type": "voronoi",
+             "parameters": {"scale_x": "$param1", "scale_y": "$param1"}},
+            {"name": "gen_parameters", "type": "remote", "parameters": {"param1": 36},
+             "widgets": [{"name": "param1", "shortdesc": "Fleck density", "label": "",
+                          "type": "named_parameter", "min": 1, "max": 48, "step": 1,
+                          "default": 36}]},
+        ]}], "connections": []}
+
+
+def test_named_parameter_slider_takes_its_range_from_the_widget():
+    (s,) = derive_sliders(_named_param_graph(), _catalog())
+    assert (s["kind"], s["min"], s["max"], s["step"], s["value"]) == ("float", 1, 48, 1, 36)
+    assert s["binding"] == {"node": "fleck_layer", "widget": "param1"}
+
+
+def test_apply_values_sets_a_named_parameter_and_keeps_the_references():
+    out = apply_values(_named_param_graph(), {"fleck_layer/param1": 44})
+    sub = out["nodes"][0]
+    remote = next(n for n in sub["nodes"] if n["name"] == "gen_parameters")
+    cells = next(n for n in sub["nodes"] if n["name"] == "Cells")
+    assert sub["parameters"]["param1"] == 44 and remote["parameters"]["param1"] == 44
+    assert cells["parameters"] == {"scale_x": "$param1", "scale_y": "$param1"}
+
+
+@pytest.mark.parametrize("material, slider_id, preset", [
+    ("s14_wet_river_stone", "stone_profile/param2", 4),     # t08 Top flatness
+    ("s14_wet_river_stone", "surface_grain/param1", 128),   # t08 Grain scale
+    ("s07_cobblestone", "surface_grain/param0", 48),        # s08 Grain scale
+    ("f07_herringbone_tweed", "fleck_layer/param1", 36),    # f08 Fleck density
+])
+def test_host_presets_are_inside_their_slider_range(material, slider_id, preset):
+    cfg = load_config()
+    entry = cookbook.find_cookbook(cfg.cookbook_dir, material)
+    graph = json.load(open(entry.path, encoding="utf-8"))
+    s = next(s for s in derive_sliders(graph, _catalog()) if s["id"] == slider_id)
+    assert s["min"] <= preset <= s["max"], (slider_id, s["min"], s["max"])
