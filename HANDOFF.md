@@ -1,162 +1,94 @@
 # 🧭 Session Handoff: Tool-MaterialMaker-MCP
 
-_Last updated: 2026-09-16 — iteration-and-parallax cycle MERGED to `main` and pushed: s14/m06
-retunes (code-clean, visual approval still outstanding) + a real Deep Parallax prototype
-(Grayson-approved). See below._
+_Last updated: 2026-09-27 04:35 CDT. Teardown #6 plus the truth pass are MERGED to `main` (`bfeaac1`) and pushed, CI green. v0.8.0 is released; release PR #14 (0.8.1) is open._
 
-The session baton. Read at pickup, rewrite at wrap-up. **Shape rule (2026-09-05,
-teardown #3):** "Current state" describes the latest session only; anything older is one
-line in the session log. "Heads-up" is a bounded list of live gotchas. Git history is the
-archive.
+The session baton. Read at pickup, rewrite at wrap-up. **Shape rule (2026-09-05, teardown #3):**
+- "Current state" describes the latest session only.
+- Anything older is one line in the session log.
+- "Heads-up" is a bounded list of live gotchas.
+- Git history is the archive.
 
 ## 🎯 Current state
 
-`iteration-and-parallax` cycle, executed subagent-driven (5 tasks + a final whole-branch review +
-one fix wave), **MERGED to `main` and pushed**, fast suite 1254 green. Two threads:
+This session had four parts:
+- **Housekeeping.** Merged release PR #6, so v0.8.0 is out. Pruned branches: local from 10 to 3, remote from 8 to 2. Re-sent the s14/m06 renders, and Grayson **approved** them.
+- **Teardown #6** ran as 5 parallel lens agents, and every red finding was hand-verified. The report is `docs/teardowns/TEARDOWN-2026-09-27.md`. Verdict: **not a rebuild.** The core is small and sound, but two weeks of breadth work (proof materials, preview polish) went through `quality/`, not the MCP, and moved neither use nor reach.
+- **Grayson set the direction:** no new materials. Features go onto existing ones, for a smaller, feature-rich library. The report's appendix proposes 74 → about 29 host materials, pending his approval.
+- **The truth pass shipped:**
+  - `size` works now. Material Maker always bakes at 2048, so smaller sizes are downsampled. The range is 16-2048 and the default is 2048.
+  - A render now reports ok only on exit 0 with maps that decode.
+  - The flat-normal race gets one retry. It was reproduced on s07 and on Unity/URP, and the retry fixed it both times.
+  - The outdir is forced absolute.
+  - The 4 core tools are now described, and a test enforces that every tool has a description.
+  - The MCP preview tile default is 0.45.
+  - mm-play renders at 2048.
 
-- **s14/m06 iteration (Thread A), code-review clean, Grayson's VISUAL approval still
-  outstanding:** `s14_wet_river_stone` got a two-scale pebble mix (size variation, ported from
-  `s06_river_pebbles`'s pattern), curved (less-flattened) tops, and a lowered roughness ceiling so
-  tops keep partial reflective sheen instead of reading fully matte. `m06_car_paint` got a
-  coarser "orange peel" noise combined into its normal chain (relief 0.04→0.10) for surface
-  detail under the clearcoat demo. Both were rendered and sent to Grayson; the conversation moved
-  to Thread B before he replied — this is a known, tracked gap, not an oversight.
-- **Deep Parallax prototype (Thread B), Grayson-approved after 4 rounds of live iteration:**
-  confirmed this session (by reading the pristine MM checkout directly) that Material Maker's
-  `material` node has a long-unused `depth_tex` input, and MM's own "Godot/Godot 4 Standard"
-  export target already writes native `heightmap_enabled`/`heightmap_deep_parallax` when it's
-  connected — a real round-trip feature, not a preview-only garnish like clearcoat. Added opt-in
-  `heightmap_path`/`heightmap_scale` params to the preview rig. Discovered (and confirmed via
-  engine warning + byte-identical render) that **Godot 4.7 flatly refuses to compose
-  heightmap/parallax with triplanar UV mapping** — a hard engine limitation, not a bug. Iterated
-  through Grayson's live feedback: a demo plane (rejected, nearly invisible) → swapping the rig's
-  existing SPHERE to a non-triplanar material only when a heightmap is given (kept) → fixing the
-  sphere's tile scale for legibility + adding a `parallax_spin` sweep mode (rotates the sphere,
-  not the light — the existing light-sweep can't reveal parallax at all) → matching cube/rook/
-  ground's tile density to the sphere's so the whole demo scene reads consistently. Wired
-  `s09_ashlar_wall` to actually export it (`depth_scale` 0.2→0.3, `to_port 6` repointed to
-  `colorize_6`); round-trip verified via a real `.tres` string-check, not just "a PNG exists."
-- **Two things discovered mid-cycle, worth remembering:** (1) `s09_ashlar_wall`'s donor
-  (`stone_wall`) already had an ACCIDENTAL, unexamined `depth_tex` connection — Deep Parallax was
-  silently half-working before this session touched it; this cycle made it deliberate and fixed
-  its polarity (the brief's draft `blend_2` tap was tried and rendered backwards). (2) that same
-  investigation found `s09_ashlar_wall`'s `BlockAO`/`BlockHeight` role names were SWAPPED
-  relative to actual wiring — fixed in the final-review fix wave. Grayson independently started
-  a background session to fix the identical bug in parallel (unprompted, from an earlier
-  suggestion); since redundant with the fix already on this branch, its commits were preserved
-  under `archive/task_925ceb53-blockao-blockheight-fix` rather than merged twice.
-- **Contact sheet regen DEFERRED, not done this session** — `docs/images/cookbook-contact-sheet.png`
-  was already stale (72 vs 74) before this cycle and still needs a render pass across s14/m06's
-  new look (s09 isn't gallery-facing, no thumbnail needed). Cosmetic/ungated; skipped this session
-  per Grayson's "wrap and push" to avoid another render cycle.
+Gates: the fast suite has 1233 passing. The integration suite has 26 of 26 passing (the live-GUI tests were not run).
 
 ## 📌 Where we stopped
 
-Merged and pushed to `main` at Grayson's explicit "wrap and push." s14/m06 visual sign-off is
-the one open loop — renders are already in his hands, just needs a reply.
+Everything is merged and pushed. Two decisions are with Grayson: the outside PRs, and the cookbook keep/merge/cut list.
 
 ## ▶️ Next concrete step
 
-**Get Grayson's visual call on s14_wet_river_stone and m06_car_paint** (renders already sent
-this session — pick up the reply, don't re-render unless he asks for changes). Then: regen the
-contact sheet (still stale). Alternatives: (a) author 1-2 more Deep Parallax examples now that
-the plumbing + one working material exist (original ask was "an example or two"); (b) the
-emission cycle (parked since the reflections cycle, still untouched).
+**Grayson's call on waskosky's PRs.** The draft replies and triage are in `docs/teardowns/2026-09-27-pr-triage-draft.md`.
+- #13 (sweep publication) and #7 (play Download): merge after changes.
+- #8: close as superseded by `fdd2ac7`.
+- Nothing gets posted, and none of their code is run, without his go.
+
+Alternatives:
+- **(a) The m02 host pilot.** m02 absorbs m03, m04 and m05 as exposed layers. It needs Grayson to approve the keep/merge/cut list first.
+- **(b) Grayson's hands-on step-3 session.** It is the North Star's own test and costs no agent time. First lay out the 32 subgraphs whose nodes are all at (0,0), so they don't open as a pile in Material Maker; that layout is render-identical.
+- **Also pending:** merging release PR #14 (0.8.1), and restarting the MCP server so it runs the new code.
 
 ## ❓ Open questions
 
-- s14/m06: same open loop as above — no new design questions, just needs Grayson's eyes.
-- Deep Parallax has exactly ONE example (`s09_ashlar_wall`) — worth more, or is one proof-of-concept enough?
-- Cookbook curation: Grayson raised (not scoped, "at some point") trimming the gallery — named
-  candidates: `hazard stripe` (cut candidate), `circuit board` (doesn't read as circuit board),
-  and stone-category overlap (dry stone wall/flagstone/cobblestone feel similar; river pebbles
-  don't read as river pebbles). Likely a `teardown`-skill session when Grayson is ready to commit
-  to it — not folded into any authoring cycle.
-- Emission cycle (parked since reflections): does "Godot 4 Standard" write `_emission.png`
-  unconditionally or only when `emission_tex` is connected?
+- **The cookbook keep/merge/cut list:** does Grayson approve, and are 29 hosts the right number?
+- **The North Star amendment** (library shape, a measurable step 3): the draft is in the report, and every inference is marked ⚠️ CONFIRM.
+- **Emission (parked since the reflections cycle):** does "Godot 4 Standard" write `_emission.png` unconditionally? t06 is the only material that uses emission.
+- **Only 1 of 74 materials drives AO (s09).** The rest export flat AO. This is the first "feature depth" candidate.
 
 ## 🗂️ Changed this session
 
-- Branch: `iteration-and-parallax`, 20 commits, MERGED to `main`, pushed.
-- Key files: `quality/cookbook_stone.py` (s14, s09), `quality/cookbook_metal.py` (m06),
-  `src/mm_mcp/preview.py` + `src/mm_mcp/preview_project/preview.gd` (opt-in heightmap params,
-  sphere material swap, `parallax_spin` sweep), `src/mm_mcp/server.py` (docstring),
-  `tests/test_preview.py`, `cookbook/stone|metal/*`, spec+plan under `docs/superpowers/`.
-- Decisions (+ why): sphere-swap not a new demo object (Grayson: "same shaped objects, no new
-  object"); `parallax_spin` rotates the object not the light (parallax is camera-angle-dependent,
-  a light sweep can't show it); `depth_tex` wired via `rewire()` not `append()` on `s09` (a
-  connection already existed — an `append` would've left two edges into one port); the
-  `BlockAO`/`BlockHeight` swap fixed on this branch rather than merging the parallel duplicate fix.
+- **Branch:** `claude/pickup-teardown-commands-dfb4c2`, merged `--no-ff` as `bfeaac1`.
+- **Key files:**
+  - `src/mm_mcp/render.py`, `server.py`, `preview.py`, `play/api.py`, `play/static/app.js`
+  - `quality/render_{one,tracked,cookbook}.py`
+  - `tests/test_render.py`, `tests/test_server_tools.py`, `tests/test_debug_swatches.py`
+  - `README.md`, `docs/AUTHORING.md`, `docs/teardowns/TEARDOWN-2026-09-27.md`, `STATUS.md`
+- **Decisions and why:**
+  - **The default `size` is 2048, not 512.** Every caller had always received 2048, and the quality pipeline and previews depend on that. The `quality/` callers pin 2048, so their outputs stay byte-identical.
+  - **Nonzero exit now means failure.** 12 of 12 successful Godot probes and 5 of 5 Unity probes exited 0, so the old tolerance for nonzero exits bought nothing.
+  - **The flat check needs both signals:** a std≈0 normal *and* "invalid shader" in the log. A graph with no normal input legitimately bakes flat.
+  - **The swatch test renders at 2048,** because its thresholds were calibrated against 2048 maps. It had asked for 128, but it never got 128.
+  - **mm-play is back at 2048,** because a smaller request only meant a blurrier sphere with no speed gain.
+  - **Sweep/preview publication and the play Download bug were left to PRs #13 and #7,** out of respect for the outside contributor. #8's intent was landed narrowly by hand, because as written it would break every real render.
 
 ## ⚠️ Heads-up for the next agent
 
-- **Direction (Grayson, 2026-09-27): no new cookbook materials.** New features land on existing materials; the aim is a smaller, feature-rich library. Teardown #6 (`docs/teardowns/TEARDOWN-2026-09-27.md`) proposes about 29 host materials. The keep/merge/cut appendix awaits his approval.
-- **Open outside PRs: #7, #8, #13 from `waskosky`.** They are untrusted code: read-only (`gh pr view/diff`) until Grayson says go. The triage plan is in the teardown report: merge #13 and #7 with changes, and close #8 as superseded by `fdd2ac7`.
-
-- **Godot 4.7 cannot combine heightmap/parallax with `uv1_triplanar = true`** — confirmed via
-  engine warning + byte-identical render, not assumed. Any FUTURE object that needs Deep Parallax
-  in the preview rig needs the same non-triplanar-material-swap pattern the sphere uses now, not
-  a triplanar material with heightmap fields set (those get silently ignored by Godot).
-- **Three tile/density constants now live in `preview.gd`, each with different UV-space
-  semantics** — the CLI `tile` param (triplanar, world-space), `SPHERE_HEIGHTMAP_UV_SCALE`
-  (equirect, sphere-only), `SPHERE_MATCHED_TRIPLANAR_TILE` (triplanar, but tuned to visually
-  match the sphere when heightmap mode is active). Don't assume any two of these should share a
-  value — they were each hand-tuned by rendering, not derived from a formula.
-- **Known parked Minor (not fixed, low severity):** `shared_tile` selection is gated on
-  `heightmap_path != ""` alone, while whether the sphere ACTUALLY gets its parallax material also
-  depends on the texture load succeeding — in the rare case a given heightmap path fails to load,
-  cube/rook/ground would render at the sphere-matched tile even though the sphere itself silently
-  fell back to normal. Error-path only; no real render has ever hit this.
-- **SDD workspace deleted** (final review clean, fix wave landed) — the full task ledger, every
-  ruling, and the visual-iteration history live in `git log` on this branch now. Spec:
-  `docs/superpowers/specs/2026-09-15-iteration-and-parallax-design.md`; plan:
-  `docs/superpowers/plans/2026-09-15-iteration-and-parallax.md` (Tasks 1-5, all checked off,
-  amended in place multiple times to record real deviations — read it as history, not just intent).
-- **Contact sheet `docs/images/cookbook-contact-sheet.png` is stale** (needs s14/m06/s09 re-render)
-  — still true, carried over, not this session's regression.
-- Standing render gotchas: one Godot at a time; `render()`/preview need ABSOLUTE outdir; never
-  render from `python -c`; `taskkill //F //IM Godot_v4.7.1-stable_win64_console.exe` to recover a hang.
+- **Direction (Grayson, 2026-09-27): no new cookbook materials.** Add features to existing materials. Node-coverage counts are a diagnostic, not a goal.
+- **Open outside PRs #7, #8 and #13 (`waskosky`) are untrusted code.** Read them with `gh pr view/diff` only, until Grayson says go. Their fork is 46 commits ahead.
+- **The user-wide MCP server is an EDITABLE install of the MAIN checkout's `src`** (`.venv\Scripts\mm-mcp.exe`; its metadata says 0.1.0). It picks up merged code only after a restart. This session's fixes are not live in the running server yet.
+- **A worktree has no `.env`.** Copy it from the main checkout without printing it. Without it, the examples gate silently collapses to 1 skipped test.
+- **Material Maker ignores `--size`.** `render()` downsamples. Anything that calibrates on pixels must render at the size it measures (see the swatch test).
+- **Godot 4.7 cannot combine heightmap/parallax with `uv1_triplanar = true`.** Any future Deep Parallax object needs the sphere's non-triplanar material swap.
+- **Three tile constants live in `preview.gd`, each in different units:** CLI `tile`, `SPHERE_HEIGHTMAP_UV_SCALE`, and `SPHERE_MATCHED_TRIPLANAR_TILE`. Heightmap mode silently overrides the caller's tile.
+- **The contact sheet `docs/images/cookbook-contact-sheet.png` is stale** (71 of 74), and no script writes its tracked path.
+- **Standing render gotchas:**
+  - One Godot at a time.
+  - Never render from `python -c`.
+  - Recover a hang with `taskkill //F //IM Godot_v4.7.1-stable_win64_console.exe`.
+  - Port 8788 (mm-play) is sometimes held by another project's node server; use `MM_PLAY_PORT`.
 
 ## 🕓 Session log
 
 Newest first. Keep at most 8; older ones are in `git log` (search commit subjects).
 
-### 2026-09-15/16 (iteration-and-parallax: s14/m06 retunes + Deep Parallax prototype, MERGED to `main`)
-Subagent-driven, 5 tasks + final whole-branch review + 1 fix wave. s14 two-scale pebbles/curvature/
-reflection retune and m06 orange-peel normal: code-review clean, Grayson's visual approval still
-outstanding (renders sent, conversation moved on before reply). Deep Parallax: confirmed `depth_tex`
-+ MM's Godot-4-export round-trip by reading the pristine MM checkout; discovered Godot 4.7 can't
-compose heightmap/parallax with triplanar (engine warning + byte-identical render); iterated
-through Grayson's live feedback across 4 rounds (demo plane → sphere swap → tile-scale+sweep fix →
-density match) to a Grayson-approved result; wired `s09_ashlar_wall` for real (found + fixed an
-accidental pre-existing donor connection, wrong-polarity draft caught by render, and a swapped
-BlockAO/BlockHeight naming bug independently also fixed by Grayson's own parallel background
-session — reconciled, not double-merged). Final review: 2 Important + 3 Minor findings, one fix
-wave, all addressed; full suite 1254 green throughout. See ledger:
-`.superpowers/sdd/2026-09-15-iteration-and-parallax/progress.md` (workspace deleted post-merge,
-history lives in git). Contact sheet regen deferred to next session.
-### 2026-09-15 (reflections cycle: rig + 3 materials, MERGED to `main` `007d493`)
-Subagent-driven. Rig: ambient decouple (`befb1bf`), sun-disc reflection (`4ec9177`), SSR
-(`fa8c526`), opt-in clearcoat param (`055b2e8`), + no-regress gate `quality/preview_regress.py`
-(`3746d14`). Materials: m05 chrome (`059c5d9`), s14 wet stone dielectric (`ab8ff24`) then
-roughness-masked v2 (`afa90f8`), m06 car paint (`b9ff20e`), thumbnails (`1c4c5f2`). Big detour:
-a global normal green-flip (Task 10, `f7ac0d3`) that "fixed" m04 but INVERTED the 8 approved
-materials — caught by comparing the approved gallery cobblestone, REVERTED (`4e239da`). m04's
-raised scratches are a separate m04 quirk. Grayson likes car-paint colors; wants s14 pebbles to
-reflect on faces + vary size + less-flat tops, and the car-paint clearcoat to gain surface
-detail. Merged to `main` (`007d493`) mid-iteration at Grayson's call. See memory [[reflections-cycle-rig-and-materials]].
-### 2026-09-14 (night: preview-rig overhaul + showcase recuration, committed to `main` `24ff854`)
-Rig (`preview.gd`): cube → `_rounded_box` (Minkowski) + triplanar; unified ALL objects on one
-triplanar material; cutaway ball → lathed chess rook. Recurated front page to 8 materials + hero
-+ 5 GIFs. See memory [[preview-rig-rook-and-showcase-recuration]].
-### 2026-09-14 (late evening: s06/t03 coin + grit + two-scale, committed `4b0948f`)
-Coin profile + two-scale gravel for s06/t03. See memory [[coin-profile-two-scale-gravel]].
-### 2026-09-14 (evening: normal/albedo audit + 5 fixes, MERGED to main)
-Built `normal_albedo_audit.py` + `_make_showcase.py`; fixed granite + 4 siblings' normal
-registration. See memory [[normal-albedo-registration-audit]].
-### 2026-09-14 (task_73027cd8 compound-default fix, MERGED PR #11 `948a8e7`)
-`_parse_generic_node` sources compound param default from the remote node, not the linked leaf.
-### 2026-09-14 (noise-vocabulary round 3 + catalog range fix, MERGED)
-6 materials (cookbook 65→71), catalog_builder compound-node range fixpoint fix.
-### 2026-09-14 (preview lighting overhaul, MERGED `6ce84c6`)
-render_preview rig reworked (soft key shadow, shadow-casting rim, sky bounce, SSAO, precession sweep).
+- **2026-09-27** (teardown #6 + truth pass, merged `bfeaac1`): v0.8.0 released; branches pruned; s14/m06 approved; report in `docs/teardowns/`; `size`, render-success, flat-normal retry and tool descriptions fixed; play at 2048.
+- **2026-09-15/16** (iteration-and-parallax, merged): s14/m06 retunes; the Deep Parallax prototype on `s09_ashlar_wall` (`depth_tex`, sphere swap, `parallax_spin`); the BlockAO/BlockHeight swap fixed.
+- **2026-09-15** (reflections cycle, merged `007d493`): sun-disc, SSR and opt-in clearcoat rig; m05, s14 and m06 added; the global normal green-flip was reverted (`4e239da`).
+- **2026-09-14 night** (rig overhaul, `24ff854`): rounded-box cube, unified triplanar, lathed rook; front page recurated to 8 materials plus GIFs.
+- **2026-09-14 late** (`4b0948f`): coin profile and two-scale gravel for s06/t03.
+- **2026-09-14 evening** (merged): `normal_albedo_audit.py` and `_make_showcase.py`; 5 normal-registration fixes.
+- **2026-09-14** (PR #11 `948a8e7`): the compound-node param default is now sourced from the remote node.
+- **2026-09-14** (noise-vocabulary round 3, merged): 6 proof materials (65→71); the catalog_builder fixpoint fix.

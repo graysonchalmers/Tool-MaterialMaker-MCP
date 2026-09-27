@@ -6,71 +6,7 @@
 
 Gate ledger. Three states only: ✅ verified · 🔌 wired · ⬜ not started.
 
-_Last updated: 2026-09-16 (iteration-and-parallax cycle MERGED to `main`, pushed — see callout).
-Prior: 2026-09-15 reflections cycle, also on `main`._
-
-> 🔩 **Deep Parallax prototype — MERGED to `main`, pushed, fast suite 1254 green:** confirmed
-> (by reading the pristine MM checkout) that Material Maker's `depth_tex` input + its
-> "Godot/Godot 4 Standard" export target already produce a real, round-trip native
-> `heightmap_enabled`/`heightmap_deep_parallax` material — not a preview-only effect. Added
-> opt-in `heightmap_path`/`heightmap_scale` to the preview rig; discovered Godot 4.7 cannot
-> compose heightmap/parallax with triplanar UV mapping (engine warning + byte-identical render,
-> not a bug); the rig's sphere now swaps to a non-triplanar material only when a heightmap is
-> given (Grayson: "same shaped objects, no new object"), with a `parallax_spin` sweep mode
-> (rotates the object, not the light — parallax is camera-angle-dependent) and cube/rook/ground
-> tile-density matched to the sphere. `s09_ashlar_wall` now exports real Deep Parallax
-> (`depth_tex` repointed to the correct-polarity `colorize_6`; the donor already had an
-> accidental, unexamined connection here — made deliberate). Grayson-approved after 4 rounds of
-> live visual iteration; final whole-branch review found 2 Important + 3 Minor, one fix wave
-> closed all but one parked cosmetic edge case. **s14/m06 iteration retunes shipped in the same
-> merge, code-review clean, but Grayson's visual sign-off is still outstanding** — see
-> `HANDOFF.md`. Contact sheet regen deferred (still stale, cosmetic). Ledger was at
-> `.superpowers/sdd/2026-09-15-iteration-and-parallax/progress.md`, deleted post-merge (history
-> in `git log`). Spec/plan under `docs/superpowers/`.
->
-> 🪞 **Reflections cycle — MERGED to `main` (`007d493`), fast suite 1217 green (RESOLVED
-> above):** rig gained ambient/reflection decouple, a `SKY_ONLY` sun-disc reflection, SSR, and an
-> opt-in preview-only clearcoat param. Three reflective materials added (cookbook 71→74):
-> `m05_polished_chrome`, `s14_wet_river_stone`, `m06_car_paint`. A global normal green-flip
-> attempt was REVERTED (`4e239da`) after it inverted the approved materials — the triplanar rig
-> is fine, m04's raised scratches are an isolated pre-existing quirk. Ledger:
-> `.superpowers/sdd/2026-09-14-reflections/progress.md`.
-
-> 🔧 **Normal/albedo registration audit + 5 fixes (MERGED):** two new `quality/` tools +
-> 5 material normal-registration fixes. An audit found 8/71 materials whose normal relief
-> was built from a different noise source than their albedo (relief did not register with
-> color). Fixed: `s02_gray_granite`, `s06_river_pebbles`, `s04_scattered_river_stones`,
-> `t03_gravel`, `pm04_hammertone` (all audit-clean, full suite green). Left as fine-by-design:
-> `t02_fresh_snow`, `pm01_powder_coat`, `pm02_automotive_enamel`. Still pending: soften
-> s06/t03 relief to domes (Grayson request), cube triplanar+bevel, and the original
-> front-page showcase regen (hero+gallery stills on the new rig + a top-5 GIF strip). See
-> `HANDOFF.md` + `.superpowers/sdd/2026-09-14-showcase-lighting-refresh/progress.md`.
-
-> ✅ **`task_73027cd8` fixed:** the round-3 catalog fix's resolved `default`
-> field was taken from the wrong (linked inner leaf) node for compound-node
-> params (e.g. `crystal.param0` reported 4, real default 16, from its own
-> `remote`/`gen_parameters` block). `_parse_generic_node` now prefers the
-> remote node's own declared default. Commit `948a8e7`, open as
-> [PR #11](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/pull/11)
-> with CI green, ready to merge. Fast suite 1165 passed. See `HANDOFF.md`'s
-> session log for detail.
->
-> ✅ **Round 3 MERGED to `main`:** six more proof materials on
-> previously-unused catalog nodes, all Grayson-approved: `m04_scratched_steel`
-> (scratches), `f11_corduroy` (directional_noise), `t10_packed_dirt` (dirt),
-> `gl04_raw_crystal_cluster` (crystal), `pm06_splatter_finish` (splatter),
-> `man03_mosaic_tile` (skewed_bricks -- swapped in for `custom_tiles`, which
-> needs an out-of-scope `sdf2d` input). Cookbook is now 71 materials, 12
-> categories; live noise coverage 20/53. Also fixed a real pre-existing
-> `catalog_builder.py` bug this round surfaced (compound-node param range
-> resolution for `named_parameter` widgets and type-referenced `linked_control`
-> links, plus a fixpoint-loop fix for compound-to-compound reference chains
-> after the first pass proved order-dependent). Full task-by-task ledger at
-> `.superpowers/sdd/2026-09-14-noise-vocabulary-round-3/progress.md`; see
-> `HANDOFF.md`'s session log for the summary. Plan:
-> `docs/superpowers/plans/2026-09-14-noise-vocabulary-round-3.md`. Prior
-> rounds' callouts retired to `HANDOFF.md`'s session log per this file's own
-> "state + one line + evidence pointer" rule.
+_Last updated: 2026-09-27 (teardown #6 + truth pass merged to `main` `bfeaac1`; v0.8.0 released, 0.8.1 release PR #14 open). Narrative lives in `HANDOFF.md` and `docs/teardowns/TEARDOWN-2026-09-27.md`, not here._
 
 **How to read this file (rule adopted 2026-09-05, teardown #3):** each cell holds
 the state, one line of what it is, and a pointer to where the evidence lives
@@ -94,22 +30,22 @@ row points at.
 
 | Component | State | What it is / evidence |
 |---|---|---|
-| `src/mm_mcp/catalog_builder.py` | ✅ | `.mmg` -> `catalog.json`, incl. compound-node param ranges (a bounded fixpoint pass over compound-to-compound reference chains, 2026-09-14, order-independence regression-tested) and defaults sourced from the remote node's own block, not the linked inner node (`task_73027cd8`, 2026-09-14, PR #11 open). `tests/test_catalog_*.py` |
+| `src/mm_mcp/catalog_builder.py` | ✅ | `.mmg` -> `catalog.json`, incl. compound-node param ranges (a bounded fixpoint pass over compound-to-compound reference chains, 2026-09-14, order-independence regression-tested) and defaults sourced from the remote node's own block, not the linked inner node (`task_73027cd8`, merged PR #11). `tests/test_catalog_*.py` |
 | `src/mm_mcp/validator.py`, `graph.py` | ✅ | Graph validation (errors as data), recurses into subgraphs (2026-09-06, `577592f`), + pure helpers. `tests/test_validator.py`, `tests/test_graph.py` |
-| `src/mm_mcp/render.py` | ✅ | Headless Godot runner, `--target` profiles (Godot, Unity/URP verified; Unreal UE5 file-level only), process-tree kill, temp-file IO. `tests/test_render.py` |
-| `src/mm_mcp/server.py` (+ `idle.py`) | ✅ | 11 batch tools + 7 live tools + `catalog://nodes` + `guide://authoring`; opt-in idle exit (`MM_IDLE_EXIT_MINUTES`, 2026-09-06). `tests/test_server_tools.py`, `tests/test_server_live.py`, `tests/test_server_idle.py`, `tests/test_idle.py`; counts enforced by `tests/test_readme_counts.py` |
+| `src/mm_mcp/render.py` | ✅ | Headless Godot runner, `--target` profiles (Godot, Unity/URP verified; Unreal UE5 file-level only). Since `fdd2ac7`: `size` honoured by downsampling MM's fixed 2048 bake; ok only on exit 0 + decodable maps; the flat-normal "invalid shader" race gets one retry; outdir forced absolute. `tests/test_render.py` |
+| `src/mm_mcp/server.py` (+ `idle.py`) | ✅ | 11 batch tools + 7 live tools + `catalog://nodes` + `guide://authoring`, every tool described (test-enforced since `d4601a0`); opt-in idle exit (`MM_IDLE_EXIT_MINUTES`). `tests/test_server_tools.py`, `tests/test_server_live.py`, `tests/test_server_idle.py`, `tests/test_idle.py`; counts enforced by `tests/test_readme_counts.py` |
 | `src/mm_mcp/doctor.py`, `paths.py`, `inspect.py`, `config.py` | ✅ | Setup preflight, opt-in path bounding (`MM_ALLOWED_ROOTS`), `.ptex` metrics, env config. Matching `tests/test_*.py` |
 | `src/mm_mcp/preview.py` + `preview_project/` | ✅ | `render_preview` 3D composite. Rig reworked 2026-09-14 (`24ff854`): sphere + `_rounded_box` bevel cube + lathed chess rook, ALL on one triplanar material at a unified world-space density (default tile 0.45). Lighting rig (`6ce84c6`): soft key shadow, rim, sky bounce+reflections, SSAO. Reflections (2026-09-15): sun-disc + SSR + opt-in clearcoat. Deep Parallax (2026-09-16): opt-in `heightmap_path`/`heightmap_scale`; the sphere swaps to its own non-triplanar material ONLY when a heightmap is given (Godot 4.7 cannot compose heightmap with triplanar UV — confirmed via engine warning), with its own tuned UV scale (`SPHERE_HEIGHTMAP_UV_SCALE`) and a matched shared-material tile density (`SPHERE_MATCHED_TRIPLANAR_TILE`) so cube/rook/ground read consistently in the same demo. Front-page gallery/hero unaffected (still the original rig for non-heightmap renders, no-op verified by `quality/preview_regress.py`). `tests/test_preview.py` |
 | `render_preview_sweep` (`preview.py` + `preview_project/`) | ✅ | 2026-09-14: default sweep is a PRECESSION (`6ce84c6`) -- key aim wobbles in a cone so highlights circle relief without going backlit; `sweep_kind="azimuth"` still reachable. 2026-09-16: `sweep_kind="parallax_spin"` (opt-in, only meaningful with `heightmap_path`) rotates the demo sphere itself instead of the light, since parallax is camera-angle- not light-angle-dependent. One Godot process, looping GIF, `Pillow` runtime dep. `tests/test_preview.py` |
 | `src/mm_mcp/overlay.py` + `addons/mm_live/` + `src/mm_mcp/live.py` | ✅ | Disposable MM overlay with a GDScript socket addon (port 8765); client with `connect_or_launch`, 8 commands incl. `load_graph`. `tests/test_overlay.py`, `tests/test_live.py` |
-| `src/mm_mcp/play/` (`mm-play`, `play.bat`) | ✅ | Slider web page over cookbook subgraph params with a WebGL sphere; Grayson ran `play.bat` hands-on 2026-09-05. Refuses to start beside a stale listener and names the PID (2026-09-05). `tests/test_play_*.py`; `docs/superpowers/specs/2026-09-04-play-surface-design.md` |
+| `src/mm_mcp/play/` (`mm-play`, `play.bat`) | ✅ | Slider web page over cookbook subgraph params with a WebGL sphere; Grayson ran `play.bat` hands-on 2026-09-05. Refuses to start beside a stale listener and names the PID. Renders at 2048 (`98fccdc`). Known bug: Download exports the untweaked `.ptex` (fix in outside PR #7, not merged). `tests/test_play_*.py`; `docs/superpowers/specs/2026-09-04-play-surface-design.md` |
 | `cookbook/` + `quality/cookbook_*.py` + `promote_cookbook.py` | ✅ | 74 tracked materials on `main`, 12 categories, subgraph-grouped, every node role-named (render-identical), each card carrying a generated node table; builders are the source, `--check` is the regression baseline. `s09_ashlar_wall` is the first material with a deliberate `depth_tex` (Deep Parallax) connection (2026-09-16, real round-trip export, not preview-only). `s14_wet_river_stone`/`m06_car_paint` retuned per Grayson feedback (2026-09-16), Grayson-approved 2026-09-27. `tests/test_cookbook*.py` incl. `test_cookbook_naming_gate.py`, `test_cookbook_card_table_gate.py`; `cookbook/README.md` |
 | `docs/AUTHORING.md` + `guide://authoring` | ✅ | Invariant authoring guide served as an MCP resource; per-material recipes are cards beside each `.ptex`. `tests/test_guide_resource.py` |
 | `quality/debug_swatches.py` | ✅ | 19 single-node diagnostic swatches with pixel assertions (merged to `main` with round 1; slope_blur structural-only, buffer node cannot render headless). Surfaced in README's "Core toolbox" section as a swatch contact sheet. `tests/test_debug_swatches.py`; `docs/DEBUG_SWATCHES.md` |
 | `quality/` package (builders, helpers, naming checker, render_tracked, promote/check, swatches) | ✅ | Importable package, `python -m quality.<module>`; `author.py` is the shared builder base, guarded by `--check`. `tests/test_quality_package.py`, `tests/test_cookbook_builders_signature.py`; `quality/README.md` |
 | `quality/node_usage_audit.py` | ✅ | Recurses cookbook subgraphs, reports live noise/pattern node coverage against a curated 53-node list (`_NOISE_PATTERN_NODES`); replaces the old one-time manual histogram. AUTHORING.md's coverage line is test-enforced against its live output. `tests/test_node_usage_audit.py`, `tests/test_authoring_counts.py` |
-| `quality/normal_albedo_audit.py` | ✅ (branch) | Static audit: traces albedo(port 0)/normal(port 4) source generators across subgraph proxies, flags materials where the sets are disjoint (relief does not register with color). Reviewer hand-verified traversal. `tests/test_normal_albedo_audit.py` (branch `showcase-lighting-refresh`, commit `9678006`) |
-| `quality/_make_showcase.py` | ✅ (branch) | Reproducible front-page render pipeline (still 1024x576 / hero 3-panel montage / gif modes); import-safe (Godot lazy). `tests/test_make_showcase.py` (branch `showcase-lighting-refresh`, commit `7d9f2a2`). Not yet used to regen the tracked gallery. |
+| `quality/normal_albedo_audit.py` | ✅ | Static audit: traces albedo(port 0)/normal(port 4) source generators across subgraph proxies, flags materials where the sets are disjoint (relief does not register with color). Reviewer hand-verified traversal. `tests/test_normal_albedo_audit.py` |
+| `quality/_make_showcase.py` | ✅ | Reproducible front-page render pipeline (still 1024x576 / hero 3-panel montage / gif modes); import-safe (Godot lazy). `tests/test_make_showcase.py`. The tracked contact sheet is stale (71 of 74) and no script writes its tracked path. |
 | `docs/evidence/phase3/` | ✅ | Frozen Phase-3 test set, rubric, and both scorecards, archived 2026-09-05; runner retired. `tests/test_phase3_evidence.py` |
 | Packaging (wheel/sdist, CI, release-please) | 🔌 | `twine`-clean, clean-venv verified, windows-latest CI green, release PRs auto-opened. PyPI on hold; macOS/Linux untested |
 | Backup (nightly `backup-ops` mirror to V:) | ✅ | Regenerable render output and the overlay excluded 2026-09-05 (`C:\Projects-local\backup-ops\projects.psd1`, `Tool-MaterialMaker-MCP` override) |
