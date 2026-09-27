@@ -109,7 +109,7 @@ map from the shipped names to their types.
 4. Render via `render_graph` (or `python -m quality.render_one` for an authored variant).
 5. **Judge in 3D, not off the flat albedo.** Feed the render's output paths
    into `render_preview(albedo_path, normal_path, orm_path)` to composite the
-   maps onto a sphere, a cube, and a cutaway ball on a tiled ground plane. This
+   maps onto a sphere, a cube, and a chess rook on a tiled ground plane. This
    is where relief actually reads: a normal map that looks like noise on a flat
    swatch shows its real bump under lighting here, and it is the only reliable
    check for a flat-normal miss. `render_preview` does not render a graph, it

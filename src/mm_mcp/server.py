@@ -12,6 +12,7 @@ from mm_mcp.cookbook import list_cookbook, find_cookbook
 from mm_mcp.graph import find_material_node, isolate_node_output
 from mm_mcp.validator import validate_graph
 from mm_mcp.render import render
+from mm_mcp.preview import DEFAULT_TILE
 from mm_mcp.preview import render_preview as _render_preview
 from mm_mcp.preview import render_preview_sweep as _render_preview_sweep
 from mm_mcp.doctor import run_check
@@ -84,6 +85,12 @@ def list_node_types(category: str = "") -> list:
 
 
 def describe_node(node_type: str) -> dict:
+    """Full definition of one catalog node type: {type, inputs, outputs,
+    parameters}. inputs/outputs are ordered lists; a connection's
+    from_port/to_port is an index into them. Each parameter carries its
+    type, default and (where declared) min/max; an enum parameter takes the
+    INDEX into its `values` list, not the value itself. An unknown type
+    returns {"error": ...} as data (no "ok" key)."""
     _, catalog = _ensure_ready()
     if node_type not in catalog:
         return {"error": f"unknown node type '{node_type}'"}
@@ -91,12 +98,39 @@ def describe_node(node_type: str) -> dict:
 
 
 def validate(ptex: dict) -> list:
+    """Check a .ptex graph dict ({nodes, connections}) against the catalog
+    without rendering it. Returns a list of problems, each {severity, where,
+    message}; an empty list means the graph is clean. "error" (unknown node
+    type, missing node, port index or enum index out of range) blocks
+    render_graph; "warning" (unknown parameter name, numeric value outside
+    the editor's slider range) does not. Descends into subgraph
+    ("graph"-type) nodes, prefixing inner problems' `where` with the
+    subgraph path (e.g. "sub/inner")."""
     _, catalog = _ensure_ready()
     return validate_graph(ptex, catalog)
 
 
-def render_graph(ptex: dict, size: int = 512, basename: str = "material",
+def render_graph(ptex: dict, size: int = 2048, basename: str = "material",
                   target: str = "Godot/Godot 4 Standard") -> dict:
+    """Render a .ptex graph dict headlessly to PBR texture maps.
+
+    Validates first: any error-severity problem returns {"ok": False,
+    "images": [], "error": "validation failed", "problems": [...]} without
+    rendering. Otherwise writes `<basename>.ptex` and the target's exported
+    maps as `<basename>_*.png` (albedo, normal, orm, heightmap, ...) into
+    the configured output dir (MM_OUTPUT_DIR, default ./output under the
+    server's working directory), overwriting same-named files. basename
+    must be a plain name, not a path.
+
+    size: edge length in pixels of the returned maps, 16-2048 (default
+    2048). Material Maker always bakes at 2048; smaller sizes are
+    downsampled after export. Out-of-range values return an error.
+    target is a Material Maker export profile, e.g. "Godot/Godot 4
+    Standard" or "Unity/URP".
+
+    Returns {ok, images (absolute paths), error, log_tail}; failures come
+    back as data (ok False, error set), never raised.
+    """
     cfg, catalog = _ensure_ready()
     try:
         reject_path_fragment(basename)
@@ -112,7 +146,7 @@ def render_graph(ptex: dict, size: int = 512, basename: str = "material",
             "error": result.error, "log_tail": result.log_tail}
 
 
-def render_node_output(ptex: dict, node_name: str, port: int = 0, size: int = 512,
+def render_node_output(ptex: dict, node_name: str, port: int = 0, size: int = 2048,
                         basename: str = "node_output",
                         target: str = "Godot/Godot 4 Standard") -> dict:
     """Render a single node's output in isolation, without editing the real
@@ -123,6 +157,10 @@ def render_node_output(ptex: dict, node_name: str, port: int = 0, size: int = 51
 
     Use this instead of manually rerouting a graph by hand to check an
     intermediate node (e.g. a mask) during authoring.
+
+    size: edge length in pixels of the returned maps, 16-2048 (default
+    2048). Material Maker always bakes at 2048; smaller sizes are
+    downsampled after export. Out-of-range values return an error.
     """
     cfg, catalog = _ensure_ready()
     try:
@@ -151,17 +189,19 @@ def render_node_output(ptex: dict, node_name: str, port: int = 0, size: int = 51
 
 
 def render_preview(albedo_path: str, normal_path: str, orm_path: str,
-                    basename: str = "preview", tile: float = 1.0) -> dict:
-    """Composite a material's already-rendered maps onto a sphere, a cube,
-    and a cutaway ball revealing an inner core, on a tiled ground plane.
+                    basename: str = "preview", tile: float = DEFAULT_TILE) -> dict:
+    """Composite a material's already-rendered maps onto a lit preview rig:
+    a sphere, a bevelled rounded cube, and a lathed chess rook on a ground
+    plane, all sharing one triplanar material.
 
     Call render_graph first and pass its albedo/normal/orm output paths here;
     this does not render a graph itself, only visualizes maps that already
     exist, so a normal map's relief is visible under real lighting instead of
-    read as a flat swatch. tile controls the UV repeat count on the objects
-    (the ground always tiles finer than that, so its own repeat is visible
-    regardless of the chosen value). Raise it to check how a material reads
-    at a smaller physical scale, e.g. tiled across a large surface.
+    read as a flat swatch. tile is the triplanar world-space density, applied
+    uniformly to every object and the ground, so all of them tile alike. Raise
+    it to check how a material reads at a smaller physical scale, e.g. tiled
+    across a large surface. Writes `<basename>_preview.png` into the output
+    dir and returns {ok, image, error, log_tail}; failures come back as data.
     """
     cfg, _ = _ensure_ready()
     try:
@@ -177,30 +217,28 @@ def render_preview(albedo_path: str, normal_path: str, orm_path: str,
 
 
 def render_preview_sweep(albedo_path: str, normal_path: str, orm_path: str,
-                          basename: str = "preview", tile: float = 1.0,
+                          basename: str = "preview", tile: float = DEFAULT_TILE,
                           frames: int = 18, frame_duration_ms: int = 80,
                           sweep_kind: str = "precess", cone: float = 18.0) -> dict:
-    """Animate the key light around the same sphere/cube/cutaway rig
+    """Animate the key light over the same sphere/cube/rook rig
     render_preview uses, and return a looping GIF.
 
     sweep_kind defaults to 'precess': the key stays aimed at the object and its
     aim wobbles in a small cone (radius = cone degrees) so highlights circle the
     relief without the shot ever going backlit -- the best all-round relief
     reveal. sweep_kind='azimuth' is the older full 360-degree orbit (its backlit
-    third reads dark on most materials). A third kind, 'parallax_spin', also
-    exists on the underlying render_preview_sweep API -- it spins the sphere
-    itself instead of moving any light, and is only useful paired with a
-    heightmap_path/heightmap_scale, which this MCP tool does not expose. Passed
-    through this tool it is a harmless no-op GIF (the sphere just spins with no
-    depth cue to show); it's only useful via the internal Python API used by
-    the quality/ scripts.
+    third reads dark on most materials). 'parallax_spin' is accepted but not
+    useful here: it spins the sphere instead of moving the light, to show a
+    Deep Parallax heightmap, and this tool cannot pass a heightmap, so the
+    sphere just spins with no depth cue. Use 'precess' or 'azimuth'.
 
     Optional and slower than render_preview (one Godot process, but frames
     frames rendered inside it) -- reach for this only when render_preview's
     single static frame leaves a normal/relief map's depth ambiguous, e.g.
     Grayson can't tell how strong the bump reads until the light moves across
     it. Call render_graph first and pass its albedo/normal/orm output paths
-    here, same as render_preview.
+    here, same as render_preview. Returns {ok, image (the GIF path),
+    frame_count, error, log_tail}; failures come back as data.
     """
     cfg, _ = _ensure_ready()
     try:
@@ -218,6 +256,11 @@ def render_preview_sweep(albedo_path: str, normal_path: str, orm_path: str,
 
 
 def save_graph(ptex: dict, path: str) -> dict:
+    """Write a .ptex graph dict to `path` as JSON, creating parent
+    directories and overwriting any existing file, so Material Maker can
+    open it. Does not validate: call validate first. path is bounded by
+    MM_ALLOWED_ROOTS when set. Returns {"ok": True, "path": <absolute
+    path>} or {"ok": False, "error": ...} as data."""
     _touch_idle()
     try:
         path = ensure_within_roots(path, load_config().allowed_roots)

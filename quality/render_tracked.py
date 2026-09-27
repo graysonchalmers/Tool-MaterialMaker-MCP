@@ -86,7 +86,7 @@ def main(argv: list[str]) -> int:
         return 2
     out = Path(out).resolve()
     category = _arg(argv, "--category")
-    size = int(_arg(argv, "--size", "512"))
+    size = int(_arg(argv, "--size", "2048"))
     baseline = _arg(argv, "--compare")
     if baseline:
         baseline = Path(baseline).resolve()

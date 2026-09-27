@@ -7,6 +7,10 @@ from mm_mcp.render import _run_godot, _log_tail, _GodotTimeout
 
 _PREVIEW_PROJECT = os.path.join(os.path.dirname(__file__), "preview_project")
 
+# Triplanar tile density the rig and the showcase renders are tuned for; the
+# MCP preview tools default to this too.
+DEFAULT_TILE = 0.45
+
 
 @dataclass
 class PreviewResult:
@@ -45,17 +49,17 @@ def _build_command(cfg: Config, albedo_path: str, normal_path: str, orm_path: st
 
 def render_preview(albedo_path: str, normal_path: str, orm_path: str,
                     outdir: str | None = None, basename: str = "preview",
-                    tile: float = 0.45, clearcoat: float = 0.0,
+                    tile: float = DEFAULT_TILE, clearcoat: float = 0.0,
                     clearcoat_roughness: float = 0.5,
                     heightmap_path: str | None = None, heightmap_scale: float = 0.05,
                     cfg: Config | None = None) -> PreviewResult:
-    """Composite a material's already-rendered maps onto a lit sphere + cube.
+    """Composite a material's already-rendered maps onto a lit sphere, cube
+    and chess rook on a ground plane.
 
     Takes paths from a prior render_graph call (albedo/normal/orm), not a
     .ptex graph — rendering the flat maps is render.py's job, this only
-    visualizes maps that already exist. tile controls the UV repeat count on
-    the sphere/cube/cutaway ball; the ground plane always tiles finer than
-    that so its own repeat is visible regardless of the chosen value.
+    visualizes maps that already exist. tile is the triplanar world-space
+    density, applied uniformly to the sphere, cube, rook and ground plane.
 
     clearcoat/clearcoat_roughness add an optional glossy clearcoat lobe to
     the preview material for a car-paint-style showcase look. This is
@@ -138,12 +142,12 @@ def _frames_to_gif(frame_paths: list[str], gif_path: str, frame_duration_ms: int
 
 def render_preview_sweep(albedo_path: str, normal_path: str, orm_path: str,
                           outdir: str | None = None, basename: str = "preview",
-                          tile: float = 0.45, frames: int = 18,
+                          tile: float = DEFAULT_TILE, frames: int = 18,
                           frame_duration_ms: int = 80,
                           sweep_kind: str = "precess", cone: float = 18.0,
                           heightmap_path: str | None = None, heightmap_scale: float = 0.05,
                           cfg: Config | None = None) -> PreviewSweepResult:
-    """Animate the key light around the same sphere/cube/cutaway rig
+    """Animate the key light around the same sphere/cube/rook rig
     render_preview uses, and composite the frames into a looping GIF -- relief
     that a single fixed-angle static frame hides becomes visible across the
     sweep.

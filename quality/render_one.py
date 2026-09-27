@@ -29,7 +29,7 @@ def main() -> int:
         print("usage: python -m quality.render_one <label> <case> [size]")
         return 2
     label, case = sys.argv[1], sys.argv[2]
-    size = int(sys.argv[3]) if len(sys.argv) > 3 else 512
+    size = int(sys.argv[3]) if len(sys.argv) > 3 else 2048
 
     variant = _QUALITY / "authored" / label / case / "v1.ptex"
     outdir = _QUALITY / "cookbook" / label / case

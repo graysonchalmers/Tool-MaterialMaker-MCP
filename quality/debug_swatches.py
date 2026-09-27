@@ -518,7 +518,8 @@ def build_swatch_pattern() -> str:
 # human-readable failure strings ([] == matches its known-answer). Consumed by
 # tests/test_debug_swatches.py, which renders each swatch LIVE and runs its
 # checks on the fresh pixels -- a real regression smoke test. Thresholds are
-# calibrated against actual size-128 renders (the margins are wide, but the
+# calibrated against 2048 renders (the test asked for 128, but MM ignored --size
+# until 2026-09-27, so the maps were always 2048; the margins are wide, but the
 # voronoi layout is deterministic since MM's voronoi uses a fixed hash).
 
 

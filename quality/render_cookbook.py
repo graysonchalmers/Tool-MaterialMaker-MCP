@@ -46,7 +46,7 @@ def main() -> int:
             for w in problems:
                 if w["severity"] == "warning":
                     print(f"  warn: {w['message']}")
-            result = render(ptex, size=512, outdir=str(outdir),
+            result = render(ptex, size=2048, outdir=str(outdir),
                             basename=case_dir.name, cfg=cfg)
             if result.ok:
                 for img in result.images:
