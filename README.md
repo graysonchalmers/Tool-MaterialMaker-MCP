@@ -54,14 +54,14 @@ lit ground plane, so the normal-map relief reads under real lighting instead of
 as a flat swatch. Full graphs live in the cookbook below (`s07_cobblestone`,
 `s09_ashlar_wall`, `s11_marble`, `gl04_raw_crystal_cluster`,
 `sf02_hazard_stripe_panel`, `f07_herringbone_tweed`, `t05_cracked_ice`,
-`t08_riverbed_pebbles`).
+`s14_wet_river_stone`).
 
 | | |
 |:--:|:--:|
 | ![irregular cobblestone](docs/images/gallery/s07_cobblestone.png) | ![coursed ashlar stone wall](docs/images/gallery/s09_ashlar_wall.png) |
 | ![veined marble](docs/images/gallery/s11_marble.png) | ![raw purple crystal cluster](docs/images/gallery/gl04_raw_crystal_cluster.png) |
 | ![yellow and black hazard stripe panel](docs/images/gallery/sf02_hazard_stripe_panel.png) | ![herringbone tweed fabric](docs/images/gallery/f07_herringbone_tweed.png) |
-| ![cracked ice](docs/images/gallery/t05_cracked_ice.png) | ![riverbed pebbles](docs/images/gallery/t08_riverbed_pebbles.png) |
+| ![cracked ice](docs/images/gallery/t05_cracked_ice.png) | ![wet river pebbles](docs/images/gallery/s14_wet_river_stone.png) |
 
 ### In motion
 
@@ -76,7 +76,7 @@ across five materials so the normal-map depth reads as it moves.
 
 ## Material cookbook
 
-The cookbook is 71 materials across 12 categories (the gallery above is
+The cookbook is 68 materials across 12 categories (the gallery above is
 drawn from it), each one a real graph this server authored and then locked
 after a 3D-preview pass. Every one ships as a tracked `.ptex` under
 [`cookbook/`](cookbook/): open `cookbook/<category>/<id>.ptex` in Material
@@ -87,10 +87,10 @@ materials are in [docs/AUTHORING.md](docs/AUTHORING.md), also served as the
 its graph as `cookbook/<category>/<id>.md`. The builders that regenerate the
 graphs live in [`quality/`](quality/).
 
-**The full cookbook (71 materials:** ceramic, fabrics, glass, leather, metal, organics, painted metal, plastics, sci-fi, stone, terrain, wood)
+**The full cookbook (68 materials:** ceramic, fabrics, glass, leather, metal, organics, painted metal, plastics, sci-fi, stone, terrain, wood)
 
 <p align="center">
-  <img src="docs/images/cookbook-contact-sheet.png" alt="Contact sheet of all 71 cookbook materials across 12 categories" width="100%">
+  <img src="docs/images/cookbook-contact-sheet.png" alt="Contact sheet of all 68 cookbook materials across 12 categories" width="100%">
 </p>
 
 ## Core toolbox
@@ -325,7 +325,7 @@ for the full design.
 ## Play surface (optional)
 
 `mm-play` is a small local web page for a non-technical person who wants to
-tweak a cookbook material without touching a node graph: a gallery of the 71
+tweak a cookbook material without touching a node graph: a gallery of the 68
 cookbook materials, each opening to friendly sliders (derived from the
 material's author-chosen subgraph parameters) with a WebGL sphere preview
 that re-renders as you drag. It deliberately hides the node graph; it is a

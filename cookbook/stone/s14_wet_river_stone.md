@@ -7,7 +7,7 @@ This is the dielectric reflection proof from the reflections cycle
 (metallic 0, so every reflection comes from Godot's default specular
 term). Since 2026-09-27 it is also the river-pebble host: one graph whose
 feature layers reach the looks of `s06_river_pebbles`, `s04_scattered_river_stones`
-and `t08_riverbed_pebbles`.
+and `t08_riverbed_pebbles` (all three retired into this host, 2026-09-27).
 
 ## Recipe
 

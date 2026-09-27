@@ -734,45 +734,6 @@ def build_t07_forest_floor(catalog: dict) -> str:
     return save_variant(g, _LABEL, "t07_forest_floor", 1)
 
 
-def build_t08_riverbed_pebbles(catalog: dict) -> str:
-    """Riverbed pebbles: dry_earth voronoi-plate donor as tight-packed, rounded,
-    WET river stones. The wet-vs-dry contrast with t03 gravel (loose, angular,
-    matte, rock donor) is the whole point: small rounded plates (scale 8), clean
-    joints (warp 0.12), a multicolor river-tumbled palette (gray/tan/slate/brown/
-    cream), and LOW roughness 0.2 for a damp sheen. Deep recessed wet gaps
-    (blend 0.6). Keeps dry_earth's relief so each pebble bulges."""
-    g = _dry_earth_plates(
-        scale=8,
-        plate_grad=[            # river-tumbled multicolor stones
-            (0.0,  0.30, 0.30, 0.31),   # gray
-            (0.25, 0.52, 0.47, 0.40),   # tan
-            (0.5,  0.34, 0.38, 0.42),   # slate blue-gray
-            (0.72, 0.44, 0.34, 0.26),   # warm brown
-            (1.0,  0.62, 0.58, 0.52),   # pale cream stone
-        ],
-        blend_amount=0.6, warp=0.02, roughness=0.2)   # warp ~0: recessed contact
-        # gaps between packed pebbles, not the warped crack lines that made this
-        # a sibling of the ice plates
-    _group_dry_earth_plate(g, catalog, plate_label="Pebble Bed & Gaps",
-                            color_label="Pebble color", gap_label="Gap depth")
-    rename_nodes(g, {
-        "voronoi_0": "PebbleCells",
-        "colorize_1": "PebbleEdges",
-        "warp_0": "ContactWarp",
-        "blend_0": "ContactComposite",
-        "perlin_1": "ReliefNoiseCoarse",
-        "colorize_3": "ReliefContrast",
-        "perlin_0": "ReliefNoiseFine",
-        "colorize_0": "ReliefFineUnused",
-        "colorize_4": "ReliefRamp",
-        "blend_1": "ReliefComposite",
-        "colorize": "ReliefHeight",
-        "normal_map_0": "PebbleNormal",
-        "colorize_plate": "PebbleColor",
-        "rough_const": "PebbleRoughness",
-    })
-    return save_variant(g, _LABEL, "t08_riverbed_pebbles", 1)
-
 
 _T09_NAMES = {
     "perlin_0": "RippleField",       # placeholder perlin, retyped to wavelet_noise below
@@ -1029,7 +990,6 @@ BUILDERS = {
     "t05_cracked_ice": build_t05_cracked_ice,
     "t06_cooled_lava": build_t06_cooled_lava,
     "t07_forest_floor": build_t07_forest_floor,
-    "t08_riverbed_pebbles": build_t08_riverbed_pebbles,
     "t09_rippled_wet_sand": build_t09_rippled_wet_sand,
     "t10_packed_dirt": build_t10_packed_dirt,
 }

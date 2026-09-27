@@ -43,7 +43,7 @@ _TILE_OVERRIDES = {
     "sf02_hazard_stripe_panel": 0.32,
     "f07_herringbone_tweed": 0.24,
     "t05_cracked_ice": 0.40,
-    "t08_riverbed_pebbles": 0.40,
+    "s14_wet_river_stone": 0.40,
 }
 
 
