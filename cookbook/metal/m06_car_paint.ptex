@@ -234,13 +234,11 @@
        "name": "param3",
        "shortdesc": "Flake size",
        "label": "",
-       "type": "linked_control",
-       "linked_widgets": [
-        {
-         "node": "FlakeCells",
-         "widget": "scale_x"
-        }
-       ]
+       "type": "named_parameter",
+       "min": 1,
+       "max": 64,
+       "step": 1,
+       "default": 48
       },
       {
        "name": "param4",
@@ -350,7 +348,7 @@
       "y": 0
      },
      "parameters": {
-      "scale_x": 48,
+      "scale_x": "$param3",
       "scale_y": 48
      }
     },

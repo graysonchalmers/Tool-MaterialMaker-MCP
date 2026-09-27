@@ -197,13 +197,11 @@
        "name": "param1",
        "shortdesc": "Scuff length",
        "label": "",
-       "type": "linked_control",
-       "linked_widgets": [
-        {
-         "node": "ScuffNoise",
-         "widget": "scale_x"
-        }
-       ]
+       "type": "named_parameter",
+       "min": 1,
+       "max": 64,
+       "step": 1,
+       "default": 48
       }
      ]
     },
@@ -216,7 +214,7 @@
      "parameters": {
       "iterations": 2,
       "persistence": 1,
-      "scale_x": 48,
+      "scale_x": "$param1",
       "scale_y": 2
      },
      "type": "perlin"

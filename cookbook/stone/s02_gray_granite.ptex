@@ -233,13 +233,11 @@
        "name": "param0",
        "shortdesc": "Fleck density",
        "label": "",
-       "type": "linked_control",
-       "linked_widgets": [
-        {
-         "node": "FleckCells",
-         "widget": "scale_x"
-        }
-       ]
+       "type": "named_parameter",
+       "min": 1,
+       "max": 64,
+       "step": 1,
+       "default": 44
       },
       {
        "name": "param1",
@@ -308,7 +306,7 @@
      "parameters": {
       "intensity": 1,
       "randomness": 1,
-      "scale_x": 44,
+      "scale_x": "$param0",
       "scale_y": 44,
       "stretch_x": 1,
       "stretch_y": 1

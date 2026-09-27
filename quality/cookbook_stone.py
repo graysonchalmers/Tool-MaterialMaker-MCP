@@ -12,7 +12,7 @@ Then `python -m quality.render_cookbook` renders each variant for inspection.
 import math
 import sys
 
-from quality.author_helpers import (load_example, set_gradient, set_param, save_variant,
+from quality.author_helpers import (widen_widget, load_example, set_gradient, set_param, save_variant,
                              add_node, rewire, drop_conn, retype, node, _grad,
                              group_into_subgraph, take_variant, rename_nodes,
                              place, tidy_ports, link_also)
@@ -655,6 +655,10 @@ def build_s02_gray_granite(catalog: dict) -> str:
         "normal_map_0": "GraniteNormal",
         "perlin_0": "SurfaceNoise",
     })
+    # Exposed values past the inner node's slider get their own range
+    # (named_parameter, author_helpers.widen_widget):
+    # Fleck density: default 44, voronoi stops at 32.
+    widen_widget(g, "fleck_color", "param0", 64, catalog)
     return save_variant(g, _LABEL, "s02_gray_granite", 1)
 
 
@@ -986,6 +990,10 @@ def build_s12_eroded_sandstone(catalog: dict) -> str:
         "colorize_grit": "GritContrast",
         "blend_grit": "AlbedoGrit",
     })
+    # Exposed values past the inner node's slider get their own range
+    # (named_parameter, author_helpers.widen_widget):
+    # Grit scale: default 42, perlin stops at 32.
+    widen_widget(g, "surface_grit", "param0", 64, catalog)
     return save_variant(g, _LABEL, "s12_eroded_sandstone", 1)
 
 

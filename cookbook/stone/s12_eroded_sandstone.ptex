@@ -766,13 +766,11 @@
        "name": "param0",
        "shortdesc": "Grit scale",
        "label": "",
-       "type": "linked_control",
-       "linked_widgets": [
-        {
-         "node": "GritNoise",
-         "widget": "scale_x"
-        }
-       ]
+       "type": "named_parameter",
+       "min": 1,
+       "max": 64,
+       "step": 1,
+       "default": 42
       }
      ]
     },
@@ -784,7 +782,7 @@
       "y": 320
      },
      "parameters": {
-      "scale_x": 42,
+      "scale_x": "$param0",
       "scale_y": 42,
       "iterations": 5
      }

@@ -9,7 +9,7 @@ Then: python -m quality.render_cookbook cookbook-glass
 """
 import sys
 
-from quality.author_helpers import (load_example, set_gradient, set_param, drop_conn,
+from quality.author_helpers import (widen_widget, load_example, set_gradient, set_param, drop_conn,
                      save_variant, add_node, _grad, group_into_subgraph, rename_nodes, retype,
                      _from_scratch_noise_material)
 
@@ -112,6 +112,10 @@ def build_gl01_frosted_glass(catalog: dict) -> str:
         catalog,
     )
     rename_nodes(g, _GL01_NAMES)
+    # Exposed values past the inner node's slider get their own range
+    # (named_parameter, author_helpers.widen_widget):
+    # Facet size: default 60, voronoi stops at 32.
+    widen_widget(g, "base_color", "param0", 96, catalog)
     return save_variant(g, _LABEL, "gl01_frosted_glass", 1)
 
 

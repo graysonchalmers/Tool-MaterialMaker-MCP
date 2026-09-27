@@ -475,13 +475,11 @@
        "name": "param0",
        "shortdesc": "Small stone size",
        "label": "",
-       "type": "linked_control",
-       "linked_widgets": [
-        {
-         "node": "SmallStoneCells",
-         "widget": "scale_x"
-        }
-       ]
+       "type": "named_parameter",
+       "min": 1,
+       "max": 48,
+       "step": 1,
+       "default": 36
       },
       {
        "name": "param1",
@@ -499,13 +497,11 @@
        "name": "param2",
        "shortdesc": "Top flatness",
        "label": "",
-       "type": "linked_control",
-       "linked_widgets": [
-        {
-         "node": "BigDomeFlatten",
-         "widget": "default_in2"
-        }
-       ]
+       "type": "named_parameter",
+       "min": 0,
+       "max": 5,
+       "step": 0.01,
+       "default": 1.5
       }
      ]
     },
@@ -531,7 +527,7 @@
      },
      "parameters": {
       "op": 2,
-      "default_in2": 1.5,
+      "default_in2": "$param2",
       "clamp": true
      }
     },
@@ -555,7 +551,7 @@
       "y": 0
      },
      "parameters": {
-      "scale_x": 36,
+      "scale_x": "$param0",
       "scale_y": 36,
       "randomness": 1
      }
@@ -878,13 +874,11 @@
        "name": "param0",
        "shortdesc": "Grain scale",
        "label": "",
-       "type": "linked_control",
-       "linked_widgets": [
-        {
-         "node": "GrainNoise",
-         "widget": "scale_x"
-        }
-       ]
+       "type": "named_parameter",
+       "min": 1,
+       "max": 64,
+       "step": 1,
+       "default": 48
       },
       {
        "name": "param1",
@@ -908,7 +902,7 @@
       "y": 0
      },
      "parameters": {
-      "scale_x": 48,
+      "scale_x": "$param0",
       "scale_y": 48,
       "iterations": 5
      }

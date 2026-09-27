@@ -48,6 +48,10 @@ def test_every_cookbook_material_yields_consistent_sliders(entry):
         if s["kind"] in ("float", "int"):
             assert s["min"] is not None and s["max"] is not None, \
                 f"{entry.name}/{s['slot_id']} missing numeric range"
+            # The shipped value must sit on its own slider (widen_widget
+            # gives a control past its inner node's range its own range).
+            assert s["min"] <= s["value"] <= s["max"], \
+                f"{entry.name}/{s['id']} value {s['value']} outside [{s['min']}, {s['max']}]"
 
 
 def test_apply_values_round_trips_through_derive():
@@ -172,6 +176,7 @@ def test_apply_values_sets_a_named_parameter_and_keeps_the_references():
     ("s14_wet_river_stone", "surface_grain/param1", 128),   # t08 Grain scale
     ("s07_cobblestone", "surface_grain/param0", 48),        # s08 Grain scale
     ("f07_herringbone_tweed", "fleck_layer/param1", 36),    # f08 Fleck density
+    ("man02_ceramic_hex_tiles", "surface_grain/param1", 48),  # s05 Grain scale
 ])
 def test_host_presets_are_inside_their_slider_range(material, slider_id, preset):
     cfg = load_config()

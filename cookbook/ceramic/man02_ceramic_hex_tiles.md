@@ -128,8 +128,8 @@ also had `roughness` 0.5 and `depth_scale` 1, where the host has 1 and
 0.2. Those only reach the `.tres`, not the PNG maps. For man03's in-engine
 look, set them on the Material node too.
 
-`Grain scale` 48 is past the perlin slider's range (it stops at 32), so type
-it into the field. It is already the default.
+`Grain scale` has its own slider range, 1-64 (a named parameter both perlin
+scales read), so s05's 48, the default, is on the slider.
 
 **Beyond the originals (not rendered yet):** the layers combine, e.g.
 `Grain strength` 1 on the white ceramic, or `Layout` 1 with the s05 ramps.

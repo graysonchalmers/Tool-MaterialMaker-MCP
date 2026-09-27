@@ -10,7 +10,7 @@ import copy
 import sys
 
 from quality import author  # shared builder base; regression guard is promote_cookbook --check
-from quality.author_helpers import (save_variant, take_variant, group_into_subgraph, rename_nodes,
+from quality.author_helpers import (widen_widget, save_variant, take_variant, group_into_subgraph, rename_nodes,
                      set_gradient, set_param, retype, add_node, _grad,
                      _from_scratch_noise_material, rewire, node, place,
                      tidy_ports, link_also)
@@ -321,6 +321,10 @@ def build_man02_ceramic_hex_tiles(catalog: dict) -> str:
         "Material": (0, 0),
     })
     rename_nodes(g, _MAN02_NAMES)
+    # Exposed values past the inner node's slider get their own range
+    # (named_parameter, author_helpers.widen_widget):
+    # Grain scale: default and s05 preset 48, perlin stops at 32.
+    widen_widget(g, "surface_grain", "param1", 64, catalog)
     return save_variant(g, _LABEL, "man02_ceramic_hex_tiles", 1)
 
 

@@ -545,13 +545,11 @@
        "name": "param0",
        "shortdesc": "Stitch pitch",
        "label": "",
-       "type": "linked_control",
-       "linked_widgets": [
-        {
-         "node": "StitchDashes",
-         "widget": "x_scale"
-        }
-       ]
+       "type": "named_parameter",
+       "min": 0,
+       "max": 48,
+       "step": 1,
+       "default": 32
       },
       {
        "name": "param1",
@@ -577,7 +575,7 @@
      "parameters": {
       "mix": 0,
       "x_wave": 2,
-      "x_scale": 32,
+      "x_scale": "$param0",
       "y_wave": 2,
       "y_scale": 12
      }

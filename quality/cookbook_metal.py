@@ -10,7 +10,7 @@ Then: python -m quality.promote_cookbook cookbook-metal
 import sys
 
 from quality import author  # shared builder base; regression guard is promote_cookbook --check
-from quality.author_helpers import (
+from quality.author_helpers import (widen_widget, 
     save_variant, take_variant, group_into_subgraph, rename_nodes,
     _from_scratch_noise_material, retype, add_node, _grad, set_param, rewire,
     node, place, tidy_ports,
@@ -296,6 +296,10 @@ def build_m02_brushed_metal(catalog: dict) -> str:
         "Material": (1600, 0),
     })
     rename_nodes(g, _M02_NAMES)
+    # Exposed values past the inner node's slider get their own range
+    # (named_parameter, author_helpers.widen_widget):
+    # Streak length: default 40, perlin stops at 32.
+    widen_widget(g, "brushed_finish", "param0", 64, catalog)
     return save_variant(g, _LABEL, "m02_brushed_metal", 1)
 
 
@@ -413,6 +417,10 @@ def build_m06_car_paint(catalog: dict) -> str:
         catalog,
     )
     rename_nodes(g, _M06_NAMES)
+    # Exposed values past the inner node's slider get their own range
+    # (named_parameter, author_helpers.widen_widget):
+    # Flake size: default 48, voronoi stops at 32.
+    widen_widget(g, "car_paint_finish", "param3", 64, catalog)
     return save_variant(g, _LABEL, "m06_car_paint", 1)
 
 

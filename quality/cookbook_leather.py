@@ -21,7 +21,7 @@ Then `python -m quality.render_cookbook` cookbook-leather renders each for inspe
 """
 import sys
 
-from quality.author_helpers import (load_example, node, set_gradient, set_param, retype,
+from quality.author_helpers import (widen_widget, load_example, node, set_gradient, set_param, retype,
                     rewire, add_node, save_variant, _grad, group_into_subgraph, rename_nodes)
 
 from mm_mcp.catalog_builder import build_catalog
@@ -547,6 +547,10 @@ def build_l06_topstitched_leather(catalog: dict) -> str:
         "blend_alb_st": "AlbedoComposite",
         "blend_h_st": "HeightComposite",
     })
+    # Exposed values past the inner node's slider get their own range
+    # (named_parameter, author_helpers.widen_widget):
+    # Stitch pitch: default 32 sits on pattern's max, no headroom.
+    widen_widget(g, "stitch_pattern", "param0", 48, catalog)
     return save_variant(g, _LABEL, "l06_topstitched_leather", 1)
 
 

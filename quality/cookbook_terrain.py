@@ -9,7 +9,7 @@ Then: python -m quality.render_cookbook cookbook-terrain
 """
 import sys
 
-from quality.author_helpers import (load_example, node, set_gradient, set_param, retype,
+from quality.author_helpers import (widen_widget, load_example, node, set_gradient, set_param, retype,
                      rewire, drop_conn, add_node, save_variant, _grad,
                      group_into_subgraph, rename_nodes, _from_scratch_noise_material)
 
@@ -409,6 +409,14 @@ def build_t03_gravel(catalog: dict) -> str:
         "height_relief": "ReliefHeight",
         "normal_map_0": "GravelNormal",
     })
+    # Exposed values past the inner node's slider get their own range
+    # (named_parameter, author_helpers.widen_widget):
+    # Small stone size: default 36, voronoi stops at 32.
+    # Top flatness: default 1.5, math stops at 1.
+    # Grain scale: default 48, perlin stops at 32.
+    widen_widget(g, "stone_profile", "param0", 48, catalog)
+    widen_widget(g, "stone_profile", "param2", 5, catalog)
+    widen_widget(g, "surface_grain", "param0", 64, catalog)
     return save_variant(g, _LABEL, "t03_gravel", 1)
 
 

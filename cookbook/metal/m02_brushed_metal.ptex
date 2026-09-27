@@ -173,13 +173,11 @@
        "name": "param0",
        "shortdesc": "Streak length",
        "label": "",
-       "type": "linked_control",
-       "linked_widgets": [
-        {
-         "node": "StreakNoise",
-         "widget": "scale_x"
-        }
-       ]
+       "type": "named_parameter",
+       "min": 1,
+       "max": 64,
+       "step": 1,
+       "default": 40
       },
       {
        "name": "param1",
@@ -204,7 +202,7 @@
      "parameters": {
       "iterations": 8,
       "persistence": 1,
-      "scale_x": 40,
+      "scale_x": "$param0",
       "scale_y": 2
      },
      "type": "perlin"
