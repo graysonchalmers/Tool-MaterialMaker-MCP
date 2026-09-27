@@ -33,3 +33,25 @@ def test_downscale_gif_frames_preserves_aspect(tmp_path):
     fr = tmp_path / "f.png"; Image.new("RGB", (1024, 576)).save(fr)
     out = ms.downscale_gif_frames([fr], width=512)
     assert out[0].size == (512, 288)
+
+def test_showcase_override_sets_s14_damp_on_a_copy():
+    import json
+    src = ms.resolve_source("s14_wet_river_stone")
+    before = src.read_bytes()
+    g = json.loads(before.decode("utf-8"))
+    out = ms.apply_showcase_overrides(g, "s14_wet_river_stone")
+    sub = next(n for n in out["nodes"] if n["name"] == "dry_layer")
+    remote = next(n for n in sub["nodes"] if n["name"] == "gen_parameters")
+    dryness = next(n for n in sub["nodes"] if n["name"] == "Dryness")
+    assert sub["parameters"]["param0"] == 0.5
+    assert remote["parameters"]["param0"] == 0.5
+    assert dryness["parameters"]["color"] == 0.5
+    # input dict and cookbook file untouched
+    orig_sub = next(n for n in g["nodes"] if n["name"] == "dry_layer")
+    assert orig_sub["parameters"]["param0"] == 0
+    assert src.read_bytes() == before
+
+def test_showcase_override_is_identity_for_unlisted_material():
+    import json
+    g = json.loads(ms.resolve_source("s07_cobblestone").read_text(encoding="utf-8"))
+    assert ms.apply_showcase_overrides(g, "s07_cobblestone") == g
