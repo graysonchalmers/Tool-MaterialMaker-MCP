@@ -251,7 +251,8 @@ def build_f07_herringbone_tweed(catalog: dict) -> str:
     - Plaid Overlay (new): weave2's own warp and weft thread masks (ports 2
       and 1) paint vertical threads with a sett gradient along x and
       horizontal threads with the same sett along y, so the check is woven
-      thread by thread and its colour edges sit on thread edges. Replaces
+      thread by thread and its colour edges sit on thread edges. Multiply
+      blend, so the sett tints the tweed and the ribbon shading stays. Replaces
       f09's crosshatch-as-plaid, which never read as plaid (that crosshatch
       stays as a Pattern mode, for the exact f09 preset).
     - Fleck Layer (f08): f08's voronoi port-2 fleck nodes and values, colour
@@ -316,8 +317,11 @@ def build_f07_herringbone_tweed(catalog: dict) -> str:
     for name, rotate in (("WarpStripes", 0), ("WeftStripes", 90)):
         add_node(g, name, "gradient", {"repeat": 1, "rotate": rotate, "mirror": False,
                                        "gradient": _sett(_PLAID_SETT)})
-    add_node(g, "WarpComposite", "blend", {"blend_type": 0, "amount": 0})  # 0 = Normal
-    add_node(g, "WeftComposite", "blend", {"blend_type": 0, "amount": 0})
+    # 2 = Multiply (blend_type is an index into blend.mmg's values list): the
+    # sett tints the tweed colour, so the weave's ribbon shading shows
+    # through. Normal (0) replaced it and read flat at strength 1.
+    add_node(g, "WarpComposite", "blend", {"blend_type": 2, "amount": 0})
+    add_node(g, "WeftComposite", "blend", {"blend_type": 2, "amount": 0})
     g["connections"] += [
         {"from": "WarpStripes", "from_port": 0, "to": "WarpComposite", "to_port": 0},
         {"from": "colorize_1", "from_port": 0, "to": "WarpComposite", "to_port": 1},
