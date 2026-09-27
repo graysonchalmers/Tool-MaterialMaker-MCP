@@ -487,3 +487,22 @@ def test_render_bundled_example_produces_pngs(tmp_path):
         assert os.path.getsize(img) > 0
         with Image.open(img) as im:
             assert im.size == (256, 256)  # MM bakes 2048; render() downsamples
+
+
+def test_render_retries_a_transient_missing_output(monkeypatch, tmp_path):
+    """A Godot export occasionally exits 0 having written no maps; an
+    identical re-run is fine (seen 2026-09-27 during the s14 host round)."""
+    calls = []
+    _fake_export(monkeypatch, [{"maps": {}}, {"maps": {"albedo": _noise(64)}}], calls)
+    result = render({}, size=64, outdir=str(tmp_path), basename="m", cfg=cfg)
+    assert result.ok, result.error
+    assert len(calls) == 2
+
+
+def test_render_fails_when_no_output_appears_after_the_retries(monkeypatch, tmp_path):
+    calls = []
+    _fake_export(monkeypatch, [{"maps": {}}] * 3, calls)
+    result = render({}, size=64, outdir=str(tmp_path), basename="m", cfg=cfg)
+    assert not result.ok
+    assert "no PNG output" in result.error
+    assert len(calls) == 3

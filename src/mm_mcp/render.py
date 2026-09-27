@@ -229,7 +229,8 @@ def render(ptex: dict, size: int = _BAKE_SIZE, outdir: str | None = None,
 
     cmd = _build_command(cfg, ptex_path, target, outdir, size)
 
-    # Up to two retries, for the flat-normal race only. Measured 2026-09-27:
+    # Up to two retries, for two transient failures only: a missing export
+    # and the flat-normal race. Flat-normal rate measured 2026-09-27:
     # 14 of 57 raw renders across the 19 cookbook graphs with a buffered
     # normal_map baked flat (mostly a graph's first, cold-cache render), and
     # m06 went flat twice in a row, so one retry was not enough.
@@ -247,16 +248,18 @@ def render(ptex: dict, size: int = _BAKE_SIZE, outdir: str | None = None,
             return RenderResult(ok=False, log_tail=log_tail,
                                 error=f"Godot exited {proc.returncode}")
         if not images:
-            return RenderResult(ok=False, log_tail=log_tail,
-                                error="no PNG output produced")
+            # Also transient: an export occasionally exits 0 having written
+            # nothing, and an identical re-run is fine.
+            failure = "no PNG output produced (3 attempts)"
+            continue
         bad = _undecodable(images)
         if bad:
             return RenderResult(ok=False, log_tail=log_tail, error=bad)
         if not _flat_normal(images, (proc.stdout or "") + (proc.stderr or "")):
             break
+        failure = "normal map baked flat (Material Maker logged 'invalid shader'), 3 attempts"
     else:
-        return RenderResult(ok=False, images=images, log_tail=log_tail, error=(
-            "normal map baked flat three times (Material Maker logged 'invalid shader')"))
+        return RenderResult(ok=False, images=images, log_tail=log_tail, error=failure)
 
     _downsample(images, size)
     return RenderResult(ok=True, images=images, log_tail=log_tail)
