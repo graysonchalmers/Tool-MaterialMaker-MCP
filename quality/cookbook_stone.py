@@ -1365,7 +1365,7 @@ def build_s12_eroded_sandstone(catalog: dict) -> str:
 
 def build_s14_wet_river_stone(catalog: dict) -> str:
     """Wet dark river stone -- the DIELECTRIC reflection proof for the
-    reflections cycle (m05_polished_chrome already covers the metallic
+    reflections cycle (m02_brushed_aluminum's Polish layer (folded in from the retired m05_polished_chrome) already covers the metallic
     path). Same physical idea as s06_river_pebbles (CLONE `rock`, big
     voronoi cells for rounded pebbles, the coin-profile analytic dome for
     relief) but re-tuned for "just came out of the water": dark, glossy,
