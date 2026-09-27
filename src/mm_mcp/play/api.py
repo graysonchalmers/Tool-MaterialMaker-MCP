@@ -50,7 +50,7 @@ def _changes_for(graph, catalog, values):
 def render_request(cfg, catalog, body, outdir, render_fn=renderer.render_material) -> dict:
     name = body.get("material_id")
     values = body.get("values") or {}
-    size = int(body.get("size") or 256)
+    size = int(body.get("size") or 2048)
     graph, err = _load_graph(cfg, name)
     if err:
         return err

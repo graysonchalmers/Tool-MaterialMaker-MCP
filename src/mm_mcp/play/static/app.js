@@ -1,7 +1,11 @@
 /* Play surface frontend. Talks to the local server, shows a cookbook gallery,
    renders author-named sliders, and shades a three.js sphere with the returned
-   PBR maps. Rotate: drag the viewport. Slider release triggers a small render. */
+   PBR maps. Rotate: drag the viewport. Slider release triggers a render. */
 "use strict";
+
+// Material Maker always bakes at 2048; a smaller size would only be a
+// downsample of the same bake (no faster), so the preview stays full-res.
+const RENDER_SIZE = 2048;
 
 let current = null;      // {name, sliders}
 let values = {};         // slider id (e.g. "dune_ripples/param0") -> value
@@ -108,10 +112,10 @@ async function loadMaterial(name) {
     inp.min = s.min != null ? s.min : 0; inp.max = s.max != null ? s.max : 1;
     inp.step = s.step != null ? s.step : 0.01; inp.value = s.value;
     inp.oninput = () => { values[s.id] = parseFloat(inp.value); };
-    inp.onchange = () => scheduleRender(256);
+    inp.onchange = () => scheduleRender(RENDER_SIZE);
     row.appendChild(inp); box.appendChild(row);
   });
-  scheduleRender(256);
+  scheduleRender(RENDER_SIZE);
 }
 
 function scheduleRender(size) {
@@ -141,7 +145,7 @@ async function doRender(size) {
 
 function setStatus(t) { document.getElementById("status").textContent = t; }
 
-document.getElementById("full").onclick = () => doRender(1024);
+document.getElementById("full").onclick = () => doRender(RENDER_SIZE);
 document.getElementById("download").onclick = () => {
   if (current) window.location = "/api/export?material_id=" + encodeURIComponent(current.name);
 };
