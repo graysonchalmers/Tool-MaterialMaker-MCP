@@ -14,8 +14,11 @@ one ramp does both jobs: `TileColor` maps the low band to a thin dark grout
 line and everything above 0.20 to white tile, and `GlazeRoughness` inverts
 that for roughness (grout rough, glazed faces near-mirror). The metallic
 constant (`NonMetallic`) is set to 0. The hex relief from the donor's blend ->
-normal_map chain is kept so the grout reads recessed; height (port 6) comes
-from the same blend.
+normal_map chain is kept; height (port 6) comes from the same blend. Note
+(measured 2026-09-27): in hex mode the height and normal agree on a RAISED
+grout ridge (grout height ~208 vs faces ~88, each cell on its own terrace),
+while brick mode has recessed mortar. Whether to invert the hex relief is
+an open question.
 
 The lesson: when a bundled example already has the exact pattern topology
 (regular hex cells), the whole material is two gradient ramps and one

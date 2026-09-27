@@ -51,7 +51,8 @@ def build_man02_ceramic_hex_tiles(catalog: dict) -> str:
     """White ceramic hexagon tiles (was examples/man02_ceramic_hex_tiles,
     iter1 variant 1): `beehive` clone, non-metallic, faces recolored white
     with a thin dark grout band, roughness inverted (glazed faces, rough
-    grout), hex relief kept so grout reads recessed. `uniform_greyscale`
+    grout), hex relief kept (in hex mode it reads as a raised grout ridge,
+    height and normal agree; see the card). `uniform_greyscale`
     (metallic 0) stays top-level as a single donor-default constant.
 
     TILE HOST (2026-09-27): absorbs s05_hex_stone_tile and man03_mosaic_tile.
