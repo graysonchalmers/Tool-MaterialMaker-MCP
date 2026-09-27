@@ -260,6 +260,9 @@ def build_s07_cobblestone(catalog: dict) -> str:
     Every height op is a math node (no new f->rgba->f round trip). Presets
     are on the card (cookbook/stone/s07_cobblestone.md, "Feature layers")."""
     g = load_example("dry_earth")
+    # Direct normal path (2026-09-27): the donor's buffered param4=1 races to a
+    # flat normal headless; param4=0 at the same param1 matches within 0.37/255.
+    set_param(g, "normal_map_0", "param4", 0)
     set_param(g, "voronoi_0", "scale_x", 6)    # cobble-sized irregular plates
     set_param(g, "voronoi_0", "scale_y", 6)
     # per-cobble tone from the per-cell random (port 2) -> varied stone colors.
@@ -536,6 +539,9 @@ def build_s09_ashlar_wall(catalog: dict) -> str:
       per-block varied so no two blocks match.
     Relief, mortar mask and non-metal setup are stone_wall's, unchanged."""
     g = load_example("stone_wall")
+    # Direct normal path (2026-09-27): the donor's buffered param4=1 races to a
+    # flat normal headless; param4=0 at the same param1 matches within 0.37/255.
+    set_param(g, "normal_map_0", "param4", 0)
     set_param(g, "Bricks", "columns", 4)    # squarer, larger ashlar blocks
     set_param(g, "Bricks", "rows", 4)
     set_param(g, "Bricks", "mortar", 0.06)  # fine dressed joint
@@ -662,6 +668,9 @@ def build_s11_marble(catalog: dict) -> str:
     set_gradient(g, "colorize_3", [(0.0, 0, 0, 0), (1.0, 0, 0, 0)])  # metallic 0 (non-metal)
     set_param(g, "Material", "roughness", 0.15)  # polished (roughness port is unconnected)
     set_param(g, "normal_map_0", "param1", 0.1)  # smooth: veins barely raised
+    # Direct normal path (2026-09-27): the donor's buffered param4=1 races to a
+    # flat normal headless; param4=0 at the same param1 matches within 0.37/255.
+    set_param(g, "normal_map_0", "param4", 0)
 
     # Subgraph grouping. Unlike s07/s08/s10, this builder never rewires the
     # donor -- colorize_0 (not colorize_cobble) is still blend_0's port1

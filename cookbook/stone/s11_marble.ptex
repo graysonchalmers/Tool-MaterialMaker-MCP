@@ -561,7 +561,7 @@
       "param1": 0.1,
       "param2": 0,
       "param3": 0,
-      "param4": 1,
+      "param4": 0,
       "size": 2
      },
      "type": "normal_map"

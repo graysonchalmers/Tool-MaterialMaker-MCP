@@ -11,8 +11,10 @@ Pure recolor of `wood`'s existing `colorize_2` (albedo) and `colorize_0`
 (roughness) ramps, the same lever the frozen barn-wood reference case already
 uses. Deep saturated brown, with roughness lowered relative to barn wood's
 raw weathered surface for a sealed, finished walnut look. `wood`'s own
-generator chain already renders real grain relief out of the box, so this
-doesn't touch the `normal_map` `param4` switch. First-pass hit.
+generator chain already renders real grain relief out of the box. First-pass
+hit. Its `normal_map` was switched from the donor's buffered `param4=1` to
+`param4=0` on 2026-09-27 (the buffered path races to a flat normal
+headless); `param1` was unchanged and the relief matches.
 
 ## Subgraph structure
 

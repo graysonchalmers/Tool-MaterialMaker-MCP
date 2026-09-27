@@ -440,16 +440,19 @@ node(g, "normal_map_0")["parameters"] = {
 
 This unblocked `f01` denim (a clean diagonal twill in the normal, from
 `diagonal_weave`) and is a **general lever**: any graph whose normal is fed
-directly from an analytic generator can get a real normal this way. Examples
-that already looked fine (`dry_earth`/`bricks` donors, `param4=1`) work because
-their input reaches `normal_map` through a `blend`/buffered chain, so the buffer
-path has real content.
+directly from an analytic generator can get a real normal this way. Donors
+that looked fine at `param4=1` (`dry_earth`/`bricks`/`beehive`) have real content
+in the buffer, but the buffered path is still unreliable headless (below).
 
 Practical guidance now:
-- Relief from a **cloned working chain** (dry_earth cracks, bricks, beehive
-  heightmap): keep it as-is, it works.
+- **Prefer `param4=0` always.** The buffered path races to a flat normal in
+  headless Material Maker (2026-09-27 survey: `man02` flat 3/3 renders and `m06`
+  2/3 at `param4=1`; 0/3 after switching).
+- Relief from a **cloned buffered chain** (dry_earth cracks, bricks, beehive
+  heightmap): set `param4=0` and leave `param1` alone. On 11 cookbook graphs the
+  direct path at the same `param1` matched the buffered normal within 0.37/255.
 - Relief from a **directly-fed analytic generator** (weave, stretched noise,
-  voronoi): set `normal_map` `param4=0` and tune `param1`.
+  voronoi): set `normal_map` `param4=0` and lower `param1` (see above).
 - Even a chain that *looks* buffered (a `blend` node ahead of `normal_map`) can
   still be directly-fed if the blend's real input is an un-warped, un-buffered
   generator: the switch cares about what the buffer actually renders, not the

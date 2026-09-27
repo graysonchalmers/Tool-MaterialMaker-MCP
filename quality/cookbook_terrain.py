@@ -72,6 +72,9 @@ def build_t01_sand_dunes(catalog: dict) -> str:
     broad, slow-rolling ripples instead of tight wood grain. Warm sand tan,
     high roughness. wood's own normal chain already works unmodified."""
     g = load_example("wood")
+    # Direct normal path (2026-09-27): the donor's buffered param4=1 races to a
+    # flat normal headless; param4=0 at the same param1 matches within 0.37/255.
+    set_param(g, "normal_map_0", "param4", 0)
     set_param(g, "perlin_2", "scale_x", 7)
     set_param(g, "perlin_2", "scale_y", 3)
     set_param(g, "perlin_2", "iterations", 5)
@@ -533,6 +536,9 @@ def _dry_earth_plates(scale: int, plate_grad, blend_amount: float,
     roughness input unconnected). Non-metal forced (drop the colorize_3->metallic
     wire + scalar 0). Returns the graph for per-material extra tuning."""
     g = load_example("dry_earth")
+    # Direct normal path (2026-09-27): the donor's buffered param4=1 races to a
+    # flat normal headless; param4=0 at the same param1 matches within 0.37/255.
+    set_param(g, "normal_map_0", "param4", 0)
     set_param(g, "voronoi_0", "scale_x", scale)
     set_param(g, "voronoi_0", "scale_y", scale)
     add_node(g, "colorize_plate", "colorize", {"gradient": _grad(plate_grad)})

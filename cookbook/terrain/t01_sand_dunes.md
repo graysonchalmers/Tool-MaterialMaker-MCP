@@ -8,7 +8,7 @@ Broad, slow-rolling sand dunes with warm tan tone and organic, wavy ripples.
 
 Clones `wood` structurally unmodified, the same move `o03_tree_bark` uses, since dune ripples are organic and wavy, so the knot-warp chain is kept rather than straightened out the way `m02` aluminum straightens it. `perlin_2`'s scale is widened for broad, slow-rolling ripples instead of tight wood grain. Palette is a warm sand tan with high roughness.
 
-No pitfall pass was needed for this material; `wood`'s own chain already produced correct relief unmodified, so no `param4=0` normal fix was required.
+No pitfall pass was needed for this material; `wood`'s own chain already produced correct relief. Its `normal_map` was switched from the donor's buffered `param4=1` to `param4=0` on 2026-09-27 (the buffered path races to a flat normal headless); `param1` was unchanged and the relief matches.
 
 ## Subgraph structure
 
