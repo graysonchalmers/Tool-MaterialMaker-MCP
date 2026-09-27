@@ -1,6 +1,6 @@
 # 🧭 Session Handoff: Tool-MaterialMaker-MCP
 
-_Last updated: 2026-09-27 07:40 CDT. Everything from this session is MERGED to `main` (`7c64a8d`) and pushed. **v0.8.1** is released. Release PR #15 (**0.9.0**) is open and not merged._
+_Last updated: 2026-09-27 15:05 CDT. `main` @ merged host rounds, pushed. **v0.8.1** released; release PR #15 (0.9.0) open, not merged. One round in flight: f07 (WIP branch `f07-host`)._
 
 The session baton. Read at pickup, rewrite at wrap-up. **Shape rule (2026-09-05, teardown #3):**
 - "Current state" describes the latest session only.
@@ -10,66 +10,44 @@ The session baton. Read at pickup, rewrite at wrap-up. **Shape rule (2026-09-05,
 
 ## 🎯 Current state
 
-This was one long session on 2026-09-27, ending with everything merged and pushed:
-- **Teardown #6** (`docs/teardowns/TEARDOWN-2026-09-27.md`): **not a rebuild.** Grayson set the direction (no new materials, depth over breadth) and **approved** the keep/merge/cut list (74 → about 29 host materials).
-- **Truth pass** (v0.8.1):
-  - `size` is honoured by downsampling MM's fixed 2048 bake.
-  - A render reports ok only on exit 0 with maps that decode.
-  - The 4 core tools are described.
-  - The MCP preview tile default is 0.45.
-  - mm-play renders at 2048.
-- **Flat-normal race.** MM sometimes bakes a flat normal and logs "invalid shader". A survey of the 19 cookbook graphs with a buffered `normal_map` baked flat **14 of 57** raw renders, mostly on a graph's first, cold-cache render. m06 went flat twice in a row. `render()` now allows **two retries** (`a70bc47`) and fails only if all three attempts are flat.
-- **The first cookbook host is done: m02.** `m02_brushed_aluminum` gained Hairline, Scratch Wear and Polish layers, default OFF, so it stays render-identical. m03, m04 and m05 were **retired** (74 → **71**), and node coverage is unchanged at 20/53. Grayson approved the look.
-- **Outside PRs (`waskosky`), all closed with replies:**
-  - #13 (atomic sweep publication) and #7 (play Download bound to its render snapshot) are **merged** as squashes authored by `waskosky`.
-  - Our follow-ups: heightmap forwarding restored in sweeps, and snapshot pruning (keep the newest 20).
-  - #8 is closed as superseded.
-  - Verified on Windows: sweep and render integration tests pass 6/6, and mm-play Download carries the moved slider value with 2048 maps.
-
-Gates: the fast suite has 1274 passing. The integration suite passed 26/26 earlier in the session, with the 7 live-GUI tests not run. Its preview, sweep and render tests were re-run against the PR merges (6/6 passed); the rest were not re-run after that.
+Long session, 2026-09-27. Teardown #6 → truth pass → outside PRs → cookbook consolidation into host materials (Grayson-approved keep/merge/cut list, 74 → ~29):
+- **Cookbook is 66 materials.** Hosts merged, each with sliders whose defaults are pixel-identical to the pre-host material (Pillow diff at 2048, 0 px on every map, hand-verified by the lead):
+  - **m02 brushed metal**: Hairline / Scratch Wear / Polish; m03, m04, m05 retired.
+  - **s14 river pebbles**: Dryness / Grain / Contact Gaps / Sediment Bed / Packing; s04, s06, t08 retired (s06 preset is bit-identical). README gallery t08 tile → s14.
+  - **s07 paved stone**: Joint width / Tones follow joints / Top flatness / Mortar; s08, s10 retired (both were s07's graph with other params; presets pixel-identical).
+- **Fixes merged:** `size` honoured (MM always bakes 2048, render() downsamples); render ok only on exit 0 + decodable maps; flat-normal race and missing-export retried (3 attempts total); mm-play Download bound to its render snapshot (PR #7) and drives every multi-linked widget; atomic sweep publication (PR #13). #8 closed.
+- **Gates:** fast suite 1238 passing on `main`.
 
 ## 📌 Where we stopped
 
-Everything is merged and pushed. There is no in-flight work.
+Round 3, **f07 herringbone tweed** absorbing f01, f05, f08, f09, was mid-flight when the session restarted. Partial builder work is a WIP commit `43a7c09` on branch **`f07-host`** (worktree `pickup-teardown-commands-dfb4c2`): untested, not promoted, no boards.
+
+Also pending (Grayson approved 2026-09-27): re-render the s14 README gallery tile at the **damp** preset (today's default reads as black bubbles).
 
 ## ▶️ Next concrete step
 
-**The next host consolidation, from the approved list.** Suggested next hosts, in order:
-- **s14 wet river stone** absorbs s04, s06 and t08 (pebbles, with a wet/dry control).
-- **s07 cobblestone** absorbs s08 and s10 (layout modes).
-
-Follow the m02 pattern: layers default OFF with render-identical proof; boards for Grayson; retire only after he approves.
+**Finish round 3 (f07).** Review `git show 43a7c09`, then either continue it or restart the round from `main` with the same brief (defaults pixel-identical to today's f07, which is in the gallery and `preview_regress` MATTE_SET; carry f08 flecks / f09 plaid in as layers; boards for Grayson; retire f01/f05/f08/f09 only after approval).
 
 Alternatives:
-- **(a) Fix the 19 buffered-normal graphs at the source.** That means `param4=0`, AUTHORING's documented fix, which would remove the flat race instead of retrying around it. It can change each graph's relief, so every one needs Grayson's eye.
-- **(b) Grayson's hands-on step-3 session.** First lay out the 32 subgraphs whose nodes are all at (0,0).
+- **(a) Damp s14 gallery tile** (small, Godot): set s14 Dryness≈0.5 on a copy, `_make_showcase still`, commit.
+- **(b) Next hosts from the appendix:** l07 leather (l01/l02/l03), combo01 wear stack (pm03/pm05/pm06), pm01 finishes (p01/pm04), gl04 crystal (gl02/gl03), w05 wood (w04/w06), man02 tiles (s05/man03).
 - **(c) Merge release PR #15 (0.9.0).**
 
 ## ❓ Open questions
 
-- **m02 id:** keep `m02_brushed_aluminum` now that it covers titanium, chrome and scratched steel, or rename it (e.g. `m02_brushed_metal`)?
-- **m02's steel preset** sits on a grainy brushed base. m04's smooth matte base isn't reachable, because Polish also forces a mirror finish. Grayson approved it as is; a "Brush relief" slider is the known upgrade.
-- **The North Star amendment** (library shape, measurable step 3): the draft is in the teardown report.
-- **Emission:** only t06 uses it. Does the Godot 4 export write `_emission.png` unconditionally?
-- **Only s09 drives AO.** The rest export flat AO, which makes AO a strong first "feature depth" candidate for the next hosts.
+- **m02 id:** keep `m02_brushed_aluminum` or rename (e.g. `m02_brushed_metal`)?
+- **19 buffered-normal graphs (param4=1):** fix at source (param4=0, AUTHORING's documented fix) instead of retrying? Changes relief, needs Grayson's eye.
+- **Slider ranges:** some host presets need typed values above the catalog slider max (s14 Top flatness 1.5/4, Grain scale 128; s07 Grain scale 48), which mm-play can't reach.
+- **North Star amendment** (library shape, measurable step 3): draft in the teardown report.
 
 ## 🗂️ Changed this session
 
-- **Merges to `main`:**
-  - `bfeaac1`: teardown + truth pass.
-  - `37f6de8`: m02 host pilot and the m03-m05 retirement.
-  - `7c64a8d`: PRs #13 and #7, with the flat-retry raise.
-- **Key files:**
-  - `src/mm_mcp/{render,server,preview}.py`, `src/mm_mcp/play/{api,server}.py`, `play/static/app.js`
-  - `quality/cookbook_metal.py`, `cookbook/metal/*`
-  - `tests/test_{render,server_tools,preview_sweep,play_api,play_browser,debug_swatches}.py`
-  - `README.md`, `docs/AUTHORING.md`, `docs/teardowns/*`, `STATUS.md`
+- **Merges to `main`:** `bfeaac1` truth pass · `37f6de8` m02 host · `7c64a8d` PRs #13/#7 · `6de8672` s14 host · `9c03c12` mm-play multi-link · `22469d6` missing-export retry · `c8f9635`/`9206b1c` s07 host + s04/s06/t08 retirement · `cf3a03b` s14 gallery tile · `589ec5f` s08/s10 retirement.
 - **Decisions and why:**
-  - **The default `size` is 2048,** because every caller always got 2048.
-  - **The flat check needs both signals:** a std≈0 normal *and* "invalid shader". The survey saw the log line on a non-flat render.
-  - **Three attempts, not two,** because m06 went flat twice in a row.
-  - **The outside PRs were squashed with our own follow-ups** rather than sent back for a rebase, since Grayson said merge. Their authorship is preserved.
-  - **m02's hairline runs vertically** so that it runs along m02's streak; unrotated, it crosshatched at mid values.
+  - **Host rounds merge sliders immediately** (defaults render-identical = no visual change); **retirement waits for Grayson's board approval**.
+  - **Pixel-identity proof by Pillow full-image diff**, not `render_tracked` (its 16x16 grid missed a flat normal).
+  - **Height ops as math nodes, not blends** (blends caused 1-LSB normal drift).
+  - **Retired files copied to `_to_delete\MaterialMaker-retired-*-2026-09-27`** before `git rm`.
 
 ## ⚠️ Heads-up for the next agent
 
@@ -81,7 +59,7 @@ Alternatives:
 - **Material Maker ignores `--size`.** `render()` downsamples. Anything that calibrates on pixels must render at the size it measures (see the swatch test).
 - **Godot 4.7 cannot combine heightmap/parallax with `uv1_triplanar = true`.** Any future Deep Parallax object needs the sphere's non-triplanar material swap.
 - **Three tile constants live in `preview.gd`, each in different units:** CLI `tile`, `SPHERE_HEIGHTMAP_UV_SCALE`, and `SPHERE_MATCHED_TRIPLANAR_TILE`. Heightmap mode silently overrides the caller's tile.
-- **The contact sheet `docs/images/cookbook-contact-sheet.png` is stale** (its 71 tiles include the now-retired m03/m04 and miss m06/s14), and no script writes its tracked path.
+- **The contact sheet `docs/images/cookbook-contact-sheet.png` is stale** (built at 71; several tiles are now retired materials), and no script writes its tracked path.
 - **`promote_cookbook --check` compares against the gitignored `quality/authored/`.** After retiring or changing a material, re-run its category builder (`python -m quality.cookbook_<cat>`) and move stale `authored/` dirs aside, or `--check` reports false drift.
 - **Standing render gotchas:**
   - One Godot at a time.
@@ -93,7 +71,7 @@ Alternatives:
 
 Newest first. Keep at most 8; older ones are in `git log` (search commit subjects).
 
-- **2026-09-27** (teardown #6, truth pass, m02 host pilot, outside PRs; merged through `7c64a8d`): v0.8.1; `size`/render-success/flat-retry fixes; cookbook 74→71 (m02 absorbs m03-m05); PRs #13/#7 merged, #8 closed.
+- **2026-09-27** (teardown #6, truth pass, PRs #13/#7, hosts m02/s14/s07; cookbook 74→66): see git log `bfeaac1..589ec5f`; f07 round WIP on `f07-host`.
 - **2026-09-15/16** (iteration-and-parallax, merged): s14/m06 retunes; the Deep Parallax prototype on `s09_ashlar_wall` (`depth_tex`, sphere swap, `parallax_spin`); the BlockAO/BlockHeight swap fixed.
 - **2026-09-15** (reflections cycle, merged `007d493`): sun-disc, SSR and opt-in clearcoat rig; m05, s14 and m06 added; the global normal green-flip was reverted (`4e239da`).
 - **2026-09-14 night** (rig overhaul, `24ff854`): rounded-box cube, unified triplanar, lathed rook; front page recurated to 8 materials plus GIFs.
