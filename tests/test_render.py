@@ -435,6 +435,28 @@ def test_render_retries_once_when_the_normal_bakes_flat_with_an_invalid_shader(m
         assert max(ImageStat.Stat(im.convert("RGB")).stddev) > 1
 
 
+def test_render_retry_counts_a_rewrite_within_the_same_mtime_tick(monkeypatch, tmp_path):
+    """A retry that rewrites the normal within one mtime tick of the flat one
+    (flaked on Windows CI, 2026-09-27) must still count as a fresh export."""
+    from mm_mcp import render as render_mod
+    bad = {"log": "ERROR: Rendering with invalid shader", "maps": {"normal": _flat_normal(64)}}
+    calls = []
+    _fake_export(monkeypatch, [bad, {"maps": {"normal": _noise(64)}}], calls)
+    fake = render_mod._run_godot
+
+    def _same_tick(cmd, timeout):
+        proc = fake(cmd, timeout)
+        outdir = cmd[cmd.index("-o") + 1]
+        for fn in os.listdir(outdir):
+            if fn.endswith(".png"):
+                os.utime(os.path.join(outdir, fn), (1_000_000, 1_000_000))
+        return proc
+    monkeypatch.setattr(render_mod, "_run_godot", _same_tick)
+    result = render({}, size=64, outdir=str(tmp_path), basename="m", cfg=cfg)
+    assert result.ok, result.error
+    assert len(calls) == 2
+
+
 def test_render_survives_two_flat_normals_in_a_row(monkeypatch, tmp_path):
     """m06 baked flat twice in a row in the 2026-09-27 survey."""
     bad = {"log": "ERROR: Rendering with invalid shader", "maps": {"normal": _flat_normal(64)}}

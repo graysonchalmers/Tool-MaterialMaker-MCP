@@ -258,6 +258,11 @@ def render(ptex: dict, size: int = _BAKE_SIZE, outdir: str | None = None,
         if not _flat_normal(images, (proc.stdout or "") + (proc.stderr or "")):
             break
         failure = "normal map baked flat (Material Maker logged 'invalid shader'), 3 attempts"
+        # Remove this attempt's maps: a retry that rewrites them within the
+        # same mtime tick would otherwise not count as fresh.
+        if _ < 2:
+            for img in images:
+                os.remove(img)
     else:
         return RenderResult(ok=False, images=images, log_tail=log_tail, error=failure)
 
