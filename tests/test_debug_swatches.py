@@ -77,7 +77,10 @@ def test_pngread_rejects_unsupported_png(tmp_path):
 def _render_swatch(name, tmp_path):
     D.BUILDERS[name]()
     graph = json.load(open(os.path.join(_AUTHORED, name, "v1.ptex"), encoding="utf-8"))
-    result = render(graph, size=128, outdir=str(tmp_path), basename=name, cfg=cfg)
+    # 2048: the pixel checks were calibrated against 2048 maps (MM ignored
+    # --size until render() started downsampling, 2026-09-27); a 128 downsample
+    # averages the glyph's thin relief strokes back to neutral.
+    result = render(graph, size=2048, outdir=str(tmp_path), basename=name, cfg=cfg)
     assert result.ok, result.error or result.log_tail
     return {os.path.basename(i).split(name + "_", 1)[1].rsplit(".", 1)[0]: i
             for i in result.images}

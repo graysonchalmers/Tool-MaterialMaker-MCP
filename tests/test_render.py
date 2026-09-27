@@ -2,6 +2,7 @@ import json
 import os
 import time
 import pytest
+from PIL import Image
 from mm_mcp.config import load_config
 from mm_mcp.render import render, _build_command, _collect_fresh_images, _snapshot_pngs
 
@@ -341,6 +342,129 @@ def test_build_command_defaults_preserved():
     ]
 
 
+def _fake_export(monkeypatch, runs, calls):
+    """Replace _run_godot with a fake Material Maker export. Each call pops the
+    next run spec {"rc", "log", "maps": {suffix: PIL image | bytes}} and writes
+    its maps as <basename>_<suffix>.png into the command's -o directory."""
+    from subprocess import CompletedProcess
+    from mm_mcp import render as render_mod
+
+    def _fake(cmd, timeout):
+        spec = runs[len(calls)]
+        calls.append(cmd)
+        outdir = cmd[cmd.index("-o") + 1]
+        base = os.path.splitext(os.path.basename(cmd[cmd.index("--export-material") + 1]))[0]
+        for suffix, img in spec.get("maps", {}).items():
+            path = os.path.join(outdir, f"{base}_{suffix}.png")
+            if isinstance(img, bytes):
+                with open(path, "wb") as fh:
+                    fh.write(img)
+            else:
+                img.save(path)
+        return CompletedProcess(cmd, spec.get("rc", 0), spec.get("log", ""), "")
+    monkeypatch.setattr(render_mod, "_run_godot", _fake)
+
+
+def _noise(size=2048):
+    from PIL import Image
+    return Image.effect_noise((size, size), 64).convert("RGBA")
+
+
+def _flat_normal(size=2048):
+    from PIL import Image
+    return Image.new("RGBA", (size, size), (127, 127, 255, 255))
+
+
+def test_render_downsamples_maps_to_the_requested_size(monkeypatch, tmp_path):
+    """Material Maker ignores --size and always bakes 2048 (parse_args.gd at
+    ad19fcf), so render() downsamples the fresh maps itself."""
+    from PIL import Image
+    calls = []
+    _fake_export(monkeypatch, [{"maps": {"albedo": _noise(), "normal": _noise()}}], calls)
+    result = render({}, size=512, outdir=str(tmp_path), basename="m", cfg=cfg)
+    assert result.ok, result.error
+    for img in result.images:
+        with Image.open(img) as im:
+            assert im.size == (512, 512)
+
+
+@pytest.mark.parametrize("size", [0, 8, 4096])
+def test_render_rejects_out_of_range_size_without_launching_godot(monkeypatch, tmp_path, size):
+    calls = []
+    _fake_export(monkeypatch, [], calls)
+    result = render({}, size=size, outdir=str(tmp_path), basename="m", cfg=cfg)
+    assert not result.ok
+    assert "2048" in result.error
+    assert calls == []
+
+
+def test_render_fails_on_nonzero_exit_even_with_fresh_maps(monkeypatch, tmp_path):
+    """A Godot that exits nonzero after writing a map is not a success: the
+    map may be partial (the old rule only failed when NO map appeared)."""
+    calls = []
+    _fake_export(monkeypatch, [{"rc": 1, "maps": {"albedo": _noise(64)}}], calls)
+    result = render({}, size=64, outdir=str(tmp_path), basename="m", cfg=cfg)
+    assert not result.ok
+    assert "exited 1" in result.error
+
+
+def test_render_fails_when_a_map_does_not_decode(monkeypatch, tmp_path):
+    import io
+    buf = io.BytesIO()
+    _noise(64).save(buf, "PNG")
+    truncated = buf.getvalue()[:200]
+    calls = []
+    _fake_export(monkeypatch, [{"maps": {"albedo": truncated}}], calls)
+    result = render({}, size=64, outdir=str(tmp_path), basename="m", cfg=cfg)
+    assert not result.ok
+    assert "m_albedo.png" in result.error
+
+
+def test_render_retries_once_when_the_normal_bakes_flat_with_an_invalid_shader(monkeypatch, tmp_path):
+    """Material Maker sometimes bakes a flat normal map after logging
+    'Rendering with invalid shader'; an identical re-run comes out fine."""
+    from PIL import Image, ImageStat
+    bad = {"log": "ERROR: Rendering with invalid shader", "maps": {"normal": _flat_normal(64)}}
+    good = {"maps": {"normal": _noise(64)}}
+    calls = []
+    _fake_export(monkeypatch, [bad, good], calls)
+    result = render({}, size=64, outdir=str(tmp_path), basename="m", cfg=cfg)
+    assert result.ok, result.error
+    assert len(calls) == 2
+    with Image.open(result.images[0]) as im:
+        assert max(ImageStat.Stat(im.convert("RGB")).stddev) > 1
+
+
+def test_render_fails_when_the_normal_stays_flat_after_the_retry(monkeypatch, tmp_path):
+    bad = {"log": "ERROR: Rendering with invalid shader", "maps": {"normal": _flat_normal(64)}}
+    calls = []
+    _fake_export(monkeypatch, [bad, bad], calls)
+    result = render({}, size=64, outdir=str(tmp_path), basename="m", cfg=cfg)
+    assert not result.ok
+    assert "flat" in result.error
+    assert len(calls) == 2
+
+
+def test_render_accepts_a_flat_normal_without_an_invalid_shader_log(monkeypatch, tmp_path):
+    """A graph with nothing wired into normal legitimately bakes flat."""
+    calls = []
+    _fake_export(monkeypatch, [{"maps": {"normal": _flat_normal(64)}}], calls)
+    result = render({}, size=64, outdir=str(tmp_path), basename="m", cfg=cfg)
+    assert result.ok, result.error
+    assert len(calls) == 1
+
+
+def test_render_passes_godot_an_absolute_output_dir(monkeypatch, tmp_path):
+    """Material Maker resolves a relative -o against its own project path,
+    reports 'Output directory does not exist' and never quits: a 180 s hang."""
+    monkeypatch.chdir(tmp_path)
+    calls = []
+    _fake_export(monkeypatch, [{"maps": {"albedo": _noise(64)}}], calls)
+    result = render({}, size=64, outdir="rel_out", basename="m", cfg=cfg)
+    assert result.ok, result.error
+    assert os.path.isabs(calls[0][calls[0].index("-o") + 1])
+
+
 @pytest.mark.integration
 def test_render_bundled_example_produces_pngs(tmp_path):
     src = os.path.join(cfg.examples_dir, "bricks.ptex")
@@ -351,3 +475,5 @@ def test_render_bundled_example_produces_pngs(tmp_path):
     assert len(result.images) >= 1
     for img in result.images:
         assert os.path.getsize(img) > 0
+        with Image.open(img) as im:
+            assert im.size == (256, 256)  # MM bakes 2048; render() downsamples
