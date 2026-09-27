@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import tempfile
 import uuid
 import zipfile
@@ -88,10 +89,25 @@ def render_request(cfg, catalog, body, outdir, render_fn=renderer.render_materia
                        "path": result.get("path"), "maps": maps}
             (stage / "receipt.json").write_text(json.dumps(receipt), encoding="utf-8")
             os.replace(stage, root / preview_id)
+        _prune_previews(root, preview_id)
         return {"ok": True, "path": result.get("path"),
                 "preview_id": preview_id, "maps": maps}
     except (OSError, ValueError) as exc:
         return {"ok": False, "error": str(exc)}
+
+
+# Every slider render keeps its own snapshot so Download stays bound to it;
+# only the newest few are worth keeping.
+_KEEP_PREVIEWS = 20
+
+
+def _prune_previews(root, keep_id):
+    published = [p for p in root.iterdir()
+                 if p.is_dir() and re.fullmatch(r"[0-9a-f]{32}", p.name)]
+    published.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+    for old in published[_KEEP_PREVIEWS:]:
+        if old.name != keep_id:
+            shutil.rmtree(old, ignore_errors=True)
 
 
 def _load_preview(outdir, preview_id):

@@ -141,3 +141,26 @@ def test_export_unknown_material_is_error_data(tmp_path):
     data, fname = api.export(cfg, _catalog(cfg),
                              {"material_id": "nope", "values": {}}, str(tmp_path))
     assert data is None and fname
+
+
+def test_render_request_prunes_old_previews(tmp_path, monkeypatch):
+    """Every slider render keeps its own snapshot; without pruning,
+    output/play/previews grows forever. Only the newest KEEP survive."""
+    monkeypatch.setattr(api, "_KEEP_PREVIEWS", 3)
+    cfg = _cfg()
+
+    def fake_render(graph, changes, size, cfg, outdir, **kw):
+        path = Path(outdir) / "play_albedo.png"
+        path.write_bytes(b"x")
+        return {"ok": True, "path": "headless", "images": [str(path)]}
+
+    ids = []
+    for i in range(5):
+        r = api.render_request(cfg, {}, {"material_id": "t01_sand_dunes", "values": {}},
+                               str(tmp_path), render_fn=fake_render)
+        ids.append(r["preview_id"])
+        os.utime(tmp_path / "previews" / r["preview_id"], (1000 + i, 1000 + i))
+
+    kept = {p.name for p in (tmp_path / "previews").iterdir()}
+    assert kept == set(ids[-3:])
+    assert api.export(cfg, {}, {"preview_id": ids[-1]}, str(tmp_path))[0]
