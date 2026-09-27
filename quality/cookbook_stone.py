@@ -637,7 +637,29 @@ def build_s07_cobblestone(catalog: dict) -> str:
       shows real surface grain, not a flat per-plate tone.
     Relief (dry_earth's crack->height->normal chain) is kept as-is: worn
     cobbles have flat-ish tops and deep mortar gaps, which is what this chain
-    already produces. Non-metal: dry_earth has no metallic input connected."""
+    already produces. (Correction: dry_earth DOES wire metallic_tex, from
+    colorize_3 on perlin_1, 0-0.52; kept exactly as shipped.)
+
+    PAVED-STONE HOST (2026-09-27): absorbs s08_dry_stone_wall and
+    s10_flagstone. Those two are this same graph with different
+    parameters and no node of their own, so nothing is carried in; the host
+    exposes the parameters they tuned (Stone size now drives scale_x AND
+    scale_y, Grain scale likewise, Relief strength = StoneNormal.param1),
+    and each preset renders its original exactly (0 px, 2048 maps). Every
+    new layer defaults to a no-op, so the default is today's s07 exactly
+    (0 px on albedo/normal/orm/heightmap):
+    - Joint width (Stone Layout): border distance / max(2 x width, 0.1)
+      before PlateEdges, upstream of JointWarp, so joint shade and groove
+      move together. 0.5 = shipped width.
+    - Tones follow joints (Stone Layout): ToneWarp, JointWarp's twin on the
+      cell random, mixed in by math; 1 puts every tone edge on a joint.
+    - Top flatness (Stone Surface): pulls the fine relief noise toward 0.5,
+      so tops go flat while joints keep full depth.
+    - Mortar (Mortar fill, Mortar color): relief reads max(w, fill) and one
+      mask smoothstep(clamp((fill - w) x 8)) paints the mortar colour where
+      the relief is mortar; the colour varies with the same surface noise.
+    Every height op is a math node (no new f->rgba->f round trip). Presets
+    are on the card (cookbook/stone/s07_cobblestone.md, "Feature layers")."""
     g = load_example("dry_earth")
     set_param(g, "voronoi_0", "scale_x", 6)    # cobble-sized irregular plates
     set_param(g, "voronoi_0", "scale_y", 6)
@@ -677,15 +699,222 @@ def build_s07_cobblestone(catalog: dict) -> str:
         {"from": "colorize_grain", "from_port": 0, "to": "blend_grain", "to_port": 1},
     ]
     rewire(g, "Material", 0, "blend_grain", 0)   # albedo <- grain-multiplied cobbles
-    _group_paving_stone(g, catalog)
-    rename_nodes(g, {
-        **_DRY_EARTH_NAMES,
-        "colorize_cobble": "StoneColor",
-        "perlin_grain": "GrainNoise",
-        "colorize_grain": "GrainContrast",
-        "blend_grain": "GrainOverStone",
-    })
+
+    # --- Host refactor ---
+    # dry_earth's flat-earth colorize_0 has had no consumer since blend_0's
+    # background was rewired onto colorize_cobble; drop it.
+    g["connections"] = [c for c in g["connections"] if c["to"] != "colorize_0"]
+    g["nodes"] = [n for n in g["nodes"] if n["name"] != "colorize_0"]
+
+    # --- Joint width (Stone Layout) ---
+    # PlateEdges ramps 0 -> 1 over 0.064 of the voronoi border distance, so
+    # the joint is a fixed fraction of the cell: bigger stones, wider joints.
+    # Dividing the border distance by (2 x Joint width) before PlateEdges
+    # scales that band on its own. Upstream of JointWarp, so the dark joint
+    # in the albedo and the groove in the relief (both read the warped band)
+    # move together. Joint width 0.5 divides by exactly 1.0; the 0.1 floor
+    # keeps a slider at 0 from dividing by zero.
+    add_node(g, "JointWidth", "math", {"op": 2, "default_in1": 0.5, "default_in2": 2})  # A*B
+    add_node(g, "JointWidthFloor", "math", {"op": 14, "default_in2": 0.1})              # max(A, B)
+    add_node(g, "JointScale", "math", {"op": 3})                                        # A/B
+    g["connections"] += [
+        {"from": "JointWidth", "from_port": 0, "to": "JointWidthFloor", "to_port": 0},
+        {"from": "voronoi_0", "from_port": 1, "to": "JointScale", "to_port": 0},
+        {"from": "JointWidthFloor", "from_port": 0, "to": "JointScale", "to_port": 1},
+    ]
+    rewire(g, "colorize_1", 0, "JointScale", 0)
+
+    # --- Tone registration (Stone Layout) ---
+    # JointWarp displaces the joints but StoneColor reads the UNwarped cell
+    # random, so some tone boundaries sit inside a stone instead of on a
+    # joint (all three dry_earth pavings ship this; thin joints expose it).
+    # ToneWarp is JointWarp's twin (same params, same JointWarpNoise) on the
+    # cell random, so its cell edges land on the warped joints. Math nodes
+    # mix it in: random + (warped - random) x amount, which is the unwarped
+    # random exactly at 0.
+    add_node(g, "ToneWarp", "warp", dict(node(g, "warp_0")["parameters"]))
+    add_node(g, "ToneDelta", "math", {"op": 1})                          # warped - random
+    add_node(g, "ToneShift", "math", {"op": 2, "default_in2": 0})        # delta x amount
+    add_node(g, "StoneTone", "math", {"op": 0})                          # random + shift
+    g["connections"] += [
+        {"from": "voronoi_0", "from_port": 2, "to": "ToneWarp", "to_port": 0},
+        {"from": "perlin_1", "from_port": 0, "to": "ToneWarp", "to_port": 1},
+        {"from": "ToneWarp", "from_port": 0, "to": "ToneDelta", "to_port": 0},
+        {"from": "voronoi_0", "from_port": 2, "to": "ToneDelta", "to_port": 1},
+        {"from": "ToneDelta", "from_port": 0, "to": "ToneShift", "to_port": 0},
+        {"from": "voronoi_0", "from_port": 2, "to": "StoneTone", "to_port": 0},
+        {"from": "ToneShift", "from_port": 0, "to": "StoneTone", "to_port": 1},
+    ]
+    rewire(g, "colorize_cobble", 0, "StoneTone", 0)
+
+    # --- Top flatness (Stone Surface) ---
+    # The relief is 0.5 x ReliefNoiseFine (rough 10-octave noise, everywhere)
+    # plus 0.5 x the joint groove. Pulling that noise toward its mid value
+    # 0.5 flattens the stone tops while the joints keep their full depth:
+    # the "relief lives in the joints" s10 wanted, where s10's own lever
+    # (normal strength 0.5) halved the joints too. noise + (0.5 - noise) x
+    # flatness is the noise exactly at 0.
+    add_node(g, "TopNoiseDelta", "math", {"op": 1, "default_in1": 0.5})  # 0.5 - noise
+    add_node(g, "TopFlatten", "math", {"op": 2, "default_in2": 0})       # delta x flatness
+    add_node(g, "TopNoise", "math", {"op": 0})                           # noise + that
+    g["connections"] += [
+        {"from": "perlin_0", "from_port": 0, "to": "TopNoiseDelta", "to_port": 1},
+        {"from": "TopNoiseDelta", "from_port": 0, "to": "TopFlatten", "to_port": 0},
+        {"from": "perlin_0", "from_port": 0, "to": "TopNoise", "to_port": 0},
+        {"from": "TopFlatten", "from_port": 0, "to": "TopNoise", "to_port": 1},
+    ]
+    rewire(g, "blend_1", 0, "TopNoise", 0)
+
+    # --- Mortar ---
+    # The joint band w (JointWarp: 0 at the joint centre, 1 on the stone)
+    # is a V-groove in the relief. Mortar fills it to a flat level L
+    # ("Mortar fill"): the relief reads max(w, L), so the groove floor rises
+    # to L and meets the stone in a crease at w = L, and ONE mask,
+    # smoothstep(clamp((L - w) x 8)), puts the mortar colour exactly where
+    # the relief is mortar. Its colour varies with the surface noise that
+    # textures the mortar's relief. L = 0 is a no-op: max(w, 0) = w and the
+    # mask is 0 (w is never below 0). 0 = open dry-laid joints (every
+    # original's look), 1 = mortar flush with the stone tops.
+    add_node(g, "MortarLevel", "uniform_greyscale", {"color": 0})
+    add_node(g, "MortarRelief", "math", {"op": 14})                              # max(w, L)
+    add_node(g, "MortarDepth", "math", {"op": 1})                                # L - w
+    add_node(g, "MortarRamp", "math", {"op": 2, "default_in2": _MORTAR_EDGE, "clamp": True})
+    add_node(g, "MortarMask", "math", {"op": 20, "clamp": True})                 # smoothstep
+    add_node(g, "MortarColor", "colorize", {"gradient": _grad(_MORTAR_COLOR)})
+    add_node(g, "MortarColorComposite", "blend", {"blend_type": 0, "amount": 1})  # 0 = Normal
+    g["connections"] += [
+        {"from": "warp_0", "from_port": 0, "to": "MortarRelief", "to_port": 0},
+        {"from": "MortarLevel", "from_port": 0, "to": "MortarRelief", "to_port": 1},
+        {"from": "MortarLevel", "from_port": 0, "to": "MortarDepth", "to_port": 0},
+        {"from": "warp_0", "from_port": 0, "to": "MortarDepth", "to_port": 1},
+        {"from": "MortarDepth", "from_port": 0, "to": "MortarRamp", "to_port": 0},
+        {"from": "MortarRamp", "from_port": 0, "to": "MortarMask", "to_port": 0},
+        {"from": "TopNoise", "from_port": 0, "to": "MortarColor", "to_port": 0},
+        # mask 1 shows port 0 (mortar), mask 0 shows port 1 (the stones)
+        {"from": "MortarColor", "from_port": 0, "to": "MortarColorComposite", "to_port": 0},
+        {"from": "blend_0", "from_port": 0, "to": "MortarColorComposite", "to_port": 1},
+        {"from": "MortarMask", "from_port": 0, "to": "MortarColorComposite", "to_port": 2},
+    ]
+    rewire(g, "colorize_4", 0, "MortarRelief", 0)
+    rewire(g, "blend_grain", 0, "MortarColorComposite", 0)
+
+    # Seed-bearing noises keep the positions they have always had: voronoi_0,
+    # perlin_0 and perlin_1 the dry_earth donor's own, perlin_grain (0, 0) of
+    # its subgraph. Only nodes with no seed move.
+    place(g, {
+        # stone_layout
+        "JointWidth": (-165, -330), "JointWidthFloor": (75, -330), "JointScale": (75, -130),
+        "colorize_1": (300, -130), "warp_0": (530, -30),
+        "ToneWarp": (75, 250), "ToneDelta": (300, 250), "ToneShift": (530, 250),
+        "StoneTone": (760, 150),
+        # stone_color
+        "colorize_cobble": (250, -250),
+        # stone_surface
+        "TopNoiseDelta": (300, -450), "TopFlatten": (530, -450), "TopNoise": (760, -360),
+        # mortar
+        "MortarColor": (300, -150), "MortarLevel": (0, 300), "MortarRelief": (300, 100),
+        "MortarDepth": (300, 350), "MortarRamp": (550, 350), "MortarMask": (800, 350),
+        "MortarColorComposite": (1050, -50),
+        # surface_grain
+        "colorize_grain": (250, -150), "blend_grain": (500, -50)})
+
+    group_into_subgraph(g, ["voronoi_0", "JointWidth", "JointWidthFloor", "JointScale",
+                             "colorize_1", "perlin_1", "warp_0",
+                             "ToneWarp", "ToneDelta", "ToneShift", "StoneTone"],
+                         "stone_layout", "Stone Layout",
+                         [("voronoi_0", "scale_x", "param0", "Stone size"),
+                          ("JointWidth", "default_in1", "param1", "Joint width"),
+                          ("ToneShift", "default_in2", "param2", "Tones follow joints")],
+                         catalog)
+    link_also(g, "stone_layout", "param0", "voronoi_0", "scale_y")
+    tidy_ports(g, "stone_layout", [],
+               [("warp_0", 0, "joints"), ("StoneTone", 0, "stone_tone"),
+                ("perlin_1", 0, "warp_noise")], catalog)
+    group_into_subgraph(g, ["colorize_cobble", "blend_0", "colorize_3"],
+                         "stone_color", "Stone Color",
+                         [("colorize_cobble", "gradient", "param0", "Stone color"),
+                          ("blend_0", "amount", "param1", "Joint depth")],
+                         catalog)
+    tidy_ports(g, "stone_color",
+               [("stone_layout", 0, "joints"), ("stone_layout", 1, "stone_tone"),
+                ("stone_layout", 2, "warp_noise")],
+               [("blend_0", 0, "albedo"), ("colorize_3", 0, "metallic")], catalog)
+    group_into_subgraph(g, ["perlin_0", "TopNoiseDelta", "TopFlatten", "TopNoise"],
+                         "stone_surface", "Stone Surface",
+                         [("TopFlatten", "default_in2", "param0", "Top flatness")],
+                         catalog)
+    tidy_ports(g, "stone_surface", [], [("TopNoise", 0, "surface")], catalog)
+    group_into_subgraph(g, ["MortarLevel", "MortarRelief", "MortarDepth", "MortarRamp",
+                             "MortarMask", "MortarColor", "MortarColorComposite"],
+                         "mortar", "Mortar",
+                         [("MortarLevel", "color", "param0", "Mortar fill"),
+                          ("MortarColor", "gradient", "param1", "Mortar color")],
+                         catalog)
+    tidy_ports(g, "mortar",
+               [("stone_layout", 0, "joints"), ("stone_color", 0, "albedo"),
+                ("stone_surface", 0, "surface")],
+               [("MortarColorComposite", 0, "albedo"), ("MortarRelief", 0, "joints")], catalog)
+    group_into_subgraph(g, ["colorize_4", "blend_1", "colorize", "normal_map_0"],
+                         "relief", "Relief",
+                         [("normal_map_0", "param1", "param0", "Relief strength")],
+                         catalog)
+    tidy_ports(g, "relief", [("mortar", 1, "joints"), ("stone_surface", 0, "surface")],
+               [("normal_map_0", 0, "normal"), ("blend_1", 0, "depth")], catalog)
+    group_into_subgraph(g, ["perlin_grain", "colorize_grain", "blend_grain"],
+                         "surface_grain", "Surface Grain",
+                         [("perlin_grain", "scale_x", "param0", "Grain scale"),
+                          ("colorize_grain", "gradient", "param1", "Grain contrast")],
+                         catalog)
+    link_also(g, "surface_grain", "param0", "perlin_grain", "scale_y")
+    tidy_ports(g, "surface_grain", [("mortar", 0, "albedo")],
+               [("blend_grain", 0, "albedo")], catalog)
+
+    place(node(g, "stone_layout"), {
+        "gen_inputs": (-450, 250), "gen_parameters": (-450, -330), "gen_outputs": (1050, 0)})
+    place(node(g, "stone_color"), {
+        "gen_inputs": (-50, 0), "gen_parameters": (-50, -300), "gen_outputs": (800, -50)})
+    place(node(g, "stone_surface"), {
+        "gen_inputs": (-250, -360), "gen_parameters": (56, -600), "gen_outputs": (1000, -360)})
+    place(node(g, "mortar"), {
+        "gen_inputs": (-300, 100), "gen_parameters": (-300, 400), "gen_outputs": (1350, 50)})
+    place(node(g, "relief"), {
+        "gen_inputs": (-50, 150), "gen_parameters": (-50, -250), "gen_outputs": (1000, 150)})
+    place(node(g, "surface_grain"), {
+        "gen_inputs": (-300, -100), "gen_parameters": (-300, 150), "gen_outputs": (750, -50)})
+    # Top level reads as a layer stack, left to right into Material. The
+    # collapsed nodes carry seed_int 0, so moving them moves no seeds.
+    place(g, {"stone_layout": (-900, 0), "stone_color": (-600, -200),
+              "stone_surface": (-900, 300), "mortar": (-300, 0),
+              "surface_grain": (0, -200), "relief": (0, 200), "Material": (300, 0)})
+    rename_nodes(g, _S07_NAMES)
     return save_variant(g, _LABEL, "s07_cobblestone", 1)
+
+
+# Mortar colour: a mid warm-gray mortar, varied by the surface noise. Kept
+# a step darker than the light stones (0.55-0.62) so a filled joint still
+# separates them under the lit preview; a light lime mortar washed out.
+_MORTAR_COLOR = [
+    (0.0, 0.30, 0.29, 0.27),
+    (1.0, 0.44, 0.42, 0.39),
+]
+# MortarMask = smoothstep(clamp((L - w) x 8)): the colour reaches full
+# mortar within an eighth of the joint ramp below the fill level.
+_MORTAR_EDGE = 8
+
+# s07 host names: _DRY_EARTH_NAMES (shared with s08/s10/s11, left as is)
+# with two misnomers corrected for the host. perlin_1 has never fed the
+# relief here: it is JointWarp's displacement and the metallic source.
+# colorize_3 is that metallic variation (dry_earth wires it to Material's
+# metallic_tex, 0-0.52), not a relief contrast.
+_S07_NAMES = {
+    **{k: v for k, v in _DRY_EARTH_NAMES.items() if k != "colorize_0"},
+    "perlin_1": "JointWarpNoise",
+    "colorize_3": "StoneMetallic",
+    "colorize_cobble": "StoneColor",
+    "perlin_grain": "GrainNoise",
+    "colorize_grain": "GrainContrast",
+    "blend_grain": "GrainOverStone",
+}
 
 
 def build_s08_dry_stone_wall(catalog: dict) -> str:

@@ -12,43 +12,78 @@ Pitfall specific to this material: two traps cost a pass each. First, the initia
 
 ## Subgraph structure
 
-Grouped per the "Grouping into subgraphs" lever in `docs/AUTHORING.md`, via
-a shared `_group_paving_stone` helper reused across `s07`/`s08`/`s10` (the
-three dry_earth-clone paving materials that add the same `StoneColor`
-+ grain-overlay structure). **`JointWarp` caution**: this donor's
-`JointWarp.amount` is the single most render-sensitive parameter in the whole
-stone category -- at 0.4 (the donor default) it smears the crack shadows
-into a broad haze across the plates (this material's own pitfall note is
-about exactly that), and this recipe deliberately drops it to 0.12 to kill
-that haze. `JointWarp` is grouped with `JointComposite`, the thing it most directly
-and visibly feeds (the crack/joint pattern), and its `amount` is **not**
-exposed as a friendly parameter, per the retrofit's category-wide rule.
-`dry_earth`'s own `JointComposite` carries no port2 mask (unconnected -> uniform
-1.0) -- its `amount` (0.6 here) is a genuine scalar mix strength, not a
-spatial mask, so it is safe to expose as `Joint depth`. `ReliefFineUnused`
-(the original flat-earth base `JointComposite` used before this recipe rewired
-`JointComposite`'s background onto `StoneColor`) is orphaned but still
-present, folded into the relief group since it shares `ReliefNoiseFine` there.
-Opening the graph shows 2 top-level groups instead of the raw 16-node
-graph:
+The paved-stone host (2026-09-27). It absorbs `s08_dry_stone_wall` and
+`s10_flagstone`, which are this same `dry_earth` graph with different
+parameters and no node of their own. Six groups, left to right into
+Material:
 
-- **Stone & Relief** -- `PlateCells`, `PlateEdges`, `StoneColor`,
-  `JointWarp`, `JointComposite` (the color/crack composite) plus the never-separately-
-  tuned relief/roughness chain (`ReliefNoiseCoarse`, `ReliefContrast`, `ReliefNoiseFine`,
-  `ReliefFineUnused`, `ReliefRamp`, `ReliefComposite`, `ReliefHeight`, `StoneNormal`) --
-  folded in here since it has no builder-set parameter of its own for this
-  material (unlike `s10`, which tunes `StoneNormal.param1` and so gets a
-  separate Relief group). Exposed: `Stone size` (`PlateCells.scale_x`),
-  `Stone color` (`StoneColor.gradient`), `Joint depth`
-  (`JointComposite.amount`).
-- **Surface Grain** -- `GrainNoise`, `GrainContrast`, `GrainOverStone`.
-  Exposed: `Grain scale` (`GrainNoise.scale_x`), `Grain contrast`
-  (`GrainContrast.gradient`).
+- **Stone Layout**: `PlateCells`, the joint band (`JointScale`,
+  `PlateEdges`, `JointWarp`, `JointWarpNoise`) and the per-stone tone
+  (`ToneWarp`, `StoneTone`). Exposed: `Stone size` (drives `scale_x` and
+  `scale_y`), `Joint width`, `Tones follow joints`.
+- **Stone Color**: `StoneColor`, `JointComposite` (dark joint shade),
+  `StoneMetallic` (dry_earth's 0-0.52 metallic variation, unchanged).
+  Exposed: `Stone color`, `Joint depth`.
+- **Stone Surface**: `ReliefNoiseFine` and the top-flatness math. Exposed:
+  `Top flatness`.
+- **Mortar**: exposed `Mortar fill`, `Mortar color`.
+- **Surface Grain**: exposed `Grain scale` (both axes), `Grain contrast`.
+- **Relief**: `ReliefRamp`, `ReliefComposite`, `ReliefHeight`,
+  `StoneNormal`. Exposed: `Relief strength`.
 
-Verified after building, with extra scrutiny given the `JointWarp` caution:
-`renders_match` against this material's own pre-retrofit baseline came back
-at an exact `grid_mean_abs_diff` of `0.0` on all four exported maps (albedo,
-heightmap, normal, orm).
+**`JointWarp` caution** still holds: its `amount` (0.12) is not exposed. At
+the donor's 0.4 it smears the joint shadows into a haze across the stones.
+
+## Feature layers
+
+Every layer defaults to a no-op, so the default renders exactly the
+cobblestone it did before the host work. A 2048 full-image diff of albedo,
+normal, ORM and heightmap against `main`'s graph gives 0 differing pixels.
+
+| Layer | Exposed params | What it does |
+|---|---|---|
+| Stone Layout: `Joint width` | 0-1, default 0.5 | Scales the joint band on its own. The border distance is divided by max(2 x width, 0.1) before `PlateEdges`, so 0.5 is the shipped joint, 0.25 is half as wide, and 1 is twice as wide. It sits upstream of `JointWarp`, so the dark joint and the relief groove move together. |
+| Stone Layout: `Tones follow joints` | 0 or 1, default 0 | Set it to 1. Every original ships 0, where the per-stone tone cells are not warped but the joints are, so some tone edges sit mid-stone. Thin joints make this obvious. At 1, `ToneWarp` (JointWarp's twin on the cell random) puts every tone edge on a joint. In-between values mix two tones; use 0 or 1. |
+| Stone Surface: `Top flatness` | 0-1, default 0 | Pulls the fine relief noise toward its mid value, so the tops go flat while the joints keep full depth. This is the "relief lives in the joints" s10 wanted. s10's own lever, `Relief strength` 0.5, halves the joints too. |
+| Mortar: `Mortar fill`, `Mortar color` | 0-1, default 0 | 0 = open dry-laid joints, the look of s07, s08 and s10 alike. Above 0, mortar fills the joint's V-groove up to that level, with a flat floor and a crease where it meets the stone. One mask, smoothstep(clamp((fill - band) x 8)), paints the mortar colour where the relief is mortar, and the colour varies with the same surface noise that textures it. 1 = flush with the tops. |
+
+`Stone size`, `Stone color`, `Joint depth`, `Grain scale`, `Grain
+contrast` and `Relief strength` are the originals' own levers, now exposed.
+Two things are different in the host: `Stone size` and `Grain scale` now
+drive both axes, and `Relief strength` is new as an exposed slider.
+
+### Presets
+
+Set these on the collapsed nodes. Colors are gradient stops (position: R, G,
+B in 0-1). Anything not listed stays at its default. `Grain scale` 48 is
+past its slider's range (the slider stops at 32), so type it into the field.
+
+**Dry stone wall (s08), exact:**
+- `Stone size` = 8, `Grain scale` = 48.
+- `Stone color`: 0.0: 0.22, 0.23, 0.22; 0.25: 0.40, 0.41, 0.40; 0.45: 0.58,
+  0.58, 0.56; 0.62: 0.50, 0.47, 0.40; 0.80: 0.43, 0.45, 0.40; 1.0: 0.30,
+  0.29, 0.26.
+- Renders s08's maps exactly (0 px on albedo, normal, ORM and heightmap).
+
+**Flagstone (s10), exact:**
+- `Stone size` = 4, `Relief strength` = 0.5.
+- `Stone color`: 0.0: 0.18, 0.20, 0.23; 0.30: 0.30, 0.34, 0.38; 0.55: 0.42,
+  0.44, 0.46; 0.78: 0.34, 0.40, 0.38; 1.0: 0.48, 0.50, 0.54.
+- `Grain contrast`: 0.0: 0.85 gray; 1.0: 1.0 gray.
+- Renders s10's maps exactly (0 px).
+
+**Beyond the originals (these use the new layers):**
+- *Tight dry-stack*, s08's stated intent (s08 shipped s07's joint width):
+  the s08 preset plus `Joint width` = 0.25 and `Tones follow joints` = 1.
+- *Sawn flagstone, grouted*: the s10 preset, but keep `Relief strength` at
+  0.99. Add `Top flatness` = 0.75, `Tones follow joints` = 1, `Mortar fill`
+  = 0.6, and `Mortar color` 0.0: 0.26, 0.27, 0.28; 1.0: 0.38, 0.39, 0.40.
+- *Cobbles set in mortar*: `Joint width` = 0.7, `Tones follow joints` = 1,
+  `Mortar fill` = 0.55. The default `Mortar color` is 0.0: 0.30, 0.29,
+  0.27; 1.0: 0.44, 0.42, 0.39.
+
+**Back to the default:** set `Joint width` to 0.5, and set `Tones follow
+joints`, `Top flatness` and `Mortar fill` to 0.
 
 ## See also
 
@@ -64,21 +99,41 @@ do not edit by hand. Open the `.ptex` and look for these names.
 
 | Subgraph | Node | Type |
 |---|---|---|
-| (top level) | stone_and_relief | graph |
+| (top level) | stone_layout | graph |
+| (top level) | stone_color | graph |
+| (top level) | stone_surface | graph |
+| (top level) | mortar | graph |
+| (top level) | relief | graph |
 | (top level) | surface_grain | graph |
-| stone_and_relief | PlateCells | voronoi |
-| stone_and_relief | PlateEdges | colorize |
-| stone_and_relief | ReliefNoiseCoarse | perlin |
-| stone_and_relief | ReliefFineUnused | colorize |
-| stone_and_relief | ReliefNoiseFine | perlin |
-| stone_and_relief | ReliefContrast | colorize |
-| stone_and_relief | JointComposite | blend |
-| stone_and_relief | JointWarp | warp |
-| stone_and_relief | ReliefComposite | blend |
-| stone_and_relief | StoneNormal | normal_map |
-| stone_and_relief | ReliefRamp | colorize |
-| stone_and_relief | ReliefHeight | colorize |
-| stone_and_relief | StoneColor | colorize |
+| stone_layout | PlateCells | voronoi |
+| stone_layout | PlateEdges | colorize |
+| stone_layout | JointWarpNoise | perlin |
+| stone_layout | JointWarp | warp |
+| stone_layout | JointWidth | math |
+| stone_layout | JointWidthFloor | math |
+| stone_layout | JointScale | math |
+| stone_layout | ToneWarp | warp |
+| stone_layout | ToneDelta | math |
+| stone_layout | ToneShift | math |
+| stone_layout | StoneTone | math |
+| stone_color | StoneMetallic | colorize |
+| stone_color | JointComposite | blend |
+| stone_color | StoneColor | colorize |
+| stone_surface | ReliefNoiseFine | perlin |
+| stone_surface | TopNoiseDelta | math |
+| stone_surface | TopFlatten | math |
+| stone_surface | TopNoise | math |
+| mortar | MortarLevel | uniform_greyscale |
+| mortar | MortarRelief | math |
+| mortar | MortarDepth | math |
+| mortar | MortarRamp | math |
+| mortar | MortarMask | math |
+| mortar | MortarColor | colorize |
+| mortar | MortarColorComposite | blend |
+| relief | ReliefComposite | blend |
+| relief | StoneNormal | normal_map |
+| relief | ReliefRamp | colorize |
+| relief | ReliefHeight | colorize |
 | surface_grain | GrainNoise | perlin |
 | surface_grain | GrainContrast | colorize |
 | surface_grain | GrainOverStone | blend |
