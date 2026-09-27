@@ -102,113 +102,6 @@ def _group_paving_stone(g: dict, catalog: dict, *, relief_label: str = None) -> 
 
 
 
-def build_s05_hex_stone_tile(catalog: dict) -> str:
-    """Natural-toned hex stone tile / mosaic paving: reuse beehive's hex
-    relief chain, same lever as man01_metal_grating/man02_ceramic_hex_tiles,
-    keeping the DEFAULT per-cell-random blend (man02 rewired it away for
-    uniform ceramic tiles -- here the per-cell randomness is what makes each
-    tile read as a naturally different stone, not a repeating single color).
-    A multi-stop earth gradient spread across the mask's value range gives
-    tiles a genuine tone spread (cool gray, warm tan, dark gray); the low
-    end stays a thin dark band for recessed mortar/gaps.
-
-    NOT true irregular cobblestone -- honest miss, worth flagging rather than
-    overselling. First attempt at the default hex scale (sx=20/sy=12) plus a
-    wide dark-mortar band read as a busy dark digital-camo grid, not stone;
-    fixed the proportions by shrinking sx/sy to 7/5 (big cobbles, not a fine
-    grid) and narrowing the dark band to a thin edge (0.0-0.08, matching
-    man01's actual ratio) so stone dominates coverage. That fix makes a
-    good-looking natural-toned stone MOSAIC, but beehive's hex grid is
-    perfectly regular -- real cobblestone/crazy-paving has irregular,
-    variously-sized stones, which this doesn't have. A voronoi-plate
-    approach (like dry_earth's cracked-plate network, recolored to stone
-    tones with per-plate variation) would likely get genuine irregularity;
-    untried here, open item for whoever wants true cobblestone next."""
-    g = load_example("beehive")
-    set_param(g, "beehive_2", "sx", 7)    # big rounded cobbles, not a fine grid
-    set_param(g, "beehive_2", "sy", 5)
-    set_param(g, "uniform_greyscale", "color", 0.0)   # non-metal
-    set_gradient(g, "colorize_5", [                    # albedo: mortar -> varied stone
-        (0.0, 0.15, 0.14, 0.13),    # recessed mortar/gap, dark, thin band only
-        (0.08, 0.16, 0.15, 0.14),
-        (0.14, 0.45, 0.42, 0.38),   # transition into stone
-        (0.40, 0.56, 0.50, 0.42),   # warm tan stone
-        (0.65, 0.43, 0.43, 0.45),   # cool gray stone
-        (0.88, 0.50, 0.46, 0.39),   # another warm variant near the top
-    ])
-    set_gradient(g, "colorize_4", [                    # roughness: rough mortar, rough-ish stone
-        (0.08, 0.85, 0.85, 0.85),
-        (0.14, 0.58, 0.58, 0.58),
-        (0.88, 0.64, 0.64, 0.64),
-    ])
-    # Grayson's feedback on the first pass: reads flat, needs another level of
-    # detail. Each hex face was a single uniform color -- add a fine perlin
-    # speckle multiplied over the albedo/roughness so individual stones show
-    # real surface grain, not just a flat per-tile tone. Multiply blend with
-    # NO mask connected (the "a" port's own unconnected default is 1.0, a
-    # uniform full-strength effect) -- no threshold involved, so none of the
-    # w03 mask-edge speckle risk applies here.
-    add_node(g, "perlin_grain", "perlin", {"scale_x": 48, "scale_y": 48, "iterations": 5})
-    add_node(g, "colorize_grain_alb", "colorize",
-             {"gradient": _grad([(0.0, 0.80, 0.80, 0.80), (1.0, 1.0, 1.0, 1.0)])})
-    add_node(g, "colorize_grain_rgh", "colorize",
-             {"gradient": _grad([(0.0, 0.85, 0.85, 0.85), (1.0, 1.05, 1.05, 1.05)])})
-    add_node(g, "blend_grain_alb", "blend", {"blend_type": 2, "amount": 1})  # Multiply
-    add_node(g, "blend_grain_rgh", "blend", {"blend_type": 2, "amount": 1})
-    g["connections"] += [
-        {"from": "perlin_grain", "from_port": 0, "to": "colorize_grain_alb", "to_port": 0},
-        {"from": "perlin_grain", "from_port": 0, "to": "colorize_grain_rgh", "to_port": 0},
-        {"from": "colorize_5", "from_port": 0, "to": "blend_grain_alb", "to_port": 0},
-        {"from": "colorize_grain_alb", "from_port": 0, "to": "blend_grain_alb", "to_port": 1},
-        {"from": "colorize_4", "from_port": 0, "to": "blend_grain_rgh", "to_port": 0},
-        {"from": "colorize_grain_rgh", "from_port": 0, "to": "blend_grain_rgh", "to_port": 1},
-    ]
-    rewire(g, "Material", 0, "blend_grain_alb", 0)   # albedo <- grain-multiplied stone
-    rewire(g, "Material", 2, "blend_grain_rgh", 0)   # roughness <- grain-multiplied
-
-    # Subgraph grouping. blend/blend_grain_alb/blend_grain_rgh carry no
-    # port2 mask (unconnected -> default 1.0), so their "amount"s are plain
-    # uniform mixes -- blend/blend_grain_* stay at their donor default
-    # amount (untouched by this builder), no polarity trap to trace.
-    # uniform_greyscale (metallic=0, explicit) is left top-level, same as
-    # other categories' untouched single-scalar metallic nodes.
-    group_into_subgraph(g, ["beehive_2", "colorize_2", "colorize", "blend",
-                             "colorize_3", "normal_map"],
-                         "hex_pattern", "Hex Pattern",
-                         [("beehive_2", "sx", "param0", "Tile width"),
-                          ("beehive_2", "sy", "param1", "Tile height")],
-                         catalog)
-    group_into_subgraph(g, ["colorize_5", "colorize_4"],
-                         "stone_finish", "Stone Color & Roughness",
-                         [("colorize_5", "gradient", "param0", "Stone color"),
-                          ("colorize_4", "gradient", "param1", "Roughness")],
-                         catalog)
-    group_into_subgraph(g, ["perlin_grain", "colorize_grain_alb", "colorize_grain_rgh",
-                             "blend_grain_alb", "blend_grain_rgh"],
-                         "surface_grain", "Surface Grain",
-                         [("perlin_grain", "scale_x", "param0", "Grain scale"),
-                          ("perlin_grain", "iterations", "param1", "Grain detail")],
-                         catalog)
-    rename_nodes(g, {
-        "beehive_2": "HexLayout",
-        "colorize_2": "HexFaceMask",
-        "colorize": "HexEdgeMask",
-        "blend": "HexFieldComposite",
-        "colorize_3": "HexAO",
-        "normal_map": "HexNormal",
-        "colorize_5": "StoneColor",
-        "colorize_4": "StoneRoughness",
-        "uniform_greyscale": "NonMetallic",
-        "perlin_grain": "GrainNoise",
-        "colorize_grain_alb": "GrainContrastAlbedo",
-        "colorize_grain_rgh": "GrainContrastRoughness",
-        "blend_grain_alb": "AlbedoComposite",
-        "blend_grain_rgh": "RoughnessComposite",
-    })
-    return save_variant(g, _LABEL, "s05_hex_stone_tile", 1)
-
-
-
 def build_s07_cobblestone(catalog: dict) -> str:
     """True irregular cobblestone -- the voronoi-plate approach the
     s05_hex_stone_tile docstring flagged as untried (backlog C). CLONE
@@ -1601,7 +1494,6 @@ _S14_NAMES = {
 
 BUILDERS = {
     "s02_gray_granite": build_s02_gray_granite,
-    "s05_hex_stone_tile": build_s05_hex_stone_tile,
     "s07_cobblestone": build_s07_cobblestone,
     "s09_ashlar_wall": build_s09_ashlar_wall,
     "s11_marble": build_s11_marble,
