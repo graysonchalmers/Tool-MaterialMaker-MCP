@@ -352,3 +352,17 @@ def test_caller_relative_paths_and_sweep_options_are_preserved(monkeypatch, swee
     with Image.open(result.image) as gif:
         assert gif.info["duration"] == 120
 
+
+def test_heightmap_is_forwarded_to_the_sweep_command(monkeypatch, sweep):
+    """parallax_spin only shows depth if the Deep Parallax heightmap reaches
+    Godot; the staged-publication rewrite must keep forwarding it."""
+    calls = _mock_render(monkeypatch)
+    heightmap = sweep.maps[0]
+
+    result = _render(sweep, sweep_kind="parallax_spin", heightmap_path=heightmap,
+                     heightmap_scale=0.2)
+
+    assert result.ok, result.error
+    cmd = calls[0].cmd
+    assert f"--heightmap={os.path.abspath(heightmap)}" in cmd
+    assert "--heightmap-scale=0.2" in cmd

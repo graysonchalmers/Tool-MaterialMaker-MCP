@@ -235,7 +235,9 @@ def render_preview_sweep(albedo_path: str, normal_path: str, orm_path: str,
                 os.makedirs(sweep_dir)
 
             cmd = _build_sweep_command(cfg, albedo_path, normal_path, orm_path, sweep_dir,
-                                        frames, tile, sweep_kind=sweep_kind, cone=cone)
+                                        frames, tile, sweep_kind=sweep_kind, cone=cone,
+                                        heightmap_path=heightmap_path,
+                                        heightmap_scale=heightmap_scale)
             proc = _run_godot(cmd, timeout, before_attempt=prepare_attempt)
             log_tail = _log_tail(proc)
             if proc.returncode != 0:
