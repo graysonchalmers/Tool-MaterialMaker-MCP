@@ -50,6 +50,34 @@ _TILE_OVERRIDES = {
 def _tile_for(basename: str) -> float:
     return _TILE_OVERRIDES.get(basename, 0.45)
 
+# Per-material exposed-slot values for the showcase render only: a gallery
+# tile can show a host material at a preset that reads better on the lit rig
+# than its cookbook default, without changing the cookbook graph. Each entry
+# is (subgraph node, slot, value). s14's default (Dryness 0, fully wet) reads
+# as black bubbles on the rig; Dryness 0.5 is the card's "damp stone".
+_PARAM_OVERRIDES = {
+    "s14_wet_river_stone": [("dry_layer", "param0", 0.5)],
+}
+
+
+def apply_showcase_overrides(ptex: dict, basename: str) -> dict:
+    """Return a copy of ptex with basename's _PARAM_OVERRIDES applied. Each
+    slot is set on the subgraph node, its gen_parameters remote, and every
+    inner widget the slot links to, so nothing relies on Material Maker's
+    load-time propagation. The input dict is not modified."""
+    import copy
+    g = copy.deepcopy(ptex)
+    for sub_name, slot, value in _PARAM_OVERRIDES.get(basename, []):
+        sub = next(n for n in g["nodes"] if n["name"] == sub_name)
+        sub["parameters"][slot] = copy.deepcopy(value)
+        remote = next(n for n in sub["nodes"] if n["name"] == "gen_parameters")
+        remote["parameters"][slot] = copy.deepcopy(value)
+        widget = next(w for w in remote["widgets"] if w["name"] == slot)
+        for lw in widget["linked_widgets"]:
+            inner = next(n for n in sub["nodes"] if n["name"] == lw["node"])
+            inner["parameters"][lw["widget"]] = copy.deepcopy(value)
+    return g
+
 STILL_SIZE = (1024, 576)
 
 
@@ -122,8 +150,8 @@ def _render_still(ident: str):
 
     cfg = load_config()
     src = resolve_source(ident)
-    ptex = json.loads(src.read_text(encoding="utf-8"))
     basename = Path(ident).stem if ident.endswith(".ptex") else ident
+    ptex = apply_showcase_overrides(json.loads(src.read_text(encoding="utf-8")), basename)
 
     with tempfile.TemporaryDirectory() as tmpdir:
         outdir = str(Path(tmpdir).resolve())
@@ -179,8 +207,8 @@ def cmd_gif(ident: str, width: int, frames: int, duration: int) -> int:
 
     cfg = load_config()
     src = resolve_source(ident)
-    ptex = json.loads(src.read_text(encoding="utf-8"))
     basename = Path(ident).stem if ident.endswith(".ptex") else ident
+    ptex = apply_showcase_overrides(json.loads(src.read_text(encoding="utf-8")), basename)
 
     with tempfile.TemporaryDirectory() as tmpdir:
         outdir = str(Path(tmpdir).resolve())
