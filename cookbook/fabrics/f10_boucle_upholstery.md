@@ -9,7 +9,7 @@ moderate relief that reads as soft loop texture rather than hard cell edges.
 ## Recipe
 
 Clones `crocodile_skin` like the rest of this category, and like
-`f09_plaid_flannel` and `l07_pebbled_leather` retypes the base generator to
+`f09_plaid_flannel` (retired into `f07_herringbone_tweed`'s Crosshatch preset) and `l07_pebbled_leather` retypes the base generator to
 `fbm` instead of keeping `voronoi_0` as a raw voronoi. Here it is `noise=6`
 (Cellular 5, "soft diagonal weave" per `docs/AUTHORING.md`'s noise vocabulary
 table -- "brushed cloth, quilted softness"). This is a different Cellular
@@ -40,7 +40,7 @@ oatmeal weave-donor ribs and from f09's navy/brick-red plaid: low value
 value (the field between loops) shades to a cooler heather gray, with a mid
 heather-beige stop for variation. Roughness is a high, low-contrast matte
 ramp with no sheen split, a nubby upholstery weave has no glossy component,
-unlike `f05_silk_satin`'s anisotropic sheen chain.
+unlike `f05_silk_satin`'s anisotropic sheen chain (retired into `f07_herringbone_tweed`'s presets).
 
 Relief is `normal_map` `param1=0.25`. The brief calls for LOW relief for a
 "soft nubby bump rather than hard relief," but f09's first pass at the

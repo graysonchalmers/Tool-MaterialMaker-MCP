@@ -74,7 +74,7 @@ untouched metallic `NonMetallic`) instead of the raw 11-node graph:
   group's external inputs come from **Leather Grain** (base albedo/height),
   **Quilt Pattern** (pad shape), and **Seam Shading** (mask/color) — the
   same all-external-inputs shape `f08_donegal_tweed`'s `fleck_composite`
-  used. Exposed: `Quilt puffiness` (`HeightComposite.amount`), `Relief
+  used (now `f07_herringbone_tweed`'s Fleck Layer). Exposed: `Quilt puffiness` (`HeightComposite.amount`), `Relief
   strength` (`LeatherNormal.param1`).
 
 `group_into_subgraph` preserves each incoming connection's own target port
