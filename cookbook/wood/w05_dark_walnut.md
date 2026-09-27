@@ -7,7 +7,7 @@ than a raw weathered wood surface.
 
 ## Recipe
 
-Pure recolor of `wood`'s existing `colorize_2` (albedo) and `colorize_0`
+Recolor of `wood`'s existing `colorize_2` (albedo) and `colorize_0`
 (roughness) ramps, the same lever the frozen barn-wood reference case already
 uses. Deep saturated brown, with roughness lowered relative to barn wood's
 raw weathered surface for a sealed, finished walnut look. `wood`'s own
@@ -18,22 +18,75 @@ headless); `param1` was unchanged and the relief matches.
 
 ## Subgraph structure
 
-Grouped per the "Grouping into subgraphs" lever in `docs/AUTHORING.md`
-(same grouping as `w04_driftwood_gray`, since both clone `wood`'s identical
-11-node graph and differ only in the two gradients below). Opening the graph
-shows 3 top-level nodes (these two groups plus `Material`) instead of the raw
-11-node `wood` tangle:
+The wood host (2026-09-27). It absorbs `w04_driftwood_gray` and
+`w06_burled_wood`. w04 is this same `wood` graph with two other ramps and no
+node of its own, so it is a preset of the existing knobs. w06 swaps the
+ring warp for a `warp2` driven by a low-frequency perlin, so the host
+carries that pair in as a layer. Two groups into Material:
 
-- **Wood Grain** — the whole noise/pattern generator (the two grain
-  perlins, the warp pair, the voronoi ring pattern and its colorize) plus the
-  albedo colorize that paints its output. Exposed: `Wood color` (the deep
-  walnut-brown albedo gradient). The generator's output (`GrainMask`) also
-  feeds the roughness ramp, the normal map, and the material's AO port
-  directly, all in **Surface Finish** or top-level `Material` — it rides
-  along with the albedo colorize here so this group carries a real knob,
-  rather than exposing nothing from a group of untouched donor defaults.
-- **Surface Finish** — the roughness ramp and the normal map. Exposed:
-  `Finish sheen` (the semi-gloss roughness gradient).
+- **Wood Grain**: the grain generator (`GrainNoiseFine`, `GrainNoiseCoarse`,
+  `GrainWobble`, `GrainWarp`), the ring figure (`RingPattern` voronoi,
+  `RingContrast`, `RingWarp`), the burl swirl (`SwirlField` perlin,
+  `BurlSwirl` warp2), `GrainMask`, and the albedo colorize `WoodColor`.
+  Exposed: `Wood color`, `Ring figure`, `Burl swirl`, `Burl size` (drives
+  `scale_x` and `scale_y`). Outputs `GrainMask` twice (relief and roughness)
+  and the coloured albedo.
+- **Surface Finish**: the roughness ramp `GrainRoughness` and the normal map
+  `GrainNormal`. Exposed: `Finish sheen`.
+
+The figure chain is `GrainWarp -> RingWarp -> BurlSwirl -> GrainMask`. A
+warp at amount 0 samples its input at uv + 0 x offset = uv, so either warp
+set to 0 passes the other through exactly. That is why the default is
+exactly w05 and the w06 preset is exactly w06, with one graph.
+
+Seeds: `perlin` and `voronoi` are seeded from node position. `SwirlField`
+sits at (0, 0) of Wood Grain, where w06 has it, and every donor node keeps
+its donor position. Do not move them. The warps have no seed.
+
+## Feature layers
+
+Every new layer defaults to a no-op, so the default renders exactly the
+walnut it did before the host work. A 2048 full-image diff of albedo,
+normal and ORM against `main`'s graph gives 0 differing pixels on all
+three (this graph exports no heightmap).
+
+| Layer | Exposed params | What it does |
+|---|---|---|
+| Wood Grain: `Ring figure` | 0-1, default 0.1 | `RingWarp` amount: how far the voronoi ring pattern bends the grain (growth-ring / cathedral figure). 0 = straight warped grain with no ring figure. |
+| Burl Swirl (from w06) | `Burl swirl` 0-1, default 0 | `BurlSwirl` (`warp2`) amount: broad swirling, knotted burl figure. 0 = off. Above about 0.9 the field folds into illegible noise. |
+| Burl Swirl | `Burl size` 1-32, default 2 | `SwirlField` scale on both axes: lower = fewer, broader swirls. |
+
+### Presets
+
+Set these on the collapsed nodes. Colors are gradient stops (position: R, G,
+B in 0-1). Anything not listed stays at its default. Every value is inside
+its slider range. Each preset was rendered at 2048 and diffed against the
+original material: albedo and ORM are 0 px for both. The normal differs
+only because w04 and w06 still ship the donor's buffered `normal_map`
+(`param4=1`), and the host is on the direct path (`param4=0`, like w05 since
+2026-09-27): max 3/255, mean 0.11/255 (w04) and 0.08/255 (w06). Against
+w04 and w06 with just `param4` set to 0, all three maps are 0 px.
+
+**Driftwood gray (w04):**
+- `Wood color`: 0.0: 0.52, 0.51, 0.49; 0.5: 0.66, 0.65, 0.63; 1.0: 0.42,
+  0.41, 0.40.
+- `Finish sheen`: 0.0: 0.55 gray; 1.0: 0.72 gray.
+
+**Burled wood (w06):**
+- `Ring figure` = 0, `Burl swirl` = 0.65 (`Burl size` 2 is the default).
+- `Wood color`: 0.0: 0.08, 0.05, 0.03; 0.3: 0.22, 0.12, 0.06; 0.55: 0.42,
+  0.24, 0.12; 0.8: 0.30, 0.16, 0.08; 1.0: 0.15, 0.08, 0.04.
+- `Finish sheen` stays at the default (w06 used w05's ramp).
+
+**Beyond the originals (these use the new layers):**
+- *Burled walnut with rings*: `Burl swirl` = 0.65 on the default. The
+  swirl bends the ring figure too, which neither original could do.
+- *Bleached burl*: w04's `Wood color` and `Finish sheen` with `Ring
+  figure` 0 and `Burl swirl` 0.65 (a pale, silvery burl).
+
+**Back to the default:** `Ring figure` 0.1, `Burl swirl` 0, `Burl size` 2,
+`Wood color` 0.0: 0.12, 0.07, 0.04; 0.5: 0.28, 0.16, 0.09; 1.0: 0.40, 0.24,
+0.14, `Finish sheen` 0.0: 0.18 gray; 1.0: 0.34 gray.
 
 ## See also
 
@@ -60,6 +113,8 @@ do not edit by hand. Open the `.ptex` and look for these names.
 | wood_grain | RingPattern | voronoi |
 | wood_grain | GrainMask | blend |
 | wood_grain | WoodColor | colorize |
+| wood_grain | SwirlField | perlin |
+| wood_grain | BurlSwirl | warp2 |
 | surface_finish | GrainNormal | normal_map |
 | surface_finish | GrainRoughness | colorize |
 <!-- nodes:end -->

@@ -68,8 +68,8 @@
    "label": "Wood Grain",
    "type": "graph",
    "node_position": {
-    "x": -273.51650666666666,
-    "y": 269.24242488888893
+    "x": -223.2407781818182,
+    "y": 256.6528930909091
    },
    "parameters": {
     "param0": {
@@ -98,7 +98,10 @@
       }
      ],
      "type": "Gradient"
-    }
+    },
+    "param1": 0.1,
+    "param2": 0,
+    "param3": 2
    },
    "seed_int": 0,
    "nodes": [
@@ -106,8 +109,8 @@
      "name": "gen_inputs",
      "type": "ios",
      "node_position": {
-      "x": -673.5165066666666,
-      "y": 269.24242488888893
+      "x": -623.2407781818182,
+      "y": 256.6528930909091
      },
      "parameters": {},
      "ports": [],
@@ -118,8 +121,8 @@
      "name": "gen_outputs",
      "type": "ios",
      "node_position": {
-      "x": 126.48349333333334,
-      "y": 269.24242488888893
+      "x": 176.7592218181818,
+      "y": 256.6528930909091
      },
      "parameters": {},
      "ports": [
@@ -145,8 +148,8 @@
      "name": "gen_parameters",
      "type": "remote",
      "node_position": {
-      "x": -673.5165066666666,
-      "y": 469.24242488888893
+      "x": -623.2407781818182,
+      "y": 456.6528930909091
      },
      "parameters": {
       "param0": {
@@ -175,7 +178,10 @@
         }
        ],
        "type": "Gradient"
-      }
+      },
+      "param1": 0.1,
+      "param2": 0,
+      "param3": 2
      },
      "seed": 0,
      "widgets": [
@@ -188,6 +194,46 @@
         {
          "node": "WoodColor",
          "widget": "gradient"
+        }
+       ]
+      },
+      {
+       "name": "param1",
+       "shortdesc": "Ring figure",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "RingWarp",
+         "widget": "amount"
+        }
+       ]
+      },
+      {
+       "name": "param2",
+       "shortdesc": "Burl swirl",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "BurlSwirl",
+         "widget": "amount"
+        }
+       ]
+      },
+      {
+       "name": "param3",
+       "shortdesc": "Burl size",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "SwirlField",
+         "widget": "scale_x"
+        },
+        {
+         "node": "SwirlField",
+         "widget": "scale_y"
         }
        ]
       }
@@ -353,6 +399,32 @@
       }
      },
      "type": "colorize"
+    },
+    {
+     "name": "SwirlField",
+     "type": "perlin",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "scale_x": 2,
+      "scale_y": 2,
+      "iterations": 3,
+      "persistence": 0.5
+     }
+    },
+    {
+     "name": "BurlSwirl",
+     "type": "warp2",
+     "node_position": {
+      "x": 6,
+      "y": 400
+     },
+     "parameters": {
+      "mode": 0,
+      "amount": 0
+     }
     }
    ],
    "connections": [
@@ -393,16 +465,28 @@
      "to_port": 1
     },
     {
-     "from": "RingWarp",
-     "from_port": 0,
-     "to": "GrainMask",
-     "to_port": 1
-    },
-    {
      "from": "GrainMask",
      "from_port": 0,
      "to": "WoodColor",
      "to_port": 0
+    },
+    {
+     "from": "RingWarp",
+     "from_port": 0,
+     "to": "BurlSwirl",
+     "to_port": 0
+    },
+    {
+     "from": "SwirlField",
+     "from_port": 0,
+     "to": "BurlSwirl",
+     "to_port": 1
+    },
+    {
+     "from": "BurlSwirl",
+     "from_port": 0,
+     "to": "GrainMask",
+     "to_port": 1
     },
     {
      "from": "GrainMask",

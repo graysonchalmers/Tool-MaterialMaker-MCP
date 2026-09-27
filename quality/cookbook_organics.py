@@ -106,7 +106,8 @@ def build_o03_tree_bark(catalog: dict) -> str:
     ])
 
     # Same donor (`wood`, unmodified structurally, per the docstring) and
-    # same identical 11-node graph as cookbook_wood.py's w04/w05, which grouped
+    # same identical 11-node graph as cookbook_wood.py's w04 (w05 added a
+    # Burl Swirl pair to it when it became the wood host), which grouped
     # it into the noise/pattern generator + albedo colorize ("Wood Grain")
     # and the roughness ramp + normal map ("Surface Finish") -- see that
     # file's build_w04_driftwood_gray for the full reasoning on why
