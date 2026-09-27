@@ -7,28 +7,46 @@
    "to_port": 1
   },
   {
-   "from": "tile_pattern",
-   "from_port": 2,
-   "to": "Material",
+   "from": "hex_layout",
+   "from_port": 1,
+   "to": "tile_pattern",
    "to_port": 0
   },
   {
-   "from": "tile_pattern",
-   "from_port": 3,
-   "to": "Material",
+   "from": "brick_layout",
+   "from_port": 0,
+   "to": "tile_pattern",
+   "to_port": 1
+  },
+  {
+   "from": "hex_layout",
+   "from_port": 0,
+   "to": "tile_color",
+   "to_port": 0
+  },
+  {
+   "from": "hex_layout",
+   "from_port": 2,
+   "to": "tile_color",
+   "to_port": 1
+  },
+  {
+   "from": "brick_layout",
+   "from_port": 0,
+   "to": "tile_color",
    "to_port": 2
   },
   {
    "from": "tile_pattern",
    "from_port": 0,
-   "to": "tile_relief",
-   "to_port": 0
+   "to": "tile_color",
+   "to_port": 3
   },
   {
    "from": "tile_pattern",
    "from_port": 1,
-   "to": "tile_relief",
-   "to_port": 1
+   "to": "tile_color",
+   "to_port": 4
   },
   {
    "from": "tile_relief",
@@ -41,6 +59,54 @@
    "from_port": 1,
    "to": "Material",
    "to_port": 6
+  },
+  {
+   "from": "hex_layout",
+   "from_port": 1,
+   "to": "tile_relief",
+   "to_port": 0
+  },
+  {
+   "from": "brick_layout",
+   "from_port": 0,
+   "to": "tile_relief",
+   "to_port": 1
+  },
+  {
+   "from": "tile_pattern",
+   "from_port": 0,
+   "to": "tile_relief",
+   "to_port": 2
+  },
+  {
+   "from": "tile_pattern",
+   "from_port": 2,
+   "to": "tile_relief",
+   "to_port": 3
+  },
+  {
+   "from": "surface_grain",
+   "from_port": 0,
+   "to": "Material",
+   "to_port": 0
+  },
+  {
+   "from": "surface_grain",
+   "from_port": 1,
+   "to": "Material",
+   "to_port": 2
+  },
+  {
+   "from": "tile_color",
+   "from_port": 0,
+   "to": "surface_grain",
+   "to_port": 0
+  },
+  {
+   "from": "tile_color",
+   "from_port": 1,
+   "to": "surface_grain",
+   "to_port": 1
   }
  ],
  "label": "Graph",
@@ -54,8 +120,8 @@
    "export_paths": {},
    "name": "Material",
    "node_position": {
-    "x": -28,
-    "y": -37
+    "x": 0,
+    "y": 0
    },
    "parameters": {
     "albedo_color": {
@@ -79,8 +145,8 @@
   {
    "name": "NonMetallic",
    "node_position": {
-    "x": -281.375671,
-    "y": -63.305649
+    "x": -300,
+    "y": 150
    },
    "parameters": {
     "color": 0.0
@@ -88,70 +154,17 @@
    "type": "uniform_greyscale"
   },
   {
-   "name": "tile_pattern",
-   "label": "Tile Pattern",
+   "name": "hex_layout",
+   "label": "Hex Layout",
    "type": "graph",
    "node_position": {
-    "x": -383.7258296666667,
-    "y": -89.23399366666666
+    "x": -1200,
+    "y": -100
    },
    "parameters": {
     "param0": 20,
     "param1": 12,
-    "param2": {
-     "interpolation": 1,
-     "points": [
-      {
-       "a": 1,
-       "r": 0.26,
-       "g": 0.25,
-       "b": 0.23,
-       "pos": 0.1
-      },
-      {
-       "a": 1,
-       "r": 0.92,
-       "g": 0.92,
-       "b": 0.9,
-       "pos": 0.2
-      },
-      {
-       "a": 1,
-       "r": 0.97,
-       "g": 0.97,
-       "b": 0.95,
-       "pos": 1.0
-      }
-     ],
-     "type": "Gradient"
-    },
-    "param3": {
-     "interpolation": 1,
-     "points": [
-      {
-       "a": 1,
-       "r": 0.8,
-       "g": 0.8,
-       "b": 0.8,
-       "pos": 0.1
-      },
-      {
-       "a": 1,
-       "r": 0.14,
-       "g": 0.14,
-       "b": 0.14,
-       "pos": 0.2
-      },
-      {
-       "a": 1,
-       "r": 0.1,
-       "g": 0.1,
-       "b": 0.1,
-       "pos": 1.0
-      }
-     ],
-     "type": "Gradient"
-    }
+    "param2": 1
    },
    "seed_int": 0,
    "nodes": [
@@ -159,8 +172,8 @@
      "name": "gen_inputs",
      "type": "ios",
      "node_position": {
-      "x": -783.7258296666666,
-      "y": -89.23399366666666
+      "x": -994.564598125,
+      "y": -162.074885375
      },
      "parameters": {},
      "ports": [],
@@ -171,28 +184,23 @@
      "name": "gen_outputs",
      "type": "ios",
      "node_position": {
-      "x": 16.274170333333302,
-      "y": -89.23399366666666
+      "x": -194.56459812499997,
+      "y": -162.074885375
      },
      "parameters": {},
      "ports": [
       {
-       "name": "out0",
+       "name": "hex",
        "type": "f",
        "group_size": 0
       },
       {
-       "name": "out1",
-       "type": "rgb",
-       "group_size": 0
-      },
-      {
-       "name": "out2",
+       "name": "relief",
        "type": "rgba",
        "group_size": 0
       },
       {
-       "name": "out3",
+       "name": "stone_tone",
        "type": "rgba",
        "group_size": 0
       }
@@ -203,66 +211,13 @@
      "name": "gen_parameters",
      "type": "remote",
      "node_position": {
-      "x": -783.7258296666666,
-      "y": 110.76600633333334
+      "x": -994.564598125,
+      "y": 37.92511462499999
      },
      "parameters": {
       "param0": 20,
       "param1": 12,
-      "param2": {
-       "interpolation": 1,
-       "points": [
-        {
-         "a": 1,
-         "r": 0.26,
-         "g": 0.25,
-         "b": 0.23,
-         "pos": 0.1
-        },
-        {
-         "a": 1,
-         "r": 0.92,
-         "g": 0.92,
-         "b": 0.9,
-         "pos": 0.2
-        },
-        {
-         "a": 1,
-         "r": 0.97,
-         "g": 0.97,
-         "b": 0.95,
-         "pos": 1.0
-        }
-       ],
-       "type": "Gradient"
-      },
-      "param3": {
-       "interpolation": 1,
-       "points": [
-        {
-         "a": 1,
-         "r": 0.8,
-         "g": 0.8,
-         "b": 0.8,
-         "pos": 0.1
-        },
-        {
-         "a": 1,
-         "r": 0.14,
-         "g": 0.14,
-         "b": 0.14,
-         "pos": 0.2
-        },
-        {
-         "a": 1,
-         "r": 0.1,
-         "g": 0.1,
-         "b": 0.1,
-         "pos": 1.0
-        }
-       ],
-       "type": "Gradient"
-      }
+      "param2": 1
      },
      "seed": 0,
      "widgets": [
@@ -274,6 +229,10 @@
        "linked_widgets": [
         {
          "node": "HexLayout",
+         "widget": "sx"
+        },
+        {
+         "node": "StoneLayout",
          "widget": "sx"
         }
        ]
@@ -287,253 +246,25 @@
         {
          "node": "HexLayout",
          "widget": "sy"
+        },
+        {
+         "node": "StoneLayout",
+         "widget": "sy"
         }
        ]
       },
       {
        "name": "param2",
-       "shortdesc": "Tile and grout color",
-       "label": "",
-       "type": "linked_control",
-       "linked_widgets": [
-        {
-         "node": "TileColor",
-         "widget": "gradient"
-        }
-       ]
-      },
-      {
-       "name": "param3",
-       "shortdesc": "Glaze roughness",
-       "label": "",
-       "type": "linked_control",
-       "linked_widgets": [
-        {
-         "node": "GlazeRoughness",
-         "widget": "gradient"
-        }
-       ]
-      }
-     ]
-    },
-    {
-     "name": "GlazeRoughness",
-     "node_position": {
-      "x": -280.375671,
-      "y": 7.194351
-     },
-     "parameters": {
-      "gradient": {
-       "interpolation": 1,
-       "points": [
-        {
-         "a": 1,
-         "r": 0.8,
-         "g": 0.8,
-         "b": 0.8,
-         "pos": 0.1
-        },
-        {
-         "a": 1,
-         "r": 0.14,
-         "g": 0.14,
-         "b": 0.14,
-         "pos": 0.2
-        },
-        {
-         "a": 1,
-         "r": 0.1,
-         "g": 0.1,
-         "b": 0.1,
-         "pos": 1.0
-        }
-       ],
-       "type": "Gradient"
-      }
-     },
-     "type": "colorize"
-    },
-    {
-     "name": "TileColor",
-     "node_position": {
-      "x": -275.375671,
-      "y": -143.805649
-     },
-     "parameters": {
-      "gradient": {
-       "interpolation": 1,
-       "points": [
-        {
-         "a": 1,
-         "r": 0.26,
-         "g": 0.25,
-         "b": 0.23,
-         "pos": 0.1
-        },
-        {
-         "a": 1,
-         "r": 0.92,
-         "g": 0.92,
-         "b": 0.9,
-         "pos": 0.2
-        },
-        {
-         "a": 1,
-         "r": 0.97,
-         "g": 0.97,
-         "b": 0.95,
-         "pos": 1.0
-        }
-       ],
-       "type": "Gradient"
-      }
-     },
-     "type": "colorize"
-    },
-    {
-     "name": "HexLayout",
-     "node_position": {
-      "x": -595.426147,
-      "y": -131.090683
-     },
-     "parameters": {
-      "sx": 20,
-      "sy": 12
-     },
-     "type": "beehive"
-    }
-   ],
-   "connections": [
-    {
-     "from": "HexLayout",
-     "from_port": 0,
-     "to": "TileColor",
-     "to_port": 0
-    },
-    {
-     "from": "HexLayout",
-     "from_port": 0,
-     "to": "GlazeRoughness",
-     "to_port": 0
-    },
-    {
-     "from": "HexLayout",
-     "from_port": 0,
-     "to": "gen_outputs",
-     "to_port": 0
-    },
-    {
-     "from": "HexLayout",
-     "from_port": 1,
-     "to": "gen_outputs",
-     "to_port": 1
-    },
-    {
-     "from": "TileColor",
-     "from_port": 0,
-     "to": "gen_outputs",
-     "to_port": 2
-    },
-    {
-     "from": "GlazeRoughness",
-     "from_port": 0,
-     "to": "gen_outputs",
-     "to_port": 3
-    }
-   ]
-  },
-  {
-   "name": "tile_relief",
-   "label": "Tile Relief",
-   "type": "graph",
-   "node_position": {
-    "x": -467.16839600000003,
-    "y": 87.67606040000001
-   },
-   "parameters": {
-    "param0": 1.02,
-    "param1": 1
-   },
-   "seed_int": 0,
-   "nodes": [
-    {
-     "name": "gen_inputs",
-     "type": "ios",
-     "node_position": {
-      "x": -867.168396,
-      "y": 87.67606040000001
-     },
-     "parameters": {},
-     "ports": [
-      {
-       "name": "in0",
-       "type": "f",
-       "group_size": 0
-      },
-      {
-       "name": "in1",
-       "type": "f",
-       "group_size": 0
-      }
-     ],
-     "seed": 0,
-     "seed_locked": true
-    },
-    {
-     "name": "gen_outputs",
-     "type": "ios",
-     "node_position": {
-      "x": -67.16839600000003,
-      "y": 87.67606040000001
-     },
-     "parameters": {},
-     "ports": [
-      {
-       "name": "out0",
-       "type": "rgb",
-       "group_size": 0
-      },
-      {
-       "name": "out1",
-       "type": "rgba",
-       "group_size": 0
-      }
-     ],
-     "seed": 0
-    },
-    {
-     "name": "gen_parameters",
-     "type": "remote",
-     "node_position": {
-      "x": -867.168396,
-      "y": 287.6760604
-     },
-     "parameters": {
-      "param0": 1.02,
-      "param1": 1
-     },
-     "seed": 0,
-     "widgets": [
-      {
-       "name": "param0",
-       "shortdesc": "Grout depth",
-       "label": "",
-       "type": "linked_control",
-       "linked_widgets": [
-        {
-         "node": "GroutNormal",
-         "widget": "param1"
-        }
-       ]
-      },
-      {
-       "name": "param1",
        "shortdesc": "Edge softness",
        "label": "",
        "type": "linked_control",
        "linked_widgets": [
         {
          "node": "ReliefBlend",
+         "widget": "amount"
+        },
+        {
+         "node": "StoneToneBlend",
          "widget": "amount"
         }
        ]
@@ -635,6 +366,1327 @@
      "type": "blend"
     },
     {
+     "name": "HexLayout",
+     "node_position": {
+      "x": -595.426147,
+      "y": -131.090683
+     },
+     "parameters": {
+      "sx": 20,
+      "sy": 12
+     },
+     "type": "beehive"
+    },
+    {
+     "name": "StoneLayout",
+     "type": "beehive",
+     "node_position": {
+      "x": -595,
+      "y": -450
+     },
+     "parameters": {
+      "sx": 20,
+      "sy": 12
+     },
+     "seed": 21902
+    },
+    {
+     "name": "StoneStructureTone",
+     "type": "colorize",
+     "node_position": {
+      "x": -590,
+      "y": -350
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "b": 1,
+         "g": 1,
+         "pos": 0,
+         "r": 1
+        },
+        {
+         "a": 1,
+         "b": 0.947917,
+         "g": 0.947917,
+         "pos": 0.049912,
+         "r": 0.947917
+        },
+        {
+         "a": 1,
+         "b": 0.115584,
+         "g": 0.115584,
+         "pos": 0.106977,
+         "r": 0.115584
+        },
+        {
+         "a": 1,
+         "b": 0,
+         "g": 0,
+         "pos": 0.290909,
+         "r": 0
+        }
+       ],
+       "type": "Gradient"
+      }
+     }
+    },
+    {
+     "name": "StoneCellTone",
+     "type": "colorize",
+     "node_position": {
+      "x": -590,
+      "y": -280
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "b": 0,
+         "g": 0,
+         "pos": 0,
+         "r": 0
+        },
+        {
+         "a": 1,
+         "b": 0.225431,
+         "g": 0.225431,
+         "pos": 0.583818,
+         "r": 0.225431
+        },
+        {
+         "a": 1,
+         "b": 0.96875,
+         "g": 0.96875,
+         "pos": 0.672727,
+         "r": 0.96875
+        }
+       ],
+       "type": "Gradient"
+      }
+     }
+    },
+    {
+     "name": "StoneToneBlend",
+     "type": "blend",
+     "node_position": {
+      "x": -600,
+      "y": -210
+     },
+     "parameters": {
+      "amount": 1,
+      "blend_type": 9
+     }
+    }
+   ],
+   "connections": [
+    {
+     "from": "StructureTone",
+     "from_port": 0,
+     "to": "ReliefBlend",
+     "to_port": 0
+    },
+    {
+     "from": "CellRandomTone",
+     "from_port": 0,
+     "to": "ReliefBlend",
+     "to_port": 1
+    },
+    {
+     "from": "HexLayout",
+     "from_port": 0,
+     "to": "StructureTone",
+     "to_port": 0
+    },
+    {
+     "from": "HexLayout",
+     "from_port": 1,
+     "to": "CellRandomTone",
+     "to_port": 0
+    },
+    {
+     "from": "StoneLayout",
+     "from_port": 0,
+     "to": "StoneStructureTone",
+     "to_port": 0
+    },
+    {
+     "from": "StoneLayout",
+     "from_port": 1,
+     "to": "StoneCellTone",
+     "to_port": 0
+    },
+    {
+     "from": "StoneStructureTone",
+     "from_port": 0,
+     "to": "StoneToneBlend",
+     "to_port": 0
+    },
+    {
+     "from": "StoneCellTone",
+     "from_port": 0,
+     "to": "StoneToneBlend",
+     "to_port": 1
+    },
+    {
+     "from": "HexLayout",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    },
+    {
+     "from": "ReliefBlend",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 1
+    },
+    {
+     "from": "StoneToneBlend",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 2
+    }
+   ]
+  },
+  {
+   "name": "brick_layout",
+   "label": "Brick Layout",
+   "type": "graph",
+   "node_position": {
+    "x": -1200,
+    "y": 150
+   },
+   "parameters": {
+    "param0": 6,
+    "param1": 3,
+    "param2": 1,
+    "param3": 0.1
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": -400.0,
+      "y": 0.0
+     },
+     "parameters": {},
+     "ports": [],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 350,
+      "y": 0
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "bricks",
+       "type": "f",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -350,
+      "y": 0
+     },
+     "parameters": {
+      "param0": 6,
+      "param1": 3,
+      "param2": 1,
+      "param3": 0.1
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Brick rows",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "BrickLayout",
+         "widget": "rows"
+        }
+       ]
+      },
+      {
+       "name": "param1",
+       "shortdesc": "Brick columns",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "BrickLayout",
+         "widget": "columns"
+        }
+       ]
+      },
+      {
+       "name": "param2",
+       "shortdesc": "Jitter",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "BrickLayout",
+         "widget": "randomness"
+        }
+       ]
+      },
+      {
+       "name": "param3",
+       "shortdesc": "Mortar width",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "BrickLayout",
+         "widget": "mortar"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "BrickLayout",
+     "type": "skewed_bricks",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "rows": 6,
+      "columns": 3,
+      "offset": 0.5,
+      "randomness": 1,
+      "mortar": 0.1,
+      "bevel": 0.1,
+      "round": 0,
+      "corner": 0.3
+     }
+    }
+   ],
+   "connections": [
+    {
+     "from": "BrickLayout",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    }
+   ]
+  },
+  {
+   "name": "tile_pattern",
+   "label": "Tile Pattern",
+   "type": "graph",
+   "node_position": {
+    "x": -900,
+    "y": 150
+   },
+   "parameters": {
+    "param0": 0,
+    "param1": 0
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": 500,
+      "y": 700
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "relief",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "bricks",
+       "type": "f",
+       "group_size": 0
+      }
+     ],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 1300,
+      "y": 250
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "is_bricks",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "is_cell_tone",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "height_relief",
+       "type": "f",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -350,
+      "y": 150
+     },
+     "parameters": {
+      "param0": 0,
+      "param1": 0
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Layout (0 hex, 1 bricks)",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "LayoutSelect",
+         "widget": "color"
+        }
+       ]
+      },
+      {
+       "name": "param1",
+       "shortdesc": "Tone source (0 clean hex, 1 per-cell stone)",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "ToneSelect",
+         "widget": "color"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "LayoutSelect",
+     "type": "uniform_greyscale",
+     "node_position": {
+      "x": 0,
+      "y": 300
+     },
+     "parameters": {
+      "color": 0
+     }
+    },
+    {
+     "name": "ToneSelect",
+     "type": "uniform_greyscale",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "color": 0
+     }
+    },
+    {
+     "name": "IsBricks",
+     "type": "math",
+     "node_position": {
+      "x": 250,
+      "y": 300
+     },
+     "parameters": {
+      "op": 15,
+      "default_in1": 0.5
+     }
+    },
+    {
+     "name": "IsHex",
+     "type": "math",
+     "node_position": {
+      "x": 500,
+      "y": 400
+     },
+     "parameters": {
+      "op": 1,
+      "default_in1": 1
+     }
+    },
+    {
+     "name": "IsCellTone",
+     "type": "math",
+     "node_position": {
+      "x": 250,
+      "y": 0
+     },
+     "parameters": {
+      "op": 15,
+      "default_in1": 0.5
+     }
+    },
+    {
+     "name": "HexReliefTerm",
+     "type": "math",
+     "node_position": {
+      "x": 750,
+      "y": 350
+     },
+     "parameters": {
+      "op": 2
+     }
+    },
+    {
+     "name": "BrickReliefTerm",
+     "type": "math",
+     "node_position": {
+      "x": 750,
+      "y": 550
+     },
+     "parameters": {
+      "op": 2
+     }
+    },
+    {
+     "name": "ReliefMix",
+     "type": "math",
+     "node_position": {
+      "x": 1000,
+      "y": 450
+     },
+     "parameters": {
+      "op": 0
+     }
+    }
+   ],
+   "connections": [
+    {
+     "from": "LayoutSelect",
+     "from_port": 0,
+     "to": "IsBricks",
+     "to_port": 1
+    },
+    {
+     "from": "IsBricks",
+     "from_port": 0,
+     "to": "IsHex",
+     "to_port": 1
+    },
+    {
+     "from": "ToneSelect",
+     "from_port": 0,
+     "to": "IsCellTone",
+     "to_port": 1
+    },
+    {
+     "from": "IsHex",
+     "from_port": 0,
+     "to": "HexReliefTerm",
+     "to_port": 1
+    },
+    {
+     "from": "IsBricks",
+     "from_port": 0,
+     "to": "BrickReliefTerm",
+     "to_port": 1
+    },
+    {
+     "from": "HexReliefTerm",
+     "from_port": 0,
+     "to": "ReliefMix",
+     "to_port": 0
+    },
+    {
+     "from": "BrickReliefTerm",
+     "from_port": 0,
+     "to": "ReliefMix",
+     "to_port": 1
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 0,
+     "to": "HexReliefTerm",
+     "to_port": 0
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 1,
+     "to": "BrickReliefTerm",
+     "to_port": 0
+    },
+    {
+     "from": "IsBricks",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    },
+    {
+     "from": "IsCellTone",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 1
+    },
+    {
+     "from": "ReliefMix",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 2
+    }
+   ]
+  },
+  {
+   "name": "tile_color",
+   "label": "Tile Color",
+   "type": "graph",
+   "node_position": {
+    "x": -600,
+    "y": -100
+   },
+   "parameters": {
+    "param0": {
+     "interpolation": 1,
+     "points": [
+      {
+       "a": 1,
+       "r": 0.26,
+       "g": 0.25,
+       "b": 0.23,
+       "pos": 0.1
+      },
+      {
+       "a": 1,
+       "r": 0.92,
+       "g": 0.92,
+       "b": 0.9,
+       "pos": 0.2
+      },
+      {
+       "a": 1,
+       "r": 0.97,
+       "g": 0.97,
+       "b": 0.95,
+       "pos": 1.0
+      }
+     ],
+     "type": "Gradient"
+    },
+    "param1": {
+     "interpolation": 1,
+     "points": [
+      {
+       "a": 1,
+       "r": 0.8,
+       "g": 0.8,
+       "b": 0.8,
+       "pos": 0.1
+      },
+      {
+       "a": 1,
+       "r": 0.14,
+       "g": 0.14,
+       "b": 0.14,
+       "pos": 0.2
+      },
+      {
+       "a": 1,
+       "r": 0.1,
+       "g": 0.1,
+       "b": 0.1,
+       "pos": 1.0
+      }
+     ],
+     "type": "Gradient"
+    }
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": -650,
+      "y": -100
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "hex",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "stone_tone",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "bricks",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "is_bricks",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "is_cell_tone",
+       "type": "f",
+       "group_size": 0
+      }
+     ],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 600,
+      "y": 0
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "albedo",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "roughness",
+       "type": "rgba",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -650,
+      "y": 250
+     },
+     "parameters": {
+      "param0": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0.26,
+         "g": 0.25,
+         "b": 0.23,
+         "pos": 0.1
+        },
+        {
+         "a": 1,
+         "r": 0.92,
+         "g": 0.92,
+         "b": 0.9,
+         "pos": 0.2
+        },
+        {
+         "a": 1,
+         "r": 0.97,
+         "g": 0.97,
+         "b": 0.95,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      },
+      "param1": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0.8,
+         "g": 0.8,
+         "b": 0.8,
+         "pos": 0.1
+        },
+        {
+         "a": 1,
+         "r": 0.14,
+         "g": 0.14,
+         "b": 0.14,
+         "pos": 0.2
+        },
+        {
+         "a": 1,
+         "r": 0.1,
+         "g": 0.1,
+         "b": 0.1,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      }
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Tile and grout color",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "TileColor",
+         "widget": "gradient"
+        },
+        {
+         "node": "CellTileColor",
+         "widget": "gradient"
+        },
+        {
+         "node": "BrickTileColor",
+         "widget": "gradient"
+        }
+       ]
+      },
+      {
+       "name": "param1",
+       "shortdesc": "Glaze roughness",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "GlazeRoughness",
+         "widget": "gradient"
+        },
+        {
+         "node": "CellGlazeRoughness",
+         "widget": "gradient"
+        },
+        {
+         "node": "BrickGlazeRoughness",
+         "widget": "gradient"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "GlazeRoughness",
+     "node_position": {
+      "x": -280.375671,
+      "y": 7.194351
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0.8,
+         "g": 0.8,
+         "b": 0.8,
+         "pos": 0.1
+        },
+        {
+         "a": 1,
+         "r": 0.14,
+         "g": 0.14,
+         "b": 0.14,
+         "pos": 0.2
+        },
+        {
+         "a": 1,
+         "r": 0.1,
+         "g": 0.1,
+         "b": 0.1,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      }
+     },
+     "type": "colorize"
+    },
+    {
+     "name": "TileColor",
+     "node_position": {
+      "x": -275.375671,
+      "y": -143.805649
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0.26,
+         "g": 0.25,
+         "b": 0.23,
+         "pos": 0.1
+        },
+        {
+         "a": 1,
+         "r": 0.92,
+         "g": 0.92,
+         "b": 0.9,
+         "pos": 0.2
+        },
+        {
+         "a": 1,
+         "r": 0.97,
+         "g": 0.97,
+         "b": 0.95,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      }
+     },
+     "type": "colorize"
+    },
+    {
+     "name": "CellTileColor",
+     "type": "colorize",
+     "node_position": {
+      "x": -275,
+      "y": -300
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0.26,
+         "g": 0.25,
+         "b": 0.23,
+         "pos": 0.1
+        },
+        {
+         "a": 1,
+         "r": 0.92,
+         "g": 0.92,
+         "b": 0.9,
+         "pos": 0.2
+        },
+        {
+         "a": 1,
+         "r": 0.97,
+         "g": 0.97,
+         "b": 0.95,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      }
+     }
+    },
+    {
+     "name": "BrickTileColor",
+     "type": "colorize",
+     "node_position": {
+      "x": -275,
+      "y": -450
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0.26,
+         "g": 0.25,
+         "b": 0.23,
+         "pos": 0.1
+        },
+        {
+         "a": 1,
+         "r": 0.92,
+         "g": 0.92,
+         "b": 0.9,
+         "pos": 0.2
+        },
+        {
+         "a": 1,
+         "r": 0.97,
+         "g": 0.97,
+         "b": 0.95,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      }
+     }
+    },
+    {
+     "name": "CellGlazeRoughness",
+     "type": "colorize",
+     "node_position": {
+      "x": -280,
+      "y": 150
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0.8,
+         "g": 0.8,
+         "b": 0.8,
+         "pos": 0.1
+        },
+        {
+         "a": 1,
+         "r": 0.14,
+         "g": 0.14,
+         "b": 0.14,
+         "pos": 0.2
+        },
+        {
+         "a": 1,
+         "r": 0.1,
+         "g": 0.1,
+         "b": 0.1,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      }
+     }
+    },
+    {
+     "name": "BrickGlazeRoughness",
+     "type": "colorize",
+     "node_position": {
+      "x": -280,
+      "y": 300
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0.8,
+         "g": 0.8,
+         "b": 0.8,
+         "pos": 0.1
+        },
+        {
+         "a": 1,
+         "r": 0.14,
+         "g": 0.14,
+         "b": 0.14,
+         "pos": 0.2
+        },
+        {
+         "a": 1,
+         "r": 0.1,
+         "g": 0.1,
+         "b": 0.1,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      }
+     }
+    },
+    {
+     "name": "ToneColorMix",
+     "type": "blend",
+     "node_position": {
+      "x": 50,
+      "y": -200
+     },
+     "parameters": {
+      "blend_type": 0,
+      "amount": 1
+     }
+    },
+    {
+     "name": "LayoutColorMix",
+     "type": "blend",
+     "node_position": {
+      "x": 300,
+      "y": -250
+     },
+     "parameters": {
+      "blend_type": 0,
+      "amount": 1
+     }
+    },
+    {
+     "name": "ToneRoughnessMix",
+     "type": "blend",
+     "node_position": {
+      "x": 50,
+      "y": 100
+     },
+     "parameters": {
+      "blend_type": 0,
+      "amount": 1
+     }
+    },
+    {
+     "name": "LayoutRoughnessMix",
+     "type": "blend",
+     "node_position": {
+      "x": 300,
+      "y": 150
+     },
+     "parameters": {
+      "blend_type": 0,
+      "amount": 1
+     }
+    }
+   ],
+   "connections": [
+    {
+     "from": "CellTileColor",
+     "from_port": 0,
+     "to": "ToneColorMix",
+     "to_port": 0
+    },
+    {
+     "from": "TileColor",
+     "from_port": 0,
+     "to": "ToneColorMix",
+     "to_port": 1
+    },
+    {
+     "from": "BrickTileColor",
+     "from_port": 0,
+     "to": "LayoutColorMix",
+     "to_port": 0
+    },
+    {
+     "from": "ToneColorMix",
+     "from_port": 0,
+     "to": "LayoutColorMix",
+     "to_port": 1
+    },
+    {
+     "from": "CellGlazeRoughness",
+     "from_port": 0,
+     "to": "ToneRoughnessMix",
+     "to_port": 0
+    },
+    {
+     "from": "GlazeRoughness",
+     "from_port": 0,
+     "to": "ToneRoughnessMix",
+     "to_port": 1
+    },
+    {
+     "from": "BrickGlazeRoughness",
+     "from_port": 0,
+     "to": "LayoutRoughnessMix",
+     "to_port": 0
+    },
+    {
+     "from": "ToneRoughnessMix",
+     "from_port": 0,
+     "to": "LayoutRoughnessMix",
+     "to_port": 1
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 0,
+     "to": "TileColor",
+     "to_port": 0
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 0,
+     "to": "GlazeRoughness",
+     "to_port": 0
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 1,
+     "to": "CellTileColor",
+     "to_port": 0
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 1,
+     "to": "CellGlazeRoughness",
+     "to_port": 0
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 2,
+     "to": "BrickTileColor",
+     "to_port": 0
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 2,
+     "to": "BrickGlazeRoughness",
+     "to_port": 0
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 4,
+     "to": "ToneColorMix",
+     "to_port": 2
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 3,
+     "to": "LayoutColorMix",
+     "to_port": 2
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 4,
+     "to": "ToneRoughnessMix",
+     "to_port": 2
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 3,
+     "to": "LayoutRoughnessMix",
+     "to_port": 2
+    },
+    {
+     "from": "LayoutColorMix",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    },
+    {
+     "from": "LayoutRoughnessMix",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 1
+    }
+   ]
+  },
+  {
+   "name": "tile_relief",
+   "label": "Tile Relief",
+   "type": "graph",
+   "node_position": {
+    "x": -600,
+    "y": 150
+   },
+   "parameters": {
+    "param0": 1.02
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": -650,
+      "y": 150
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "relief",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "bricks",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "is_bricks",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "height_relief",
+       "type": "f",
+       "group_size": 0
+      }
+     ],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 350,
+      "y": 150
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "normal",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "height",
+       "type": "rgba",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -650,
+      "y": 400
+     },
+     "parameters": {
+      "param0": 1.02
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Grout depth",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "GroutNormal",
+         "widget": "param1"
+        },
+        {
+         "node": "BrickNormal",
+         "widget": "param1"
+        }
+       ]
+      }
+     ]
+    },
+    {
      "name": "GroutNormal",
      "node_position": {
       "x": -270.375671,
@@ -677,53 +1729,348 @@
       }
      },
      "type": "colorize"
+    },
+    {
+     "name": "BrickNormal",
+     "type": "normal_map",
+     "node_position": {
+      "x": -270,
+      "y": 250
+     },
+     "parameters": {
+      "param0": 10,
+      "param1": 1.02,
+      "param2": 0,
+      "param4": 0
+     }
+    },
+    {
+     "name": "NormalMix",
+     "type": "blend",
+     "node_position": {
+      "x": 50,
+      "y": 150
+     },
+     "parameters": {
+      "blend_type": 0,
+      "amount": 1
+     }
     }
    ],
    "connections": [
     {
-     "from": "StructureTone",
+     "from": "BrickNormal",
      "from_port": 0,
-     "to": "ReliefBlend",
+     "to": "NormalMix",
      "to_port": 0
     },
     {
-     "from": "CellRandomTone",
+     "from": "GroutNormal",
      "from_port": 0,
-     "to": "ReliefBlend",
+     "to": "NormalMix",
      "to_port": 1
     },
     {
-     "from": "ReliefBlend",
+     "from": "gen_inputs",
      "from_port": 0,
      "to": "GroutNormal",
      "to_port": 0
     },
     {
-     "from": "ReliefBlend",
-     "from_port": 0,
+     "from": "gen_inputs",
+     "from_port": 1,
+     "to": "BrickNormal",
+     "to_port": 0
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 3,
      "to": "GroutDepth",
      "to_port": 0
     },
     {
      "from": "gen_inputs",
-     "from_port": 0,
-     "to": "StructureTone",
-     "to_port": 0
+     "from_port": 2,
+     "to": "NormalMix",
+     "to_port": 2
     },
     {
-     "from": "gen_inputs",
-     "from_port": 1,
-     "to": "CellRandomTone",
-     "to_port": 0
-    },
-    {
-     "from": "GroutNormal",
+     "from": "NormalMix",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
      "from": "GroutDepth",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 1
+    }
+   ]
+  },
+  {
+   "name": "surface_grain",
+   "label": "Surface Grain",
+   "type": "graph",
+   "node_position": {
+    "x": -300,
+    "y": -100
+   },
+   "parameters": {
+    "param0": 0,
+    "param1": 48,
+    "param2": 5
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": 300,
+      "y": 350
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "albedo",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "roughness",
+       "type": "rgba",
+       "group_size": 0
+      }
+     ],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 900,
+      "y": 50
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "albedo",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "roughness",
+       "type": "rgba",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -350,
+      "y": 0
+     },
+     "parameters": {
+      "param0": 0,
+      "param1": 48,
+      "param2": 5
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Grain strength",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "AlbedoGrain",
+         "widget": "amount"
+        },
+        {
+         "node": "RoughnessGrain",
+         "widget": "amount"
+        }
+       ]
+      },
+      {
+       "name": "param1",
+       "shortdesc": "Grain scale",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "GrainNoise",
+         "widget": "scale_x"
+        },
+        {
+         "node": "GrainNoise",
+         "widget": "scale_y"
+        }
+       ]
+      },
+      {
+       "name": "param2",
+       "shortdesc": "Grain detail",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "GrainNoise",
+         "widget": "iterations"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "GrainNoise",
+     "type": "perlin",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "scale_x": 48,
+      "scale_y": 48,
+      "iterations": 5
+     }
+    },
+    {
+     "name": "GrainContrastAlbedo",
+     "type": "colorize",
+     "node_position": {
+      "x": 300,
+      "y": -100
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.8,
+         "g": 0.8,
+         "b": 0.8,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 1.0,
+         "g": 1.0,
+         "b": 1.0,
+         "pos": 1.0
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "GrainContrastRoughness",
+     "type": "colorize",
+     "node_position": {
+      "x": 300,
+      "y": 100
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.85,
+         "g": 0.85,
+         "b": 0.85,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 1.05,
+         "g": 1.05,
+         "b": 1.05,
+         "pos": 1.0
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "AlbedoGrain",
+     "type": "blend",
+     "node_position": {
+      "x": 600,
+      "y": -50
+     },
+     "parameters": {
+      "blend_type": 2,
+      "amount": 0
+     }
+    },
+    {
+     "name": "RoughnessGrain",
+     "type": "blend",
+     "node_position": {
+      "x": 600,
+      "y": 150
+     },
+     "parameters": {
+      "blend_type": 2,
+      "amount": 0
+     }
+    }
+   ],
+   "connections": [
+    {
+     "from": "GrainNoise",
+     "from_port": 0,
+     "to": "GrainContrastAlbedo",
+     "to_port": 0
+    },
+    {
+     "from": "GrainNoise",
+     "from_port": 0,
+     "to": "GrainContrastRoughness",
+     "to_port": 0
+    },
+    {
+     "from": "GrainContrastAlbedo",
+     "from_port": 0,
+     "to": "AlbedoGrain",
+     "to_port": 0
+    },
+    {
+     "from": "GrainContrastRoughness",
+     "from_port": 0,
+     "to": "RoughnessGrain",
+     "to_port": 0
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 0,
+     "to": "AlbedoGrain",
+     "to_port": 1
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 1,
+     "to": "RoughnessGrain",
+     "to_port": 1
+    },
+    {
+     "from": "AlbedoGrain",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    },
+    {
+     "from": "RoughnessGrain",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1
