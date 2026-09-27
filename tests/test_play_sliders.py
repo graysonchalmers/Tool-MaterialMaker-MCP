@@ -108,3 +108,30 @@ def test_apply_values_does_not_fan_out_across_subgraphs_sharing_a_slot_id():
                 and n.get("name") == "sand_finish")
     colorize = next(n for n in sand["nodes"] if n.get("name") == "DuneColor")
     assert colorize["parameters"]["gradient"] == 42.0
+
+
+def _multi_link_graph():
+    """One exposed widget linked to two inner params (MM multi-link), as the
+    s14 host's "Pebble size" drives both scale_x and scale_y."""
+    return {"nodes": [{
+        "name": "pebble_pattern", "type": "graph", "parameters": {"param0": 4},
+        "nodes": [
+            {"name": "Cells", "type": "voronoi", "parameters": {"scale_x": 4, "scale_y": 4}},
+            {"name": "gen_parameters", "type": "remote", "parameters": {"param0": 4},
+             "widgets": [{"name": "param0", "type": "linked_control", "label": "Pebble size",
+                          "linked_widgets": [{"node": "Cells", "widget": "scale_x"},
+                                             {"node": "Cells", "widget": "scale_y"}]}]},
+        ]}], "connections": []}
+
+
+def test_apply_values_drives_every_linked_widget():
+    out = apply_values(_multi_link_graph(), {"pebble_pattern/param0": 9})
+    cells = next(n for n in out["nodes"][0]["nodes"] if n["name"] == "Cells")
+    assert cells["parameters"] == {"scale_x": 9, "scale_y": 9}
+
+
+def test_live_changes_cover_every_linked_widget():
+    from mm_mcp.play import api
+    changes = api._changes_for(_multi_link_graph(), {}, {"pebble_pattern/param0": 9})
+    assert {(c["node"], c["widget"]) for c in changes} == {("Cells", "scale_x"), ("Cells", "scale_y")}
+    assert all(c["value"] == 9 for c in changes)

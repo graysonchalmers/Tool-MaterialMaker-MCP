@@ -46,8 +46,8 @@ def _changes_for(graph, catalog, values):
     for sid, value in values.items():
         s = by_id.get(sid)
         if s:
-            changes.append({"node": s["binding"]["node"],
-                            "widget": s["binding"]["widget"], "value": value})
+            changes += [{"node": b["node"], "widget": b["widget"], "value": value}
+                        for b in s["bindings"]]
     return changes
 
 

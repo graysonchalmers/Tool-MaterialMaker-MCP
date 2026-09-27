@@ -42,6 +42,14 @@ def _param_def(catalog: dict, node_type: str, param_name: str) -> dict | None:
     return None
 
 
+def _links(widget: dict) -> list[dict]:
+    """Every (node, widget) an exposed control drives. Material Maker lets one
+    control link several inner params (e.g. a size driving scale_x and
+    scale_y), so all of them move together."""
+    return [{"node": l.get("node"), "widget": l.get("widget")}
+            for l in widget.get("linked_widgets") or []] or [{"node": None, "widget": None}]
+
+
 def derive_sliders(graph: dict, catalog: dict) -> list[dict]:
     """One slider spec per exposed widget across all subgraph nodes in `graph`.
 
@@ -62,9 +70,8 @@ def derive_sliders(graph: dict, catalog: dict) -> list[dict]:
             slot_id = widget.get("name")
             if not slot_id:
                 continue
-            linked = (widget.get("linked_widgets") or [{}])[0]
-            inode_name = linked.get("node")
-            iparam = linked.get("widget")
+            bindings = _links(widget)
+            inode_name, iparam = bindings[0]["node"], bindings[0]["widget"]
             itype = _internal_type(node, inode_name)
             pdef = _param_def(catalog, itype, iparam) if itype else None
             kind = _KIND.get((pdef or {}).get("type"), "float")
@@ -79,7 +86,8 @@ def derive_sliders(graph: dict, catalog: dict) -> list[dict]:
                 "max": (pdef or {}).get("max"),
                 "step": (pdef or {}).get("step"),
                 "value": params.get(slot_id),
-                "binding": {"node": inode_name, "widget": iparam},
+                "binding": bindings[0],
+                "bindings": bindings,
             })
     return sliders
 
@@ -104,12 +112,11 @@ def apply_values(graph: dict, values: dict) -> dict:
             if sid not in values:
                 continue
             value = values[sid]
-            linked = (widget.get("linked_widgets") or [{}])[0]
-            inode_name = linked.get("node")
-            iparam = linked.get("widget")
+            targets = {(b["node"], b["widget"]) for b in _links(widget)}
             for inner in node.get("nodes", []):
-                if inner.get("name") == inode_name:
-                    inner.setdefault("parameters", {})[iparam] = value
+                for inode_name, iparam in targets:
+                    if inner.get("name") == inode_name:
+                        inner.setdefault("parameters", {})[iparam] = value
                 if inner.get("type") == "remote":
                     inner.setdefault("parameters", {})[slot_id] = value
             node.setdefault("parameters", {})[slot_id] = value
