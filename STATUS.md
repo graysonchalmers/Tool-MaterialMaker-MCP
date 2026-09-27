@@ -6,7 +6,7 @@
 
 Gate ledger. Three states only: ✅ verified · 🔌 wired · ⬜ not started.
 
-_Last updated: 2026-09-27 evening (f07 host merged, cookbook 62; 11 normals on param4=0; v0.9.0 released, 0.9.1 release PR #16 open). Narrative lives in `HANDOFF.md` and `docs/teardowns/TEARDOWN-2026-09-27.md`, not here._
+_Last updated: 2026-09-27 late (w05 + man02 hosts, cookbook 58; m02 renamed m02_brushed_metal; widened widgets; v0.10.0). Narrative lives in `HANDOFF.md` and `docs/teardowns/TEARDOWN-2026-09-27.md`, not here._
 
 **How to read this file (rule adopted 2026-09-05, teardown #3):** each cell holds
 the state, one line of what it is, and a pointer to where the evidence lives

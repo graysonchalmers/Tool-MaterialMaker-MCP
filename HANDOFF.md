@@ -1,6 +1,6 @@
 # 🧭 Session Handoff: Tool-MaterialMaker-MCP
 
-_Last updated: 2026-09-27 17:10 CDT. `main` @ `6505f17` + wrap-up, pushed. **v0.9.0** released; release PR #16 (0.9.1) open, not merged. Nothing in flight._
+_Last updated: 2026-09-27 18:25 CDT. `main` @ `129a4ca` + wrap-up, pushed. Release PR #16 merged as **v0.10.0** (release job was queued at wrap-up). Nothing in flight._
 
 The session baton. Read at pickup, rewrite at wrap-up. **Shape rule (2026-09-05, teardown #3):**
 - "Current state" describes the latest session only.
@@ -10,68 +10,62 @@ The session baton. Read at pickup, rewrite at wrap-up. **Shape rule (2026-09-05,
 
 ## 🎯 Current state
 
-Evening session, 2026-09-27. Four jobs, all merged and pushed:
-- **f07 herringbone tweed host** (round 3): Pattern selector (weave / twill / crosshatch), Plaid Overlay, Fleck Layer. Default and the f01/f05/f08/f09 presets are 0 px different on albedo, normal and ORM at 2048; the lead re-ran the diff. Grayson approved the boards, so **f01, f05, f08, f09 are retired. Cookbook is 62.**
-- **s14 gallery tile** re-rendered at Dryness 0.5 (damp) through a `_make_showcase` `_PARAM_OVERRIDES` table. s14's cookbook default is unchanged.
-- **param4 source fix** (Grayson approved the boards): 11 `normal_map` nodes (man02, m06, o01, s07, s09, s11, t01, t05, t06, w03, w05) switched to the direct path, param4=0, **with param1 unchanged**. Measured: the normal matches within 0.37/255, sweep minima fall exactly at the old param1, man02 went 3/3 flat → 0/3 and m06 2/3 → 0/3. AUTHORING now says to prefer param4=0 always. Only o03, s05, w04 and w06 still use param4=1; all four are due to retire into hosts.
-- **render() retry race fixed** (`3db6167`): each attempt re-snapshotted mtimes and required `mtime > prev`, so a retry that rewrote the map inside one filesystem tick looked like a missing export. That was the Windows CI flake at 589ec5f and 75d4fbe. A failed attempt's maps are now removed before the retry, with a pinned-mtime regression test.
-- **Gates:** fast suite 1209 passing, CI green on `3db6167`.
+Late-evening session, 2026-09-27 (four subagent worktrees, all merged, pushed, retired). **Cookbook 62 → 58.**
+- **w05 wood host** absorbs w04 + w06: w04 is a preset (ramps only); w06's `SwirlField`+`BurlSwirl(warp2)` chained after `RingWarp` (either warp at 0 passes the other through). Exposed: Ring figure, Burl swirl (default 0), Burl size. Default 0 px; presets 0 px albedo/ORM, normal ≤3/255 (their param4=1 only; 0 px vs param4=0 controls). **w04, w06 retired.**
+- **man02 tile host** absorbs s05 + man03: Layout switch (hex / skewed bricks), Tone switch (clean / per-cell stone via a twin stone-tone chain), Surface Grain (default off). Default: 1 normal px at 1/255 (NormalMix's presence; accepted by Grayson), else 0 px. man03 preset 0 px; s05 preset 0 px except normal ≤3/255 (its param4=1). **s05, man03 retired.** No param4=1 graph remains except o03 (an approved cut).
+- **m02 renamed `m02_brushed_metal`** (byte-identical graph, no alias: `load_example("m02_brushed_aluminum")` is now not-found).
+- **Slider ranges:** new `widen_widget` helper (`quality/author_helpers.py`) converts an exposed slider to a named parameter with its own range; `play/sliders.py` reads it. Applied to s07/s14/f07/man02/gl01/m02/m06/pm01/pm02/pm05/s02/s12/t03/l06; a test now asserts every shipped value is inside its range. All default renders 0 px before vs after.
+- **f07 Plaid Overlay** now multiplies (blend_type 2). Defaults/presets 0 px; plaid on reads much darker (sett × tweed).
+- **North Star** adopts "Library shape: depth over breadth" (`9930809`). t01/s09 stale docstrings fixed.
+- **Gates:** promote `--check` in sync; fast suite 1187; CI green on `588bb67`.
 
 ## 📌 Where we stopped
 
-Clean. Every branch is merged, and every worktree from this session is retired.
+Clean. Every branch merged, every session worktree retired, v0.10.0 release PR merged.
 
 ## ▶️ Next concrete step
 
-**Next host round from the teardown appendix** (`docs/teardowns/TEARDOWN-2026-09-27.md:289-317`). Pick **w05 wood** (absorbs w04 and w06): it also retires two of the four remaining param4=1 graphs. Same recipe as before: defaults pixel-identical by Pillow diff at 2048, boards for Grayson, retire only after his approval.
+**Execute the three approved cuts** from the teardown appendix (`docs/teardowns/TEARDOWN-2026-09-27.md:289-317`): sf03 circuit board, o03 tree bark (it is also the LAST param4=1 graph), o05 coral. Copy to `_to_delete\` first, `git rm`, drop builders, fix cross-refs, recount README/STATUS. Cheap and needs no boards.
 
 Alternatives:
-- **man02 tiles** (absorbs s05, man03): retires another param4=1 graph.
-- **Merge release PR #16 (0.9.1)**: carries the param4 fix. Wait until CI on main is green.
+- **Next host round:** s11 marble absorbs s13 (one absorbee, small), or s09 ashlar absorbs s12 + o06. Same recipe: defaults 0 px by Pillow diff at 2048, boards, retire only after Grayson approves.
+- **Grayson hands-on step-3 session:** open a host in MM, check the widened sliders show in the GUI (only headless-verified), save a hand-edit to `saved_graphs/`.
 
 ## ❓ Open questions
 
-- **m02 id:** keep `m02_brushed_aluminum` or rename it (e.g. `m02_brushed_metal`)?
-- **Slider ranges:** some host presets need typed values above the catalog slider max (s14 Top flatness 1.5/4, Grain scale 128; s07 Grain scale 48; f07 Fleck density 36 > 32), which mm-play can't reach.
-- **f07 Plaid Overlay** at strength 1 reads flat, because its Normal blend replaces the ribbon shading. Is a multiply or shaded variant wanted?
-- **North Star amendment** (library shape, measurable step 3): the draft is in the teardown report.
+- **man02 hex grout is a raised ridge** (measured: grout height ~208 vs faces ~88, height and normal agree; brick mode has recessed mortar). Invert the hex relief so grout recesses? Changes the hex normal too, needs boards.
+- **f07 plaid under multiply reads dark.** Retune the sett to lighter colours?
+- **Widened sliders in the MM GUI:** wired only (read from MM's `gen_remote.gd`); mm-play live path for named parameters untested (falls back to a headless render).
 
 ## 🗂️ Changed this session
 
-- **Merges to `main`:**
-  - `53a4832` f07 host
-  - `7f5f15a` f01/f05/f08/f09 retirement
-  - `75d4fbe` s14 damp tile
-  - `3db6167` render retry fix
-  - `6b12f8d` release 0.9.0
-  - `6505f17` param4 fix
+- **Commits on `main`:** `816d14d` docstrings · `9930809` North Star · `3a7feca` w05 host · `e760289` rename/ranges/plaid · `5023e78` retire w04/w06 · `a18aaf0` man02 host · `aa017e9` retire s05/man03 · `4e1bdae` widen remaining widgets · `588bb67` man02 card grout note · `129a4ca` release 0.10.0.
 - **Decisions and why:**
-  - **param4 source fix without a param1 retune.** Cloned buffered chains are not directly-fed generators, so the old "lower param1" advice doesn't apply to them. It was measured on 11 graphs.
-  - **The param4 fix skipped graphs about to retire** (o03, s05, w04, w06), because fixing a graph that is about to be deleted is wasted work.
-  - **Retired files copied first** to `_to_delete\MaterialMaker-retired-f01-f05-f08-f09-2026-09-27`, before `git rm`.
+  - **Host normals stay param4=0** even though absorbed presets then differ ≤3/255 from their param4=1 originals: the buffered path races flat headless; controls with param4=0 prove 0 px.
+  - **man02's 1-px default drift accepted** (Grayson): removing it would drop brick mode.
+  - **man02 heightmap NOT flipped:** flipping height alone would contradict the normal. Card corrected instead; inversion is an open question.
+  - **Retired files copied first** to `_to_delete\MaterialMaker-retired-w04-w06-2026-09-27` and `...-s05-man03-2026-09-27`.
+  - **Parallel host agents shared a render lock** (`mkdir scratchpad\godot.lock`), since MM is single-instance. Worked: no hangs across 4 agents.
 
 ## ⚠️ Heads-up for the next agent
 
-- **Direction (Grayson, 2026-09-27): no new cookbook materials.** Add features to existing materials. Node-coverage counts are a diagnostic, not a goal.
-- **"invalid shader" in the MM log is not a flat-normal signal on its own.** It showed up on many correct param4=0 renders. `_flat_normal` checks both the log line and the pixels; keep it that way.
-- **Stale builder docstrings:** t01 ("wood's own normal chain already works unmodified"), s09 ("stone_wall's, unchanged") and w05 ("Pure recolor") predate the param4=0 switch.
-- **Outside contributor `waskosky`:** review any NEW PR as untrusted before running it, and watch the queue (they once went 19 days unanswered).
-- **The user-wide MCP server is an EDITABLE install of the MAIN checkout's `src`.** It picks up merged code (the retry fix, for one) only after a session restart. Never `pip install -e .` into `.venv` while any `mm-mcp.exe` is running: the locked exe leaves the venv without `mm_mcp`. Recovery: a `--prefix` install, then copy the `.pth` and `dist-info`.
-- **A worktree has no `.env`.** Copy it from the main checkout without printing it, or the catalog silently fails.
-- **Material Maker ignores `--size`.** `render()` downsamples. Anything that calibrates on pixels must render at the size it measures.
+- **Direction (Grayson, 2026-09-27): no new cookbook materials.** Add features to existing materials. Node-coverage counts are a diagnostic, not a goal. Now written into `docs/NORTH_STAR.md`.
+- **Widening a slider = `widen_widget`**, not a catalog range edit: MM gives a linked slider the inner node's range. `--check` can't prove a widen is render-neutral; diff default renders.
+- **"invalid shader" in the MM log is not a flat-normal signal on its own.** `_flat_normal` checks both the log line and the pixels; keep it that way.
+- **Outside contributor `waskosky`:** review any NEW PR as untrusted before running it, and watch the queue.
+- **The user-wide MCP server is an EDITABLE install of the MAIN checkout's `src`.** Restart sessions to pick up merged code (this session changed `play/sliders.py`). Never `pip install -e .` into `.venv` while any `mm-mcp.exe` runs; recovery is a `--prefix` install, then copy the `.pth` and `dist-info`.
+- **A worktree has no `.env`.** Copy it without printing it, or the catalog silently fails.
+- **`promote_cookbook --check` compares against the gitignored `quality/authored/`.** In the main checkout after merges, re-run all 12 `quality.cookbook_*` builders first; after a retirement or rename, move stale `authored/` dirs aside.
+- **Material Maker ignores `--size`.** `render()` downsamples; calibrate at the size you measure.
 - **Godot 4.7 cannot combine heightmap/parallax with `uv1_triplanar = true`.**
 - **The contact sheet `docs/images/cookbook-contact-sheet.png` is stale** (built at 71). No script writes its tracked path.
-- **`promote_cookbook --check` compares against the gitignored `quality/authored/`.** After retiring a material, re-run its builder and move stale `authored/` dirs aside.
-- **Standing render gotchas:**
-  - One Godot at a time.
-  - Never render from `python -c`.
-  - Recover a hang with `taskkill //F //IM Godot_v4.7.1-stable_win64_console.exe`.
-  - Use `MM_PLAY_PORT` if 8788 is taken.
+- **Standing render gotchas:** one Godot at a time (use the mkdir lock for parallel agents); never render from `python -c`; recover a hang with `taskkill //F //IM Godot_v4.7.1-stable_win64_console.exe`; use `MM_PLAY_PORT` if 8788 is taken.
 
 ## 🕓 Session log
 
 Newest first. Keep at most 8; older ones are in `git log` (search commit subjects).
 
+- **2026-09-27 late** (w05 + man02 hosts, w04/w06/s05/man03 retired, cookbook 58; m02 → m02_brushed_metal; widen_widget; f07 multiply plaid; North Star amendment; v0.10.0): see git log `816d14d..129a4ca`.
 - **2026-09-27 evening** (f07 host + f01/f05/f08/f09 retired, cookbook 62; s14 damp tile; param4=0 on 11 normals; render retry mtime race; v0.9.0): see git log `53a4832..6505f17`.
 - **2026-09-27** (teardown #6, truth pass, PRs #13/#7, hosts m02/s14/s07; cookbook 74→66): see git log `bfeaac1..a132a9f`.
 - **2026-09-15/16** (iteration-and-parallax, merged): s14/m06 retunes; the Deep Parallax prototype on `s09_ashlar_wall`; the BlockAO/BlockHeight swap fixed.
@@ -79,4 +73,3 @@ Newest first. Keep at most 8; older ones are in `git log` (search commit subject
 - **2026-09-14 night** (rig overhaul, `24ff854`): rounded-box cube, unified triplanar, lathed rook; front page recurated.
 - **2026-09-14 late** (`4b0948f`): coin profile and two-scale gravel for s06/t03.
 - **2026-09-14 evening** (merged): `normal_albedo_audit.py` and `_make_showcase.py`; 5 normal-registration fixes.
-- **2026-09-14** (PR #11 `948a8e7`): the compound-node param default is now sourced from the remote node.
