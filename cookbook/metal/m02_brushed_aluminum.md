@@ -33,9 +33,9 @@ brushed aluminum as before.
 
 | Layer | Exposed param | What it does |
 |---|---|---|
-| Hairline Layer (from `m03_brushed_titanium`) | `Hairline fineness` 0-1 | m03's `noise_anisotropic` hairline (same params, rotated 90 degrees so it runs along the streak) blended over the streak. 0 = the coarse, grainy aluminum streak, 1 = m03's smooth fine hairline. Color, roughness and relief all read the blended signal, so they stay lined up. |
-| Polish Layer (from `m05_polished_chrome`) | `Polish` 0-1 | Pulls roughness toward m05's mirror band (0.06-0.14) and polishes the brush relief flat; at 1 the brush relief is gone completely. |
-| Scratch Wear (from `m04_scratched_steel`) | `Scratch amount` 0-1, `Scratch randomness`, `Scratch length` | m04's `scratches` node. One mask drives three things at the same pixels: a slight brightening (a fresh cut), roughness raised toward m04's 0.6, and a groove cut into the relief. |
+| Hairline Layer (from the retired `m03_brushed_titanium`) | `Hairline fineness` 0-1 | m03's `noise_anisotropic` hairline (same params, rotated 90 degrees so it runs along the streak) blended over the streak. 0 = the coarse, grainy aluminum streak, 1 = m03's smooth fine hairline. Color, roughness and relief all read the blended signal, so they stay lined up. |
+| Polish Layer (from the retired `m05_polished_chrome`) | `Polish` 0-1 | Pulls roughness toward m05's mirror band (0.06-0.14) and polishes the brush relief flat; at 1 the brush relief is gone completely. |
+| Scratch Wear (from the retired `m04_scratched_steel`) | `Scratch amount` 0-1, `Scratch randomness`, `Scratch length` | m04's `scratches` node. One mask drives three things at the same pixels: a slight brightening (a fresh cut), roughness raised toward m04's 0.6, and a groove cut into the relief. |
 
 The scratch layer sits after the polish layer, so scratches also cut
 through a polished surface. Two things differ from the originals on

@@ -194,7 +194,7 @@ that read alike. The fix is a wider base-noise vocabulary, not more recolors.
 
 Six cookbook proof materials shipped on previously-zero-use bases in this round (the 2026-09-14 noise-vocabulary-round-2 session): `l07_pebbled_leather` (fbm Cellular 1), `f09_plaid_flannel` (fbm Cellular 3), `f10_boucle_upholstery` (fbm Cellular 5), `sf05_circuit_maze_panel` (truchet Line), and `gl03_shattered_crystal` (shard_fbm), plus `w06_burled_wood` (warp2, described under the Distortion vocabulary section) -- most of these are new enum *modes* on an already-counted node type, not new node types outright, which is why `shard_fbm` (a genuinely new type) is the only one that moves the coverage count above by +1.
 
-Six more cookbook proof materials shipped in the following round (the 2026-09-14 noise-vocabulary-round-3 session), all on genuinely new top-level node types this time, not new enum modes: `m04_scratched_steel` (scratches), `f11_corduroy` (directional_noise), `t10_packed_dirt` (dirt), `gl04_raw_crystal_cluster` (crystal), `pm06_splatter_finish` (splatter), and `man03_mosaic_tile` (skewed_bricks) -- which is why this round moves the coverage count by +6. The plan originally targeted `custom_tiles` for the tile-mosaic slot, but that node requires an `sdf2d`-typed shape input, which only the out-of-scope SDF family can produce (see "SDF is out of scope" below), so `skewed_bricks` was substituted instead; `custom_tiles` therefore remains unused despite this round's work, on purpose.
+Six more cookbook proof materials shipped in the following round (the 2026-09-14 noise-vocabulary-round-3 session), all on genuinely new top-level node types this time, not new enum modes: `m04_scratched_steel` (scratches; folded into `m02_brushed_aluminum`'s Scratch Wear layer 2026-09-27), `f11_corduroy` (directional_noise), `t10_packed_dirt` (dirt), `gl04_raw_crystal_cluster` (crystal), `pm06_splatter_finish` (splatter), and `man03_mosaic_tile` (skewed_bricks) -- which is why this round moves the coverage count by +6. The plan originally targeted `custom_tiles` for the tile-mosaic slot, but that node requires an `sdf2d`-typed shape input, which only the out-of-scope SDF family can produce (see "SDF is out of scope" below), so `skewed_bricks` was substituted instead; `custom_tiles` therefore remains unused despite this round's work, on purpose.
 
 Gallery source: `quality/noise_gallery.py` (single node -> grey ramp -> albedo,
 so you see the raw field). Render with `python -m quality.render_cookbook
@@ -267,7 +267,7 @@ sand-ripple family). Six cookbook proof materials shipped on
 previously-zero-use bases this session, including `s12_eroded_sandstone`
 built on `directional_warp` and `t09_rippled_wet_sand` on `wavelet_noise`,
 alongside `s13_polished_marble` (fbm turbulence), `m03_brushed_titanium`
-(noise_anisotropic), `sf07_conduit_panel` (truchet), and `gl02_cut_gem`
+(noise_anisotropic; folded into `m02_brushed_aluminum`'s Hairline layer 2026-09-27), `sf07_conduit_panel` (truchet), and `gl02_cut_gem`
 (voronoi_triangle).
 
 **`buffer`-type compound nodes do not render headless.** `slope_blur` and
