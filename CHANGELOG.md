@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.8.1](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/compare/v0.8.0...v0.8.1) (2026-09-27)
+
+
+### Bug Fixes
+
+* **play:** render at 2048, the size Material Maker actually bakes ([98fccdc](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/98fccdcbb1a0fb7b93b2f967b5109cecb34413b3))
+* **render:** honour size, fail on bad output, retry the flat-normal race ([fdd2ac7](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/fdd2ac7e3546b9d23c0b6d66178e96ee0f1bf80a))
+* **server:** describe the core tools, match the preview tile default ([d4601a0](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/d4601a0225ff1139c1e84838b8c3cad57c939787))
+
+
+### Documentation
+
+* correct integration count in teardown [#6](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/issues/6) outcome ([3264f7b](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/3264f7bdfa83bc5b142bb841a65088fd62f1b675))
+* record truth-pass outcome in teardown [#6](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/issues/6), direction + open PRs in HANDOFF ([f84e4b1](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/f84e4b1aa43518ecc7099239875bd8afa9488f4e))
+* teardown [#6](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/issues/6) report + s14/m06 approval ([99a329d](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/99a329de5c96be722e05842faef24dde83f7b4e5))
+* wrap up teardown [#6](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/issues/6) + truth pass session ([2bb15b6](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/2bb15b677a0ed8296899afd24391ed3e90a47592))
+
 ## [0.8.0](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/compare/v0.7.0...v0.8.0) (2026-09-16)
 
 
