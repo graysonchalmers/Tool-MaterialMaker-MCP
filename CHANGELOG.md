@@ -1,5 +1,37 @@
 # Changelog
 
+## [0.9.0](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/compare/v0.8.1...v0.9.0) (2026-09-27)
+
+
+### Features
+
+* **cookbook:** f07 woven-pattern host with pattern selector, plaid overlay and fleck layers ([56ca1ff](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/56ca1ffbd0db59cb0183efcba37313ae09303260))
+* **cookbook:** m02 brushed-metal host with hairline, polish and scratch layers ([640f55d](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/640f55df4291da3e4d3a568e0ad862452d928b3f))
+* **cookbook:** s07 paved-stone host with joint width, tone registration, top flatness and mortar layers ([8a693af](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/8a693affbf887738d9db4c064abc8b256c63a7b1))
+* **cookbook:** s14 river-pebble host with dry, grain, contact-gap and sediment-bed layers ([3477b3d](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/3477b3d82de2f0c132911c683f35f166917bc137))
+
+
+### Bug Fixes
+
+* **play:** bind downloads to completed render snapshots ([f44a799](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/f44a799541b43989a7127742480a2a47900f911c))
+* **play:** drive every widget a multi-linked control links ([a520bc9](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/a520bc9b2ab9ad5d8756f1d69fcd5a9547f28010))
+* **play:** prune old preview snapshots ([cad3838](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/cad3838ed2f0ae4b9179bda52deaccf7e78d036b))
+* **preview:** keep forwarding the Deep Parallax heightmap in sweeps ([a2a7aa1](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/a2a7aa1ffac5e77040750012e43b14c311502413))
+* **preview:** publish complete animated sweeps atomically ([53585a4](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/53585a4b1eb57fc152bdaab01b5292da35f275b4))
+* **render:** allow two retries for the flat-normal race ([a70bc47](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/a70bc47fb5248aa8f6ad7fd7446eeb2176ed3c84))
+* **render:** count a retry's maps as fresh even within the same mtime tick ([3db6167](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/3db6167740f02e95c506027d5c7533031b870bd9))
+* **render:** retry an export that exits 0 with no maps ([22469d6](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/22469d65c9804669f205e17fdee1c3aecfd0c322))
+
+
+### Documentation
+
+* **gallery:** s14 river-pebble host replaces the retired t08 gallery tile ([cf3a03b](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/cf3a03b0d3c3663026b8cf58953424bf69a92d1b))
+* **gallery:** s14 tile at the damp preset (Dryness 0.5) ([8c5f455](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/8c5f455965ddf06f13ff912bfe5047fc57b69cbc))
+* HANDOFF heads-up for the locked mm-mcp.exe reinstall trap ([597355b](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/597355bc9cc293c6c1d1696a28856e3183911cf9))
+* wrap up - hosts m02/s14/s07 merged (cookbook 66), f07 round WIP ([a132a9f](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/a132a9fafb0ba4f52b012b002bec5c31958d81cf))
+* wrap up - m02 host merged, m03-m05 retired, PRs [#13](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/issues/13)/[#7](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/issues/7) landed ([d29d91b](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/d29d91b1ed1a106456d6fef5d55dac583fcfa65a))
+* wrap up - v0.8.1 out, PR merges on pr-merge, m02 pilot in flight ([8eea7c2](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/8eea7c2f7219aa5b4e83c01f274c354554bf24ed))
+
 ## [0.8.1](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/compare/v0.8.0...v0.8.1) (2026-09-27)
 
 
