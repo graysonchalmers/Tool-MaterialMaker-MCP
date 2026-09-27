@@ -537,7 +537,8 @@ def build_s09_ashlar_wall(catalog: dict) -> str:
       dressed limestone/sandstone/gray and TEMPER stone_wall's rustic orange
       block so the wall reads as cut castle stone, not weathered rubble -- still
       per-block varied so no two blocks match.
-    Relief, mortar mask and non-metal setup are stone_wall's, unchanged."""
+    Relief, mortar mask and non-metal setup are stone_wall's, except the normal
+    map is on the direct path (param4=0) at the donor's param1."""
     g = load_example("stone_wall")
     # Direct normal path (2026-09-27): the donor's buffered param4=1 races to a
     # flat normal headless; param4=0 at the same param1 matches within 0.37/255.

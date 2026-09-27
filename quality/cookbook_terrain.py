@@ -70,7 +70,8 @@ def build_t01_sand_dunes(catalog: dict) -> str:
     dune ripples are organic and wavy, so KEEP the knot-warp chain rather
     than straightening it like m02 aluminum. Widen perlin_2's scale for
     broad, slow-rolling ripples instead of tight wood grain. Warm sand tan,
-    high roughness. wood's own normal chain already works unmodified."""
+    high roughness. wood's normal chain is kept, switched to the direct path
+    (param4=0) at the donor's param1."""
     g = load_example("wood")
     # Direct normal path (2026-09-27): the donor's buffered param4=1 races to a
     # flat normal headless; param4=0 at the same param1 matches within 0.37/255.
