@@ -229,7 +229,11 @@ def render(ptex: dict, size: int = _BAKE_SIZE, outdir: str | None = None,
 
     cmd = _build_command(cfg, ptex_path, target, outdir, size)
 
-    for _ in range(2):  # one retry, for the flat-normal race only
+    # Up to two retries, for the flat-normal race only. Measured 2026-09-27:
+    # 14 of 57 raw renders across the 19 cookbook graphs with a buffered
+    # normal_map baked flat (mostly a graph's first, cold-cache render), and
+    # m06 went flat twice in a row, so one retry was not enough.
+    for _ in range(3):
         # Snapshot existing output files before render to detect fresh outputs
         before = _snapshot_pngs(outdir, basename)
         try:
@@ -252,7 +256,7 @@ def render(ptex: dict, size: int = _BAKE_SIZE, outdir: str | None = None,
             break
     else:
         return RenderResult(ok=False, images=images, log_tail=log_tail, error=(
-            "normal map baked flat twice (Material Maker logged 'invalid shader')"))
+            "normal map baked flat three times (Material Maker logged 'invalid shader')"))
 
     _downsample(images, size)
     return RenderResult(ok=True, images=images, log_tail=log_tail)
