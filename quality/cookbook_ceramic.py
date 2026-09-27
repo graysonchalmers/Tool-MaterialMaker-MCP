@@ -11,7 +11,8 @@ import sys
 from quality import author  # shared builder base; regression guard is promote_cookbook --check
 from quality.author_helpers import (save_variant, take_variant, group_into_subgraph, rename_nodes,
                      set_gradient, set_param, retype, add_node, _grad,
-                     _from_scratch_noise_material)
+                     _from_scratch_noise_material, rewire, node, place,
+                     tidy_ports, link_also)
 
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.config import load_config
@@ -37,35 +38,214 @@ _MAN02_NAMES = {
 }
 
 
+_MAN02_HOST_NAMES = {
+    **_MAN02_NAMES,
+    "blend": "StoneToneBlend",       # host: also the per-cell stone tone (s05)
+}
+
+
 def build_man02_ceramic_hex_tiles(catalog: dict) -> str:
     """White ceramic hexagon tiles (was examples/man02_ceramic_hex_tiles,
     iter1 variant 1): `beehive` clone, non-metallic, faces recolored white
     with a thin dark grout band, roughness inverted (glazed faces, rough
-    grout), hex relief kept so grout reads recessed. Grouped into the tile
-    pattern (what you see) and the tile relief (what you feel);
-    `uniform_greyscale` (metallic 0) stays top-level as a single
-    donor-default constant."""
+    grout), hex relief kept so grout reads recessed. `uniform_greyscale`
+    (metallic 0) stays top-level as a single donor-default constant.
+
+    TILE HOST (2026-09-27): absorbs s05_hex_stone_tile and man03_mosaic_tile.
+    s05 is this same beehive graph with the colour and roughness read off
+    the per-cell blend instead of the clean hex field, plus a perlin grain
+    multiplied over both; man03 is a different generator (`skewed_bricks`)
+    feeding the same colour / roughness / normal shape. So the host carries
+    `skewed_bricks` in as a Brick Layout, and two selectors pick the
+    signals:
+    - Layout (0 hex, 1 bricks) picks the field that feeds colour,
+      roughness, normal and height.
+    - Tone source (0 clean hex, 1 per-cell stone) picks, in hex mode,
+      whether colour and roughness read the clean hex value (man02) or the
+      per-cell blend the relief already uses (s05).
+    Both are one-hot weights in product-sum form (a x w0 + b x w1, weights
+    from an `A<B` threshold at 0.5 and 1 - that), as f07's Pattern selector:
+    exact in every mode, where a lerp or a blend would drift.
+    - Surface Grain (s05's nodes and values): perlin grain multiplied over
+      albedo and roughness. Grain on blend port 0 and the base on port 1,
+      so Grain strength 0 passes the base through bit-exact.
+    Each absorbed material is a preset on the card
+    (cookbook/ceramic/man02_ceramic_hex_tiles.md). Seeds: beehive, perlin
+    and skewed_bricks seed from node position, so HexLayout keeps its
+    donor spot and BrickLayout / GrainNoise sit at (0, 0) as in man03/s05.
+    Material-node params are unchanged (they only reach the .tres).
+    Measured 2048 diffs (Pillow, full image): default vs pre-host man02
+    heightmap 0 px, albedo/normal/ORM 320/79/1584 px at exactly 1/255 (GPU
+    rounding of beehive in the selector context; bypassing both selectors
+    gives 0 px); s05 preset albedo/ORM/heightmap 0 px, normal <= 3/255
+    (s05 is buffered param4=1, the host direct); man03 preset albedo/normal/
+    ORM 0 px with GroutNormal param0 = 10."""
     g = take_variant(author.build_man02_ceramic_hex_tiles, _LABEL, 1)
     # Direct normal path (2026-09-27): the donor's buffered param4=1 races to a
     # flat normal headless; param4=0 at the same param1 matches within 0.37/255.
     set_param(g, "normal_map", "param4", 0)
+
+    # --- Brick Layout (man03's generator, man03's values) ---
+    add_node(g, "BrickLayout", "skewed_bricks", {
+        "rows": 6, "columns": 3, "offset": 0.5, "randomness": 1,
+        "mortar": 0.1, "bevel": 0.1, "round": 0, "corner": 0.3})
+
+    # --- Selectors: Layout (hex / bricks) and Tone source (clean / per-cell) ---
+    add_node(g, "LayoutSelect", "uniform_greyscale", {"color": 0})
+    add_node(g, "ToneSelect", "uniform_greyscale", {"color": 0})
+    add_node(g, "IsBricks", "math", {"op": 15, "default_in1": 0.5})    # 0.5 < L
+    add_node(g, "IsHex", "math", {"op": 1, "default_in1": 1})          # 1 - IsBricks
+    add_node(g, "IsCellTone", "math", {"op": 15, "default_in1": 0.5})  # 0.5 < T
+    add_node(g, "IsCleanTone", "math", {"op": 1, "default_in1": 1})    # 1 - IsCellTone
+    for term in ("CleanToneTerm", "CellToneTerm", "HexToneTerm", "BrickToneTerm",
+                 "HexReliefTerm", "BrickReliefTerm"):
+        add_node(g, term, "math", {"op": 2})                           # A*B
+    for total in ("HexTone", "ToneMix", "ReliefMix"):
+        add_node(g, total, "math", {"op": 0})                          # A+B
+    g["connections"] += [
+        {"from": "LayoutSelect", "from_port": 0, "to": "IsBricks", "to_port": 1},
+        {"from": "IsBricks", "from_port": 0, "to": "IsHex", "to_port": 1},
+        {"from": "ToneSelect", "from_port": 0, "to": "IsCellTone", "to_port": 1},
+        {"from": "IsCellTone", "from_port": 0, "to": "IsCleanTone", "to_port": 1},
+        # hex tone = clean hex x (1 - t) + per-cell blend x t
+        {"from": "beehive_2", "from_port": 0, "to": "CleanToneTerm", "to_port": 0},
+        {"from": "IsCleanTone", "from_port": 0, "to": "CleanToneTerm", "to_port": 1},
+        {"from": "blend", "from_port": 0, "to": "CellToneTerm", "to_port": 0},
+        {"from": "IsCellTone", "from_port": 0, "to": "CellToneTerm", "to_port": 1},
+        {"from": "CleanToneTerm", "from_port": 0, "to": "HexTone", "to_port": 0},
+        {"from": "CellToneTerm", "from_port": 0, "to": "HexTone", "to_port": 1},
+        # tone = hex tone x (1 - l) + bricks x l
+        {"from": "HexTone", "from_port": 0, "to": "HexToneTerm", "to_port": 0},
+        {"from": "IsHex", "from_port": 0, "to": "HexToneTerm", "to_port": 1},
+        {"from": "BrickLayout", "from_port": 0, "to": "BrickToneTerm", "to_port": 0},
+        {"from": "IsBricks", "from_port": 0, "to": "BrickToneTerm", "to_port": 1},
+        {"from": "HexToneTerm", "from_port": 0, "to": "ToneMix", "to_port": 0},
+        {"from": "BrickToneTerm", "from_port": 0, "to": "ToneMix", "to_port": 1},
+        # relief = hex relief blend x (1 - l) + bricks x l
+        {"from": "blend", "from_port": 0, "to": "HexReliefTerm", "to_port": 0},
+        {"from": "IsHex", "from_port": 0, "to": "HexReliefTerm", "to_port": 1},
+        {"from": "BrickLayout", "from_port": 0, "to": "BrickReliefTerm", "to_port": 0},
+        {"from": "IsBricks", "from_port": 0, "to": "BrickReliefTerm", "to_port": 1},
+        {"from": "HexReliefTerm", "from_port": 0, "to": "ReliefMix", "to_port": 0},
+        {"from": "BrickReliefTerm", "from_port": 0, "to": "ReliefMix", "to_port": 1},
+    ]
+    for consumer in ("colorize_5", "colorize_4"):
+        rewire(g, consumer, 0, "ToneMix", 0)
+    for consumer in ("normal_map", "colorize_3"):
+        rewire(g, consumer, 0, "ReliefMix", 0)
+
+    # --- Surface Grain (s05's nodes and values; strength 0 = off) ---
+    add_node(g, "GrainNoise", "perlin", {"scale_x": 48, "scale_y": 48, "iterations": 5})
+    add_node(g, "GrainContrastAlbedo", "colorize",
+             {"gradient": _grad([(0.0, 0.80, 0.80, 0.80), (1.0, 1.0, 1.0, 1.0)])})
+    add_node(g, "GrainContrastRoughness", "colorize",
+             {"gradient": _grad([(0.0, 0.85, 0.85, 0.85), (1.0, 1.05, 1.05, 1.05)])})
+    add_node(g, "AlbedoGrain", "blend", {"blend_type": 2, "amount": 0})     # Multiply
+    add_node(g, "RoughnessGrain", "blend", {"blend_type": 2, "amount": 0})
+    g["connections"] += [
+        {"from": "GrainNoise", "from_port": 0, "to": "GrainContrastAlbedo", "to_port": 0},
+        {"from": "GrainNoise", "from_port": 0, "to": "GrainContrastRoughness", "to_port": 0},
+        {"from": "GrainContrastAlbedo", "from_port": 0, "to": "AlbedoGrain", "to_port": 0},
+        {"from": "colorize_5", "from_port": 0, "to": "AlbedoGrain", "to_port": 1},
+        {"from": "GrainContrastRoughness", "from_port": 0, "to": "RoughnessGrain", "to_port": 0},
+        {"from": "colorize_4", "from_port": 0, "to": "RoughnessGrain", "to_port": 1},
+    ]
+    rewire(g, "Material", 0, "AlbedoGrain", 0)
+    rewire(g, "Material", 2, "RoughnessGrain", 0)
+
+    # Seed-bearing nodes where their originals keep them (see docstring);
+    # beehive_2 is never moved. Everything else spaced by data flow.
+    place(g, {
+        "BrickLayout": (0, 0), "GrainNoise": (0, 0),
+        "LayoutSelect": (0, 300), "ToneSelect": (0, 0),
+        "IsBricks": (250, 300), "IsHex": (500, 300),
+        "IsCellTone": (250, 0), "IsCleanTone": (500, 0),
+        "CleanToneTerm": (750, -150), "CellToneTerm": (750, 50), "HexTone": (1000, -50),
+        "HexToneTerm": (1250, -50), "BrickToneTerm": (1250, 150), "ToneMix": (1500, 50),
+        "HexReliefTerm": (1250, 350), "BrickReliefTerm": (1250, 550), "ReliefMix": (1500, 450),
+        "GrainContrastAlbedo": (300, -100), "GrainContrastRoughness": (300, 100),
+        "AlbedoGrain": (600, -50), "RoughnessGrain": (600, 150),
+    })
+
     group_into_subgraph(
-        g, ["beehive_2", "colorize_5", "colorize_4"],
-        "tile_pattern", "Tile Pattern",
+        g, ["beehive_2", "colorize_2", "colorize", "blend"], "hex_layout", "Hex Layout",
         [("beehive_2", "sx", "param0", "Tiles across"),
          ("beehive_2", "sy", "param1", "Tiles down"),
-         ("colorize_5", "gradient", "param2", "Tile and grout color"),
-         ("colorize_4", "gradient", "param3", "Glaze roughness")],
+         ("blend", "amount", "param2", "Edge softness")],
         catalog,
     )
+    tidy_ports(g, "hex_layout", [],
+               [("beehive_2", 0, "hex"), ("blend", 0, "stone_tone")], catalog)
     group_into_subgraph(
-        g, ["colorize_2", "colorize", "blend", "normal_map", "colorize_3"],
-        "tile_relief", "Tile Relief",
-        [("normal_map", "param1", "param0", "Grout depth"),
-         ("blend", "amount", "param1", "Edge softness")],
+        g, ["BrickLayout"], "brick_layout", "Brick Layout",
+        [("BrickLayout", "rows", "param0", "Brick rows"),
+         ("BrickLayout", "columns", "param1", "Brick columns"),
+         ("BrickLayout", "randomness", "param2", "Jitter"),
+         ("BrickLayout", "mortar", "param3", "Mortar width")],
         catalog,
     )
-    rename_nodes(g, _MAN02_NAMES)
+    tidy_ports(g, "brick_layout", [], [("BrickLayout", 0, "bricks")], catalog)
+    group_into_subgraph(
+        g, ["LayoutSelect", "ToneSelect", "IsBricks", "IsHex", "IsCellTone", "IsCleanTone",
+            "CleanToneTerm", "CellToneTerm", "HexTone", "HexToneTerm", "BrickToneTerm",
+            "ToneMix", "HexReliefTerm", "BrickReliefTerm", "ReliefMix"],
+        "tile_pattern", "Tile Pattern",
+        [("LayoutSelect", "color", "param0", "Layout (0 hex, 1 bricks)"),
+         ("ToneSelect", "color", "param1", "Tone source (0 clean hex, 1 per-cell stone)")],
+        catalog,
+    )
+    tidy_ports(g, "tile_pattern",
+               [("hex_layout", 0, "hex"), ("hex_layout", 1, "stone_tone"),
+                ("brick_layout", 0, "bricks")],
+               [("ToneMix", 0, "tone"), ("ReliefMix", 0, "relief")], catalog)
+    group_into_subgraph(
+        g, ["colorize_5", "colorize_4"], "tile_color", "Tile Color",
+        [("colorize_5", "gradient", "param0", "Tile and grout color"),
+         ("colorize_4", "gradient", "param1", "Glaze roughness")],
+        catalog,
+    )
+    tidy_ports(g, "tile_color", [("tile_pattern", 0, "tone")],
+               [("colorize_5", 0, "albedo"), ("colorize_4", 0, "roughness")], catalog)
+    group_into_subgraph(
+        g, ["normal_map", "colorize_3"], "tile_relief", "Tile Relief",
+        [("normal_map", "param1", "param0", "Grout depth")],
+        catalog,
+    )
+    # GroutNormal's param0 (resolution; man03 used 10) is NOT exposed: the
+    # catalog has no type/range for normal_map's param0, so mm-play would
+    # offer it as a 0-1 float slider. The man03 preset sets it inside.
+    tidy_ports(g, "tile_relief", [("tile_pattern", 1, "relief")],
+               [("normal_map", 0, "normal"), ("colorize_3", 0, "height")], catalog)
+    group_into_subgraph(
+        g, ["GrainNoise", "GrainContrastAlbedo", "GrainContrastRoughness",
+            "AlbedoGrain", "RoughnessGrain"],
+        "surface_grain", "Surface Grain",
+        [("AlbedoGrain", "amount", "param0", "Grain strength"),
+         ("GrainNoise", "scale_x", "param1", "Grain scale"),
+         ("GrainNoise", "iterations", "param2", "Grain detail")],
+        catalog,
+    )
+    link_also(g, "surface_grain", "param0", "RoughnessGrain", "amount")
+    link_also(g, "surface_grain", "param1", "GrainNoise", "scale_y")
+    tidy_ports(g, "surface_grain",
+               [("tile_color", 0, "albedo"), ("tile_color", 1, "roughness")],
+               [("AlbedoGrain", 0, "albedo"), ("RoughnessGrain", 0, "roughness")], catalog)
+
+    # Inner canvases: park the proxies at the edges of the hand-placed nodes.
+    place(node(g, "tile_pattern"), {
+        "gen_inputs": (500, 700), "gen_parameters": (-350, 150), "gen_outputs": (1800, 250)})
+    place(node(g, "brick_layout"), {"gen_parameters": (-350, 0), "gen_outputs": (350, 0)})
+    place(node(g, "surface_grain"), {
+        "gen_inputs": (300, 350), "gen_parameters": (-350, 0), "gen_outputs": (900, 50)})
+    # Top level reads as a layer stack, left to right into Material. The
+    # collapsed nodes carry seed_int 0, so moving them moves no seeds.
+    place(g, {
+        "hex_layout": (-1200, -100), "brick_layout": (-1200, 150),
+        "tile_pattern": (-900, 0), "tile_color": (-600, -100), "tile_relief": (-600, 150),
+        "surface_grain": (-300, -100), "uniform_greyscale": (-300, 150),
+        "Material": (0, 0),
+    })
+    rename_nodes(g, _MAN02_HOST_NAMES)
     return save_variant(g, _LABEL, "man02_ceramic_hex_tiles", 1)
 
 
