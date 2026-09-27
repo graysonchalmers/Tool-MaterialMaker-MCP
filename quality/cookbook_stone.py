@@ -50,7 +50,8 @@ _DRY_EARTH_NAMES = {
 
 def _group_paving_stone(g: dict, catalog: dict, *, relief_label: str = None) -> None:
     """Shared grouping for the dry_earth-voronoi-plate paving stones
-    (s07_cobblestone, s08_dry_stone_wall, s10_flagstone), which all clone
+    (s07_cobblestone; s08_dry_stone_wall and s10_flagstone, since retired into
+    s07's presets), which all clone
     `dry_earth` and add the same `colorize_cobble` (per-plate tone,
     replacing `colorize_0` as `blend_0`'s port1/background) plus a
     `perlin_grain` surface-detail overlay (`blend_grain`, Multiply, over the
@@ -515,63 +516,6 @@ _S07_NAMES = {
 }
 
 
-def build_s08_dry_stone_wall(catalog: dict) -> str:
-    """Dry-stone / fieldstone wall: irregular stones tightly packed with thin
-    dark dry-stack gaps (no mortar), weathered gray. Same voronoi-plate donor
-    as s07 cobblestone, deliberately retuned to read as a different material,
-    not a recolor:
-    - scale 6 -> 8: smaller, denser, more numerous stones than the paving cobbles.
-    - warp stays at s07's haze-free 0.12: a first pass at 0.20 (chasing more
-      angular edges) just brought back the broad crack-smear haze without
-      actually sharpening corners -- voronoi cells are already polygonal, so the
-      angular fieldstone read comes from the cell shape, not the warp.
-    - palette shifts warm tan -> cool weathered GRAY with subtle mossy and brown
-      accents (the loudest read that these aren't the same stones as s07). The
-      green is kept restrained -- pushed further it tips into a camo-grid look
-      (the same trap s05 hit).
-    - gaps stay thin and dark (blend_0 Multiply 0.6) -- a dry stack shows a
-      tight recessed shadow line, not s07's wider mortar joint feel.
-    Keeps s07's strong per-stone relief (chunky individual stones is exactly the
-    fieldstone look) and the fine perlin surface grain. Honest limit: pure
-    voronoi has no horizontal coursing, so this reads as random rubble/fieldstone
-    packing, not neatly coursed drystone -- flagged rather than oversold."""
-    g = load_example("dry_earth")
-    set_param(g, "voronoi_0", "scale_x", 8)    # smaller, denser stones than cobbles
-    set_param(g, "voronoi_0", "scale_y", 8)
-    add_node(g, "colorize_cobble", "colorize",
-             {"gradient": _grad([
-                 (0.0,  0.22, 0.23, 0.22),   # dark wet gray
-                 (0.25, 0.40, 0.41, 0.40),   # mid weathered gray
-                 (0.45, 0.58, 0.58, 0.56),   # light gray
-                 (0.62, 0.50, 0.47, 0.40),   # tan-gray
-                 (0.80, 0.43, 0.45, 0.40),   # restrained mossy gray (not camo green)
-                 (1.0,  0.30, 0.29, 0.26),   # dark brown-gray
-             ])})
-    g["connections"].append(
-        {"from": "voronoi_0", "from_port": 2, "to": "colorize_cobble", "to_port": 0})
-    rewire(g, "blend_0", 1, "colorize_cobble", 0)
-    set_param(g, "blend_0", "amount", 0.6)     # thin, dark dry-stack gap shadow
-    set_param(g, "warp_0", "amount", 0.12)     # haze-free (0.20 smeared, no angularity gain)
-    add_node(g, "perlin_grain", "perlin", {"scale_x": 48, "scale_y": 48, "iterations": 5})
-    add_node(g, "colorize_grain", "colorize",
-             {"gradient": _grad([(0.0, 0.82, 0.82, 0.82), (1.0, 1.0, 1.0, 1.0)])})
-    add_node(g, "blend_grain", "blend", {"blend_type": 2, "amount": 1})   # Multiply
-    g["connections"] += [
-        {"from": "perlin_grain", "from_port": 0, "to": "colorize_grain", "to_port": 0},
-        {"from": "blend_0", "from_port": 0, "to": "blend_grain", "to_port": 0},
-        {"from": "colorize_grain", "from_port": 0, "to": "blend_grain", "to_port": 1},
-    ]
-    rewire(g, "Material", 0, "blend_grain", 0)
-    _group_paving_stone(g, catalog)
-    rename_nodes(g, {
-        **_DRY_EARTH_NAMES,
-        "colorize_cobble": "StoneColor",
-        "perlin_grain": "GrainNoise",
-        "colorize_grain": "GrainContrast",
-        "blend_grain": "GrainOverStone",
-    })
-    return save_variant(g, _LABEL, "s08_dry_stone_wall", 1)
-
 
 def build_s09_ashlar_wall(catalog: dict) -> str:
     """Ashlar / castle block wall: neatly cut rectangular stone blocks laid in
@@ -683,61 +627,6 @@ def build_s09_ashlar_wall(catalog: dict) -> str:
     })
     return save_variant(g, _LABEL, "s09_ashlar_wall", 1)
 
-
-def build_s10_flagstone(catalog: dict) -> str:
-    """Flagstone / slate paving: large flat irregular slabs with tight joints,
-    cool slate tones. Same dry_earth voronoi-plate donor as s07, tuned in the
-    OPPOSITE direction on every axis so it reads as flat quarried paving, not
-    rounded cobbles:
-    - scale 6 -> 4 (dry_earth's own default): big slabs, a few large plates
-      across the frame instead of many small cobbles.
-    - normal_map strength 0.99 -> 0.5: FLAT slab tops. Cobbles bulge; flagstones
-      are sawn flat, so the relief should live almost entirely in the recessed
-      joints, not a dome across each slab.
-    - warp kept at the haze-free 0.12: clean joint lines with a slight natural
-      wobble.
-    - palette shifts to cool blue-grays / green-gray slate (vs s07's warm tans),
-      low-contrast because slate slabs are fairly uniform -- per-slab variation
-      is a subtle tonal shift, not the strong hue spread the cobbles wanted."""
-    g = load_example("dry_earth")
-    set_param(g, "voronoi_0", "scale_x", 4)    # big flat slabs
-    set_param(g, "voronoi_0", "scale_y", 4)
-    add_node(g, "colorize_cobble", "colorize",
-             {"gradient": _grad([
-                 (0.0,  0.18, 0.20, 0.23),   # dark charcoal-blue slate
-                 (0.30, 0.30, 0.34, 0.38),   # slate blue-gray
-                 (0.55, 0.42, 0.44, 0.46),   # mid gray
-                 (0.78, 0.34, 0.40, 0.38),   # green-gray slate
-                 (1.0,  0.48, 0.50, 0.54),   # light blue-gray
-             ])})
-    g["connections"].append(
-        {"from": "voronoi_0", "from_port": 2, "to": "colorize_cobble", "to_port": 0})
-    rewire(g, "blend_0", 1, "colorize_cobble", 0)
-    set_param(g, "blend_0", "amount", 0.6)     # recessed joint shadow
-    set_param(g, "warp_0", "amount", 0.12)     # clean joints, no haze
-    set_param(g, "normal_map_0", "param1", 0.5)  # FLAT slab tops (vs cobbles' 0.99 bulge)
-    add_node(g, "perlin_grain", "perlin", {"scale_x": 40, "scale_y": 40, "iterations": 5})
-    add_node(g, "colorize_grain", "colorize",
-             {"gradient": _grad([(0.0, 0.85, 0.85, 0.85), (1.0, 1.0, 1.0, 1.0)])})
-    add_node(g, "blend_grain", "blend", {"blend_type": 2, "amount": 1})   # Multiply
-    g["connections"] += [
-        {"from": "perlin_grain", "from_port": 0, "to": "colorize_grain", "to_port": 0},
-        {"from": "blend_0", "from_port": 0, "to": "blend_grain", "to_port": 0},
-        {"from": "colorize_grain", "from_port": 0, "to": "blend_grain", "to_port": 1},
-    ]
-    rewire(g, "Material", 0, "blend_grain", 0)
-    # s10 explicitly tunes normal_map_0.param1 (0.5, flat slab tops vs. the
-    # cobbles' 0.99 bulge) -- unlike s07/s08, this earns the Relief group
-    # its own exposed parameter instead of being folded into Stone Color.
-    _group_paving_stone(g, catalog, relief_label="Slab flatness")
-    rename_nodes(g, {
-        **_DRY_EARTH_NAMES,
-        "colorize_cobble": "StoneColor",
-        "perlin_grain": "GrainNoise",
-        "colorize_grain": "GrainContrast",
-        "blend_grain": "GrainOverStone",
-    })
-    return save_variant(g, _LABEL, "s10_flagstone", 1)
 
 
 def build_s11_marble(catalog: dict) -> str:
@@ -1692,9 +1581,7 @@ BUILDERS = {
     "s02_gray_granite": build_s02_gray_granite,
     "s05_hex_stone_tile": build_s05_hex_stone_tile,
     "s07_cobblestone": build_s07_cobblestone,
-    "s08_dry_stone_wall": build_s08_dry_stone_wall,
     "s09_ashlar_wall": build_s09_ashlar_wall,
-    "s10_flagstone": build_s10_flagstone,
     "s11_marble": build_s11_marble,
     "s12_eroded_sandstone": build_s12_eroded_sandstone,
     "s13_polished_marble": build_s13_polished_marble,

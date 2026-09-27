@@ -13,7 +13,7 @@ Pitfall specific to this material: two traps cost a pass each. First, the initia
 ## Subgraph structure
 
 The paved-stone host (2026-09-27). It absorbs `s08_dry_stone_wall` and
-`s10_flagstone`, which are this same `dry_earth` graph with different
+`s10_flagstone` (both retired into it 2026-09-27), which are this same `dry_earth` graph with different
 parameters and no node of their own. Six groups, left to right into
 Material:
 

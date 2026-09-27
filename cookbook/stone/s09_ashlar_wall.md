@@ -2,7 +2,7 @@
 
 _Category: stone. Open the graph: `cookbook/stone/s09_ashlar_wall.ptex`._
 
-Regular, quarried cut-block wall, the coursed counterpart to `s08_dry_stone_wall`'s random rubble.
+Regular, quarried cut-block wall, the coursed counterpart to random rubble (the retired `s08_dry_stone_wall`, now `s07_cobblestone`'s dry-stack preset).
 
 ## Recipe
 
