@@ -68,7 +68,8 @@ Alternatives:
 
 - **Direction (Grayson, 2026-09-27): no new cookbook materials.** Add features to existing materials. Node-coverage counts are a diagnostic, not a goal.
 - **Open outside PRs #7, #8 and #13 (`waskosky`) are untrusted code.** Read them with `gh pr view/diff` only, until Grayson says go. Their fork is 46 commits ahead.
-- **The user-wide MCP server is an EDITABLE install of the MAIN checkout's `src`** (`.venv\Scripts\mm-mcp.exe`; its metadata says 0.1.0). It picks up merged code only after a restart. This session's fixes are not live in the running server yet.
+- **The user-wide MCP server is an EDITABLE install of the MAIN checkout's `src`** (`.venv\Scripts\mm-mcp.exe`; metadata fixed to 0.8.1 on 2026-09-27). It picks up merged code only after a restart.
+- **Never `pip install -e .` into `.venv` while any session's `mm-mcp.exe` is running.** The exe is locked (WinError 32): pip uninstalls first and then fails, which leaves the venv with NO `mm_mcp`. Recovery: `pip install --no-deps -e . --prefix <scratch>`, then copy the `.pth` and `dist-info` into `.venv\Lib\site-packages`, leaving the locked exe in place (it is a generic launcher).
 - **A worktree has no `.env`.** Copy it from the main checkout without printing it. Without it, the examples gate silently collapses to 1 skipped test.
 - **Material Maker ignores `--size`.** `render()` downsamples. Anything that calibrates on pixels must render at the size it measures (see the swatch test).
 - **Godot 4.7 cannot combine heightmap/parallax with `uv1_triplanar = true`.** Any future Deep Parallax object needs the sphere's non-triplanar material swap.
