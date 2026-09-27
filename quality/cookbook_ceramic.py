@@ -39,6 +39,11 @@ _MAN02_NAMES = {
 }
 
 
+# Per-tile terrace depth for man02's hex relief, as a fraction of the grout
+# depth: faces sit between 1 - k and 1 above the grout (0).
+_MAN02_TERRACE = 0.15
+
+
 def _position_seed(x: float, y: float) -> int:
     """Material Maker's seed for a node saved without one
     (gen_base.gd get_seed_from_position): ((int(x) * 0x1f1f1f1f) ^ int(y))
@@ -51,8 +56,9 @@ def build_man02_ceramic_hex_tiles(catalog: dict) -> str:
     """White ceramic hexagon tiles (was examples/man02_ceramic_hex_tiles,
     iter1 variant 1): `beehive` clone, non-metallic, faces recolored white
     with a thin dark grout band, roughness inverted (glazed faces, rough
-    grout), hex relief kept (in hex mode it reads as a raised grout ridge,
-    height and normal agree; see the card). `uniform_greyscale`
+    grout), hex relief kept but inverted so the grout is a recessed groove
+    (2026-09-27; the donor's relief made it a raised ridge, see below and
+    the card). `uniform_greyscale`
     (metallic 0) stays top-level as a single donor-default constant.
 
     TILE HOST (2026-09-27): absorbs s05_hex_stone_tile and man03_mosaic_tile.
@@ -88,12 +94,19 @@ def build_man02_ceramic_hex_tiles(catalog: dict) -> str:
     and skewed_bricks seed from node position, so HexLayout keeps its
     donor spot and BrickLayout / GrainNoise sit at (0, 0) as in man03/s05.
     Material-node params are unchanged (they only reach the .tres).
-    Measured 2048 diffs (Pillow, full image): default vs pre-host man02
-    albedo, ORM, heightmap 0 px, normal 1 px at 1/255 (the NormalMix blend's
-    presence alone; bypassing it gives 0 px); s05 preset albedo, ORM,
-    heightmap 0 px, normal <= 3/255 (s05 is buffered param4=1; s05 with
-    param4=0 vs the preset is 0 px except that same 1 normal px); man03
-    preset albedo, normal, ORM 0 px."""
+    Measured 2048 diffs (Pillow, full image) when the host landed: default
+    vs pre-host man02 albedo, ORM, heightmap 0 px, normal 1 px at 1/255;
+    s05 preset albedo, ORM, heightmap 0 px, normal <= 3/255; man03 preset
+    albedo, normal, ORM 0 px.
+    RECESSED GROUT (2026-09-27): the hex relief chain (colorize_2, colorize,
+    blend; the colour twin is copied before this) is inverted, see the
+    comment in the body: relief = 1 - max(S, k*C), k = _MAN02_TERRACE.
+    Diffs vs the host before it, default and s05 preset: albedo, ORM 0 px,
+    normal and heightmap changed by design; man03 preset 0 px on all four
+    maps and lit. Polarity (2048, grout/face = darkest/brightest 10% of a
+    clean-hex albedo mask): default height grout 56 vs faces 241 (was 208
+    vs 88), faces' 5th percentile 217; corr(normal R, -d mask/dx) +0.58
+    (was -0.23; s07 cobblestone +0.48). s05 preset 55 vs 242, +0.45."""
     g = take_variant(author.build_man02_ceramic_hex_tiles, _LABEL, 1)
     # Direct normal path (2026-09-27): the donor's buffered param4=1 races to a
     # flat normal headless; param4=0 at the same param1 matches within 0.37/255.
@@ -119,6 +132,20 @@ def build_man02_ceramic_hex_tiles(catalog: dict) -> str:
         {"from": "StoneStructureTone", "from_port": 0, "to": "StoneToneBlend", "to_port": 0},
         {"from": "StoneCellTone", "from_port": 0, "to": "StoneToneBlend", "to_port": 1},
     ]
+
+    # --- Recessed grout: invert the hex relief (normal + height only) ---
+    # The donor relief is Lighten(StructureTone, CellRandomTone) = max(S, C):
+    # S is 1 on the grout band, C a per-cell tone (0-0.23, or 0.97 on about a
+    # third of the cells), so the grout came out a RAISED ridge. Here S -> 1-S,
+    # C -> 1 - k*C and Lighten -> Darken, so relief = min(1-S, 1-kC) =
+    # 1 - max(S, kC): the old field turned upside down with the per-cell
+    # tone squeezed to k, i.e. grout at 0 and every face between 1-k and 1.
+    # Only the relief chain changes; the colour twin above was copied first.
+    for name, scale in (("colorize_2", 1.0), ("colorize", _MAN02_TERRACE)):
+        for pt in node(g, name)["parameters"]["gradient"]["points"]:
+            for ch in ("r", "g", "b"):
+                pt[ch] = round(1 - scale * pt[ch], 6)
+    set_param(g, "blend", "blend_type", 10)                          # Darken
 
     # --- Brick Layout (man03's generator, man03's values) ---
     add_node(g, "BrickLayout", "skewed_bricks", {

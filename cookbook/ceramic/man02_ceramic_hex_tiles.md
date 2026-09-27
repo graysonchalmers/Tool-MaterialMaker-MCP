@@ -13,12 +13,19 @@ peaks at each cell center and falls to a narrow low band at the edges, so
 one ramp does both jobs: `TileColor` maps the low band to a thin dark grout
 line and everything above 0.20 to white tile, and `GlazeRoughness` inverts
 that for roughness (grout rough, glazed faces near-mirror). The metallic
-constant (`NonMetallic`) is set to 0. The hex relief from the donor's blend ->
-normal_map chain is kept; height (port 6) comes from the same blend. Note
-(measured 2026-09-27): in hex mode the height and normal agree on a RAISED
-grout ridge (grout height ~208 vs faces ~88, each cell on its own terrace),
-while brick mode has recessed mortar. Whether to invert the hex relief is
-an open question.
+constant (`NonMetallic`) is set to 0. The normal and height (port 6) come
+from the donor's relief chain, turned upside down so the grout is a
+recessed groove. The donor's `ReliefBlend` was Lighten(`StructureTone`,
+`CellRandomTone`) = max(S, C), with S = 1 on the grout band, so the grout
+was a RAISED ridge. The chain now inverts `StructureTone` (1 - S), maps
+`CellRandomTone` to 1 - 0.15 x C and blends with Darken, which gives
+1 - max(S, 0.15 C): grout at 0, every face between 0.85 and 1 (each tile
+on its own slight terrace, like hand-set tile). Measured at 2048
+(2026-09-27), heightmap on grout vs faces: 56 vs 241 (was 208 vs 88), the
+lowest-terrace faces (5th percentile) at 217. The normal agrees:
+corr(normal R, -d(face mask)/dx) is +0.58 (was -0.23; s07's recessed
+mortar reads +0.48). Brick mode already had recessed mortar and is
+unchanged.
 
 The lesson: when a bundled example already has the exact pattern topology
 (regular hex cells), the whole material is two gradient ramps and one
@@ -36,7 +43,8 @@ layout, and two switches pick the result. Six groups, left to right into
 Material:
 
 - **Hex Layout**: `HexLayout` (`beehive`), `StructureTone`,
-  `CellRandomTone`, `ReliefBlend` (the relief chain, as before), plus a
+  `CellRandomTone`, `ReliefBlend` (the relief chain, inverted for a
+  recessed grout; see the recipe), plus a
   twin of that chain for the colour path: `StoneLayout`,
   `StoneStructureTone`, `StoneCellTone`, `StoneToneBlend`. Exposed: `Tiles
   across`, `Tiles down`, `Edge softness` (each drives both chains).
@@ -85,9 +93,10 @@ move them.
 ## Feature layers
 
 Every new layer defaults off, so the default is the white hex tile it was
-before the host work. A 2048 full-image diff against `main`'s graph:
-albedo, ORM and heightmap 0 px; normal 1 px, by 1/255 (bypassing
-`NormalMix` makes it 0 px). The lit preview is 0 px.
+before the host work. A 2048 full-image diff against the pre-host graph:
+albedo and ORM 0 px. The normal and heightmap differ on purpose since the
+grout inversion (2026-09-27, see the recipe); before it, the host matched
+the pre-host normal to 1 px at 1/255 and the heightmap to 0 px.
 
 | Layer | Exposed params | What it does |
 |---|---|---|
@@ -102,7 +111,7 @@ Set these on the collapsed nodes. Colors are gradient stops (position: R,
 G, B in 0-1). Anything not listed stays at its default. Each preset was
 rendered at 2048 and diffed against the current original.
 
-**Hex stone tile (s05)**: albedo, ORM and heightmap 0 px; normal differs
+**Hex stone tile (s05)**: albedo and ORM 0 px; normal and heightmap differ
 (see below).
 - `Tiles across` = 7, `Tiles down` = 5, `Tone source` = 1, `Grain strength` = 1.
 - `Tile and grout color`: 0.0: 0.15, 0.14, 0.13; 0.08: 0.16, 0.15, 0.14;
@@ -110,11 +119,14 @@ rendered at 2048 and diffed against the current original.
   0.88: 0.50, 0.46, 0.39.
 - `Glaze roughness`: 0.08: 0.85 gray; 0.14: 0.58 gray; 0.88: 0.64 gray.
 
-s05 still runs its normal through the buffered path (`param4` = 1). The
-host is on the direct path (`param4` = 0), so the s05 normal differs by at
-most 3/255 on 7.1% of pixels (mean 0.07/255), and the lit preview by up to
-46/255 on 3.8% of pixels. Against s05 re-rendered with `param4` = 0, the
-preset is 0 px on every map except that same 1 normal pixel, and 0 px lit.
+The preset shares the hex relief, so since the grout inversion
+(2026-09-27) its grout is recessed where retired s05's was raised: the
+heightmap on grout vs faces is 55 vs 242 (was 207 vs 80, measured with a
+7 x 5 clean-hex geometry mask, since s05's darkest albedo is its low-tone
+cells, not the grout), and corr(normal R, -d(face mask)/dx) is +0.45 (was
+-0.13). Before the inversion the preset matched s05 to 0 px on albedo,
+ORM and heightmap, with the normal within 3/255 (s05 buffered `param4` = 1,
+the host direct `param4` = 0).
 
 **Mosaic tile (man03)**: albedo, normal and ORM 0 px; the lit preview is
 also 0 px.
