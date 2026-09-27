@@ -12,7 +12,8 @@ import sys
 
 from quality.author_helpers import (load_example, node, set_gradient, set_param, retype,
                     rewire, add_node, save_variant, group_into_subgraph,
-                    take_variant, rename_nodes, _from_scratch_noise_material, _grad)
+                    take_variant, rename_nodes, _from_scratch_noise_material, _grad,
+                    place, tidy_ports, link_also)
 from quality import author  # shared builder base; regression guard is promote_cookbook --check
 
 from mm_mcp.catalog_builder import build_catalog
@@ -84,11 +85,14 @@ _F06_VELVET_NAMES = {
 # weave2 stitch=3: the chevron reads as herringbone, so the pattern node
 # gets its own name per the brief rather than the generic WeaveLayout.
 _F07_HERRINGBONE_TWEED_NAMES = {
-    "voronoi_0": "HerringboneLayout",
+    # Host (2026-09-27): the weave2 node now also draws plain weave and twill
+    # (its Stitch is exposed), and height/normal follow whichever Pattern is
+    # selected, so the Herringbone* names became WeaveLayout/Weave*.
+    "voronoi_0": "WeaveLayout",
     "colorize_1": "TweedColor",
     "colorize_3": "TweedRoughness",
-    "colorize_0": "HerringboneHeight",
-    "normal_map_0": "HerringboneNormal",
+    "colorize_0": "WeaveHeight",
+    "normal_map_0": "WeaveNormal",
     "uniform_0": "NonMetallic",
 }
 
@@ -292,7 +296,36 @@ def build_f07_herringbone_tweed(catalog: dict) -> str:
     three-tone (espresso / tan / cream) for the woven two-color heather, very
     matte wool roughness, soft rounded-ribbon normal (param1 low so the chevron
     reads as pressed tweed relief, not sharp thread crossings). Directly-fed
-    analytic generator -> normal_map param4=0 fix."""
+    analytic generator -> normal_map param4=0 fix.
+
+    WOVEN-PATTERN HOST (2026-09-27): absorbs f01_woven_denim, f05_silk_satin,
+    f08_donegal_tweed and f09_plaid_flannel. All four are this same
+    crocodile_skin shape (one generator feeding the albedo, roughness and
+    height colorizes); only the generator differs. f08's is this graph's own
+    weave2 (stitch 1, 10x10, width 0.85); f01 and f05 are one graph with
+    different values (diagonal_weave, size 22 vs 48); f09 is fbm Cellular 3.
+    So the host carries the two other generators in, and a Pattern selector
+    picks which ONE signal feeds all three colorizes (colour, roughness and
+    relief always read the same source, so they stay registered in every
+    mode). The selector is one-hot weights in product-sum form
+    (weave x w0 + twill x w1 + crosshatch x w2, the weights from A<B
+    thresholds on one 0 / 0.5 / 1 value): exact in every mode, where a lerp
+    or a blend (f -> rgba -> f) would drift. Each absorbed material is a
+    preset that renders its original exactly. New layers default to a no-op,
+    so the default renders today's f07 exactly:
+    - Plaid Overlay (new): weave2's own warp and weft thread masks (ports 2
+      and 1) paint vertical threads with a sett gradient along x and
+      horizontal threads with the same sett along y, so the check is woven
+      thread by thread and its colour edges sit on thread edges. Replaces
+      f09's crosshatch-as-plaid, which never read as plaid (that crosshatch
+      stays as a Pattern mode, for the exact f09 preset).
+    - Fleck Layer (f08): f08's voronoi port-2 fleck nodes and values, colour
+      only (as f08 shipped); Fleck strength 0 = off.
+    Seeds: diagonal_weave and fbm are seeded from node position, so
+    TwillLayout and CrosshatchGrid each sit at (71, 216) of their own
+    subgraph, the spot the generator holds in f01/f05/f09, and FleckSource
+    at (0, 0) as in f08. weave2 has no seed, so WeaveLayout is free to move.
+    Presets are on the card (cookbook/fabrics/f07_herringbone_tweed.md)."""
     g = load_example("crocodile_skin")
     retype(g, "voronoi_0", "weave2",
            {"columns": 8, "rows": 8, "width_x": 0.8, "width_y": 0.8, "stitch": 3})
@@ -309,14 +342,196 @@ def build_f07_herringbone_tweed(catalog: dict) -> str:
     node(g, "normal_map_0")["parameters"] = {
         "param0": 11, "param1": 0.35, "param2": 0, "param4": 0}
 
-    _group_weave_family(
-        g, catalog, pattern_name="herringbone_pattern",
-        pattern_label="Herringbone Pattern", color_label="Tweed color",
-        density_param="columns", density_label="Weave scale",
-        finish_label="Roughness",
+    # --- Pattern selector: weave2 / diagonal twill (f01, f05) / crosshatch (f09) ---
+    add_node(g, "TwillLayout", "diagonal_weave", {"size": 22})
+    add_node(g, "CrosshatchGrid", "fbm",
+             {"noise": 4, "scale_x": 10, "scale_y": 10, "folds": 0,
+              "iterations": 3, "persistence": 0.5})
+    add_node(g, "PatternSelect", "uniform_greyscale", {"color": 0})
+    add_node(g, "IsWeave", "math", {"op": 15, "default_in2": 0.25})       # P < 0.25
+    add_node(g, "IsCrosshatch", "math", {"op": 15, "default_in1": 0.75})  # 0.75 < P
+    add_node(g, "WeaveOrCrosshatch", "math", {"op": 0})                  # A+B
+    add_node(g, "IsTwill", "math", {"op": 1, "default_in1": 1})          # 1 - (A+B)
+    add_node(g, "WeaveTerm", "math", {"op": 2})                          # A*B
+    add_node(g, "TwillTerm", "math", {"op": 2})
+    add_node(g, "CrosshatchTerm", "math", {"op": 2})
+    add_node(g, "WeaveTwillSum", "math", {"op": 0})
+    add_node(g, "PatternMix", "math", {"op": 0})
+    g["connections"] += [
+        {"from": "PatternSelect", "from_port": 0, "to": "IsWeave", "to_port": 0},
+        {"from": "PatternSelect", "from_port": 0, "to": "IsCrosshatch", "to_port": 1},
+        {"from": "IsWeave", "from_port": 0, "to": "WeaveOrCrosshatch", "to_port": 0},
+        {"from": "IsCrosshatch", "from_port": 0, "to": "WeaveOrCrosshatch", "to_port": 1},
+        {"from": "WeaveOrCrosshatch", "from_port": 0, "to": "IsTwill", "to_port": 1},
+        {"from": "voronoi_0", "from_port": 0, "to": "WeaveTerm", "to_port": 0},
+        {"from": "IsWeave", "from_port": 0, "to": "WeaveTerm", "to_port": 1},
+        {"from": "TwillLayout", "from_port": 0, "to": "TwillTerm", "to_port": 0},
+        {"from": "IsTwill", "from_port": 0, "to": "TwillTerm", "to_port": 1},
+        {"from": "CrosshatchGrid", "from_port": 0, "to": "CrosshatchTerm", "to_port": 0},
+        {"from": "IsCrosshatch", "from_port": 0, "to": "CrosshatchTerm", "to_port": 1},
+        {"from": "WeaveTerm", "from_port": 0, "to": "WeaveTwillSum", "to_port": 0},
+        {"from": "TwillTerm", "from_port": 0, "to": "WeaveTwillSum", "to_port": 1},
+        {"from": "WeaveTwillSum", "from_port": 0, "to": "PatternMix", "to_port": 0},
+        {"from": "CrosshatchTerm", "from_port": 0, "to": "PatternMix", "to_port": 1},
+    ]
+    for consumer in ("colorize_1", "colorize_3", "colorize_0"):
+        rewire(g, consumer, 0, "PatternMix", 0)
+
+    # --- Plaid overlay (new): sett stripes woven through weave2's thread masks ---
+    for name, rotate in (("WarpStripes", 0), ("WeftStripes", 90)):
+        add_node(g, name, "gradient", {"repeat": 1, "rotate": rotate, "mirror": False,
+                                       "gradient": _sett(_PLAID_SETT)})
+    add_node(g, "WarpComposite", "blend", {"blend_type": 0, "amount": 0})  # 0 = Normal
+    add_node(g, "WeftComposite", "blend", {"blend_type": 0, "amount": 0})
+    g["connections"] += [
+        {"from": "WarpStripes", "from_port": 0, "to": "WarpComposite", "to_port": 0},
+        {"from": "colorize_1", "from_port": 0, "to": "WarpComposite", "to_port": 1},
+        {"from": "voronoi_0", "from_port": 2, "to": "WarpComposite", "to_port": 2},  # vertical
+        {"from": "WeftStripes", "from_port": 0, "to": "WeftComposite", "to_port": 0},
+        {"from": "WarpComposite", "from_port": 0, "to": "WeftComposite", "to_port": 1},
+        {"from": "voronoi_0", "from_port": 1, "to": "WeftComposite", "to_port": 2},  # horizontal
+    ]
+
+    # --- Fleck layer (f08's nodes and values; strength 0 = off) ---
+    add_node(g, "FleckSource", "voronoi", {"scale_x": 36, "scale_y": 36, "randomness": 1})
+    add_node(g, "FleckMask", "colorize", {"gradient": {
+        "interpolation": 1, "type": "Gradient", "points": [
+            {"a": 1, "r": 0, "g": 0, "b": 0, "pos": 0.0},
+            {"a": 1, "r": 0, "g": 0, "b": 0, "pos": 0.78},
+            {"a": 1, "r": 1, "g": 1, "b": 1, "pos": 0.84},
+            {"a": 1, "r": 1, "g": 1, "b": 1, "pos": 1.0}]}})
+    add_node(g, "FleckColor", "colorize", {"gradient": {
+        "interpolation": 1, "type": "Gradient", "points": [
+            {"a": 1, "r": 0.85, "g": 0.78, "b": 0.62, "pos": 0.78},
+            {"a": 1, "r": 0.62, "g": 0.28, "b": 0.16, "pos": 0.90},
+            {"a": 1, "r": 0.90, "g": 0.83, "b": 0.66, "pos": 1.0}]}})
+    add_node(g, "FleckComposite", "blend", {"blend_type": 0, "amount": 0})
+    g["connections"] += [
+        {"from": "FleckSource", "from_port": 2, "to": "FleckMask", "to_port": 0},
+        {"from": "FleckSource", "from_port": 2, "to": "FleckColor", "to_port": 0},
+        {"from": "FleckColor", "from_port": 0, "to": "FleckComposite", "to_port": 0},
+        {"from": "WeftComposite", "from_port": 0, "to": "FleckComposite", "to_port": 1},
+        {"from": "FleckMask", "from_port": 0, "to": "FleckComposite", "to_port": 2},
+    ]
+    rewire(g, "Material", 0, "FleckComposite", 0)
+
+    # Seed-bearing nodes where their originals keep them (see docstring);
+    # everything else spaced left to right by data flow.
+    place(g, {
+        "TwillLayout": (71, 216), "CrosshatchGrid": (71, 216), "FleckSource": (0, 0),
+        "voronoi_0": (0, 0), "PatternSelect": (0, 250),
+        "IsWeave": (250, 200), "IsCrosshatch": (250, 400),
+        "WeaveOrCrosshatch": (500, 300), "IsTwill": (750, 300),
+        "WeaveTerm": (500, 0), "TwillTerm": (1000, 150), "CrosshatchTerm": (1000, 400),
+        "WeaveTwillSum": (1250, 100), "PatternMix": (1500, 200),
+        "WarpStripes": (0, 0), "WeftStripes": (0, 300),
+        "WarpComposite": (350, 100), "WeftComposite": (650, 250),
+        "FleckMask": (300, 150), "FleckColor": (300, -100), "FleckComposite": (600, 50),
+    })
+
+    group_into_subgraph(g, ["TwillLayout"], "twill_layout", "Twill Layout",
+                        [("TwillLayout", "size", "param0", "Twill size")], catalog)
+    tidy_ports(g, "twill_layout", [], [("TwillLayout", 0, "twill")], catalog)
+    group_into_subgraph(g, ["CrosshatchGrid"], "crosshatch_layout", "Crosshatch Layout",
+                        [("CrosshatchGrid", "scale_x", "param0", "Check size")], catalog)
+    link_also(g, "crosshatch_layout", "param0", "CrosshatchGrid", "scale_y")
+    tidy_ports(g, "crosshatch_layout", [], [("CrosshatchGrid", 0, "crosshatch")], catalog)
+    group_into_subgraph(
+        g, ["voronoi_0", "PatternSelect", "IsWeave", "IsCrosshatch", "WeaveOrCrosshatch",
+            "IsTwill", "WeaveTerm", "TwillTerm", "CrosshatchTerm", "WeaveTwillSum",
+            "PatternMix"],
+        "weave_pattern", "Weave Pattern",
+        [("voronoi_0", "columns", "param0", "Weave scale"),
+         ("PatternSelect", "color", "param1", "Pattern (0 weave, 0.5 twill, 1 crosshatch)"),
+         ("voronoi_0", "stitch", "param2", "Stitch (1 plain, 2 twill, 3 herringbone)"),
+         ("voronoi_0", "width_x", "param3", "Thread width")],
+        catalog,
     )
+    link_also(g, "weave_pattern", "param0", "voronoi_0", "rows")
+    link_also(g, "weave_pattern", "param3", "voronoi_0", "width_y")
+    tidy_ports(g, "weave_pattern",
+                [("twill_layout", 0, "twill"), ("crosshatch_layout", 0, "crosshatch")],
+                [("PatternMix", 0, "pattern"), ("voronoi_0", 1, "weft_mask"),
+                 ("voronoi_0", 2, "warp_mask")],
+                catalog)
+    group_into_subgraph(g, ["colorize_1"], "tweed_color", "Tweed Color",
+                        [("colorize_1", "gradient", "param0", "Tweed color")], catalog)
+    tidy_ports(g, "tweed_color", [("weave_pattern", 0, "pattern")],
+                [("colorize_1", 0, "albedo")], catalog)
+    group_into_subgraph(
+        g, ["colorize_0", "colorize_3", "normal_map_0"], "surface_finish", "Surface Finish",
+        [("colorize_3", "gradient", "param0", "Roughness"),
+         ("normal_map_0", "param1", "param1", "Relief strength")],
+        catalog,
+    )
+    tidy_ports(g, "surface_finish", [("weave_pattern", 0, "pattern")],
+                [("normal_map_0", 0, "normal"), ("colorize_3", 0, "roughness")], catalog)
+    group_into_subgraph(
+        g, ["WarpStripes", "WeftStripes", "WarpComposite", "WeftComposite"],
+        "plaid_overlay", "Plaid Overlay",
+        [("WarpComposite", "amount", "param0", "Plaid strength"),
+         ("WarpStripes", "gradient", "param1", "Plaid sett"),
+         ("WarpStripes", "repeat", "param2", "Sett repeat")],
+        catalog,
+    )
+    link_also(g, "plaid_overlay", "param0", "WeftComposite", "amount")
+    link_also(g, "plaid_overlay", "param1", "WeftStripes", "gradient")
+    link_also(g, "plaid_overlay", "param2", "WeftStripes", "repeat")
+    tidy_ports(g, "plaid_overlay",
+                [("tweed_color", 0, "albedo"), ("weave_pattern", 1, "weft_mask"),
+                 ("weave_pattern", 2, "warp_mask")],
+                [("WeftComposite", 0, "albedo")], catalog)
+    group_into_subgraph(
+        g, ["FleckSource", "FleckMask", "FleckColor", "FleckComposite"],
+        "fleck_layer", "Fleck Layer",
+        [("FleckComposite", "amount", "param0", "Fleck strength"),
+         ("FleckSource", "scale_x", "param1", "Fleck density"),
+         ("FleckColor", "gradient", "param2", "Fleck color")],
+        catalog,
+    )
+    link_also(g, "fleck_layer", "param1", "FleckSource", "scale_y")
+    tidy_ports(g, "fleck_layer", [("plaid_overlay", 0, "albedo")],
+                [("FleckComposite", 0, "albedo")], catalog)
+
+    # Inner canvases: park the proxies at the edges of the hand-placed nodes.
+    place(node(g, "weave_pattern"), {
+        "gen_inputs": (650, 550), "gen_parameters": (-350, 250), "gen_outputs": (1800, 200)})
+    for sub in ("twill_layout", "crosshatch_layout"):
+        place(node(g, sub), {"gen_parameters": (-250, 216), "gen_outputs": (400, 216)})
+    place(node(g, "plaid_overlay"), {
+        "gen_inputs": (-350, 150), "gen_parameters": (-350, 450), "gen_outputs": (950, 250)})
+    place(node(g, "fleck_layer"), {
+        "gen_inputs": (300, 350), "gen_parameters": (-350, 250), "gen_outputs": (900, 50)})
+    # Top level reads as a layer stack, left to right into Material. The
+    # collapsed nodes carry seed_int 0, so moving them moves no seeds.
+    place(g, {
+        "twill_layout": (-600, 100), "crosshatch_layout": (-600, 300),
+        "weave_pattern": (-300, 150), "tweed_color": (0, 0), "surface_finish": (0, 300),
+        "plaid_overlay": (300, 0), "fleck_layer": (600, 0),
+        "uniform_0": (600, 200), "Material": (900, 150),
+    })
     rename_nodes(g, _F07_HERRINGBONE_TWEED_NAMES)
     return save_variant(g, _LABEL, "f07_herringbone_tweed", 1)
+
+
+# Plaid sett for the Plaid Overlay (a muted navy / green / red tartan, a
+# starting point: the overlay ships at strength 0). Constant interpolation,
+# stops on eighths so each stripe edge falls on a thread edge at the default
+# 8-thread weave with Sett repeat 1.
+_PLAID_SETT = [
+    (0.0, 0.12, 0.15, 0.28),
+    (0.375, 0.16, 0.28, 0.20),
+    (0.625, 0.58, 0.16, 0.13),
+    (0.75, 0.16, 0.28, 0.20),
+    (0.875, 0.80, 0.74, 0.58),
+]
+
+
+def _sett(points):
+    """A constant-interpolation gradient (hard stripes) from (pos, r, g, b)."""
+    grad = _grad(points)
+    grad["interpolation"] = 0
+    return grad
 
 
 def build_f08_donegal_tweed(catalog: dict) -> str:

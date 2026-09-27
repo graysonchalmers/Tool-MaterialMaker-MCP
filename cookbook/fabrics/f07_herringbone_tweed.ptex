@@ -7,22 +7,22 @@
    "to_port": 1
   },
   {
-   "from": "herringbone_pattern",
-   "from_port": 1,
-   "to": "Material",
-   "to_port": 0
-  },
-  {
-   "from": "herringbone_pattern",
+   "from": "twill_layout",
    "from_port": 0,
-   "to": "surface_finish",
+   "to": "weave_pattern",
    "to_port": 0
   },
   {
-   "from": "herringbone_pattern",
-   "from_port": 2,
-   "to": "surface_finish",
+   "from": "crosshatch_layout",
+   "from_port": 0,
+   "to": "weave_pattern",
    "to_port": 1
+  },
+  {
+   "from": "weave_pattern",
+   "from_port": 0,
+   "to": "tweed_color",
+   "to_port": 0
   },
   {
    "from": "surface_finish",
@@ -35,6 +35,42 @@
    "from_port": 1,
    "to": "Material",
    "to_port": 2
+  },
+  {
+   "from": "weave_pattern",
+   "from_port": 0,
+   "to": "surface_finish",
+   "to_port": 0
+  },
+  {
+   "from": "tweed_color",
+   "from_port": 0,
+   "to": "plaid_overlay",
+   "to_port": 0
+  },
+  {
+   "from": "weave_pattern",
+   "from_port": 1,
+   "to": "plaid_overlay",
+   "to_port": 1
+  },
+  {
+   "from": "weave_pattern",
+   "from_port": 2,
+   "to": "plaid_overlay",
+   "to_port": 2
+  },
+  {
+   "from": "fleck_layer",
+   "from_port": 0,
+   "to": "Material",
+   "to_port": 0
+  },
+  {
+   "from": "plaid_overlay",
+   "from_port": 0,
+   "to": "fleck_layer",
+   "to_port": 0
   }
  ],
  "label": "Graph",
@@ -47,8 +83,8 @@
   {
    "name": "Material",
    "node_position": {
-    "x": 674,
-    "y": 164
+    "x": 900,
+    "y": 150
    },
    "parameters": {
     "albedo_color": {
@@ -73,8 +109,8 @@
   {
    "name": "NonMetallic",
    "node_position": {
-    "x": 413,
-    "y": 208
+    "x": 600,
+    "y": 200
    },
    "parameters": {
     "color": {
@@ -88,16 +124,581 @@
    "type": "uniform"
   },
   {
-   "name": "herringbone_pattern",
-   "label": "Herringbone Pattern",
+   "name": "twill_layout",
+   "label": "Twill Layout",
    "type": "graph",
    "node_position": {
-    "x": 227.5,
-    "y": 176.5
+    "x": -600,
+    "y": 100
+   },
+   "parameters": {
+    "param0": 22
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": -329.0,
+      "y": 216.0
+     },
+     "parameters": {},
+     "ports": [],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 400,
+      "y": 216
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "twill",
+       "type": "f",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -250,
+      "y": 216
+     },
+     "parameters": {
+      "param0": 22
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Twill size",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "TwillLayout",
+         "widget": "size"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "TwillLayout",
+     "type": "diagonal_weave",
+     "node_position": {
+      "x": 71,
+      "y": 216
+     },
+     "parameters": {
+      "size": 22
+     }
+    }
+   ],
+   "connections": [
+    {
+     "from": "TwillLayout",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    }
+   ]
+  },
+  {
+   "name": "crosshatch_layout",
+   "label": "Crosshatch Layout",
+   "type": "graph",
+   "node_position": {
+    "x": -600,
+    "y": 300
+   },
+   "parameters": {
+    "param0": 10
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": -329.0,
+      "y": 216.0
+     },
+     "parameters": {},
+     "ports": [],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 400,
+      "y": 216
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "crosshatch",
+       "type": "f",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -250,
+      "y": 216
+     },
+     "parameters": {
+      "param0": 10
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Check size",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "CrosshatchGrid",
+         "widget": "scale_x"
+        },
+        {
+         "node": "CrosshatchGrid",
+         "widget": "scale_y"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "CrosshatchGrid",
+     "type": "fbm",
+     "node_position": {
+      "x": 71,
+      "y": 216
+     },
+     "parameters": {
+      "noise": 4,
+      "scale_x": 10,
+      "scale_y": 10,
+      "folds": 0,
+      "iterations": 3,
+      "persistence": 0.5
+     }
+    }
+   ],
+   "connections": [
+    {
+     "from": "CrosshatchGrid",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    }
+   ]
+  },
+  {
+   "name": "weave_pattern",
+   "label": "Weave Pattern",
+   "type": "graph",
+   "node_position": {
+    "x": -300,
+    "y": 150
    },
    "parameters": {
     "param0": 8,
-    "param1": {
+    "param1": 0,
+    "param2": 3,
+    "param3": 0.8
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": 650,
+      "y": 550
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "twill",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "crosshatch",
+       "type": "f",
+       "group_size": 0
+      }
+     ],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 1800,
+      "y": 200
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "pattern",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "weft_mask",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "warp_mask",
+       "type": "f",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -350,
+      "y": 250
+     },
+     "parameters": {
+      "param0": 8,
+      "param1": 0,
+      "param2": 3,
+      "param3": 0.8
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Weave scale",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "WeaveLayout",
+         "widget": "columns"
+        },
+        {
+         "node": "WeaveLayout",
+         "widget": "rows"
+        }
+       ]
+      },
+      {
+       "name": "param1",
+       "shortdesc": "Pattern (0 weave, 0.5 twill, 1 crosshatch)",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "PatternSelect",
+         "widget": "color"
+        }
+       ]
+      },
+      {
+       "name": "param2",
+       "shortdesc": "Stitch (1 plain, 2 twill, 3 herringbone)",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "WeaveLayout",
+         "widget": "stitch"
+        }
+       ]
+      },
+      {
+       "name": "param3",
+       "shortdesc": "Thread width",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "WeaveLayout",
+         "widget": "width_x"
+        },
+        {
+         "node": "WeaveLayout",
+         "widget": "width_y"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "WeaveLayout",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "columns": 8,
+      "rows": 8,
+      "width_x": 0.8,
+      "width_y": 0.8,
+      "stitch": 3
+     },
+     "type": "weave2"
+    },
+    {
+     "name": "PatternSelect",
+     "type": "uniform_greyscale",
+     "node_position": {
+      "x": 0,
+      "y": 250
+     },
+     "parameters": {
+      "color": 0
+     }
+    },
+    {
+     "name": "IsWeave",
+     "type": "math",
+     "node_position": {
+      "x": 250,
+      "y": 200
+     },
+     "parameters": {
+      "op": 15,
+      "default_in2": 0.25
+     }
+    },
+    {
+     "name": "IsCrosshatch",
+     "type": "math",
+     "node_position": {
+      "x": 250,
+      "y": 400
+     },
+     "parameters": {
+      "op": 15,
+      "default_in1": 0.75
+     }
+    },
+    {
+     "name": "WeaveOrCrosshatch",
+     "type": "math",
+     "node_position": {
+      "x": 500,
+      "y": 300
+     },
+     "parameters": {
+      "op": 0
+     }
+    },
+    {
+     "name": "IsTwill",
+     "type": "math",
+     "node_position": {
+      "x": 750,
+      "y": 300
+     },
+     "parameters": {
+      "op": 1,
+      "default_in1": 1
+     }
+    },
+    {
+     "name": "WeaveTerm",
+     "type": "math",
+     "node_position": {
+      "x": 500,
+      "y": 0
+     },
+     "parameters": {
+      "op": 2
+     }
+    },
+    {
+     "name": "TwillTerm",
+     "type": "math",
+     "node_position": {
+      "x": 1000,
+      "y": 150
+     },
+     "parameters": {
+      "op": 2
+     }
+    },
+    {
+     "name": "CrosshatchTerm",
+     "type": "math",
+     "node_position": {
+      "x": 1000,
+      "y": 400
+     },
+     "parameters": {
+      "op": 2
+     }
+    },
+    {
+     "name": "WeaveTwillSum",
+     "type": "math",
+     "node_position": {
+      "x": 1250,
+      "y": 100
+     },
+     "parameters": {
+      "op": 0
+     }
+    },
+    {
+     "name": "PatternMix",
+     "type": "math",
+     "node_position": {
+      "x": 1500,
+      "y": 200
+     },
+     "parameters": {
+      "op": 0
+     }
+    }
+   ],
+   "connections": [
+    {
+     "from": "PatternSelect",
+     "from_port": 0,
+     "to": "IsWeave",
+     "to_port": 0
+    },
+    {
+     "from": "PatternSelect",
+     "from_port": 0,
+     "to": "IsCrosshatch",
+     "to_port": 1
+    },
+    {
+     "from": "IsWeave",
+     "from_port": 0,
+     "to": "WeaveOrCrosshatch",
+     "to_port": 0
+    },
+    {
+     "from": "IsCrosshatch",
+     "from_port": 0,
+     "to": "WeaveOrCrosshatch",
+     "to_port": 1
+    },
+    {
+     "from": "WeaveOrCrosshatch",
+     "from_port": 0,
+     "to": "IsTwill",
+     "to_port": 1
+    },
+    {
+     "from": "WeaveLayout",
+     "from_port": 0,
+     "to": "WeaveTerm",
+     "to_port": 0
+    },
+    {
+     "from": "IsWeave",
+     "from_port": 0,
+     "to": "WeaveTerm",
+     "to_port": 1
+    },
+    {
+     "from": "IsTwill",
+     "from_port": 0,
+     "to": "TwillTerm",
+     "to_port": 1
+    },
+    {
+     "from": "IsCrosshatch",
+     "from_port": 0,
+     "to": "CrosshatchTerm",
+     "to_port": 1
+    },
+    {
+     "from": "WeaveTerm",
+     "from_port": 0,
+     "to": "WeaveTwillSum",
+     "to_port": 0
+    },
+    {
+     "from": "TwillTerm",
+     "from_port": 0,
+     "to": "WeaveTwillSum",
+     "to_port": 1
+    },
+    {
+     "from": "WeaveTwillSum",
+     "from_port": 0,
+     "to": "PatternMix",
+     "to_port": 0
+    },
+    {
+     "from": "CrosshatchTerm",
+     "from_port": 0,
+     "to": "PatternMix",
+     "to_port": 1
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 0,
+     "to": "TwillTerm",
+     "to_port": 0
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 1,
+     "to": "CrosshatchTerm",
+     "to_port": 0
+    },
+    {
+     "from": "PatternMix",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    },
+    {
+     "from": "WeaveLayout",
+     "from_port": 1,
+     "to": "gen_outputs",
+     "to_port": 1
+    },
+    {
+     "from": "WeaveLayout",
+     "from_port": 2,
+     "to": "gen_outputs",
+     "to_port": 2
+    }
+   ]
+  },
+  {
+   "name": "tweed_color",
+   "label": "Tweed Color",
+   "type": "graph",
+   "node_position": {
+    "x": 0,
+    "y": 0
+   },
+   "parameters": {
+    "param0": {
      "interpolation": 1,
      "points": [
       {
@@ -131,11 +732,17 @@
      "name": "gen_inputs",
      "type": "ios",
      "node_position": {
-      "x": -172.5,
-      "y": 176.5
+      "x": -16.0,
+      "y": 137.0
      },
      "parameters": {},
-     "ports": [],
+     "ports": [
+      {
+       "name": "pattern",
+       "type": "f",
+       "group_size": 0
+      }
+     ],
      "seed": 0,
      "seed_locked": true
     },
@@ -143,24 +750,14 @@
      "name": "gen_outputs",
      "type": "ios",
      "node_position": {
-      "x": 627.5,
-      "y": 176.5
+      "x": 784.0,
+      "y": 137.0
      },
      "parameters": {},
      "ports": [
       {
-       "name": "out0",
-       "type": "f",
-       "group_size": 0
-      },
-      {
-       "name": "out1",
+       "name": "albedo",
        "type": "rgba",
-       "group_size": 0
-      },
-      {
-       "name": "out2",
-       "type": "f",
        "group_size": 0
       }
      ],
@@ -170,12 +767,11 @@
      "name": "gen_parameters",
      "type": "remote",
      "node_position": {
-      "x": -172.5,
-      "y": 376.5
+      "x": -16.0,
+      "y": 337.0
      },
      "parameters": {
-      "param0": 8,
-      "param1": {
+      "param0": {
        "interpolation": 1,
        "points": [
         {
@@ -207,18 +803,6 @@
      "widgets": [
       {
        "name": "param0",
-       "shortdesc": "Weave scale",
-       "label": "",
-       "type": "linked_control",
-       "linked_widgets": [
-        {
-         "node": "HerringboneLayout",
-         "widget": "columns"
-        }
-       ]
-      },
-      {
-       "name": "param1",
        "shortdesc": "Tweed color",
        "label": "",
        "type": "linked_control",
@@ -267,47 +851,20 @@
       }
      },
      "type": "colorize"
-    },
-    {
-     "name": "HerringboneLayout",
-     "node_position": {
-      "x": 71,
-      "y": 216
-     },
-     "parameters": {
-      "columns": 8,
-      "rows": 8,
-      "width_x": 0.8,
-      "width_y": 0.8,
-      "stitch": 3
-     },
-     "type": "weave2"
     }
    ],
    "connections": [
     {
-     "from": "HerringboneLayout",
+     "from": "gen_inputs",
      "from_port": 0,
      "to": "TweedColor",
-     "to_port": 0
-    },
-    {
-     "from": "HerringboneLayout",
-     "from_port": 0,
-     "to": "gen_outputs",
      "to_port": 0
     },
     {
      "from": "TweedColor",
      "from_port": 0,
      "to": "gen_outputs",
-     "to_port": 1
-    },
-    {
-     "from": "HerringboneLayout",
-     "from_port": 0,
-     "to": "gen_outputs",
-     "to_port": 2
+     "to_port": 0
     }
    ]
   },
@@ -316,8 +873,8 @@
    "label": "Surface Finish",
    "type": "graph",
    "node_position": {
-    "x": 375.6666666666667,
-    "y": 307.6666666666667
+    "x": 0,
+    "y": 300
    },
    "parameters": {
     "param0": {
@@ -354,12 +911,7 @@
      "parameters": {},
      "ports": [
       {
-       "name": "in0",
-       "type": "f",
-       "group_size": 0
-      },
-      {
-       "name": "in1",
+       "name": "pattern",
        "type": "f",
        "group_size": 0
       }
@@ -377,12 +929,12 @@
      "parameters": {},
      "ports": [
       {
-       "name": "out0",
+       "name": "normal",
        "type": "rgb",
        "group_size": 0
       },
       {
-       "name": "out1",
+       "name": "roughness",
        "type": "rgba",
        "group_size": 0
       }
@@ -440,7 +992,7 @@
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "HerringboneNormal",
+         "node": "WeaveNormal",
          "widget": "param1"
         }
        ]
@@ -478,7 +1030,7 @@
      "type": "colorize"
     },
     {
-     "name": "HerringboneHeight",
+     "name": "WeaveHeight",
      "node_position": {
       "x": 264,
       "y": 331
@@ -508,7 +1060,7 @@
      "type": "colorize"
     },
     {
-     "name": "HerringboneNormal",
+     "name": "WeaveNormal",
      "node_position": {
       "x": 479,
       "y": 334
@@ -524,25 +1076,25 @@
    ],
    "connections": [
     {
-     "from": "HerringboneHeight",
+     "from": "WeaveHeight",
      "from_port": 0,
-     "to": "HerringboneNormal",
+     "to": "WeaveNormal",
      "to_port": 0
     },
     {
      "from": "gen_inputs",
      "from_port": 0,
-     "to": "HerringboneHeight",
+     "to": "WeaveHeight",
      "to_port": 0
     },
     {
      "from": "gen_inputs",
-     "from_port": 1,
+     "from_port": 0,
      "to": "TweedRoughness",
      "to_port": 0
     },
     {
-     "from": "HerringboneNormal",
+     "from": "WeaveNormal",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
@@ -552,6 +1104,692 @@
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1
+    }
+   ]
+  },
+  {
+   "name": "plaid_overlay",
+   "label": "Plaid Overlay",
+   "type": "graph",
+   "node_position": {
+    "x": 300,
+    "y": 0
+   },
+   "parameters": {
+    "param0": 0,
+    "param1": {
+     "interpolation": 0,
+     "type": "Gradient",
+     "points": [
+      {
+       "a": 1,
+       "r": 0.12,
+       "g": 0.15,
+       "b": 0.28,
+       "pos": 0.0
+      },
+      {
+       "a": 1,
+       "r": 0.16,
+       "g": 0.28,
+       "b": 0.2,
+       "pos": 0.375
+      },
+      {
+       "a": 1,
+       "r": 0.58,
+       "g": 0.16,
+       "b": 0.13,
+       "pos": 0.625
+      },
+      {
+       "a": 1,
+       "r": 0.16,
+       "g": 0.28,
+       "b": 0.2,
+       "pos": 0.75
+      },
+      {
+       "a": 1,
+       "r": 0.8,
+       "g": 0.74,
+       "b": 0.58,
+       "pos": 0.875
+      }
+     ]
+    },
+    "param2": 1
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": -350,
+      "y": 150
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "albedo",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "weft_mask",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "warp_mask",
+       "type": "f",
+       "group_size": 0
+      }
+     ],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 950,
+      "y": 250
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "albedo",
+       "type": "rgba",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -350,
+      "y": 450
+     },
+     "parameters": {
+      "param0": 0,
+      "param1": {
+       "interpolation": 0,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.12,
+         "g": 0.15,
+         "b": 0.28,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.16,
+         "g": 0.28,
+         "b": 0.2,
+         "pos": 0.375
+        },
+        {
+         "a": 1,
+         "r": 0.58,
+         "g": 0.16,
+         "b": 0.13,
+         "pos": 0.625
+        },
+        {
+         "a": 1,
+         "r": 0.16,
+         "g": 0.28,
+         "b": 0.2,
+         "pos": 0.75
+        },
+        {
+         "a": 1,
+         "r": 0.8,
+         "g": 0.74,
+         "b": 0.58,
+         "pos": 0.875
+        }
+       ]
+      },
+      "param2": 1
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Plaid strength",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "WarpComposite",
+         "widget": "amount"
+        },
+        {
+         "node": "WeftComposite",
+         "widget": "amount"
+        }
+       ]
+      },
+      {
+       "name": "param1",
+       "shortdesc": "Plaid sett",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "WarpStripes",
+         "widget": "gradient"
+        },
+        {
+         "node": "WeftStripes",
+         "widget": "gradient"
+        }
+       ]
+      },
+      {
+       "name": "param2",
+       "shortdesc": "Sett repeat",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "WarpStripes",
+         "widget": "repeat"
+        },
+        {
+         "node": "WeftStripes",
+         "widget": "repeat"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "WarpStripes",
+     "type": "gradient",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "repeat": 1,
+      "rotate": 0,
+      "mirror": false,
+      "gradient": {
+       "interpolation": 0,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.12,
+         "g": 0.15,
+         "b": 0.28,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.16,
+         "g": 0.28,
+         "b": 0.2,
+         "pos": 0.375
+        },
+        {
+         "a": 1,
+         "r": 0.58,
+         "g": 0.16,
+         "b": 0.13,
+         "pos": 0.625
+        },
+        {
+         "a": 1,
+         "r": 0.16,
+         "g": 0.28,
+         "b": 0.2,
+         "pos": 0.75
+        },
+        {
+         "a": 1,
+         "r": 0.8,
+         "g": 0.74,
+         "b": 0.58,
+         "pos": 0.875
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "WeftStripes",
+     "type": "gradient",
+     "node_position": {
+      "x": 0,
+      "y": 300
+     },
+     "parameters": {
+      "repeat": 1,
+      "rotate": 90,
+      "mirror": false,
+      "gradient": {
+       "interpolation": 0,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.12,
+         "g": 0.15,
+         "b": 0.28,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.16,
+         "g": 0.28,
+         "b": 0.2,
+         "pos": 0.375
+        },
+        {
+         "a": 1,
+         "r": 0.58,
+         "g": 0.16,
+         "b": 0.13,
+         "pos": 0.625
+        },
+        {
+         "a": 1,
+         "r": 0.16,
+         "g": 0.28,
+         "b": 0.2,
+         "pos": 0.75
+        },
+        {
+         "a": 1,
+         "r": 0.8,
+         "g": 0.74,
+         "b": 0.58,
+         "pos": 0.875
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "WarpComposite",
+     "type": "blend",
+     "node_position": {
+      "x": 350,
+      "y": 100
+     },
+     "parameters": {
+      "blend_type": 0,
+      "amount": 0
+     }
+    },
+    {
+     "name": "WeftComposite",
+     "type": "blend",
+     "node_position": {
+      "x": 650,
+      "y": 250
+     },
+     "parameters": {
+      "blend_type": 0,
+      "amount": 0
+     }
+    }
+   ],
+   "connections": [
+    {
+     "from": "WarpStripes",
+     "from_port": 0,
+     "to": "WarpComposite",
+     "to_port": 0
+    },
+    {
+     "from": "WeftStripes",
+     "from_port": 0,
+     "to": "WeftComposite",
+     "to_port": 0
+    },
+    {
+     "from": "WarpComposite",
+     "from_port": 0,
+     "to": "WeftComposite",
+     "to_port": 1
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 2,
+     "to": "WarpComposite",
+     "to_port": 2
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 1,
+     "to": "WeftComposite",
+     "to_port": 2
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 0,
+     "to": "WarpComposite",
+     "to_port": 1
+    },
+    {
+     "from": "WeftComposite",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    }
+   ]
+  },
+  {
+   "name": "fleck_layer",
+   "label": "Fleck Layer",
+   "type": "graph",
+   "node_position": {
+    "x": 600,
+    "y": 0
+   },
+   "parameters": {
+    "param0": 0,
+    "param1": 36,
+    "param2": {
+     "interpolation": 1,
+     "type": "Gradient",
+     "points": [
+      {
+       "a": 1,
+       "r": 0.85,
+       "g": 0.78,
+       "b": 0.62,
+       "pos": 0.78
+      },
+      {
+       "a": 1,
+       "r": 0.62,
+       "g": 0.28,
+       "b": 0.16,
+       "pos": 0.9
+      },
+      {
+       "a": 1,
+       "r": 0.9,
+       "g": 0.83,
+       "b": 0.66,
+       "pos": 1.0
+      }
+     ]
+    }
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": 300,
+      "y": 350
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "albedo",
+       "type": "rgba",
+       "group_size": 0
+      }
+     ],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 900,
+      "y": 50
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "albedo",
+       "type": "rgba",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -350,
+      "y": 250
+     },
+     "parameters": {
+      "param0": 0,
+      "param1": 36,
+      "param2": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.85,
+         "g": 0.78,
+         "b": 0.62,
+         "pos": 0.78
+        },
+        {
+         "a": 1,
+         "r": 0.62,
+         "g": 0.28,
+         "b": 0.16,
+         "pos": 0.9
+        },
+        {
+         "a": 1,
+         "r": 0.9,
+         "g": 0.83,
+         "b": 0.66,
+         "pos": 1.0
+        }
+       ]
+      }
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Fleck strength",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "FleckComposite",
+         "widget": "amount"
+        }
+       ]
+      },
+      {
+       "name": "param1",
+       "shortdesc": "Fleck density",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "FleckSource",
+         "widget": "scale_x"
+        },
+        {
+         "node": "FleckSource",
+         "widget": "scale_y"
+        }
+       ]
+      },
+      {
+       "name": "param2",
+       "shortdesc": "Fleck color",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "FleckColor",
+         "widget": "gradient"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "FleckSource",
+     "type": "voronoi",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "scale_x": 36,
+      "scale_y": 36,
+      "randomness": 1
+     }
+    },
+    {
+     "name": "FleckMask",
+     "type": "colorize",
+     "node_position": {
+      "x": 300,
+      "y": 150
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0,
+         "g": 0,
+         "b": 0,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0,
+         "g": 0,
+         "b": 0,
+         "pos": 0.78
+        },
+        {
+         "a": 1,
+         "r": 1,
+         "g": 1,
+         "b": 1,
+         "pos": 0.84
+        },
+        {
+         "a": 1,
+         "r": 1,
+         "g": 1,
+         "b": 1,
+         "pos": 1.0
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "FleckColor",
+     "type": "colorize",
+     "node_position": {
+      "x": 300,
+      "y": -100
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.85,
+         "g": 0.78,
+         "b": 0.62,
+         "pos": 0.78
+        },
+        {
+         "a": 1,
+         "r": 0.62,
+         "g": 0.28,
+         "b": 0.16,
+         "pos": 0.9
+        },
+        {
+         "a": 1,
+         "r": 0.9,
+         "g": 0.83,
+         "b": 0.66,
+         "pos": 1.0
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "FleckComposite",
+     "type": "blend",
+     "node_position": {
+      "x": 600,
+      "y": 50
+     },
+     "parameters": {
+      "blend_type": 0,
+      "amount": 0
+     }
+    }
+   ],
+   "connections": [
+    {
+     "from": "FleckSource",
+     "from_port": 2,
+     "to": "FleckMask",
+     "to_port": 0
+    },
+    {
+     "from": "FleckSource",
+     "from_port": 2,
+     "to": "FleckColor",
+     "to_port": 0
+    },
+    {
+     "from": "FleckColor",
+     "from_port": 0,
+     "to": "FleckComposite",
+     "to_port": 0
+    },
+    {
+     "from": "FleckMask",
+     "from_port": 0,
+     "to": "FleckComposite",
+     "to_port": 2
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 0,
+     "to": "FleckComposite",
+     "to_port": 1
+    },
+    {
+     "from": "FleckComposite",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
     }
    ]
   }
