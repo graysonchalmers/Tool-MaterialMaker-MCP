@@ -70,11 +70,19 @@ def derive_sliders(graph: dict, catalog: dict) -> list[dict]:
             slot_id = widget.get("name")
             if not slot_id:
                 continue
-            bindings = _links(widget)
-            inode_name, iparam = bindings[0]["node"], bindings[0]["widget"]
-            itype = _internal_type(node, inode_name)
-            pdef = _param_def(catalog, itype, iparam) if itype else None
-            kind = _KIND.get((pdef or {}).get("type"), "float")
+            if widget.get("type") == "named_parameter":
+                # Carries its own float range (a host widget widened past its
+                # inner node's slider); the inner params read "$<slot_id>",
+                # so the only thing to set is the subgraph's own parameter.
+                bindings = [{"node": node_name, "widget": slot_id}]
+                pdef = {k: widget.get(k) for k in ("min", "max", "step")}
+                kind = "float"
+            else:
+                bindings = _links(widget)
+                inode_name, iparam = bindings[0]["node"], bindings[0]["widget"]
+                itype = _internal_type(node, inode_name)
+                pdef = _param_def(catalog, itype, iparam) if itype else None
+                kind = _KIND.get((pdef or {}).get("type"), "float")
             sliders.append({
                 "id": f"{node_name}/{slot_id}",
                 "subgraph": node_name,

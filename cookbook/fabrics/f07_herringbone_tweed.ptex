@@ -1427,7 +1427,7 @@
       "y": 100
      },
      "parameters": {
-      "blend_type": 0,
+      "blend_type": 2,
       "amount": 0
      }
     },
@@ -1439,7 +1439,7 @@
       "y": 250
      },
      "parameters": {
-      "blend_type": 0,
+      "blend_type": 2,
       "amount": 0
      }
     }
@@ -1621,17 +1621,11 @@
        "name": "param1",
        "shortdesc": "Fleck density",
        "label": "",
-       "type": "linked_control",
-       "linked_widgets": [
-        {
-         "node": "FleckSource",
-         "widget": "scale_x"
-        },
-        {
-         "node": "FleckSource",
-         "widget": "scale_y"
-        }
-       ]
+       "type": "named_parameter",
+       "min": 1,
+       "max": 48,
+       "step": 1,
+       "default": 36
       },
       {
        "name": "param2",
@@ -1655,8 +1649,8 @@
       "y": 0
      },
      "parameters": {
-      "scale_x": 36,
-      "scale_y": 36,
+      "scale_x": "$param1",
+      "scale_y": "$param1",
       "randomness": 1
      }
     },

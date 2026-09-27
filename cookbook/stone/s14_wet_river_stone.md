@@ -52,10 +52,10 @@ Dryness 0, `Dry color` at Dryness 1.
 
 Set these on the collapsed nodes in Material Maker. Colors are gradient
 stops (position: R, G, B in 0-1, then hex). Anything not listed stays at its
-default. Two presets go past a slider's range: `Top flatness` 1.5 and 4 (the
-slider stops at 1) and `Grain scale` 128 (the slider stops at 32). Type the
-number into the field instead of dragging; Material Maker keeps a typed
-value (s06 has always shipped Top flatness 1.5).
+default. `Top flatness` (0-5) and `Grain scale` (1-160) have their own
+slider ranges, wider than the math and perlin nodes they drive, so every
+preset value below (Top flatness 1.5 and 4, Grain scale 128) is on the
+slider.
 
 **River pebbles, dry (s06):**
 - `Dryness` = 1, `Grain amount` = 1, `Top flatness` = 1.5.
@@ -105,8 +105,8 @@ scale` 40, `Relief strength` 0.6, and:
 
 `Pebble size`, `Small stone size`, `Grain scale` and `Wet patch scale` each
 set both scale_x and scale_y. `Top flatness` sets both stone sizes' domes.
-Material Maker applies all of them. mm-play's slider binds only the first
-link (scale_x, the big dome).
+`Grain scale` and `Top flatness` are named parameters: the inner nodes read
+`$param1` / `$param2`, so one value drives both.
 
 ## Subgraph structure
 
@@ -139,7 +139,7 @@ anything else around never reshuffles the stones.
 ## See also
 
 `guide://authoring` (or `docs/AUTHORING.md`) for the `param4=0` fix and the
-blend-polarity notes; `cookbook/metal/m02_brushed_aluminum.md` for the first
+blend-polarity notes; `cookbook/metal/m02_brushed_metal.md` for the first
 host material.
 
 <!-- nodes:begin -->

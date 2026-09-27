@@ -472,17 +472,11 @@
        "name": "param2",
        "shortdesc": "Top flatness",
        "label": "",
-       "type": "linked_control",
-       "linked_widgets": [
-        {
-         "node": "DomeFlatten",
-         "widget": "default_in2"
-        },
-        {
-         "node": "SmallDomeFlatten",
-         "widget": "default_in2"
-        }
-       ]
+       "type": "named_parameter",
+       "min": 0,
+       "max": 5,
+       "step": 0.01,
+       "default": 1.0
       },
       {
        "name": "param3",
@@ -520,7 +514,7 @@
      },
      "parameters": {
       "op": 2,
-      "default_in2": 1.0,
+      "default_in2": "$param2",
       "clamp": true
      }
     },
@@ -618,7 +612,7 @@
      },
      "parameters": {
       "op": 2,
-      "default_in2": 1.0,
+      "default_in2": "$param2",
       "clamp": true
      }
     },
@@ -2130,17 +2124,11 @@
        "name": "param1",
        "shortdesc": "Grain scale",
        "label": "",
-       "type": "linked_control",
-       "linked_widgets": [
-        {
-         "node": "GrainNoise",
-         "widget": "scale_x"
-        },
-        {
-         "node": "GrainNoise",
-         "widget": "scale_y"
-        }
-       ]
+       "type": "named_parameter",
+       "min": 1,
+       "max": 160,
+       "step": 1,
+       "default": 40
       }
      ]
     },
@@ -2152,8 +2140,8 @@
       "y": 0
      },
      "parameters": {
-      "scale_x": 40,
-      "scale_y": 40,
+      "scale_x": "$param1",
+      "scale_y": "$param1",
       "iterations": 5
      }
     },

@@ -55,8 +55,9 @@ drive both axes, and `Relief strength` is new as an exposed slider.
 ### Presets
 
 Set these on the collapsed nodes. Colors are gradient stops (position: R, G,
-B in 0-1). Anything not listed stays at its default. `Grain scale` 48 is
-past its slider's range (the slider stops at 32), so type it into the field.
+B in 0-1). Anything not listed stays at its default. `Grain scale` has its
+own slider range, 1-64 (a named parameter both perlin scales read), so the
+default 40 and s08's 48 are on the slider.
 
 **Dry stone wall (s08), exact:**
 - `Stone size` = 8, `Grain scale` = 48.

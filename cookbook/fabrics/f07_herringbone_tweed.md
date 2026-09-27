@@ -70,7 +70,7 @@ exports no heightmap), and the lit `preview_regress` composite is also
 | Weave Pattern: `Pattern` | 0, 0.5 or 1, default 0 | Picks the generator: 0 = `weave2` (below 0.25), 0.5 = diagonal twill (0.25 to 0.75), 1 = crosshatch (above 0.75). It is a switch, not a mix. |
 | Weave Pattern: `Stitch` | 1-10, default 3 | `weave2`'s stitch length: 1 = plain over/under weave, 3 = the herringbone chevron. It also scales the weave (uv x stitch), so change `Weave scale` with it. |
 | Weave Pattern: `Thread width` | 0-1, default 0.8 | Thread width on both axes; lower opens gaps between threads. |
-| Plaid Overlay | `Plaid strength` 0-1, default 0 | Paints vertical threads with the sett along x and horizontal threads with the same sett along y, using `weave2`'s own warp/weft masks. The check is woven thread by thread and its colour edges sit on thread edges. Needs `Pattern` 0 (the masks come from `weave2`). At 1 the sett colours replace the tweed colour on the threads (Normal blend), so the threads lose their ribbon shading; relief still comes from the weave. |
+| Plaid Overlay | `Plaid strength` 0-1, default 0 | Paints vertical threads with the sett along x and horizontal threads with the same sett along y, using `weave2`'s own warp/weft masks. The check is woven thread by thread and its colour edges sit on thread edges. Needs `Pattern` 0 (the masks come from `weave2`). The sett multiplies over the tweed colour (Multiply blend), so each thread keeps its ribbon shading and the check reads woven, not painted on; relief still comes from the weave. Multiply darkens: the result is sett x tweed, so for a brighter tartan use lighter sett colours. |
 | Fleck Layer | `Fleck strength` 0-1, default 0 | f08's sparse voronoi flecks, colour only (as f08 shipped). |
 
 ### Presets
@@ -103,8 +103,8 @@ albedo, normal and ORM for all four.
   0.74, 0.62.
 - `Roughness`: 0.0: 0.82 gray; 1.0: 0.92 gray. `Relief strength` = 0.42.
 
-`Fleck density` 36 is past the voronoi slider's range (it stops at 32), so
-type it into the field; it is already the default.
+`Fleck density` has its own slider range, 1-48 (a named parameter both
+voronoi scales read), so f08's 36, the default, is on the slider.
 
 **Beyond the originals (these use the new layers):**
 - *Woven tartan*: `Plaid strength` = 1 on the default herringbone, or with
