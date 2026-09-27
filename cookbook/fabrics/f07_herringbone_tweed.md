@@ -70,7 +70,7 @@ exports no heightmap), and the lit `preview_regress` composite is also
 | Weave Pattern: `Pattern` | 0, 0.5 or 1, default 0 | Picks the generator: 0 = `weave2` (below 0.25), 0.5 = diagonal twill (0.25 to 0.75), 1 = crosshatch (above 0.75). It is a switch, not a mix. |
 | Weave Pattern: `Stitch` | 1-10, default 3 | `weave2`'s stitch length: 1 = plain over/under weave, 3 = the herringbone chevron. It also scales the weave (uv x stitch), so change `Weave scale` with it. |
 | Weave Pattern: `Thread width` | 0-1, default 0.8 | Thread width on both axes; lower opens gaps between threads. |
-| Plaid Overlay | `Plaid strength` 0-1, default 0 | Paints vertical threads with the sett along x and horizontal threads with the same sett along y, using `weave2`'s own warp/weft masks. The check is woven thread by thread and its colour edges sit on thread edges. Needs `Pattern` 0 (the masks come from `weave2`). The sett multiplies over the tweed colour (Multiply blend), so each thread keeps its ribbon shading and the check reads woven, not painted on; relief still comes from the weave. Multiply darkens: the result is sett x tweed, so for a brighter tartan use lighter sett colours. |
+| Plaid Overlay | `Plaid strength` 0-1, default 0 | Paints vertical threads with the sett along x and horizontal threads with the same sett along y, using `weave2`'s own warp/weft masks. The check is woven thread by thread and its colour edges sit on thread edges. Needs `Pattern` 0 (the masks come from `weave2`). The sett multiplies over the tweed colour (Multiply blend), so each thread keeps its ribbon shading and the check reads woven, not painted on; relief still comes from the weave. Multiply gives sett x tweed, so the default `Plaid sett` is a set of tints: a near-white cream ground, light green, a light red accent and a strong blue (0.66, 0.80, 1.00; a paler blue turns grey on the warm tweed). At strength 1 mean albedo luminance is about 13% below plaid-off, and the check reads clearly. For a custom sett keep the colours light: dark stripes go near-black under Multiply. |
 | Fleck Layer | `Fleck strength` 0-1, default 0 | f08's sparse voronoi flecks, colour only (as f08 shipped). |
 
 ### Presets
@@ -108,7 +108,9 @@ voronoi scales read), so f08's 36, the default, is on the slider.
 
 **Beyond the originals (these use the new layers):**
 - *Woven tartan*: `Plaid strength` = 1 on the default herringbone, or with
-  `Stitch` = 2 and `Weave scale` = 16 for a finer twill.
+  `Stitch` = 2 and `Weave scale` = 16 for a finer twill. A cream / green /
+  red / blue check over the tan tweed, at close to the tweed's own
+  brightness.
 - *Flecked herringbone*: `Fleck strength` = 1 on the default.
 
 **Back to the default:** `Pattern` 0, `Stitch` 3, `Weave scale` 8, `Thread

@@ -456,16 +456,22 @@ def build_f07_herringbone_tweed(catalog: dict) -> str:
     return save_variant(g, _LABEL, "f07_herringbone_tweed", 1)
 
 
-# Plaid sett for the Plaid Overlay (a muted navy / green / red tartan, a
-# starting point: the overlay ships at strength 0). Constant interpolation,
-# stops on eighths so each stripe edge falls on a thread edge at the default
-# 8-thread weave with Sett repeat 1.
+# Plaid sett for the Plaid Overlay (a cream-ground green / red / blue tartan,
+# a starting point: the overlay ships at strength 0). The overlay MULTIPLIES
+# over the tweed, so these are tints, not paint: a near-white ground and
+# light bands barely darken, and the accents stay saturated but light. At
+# strength 1 the albedo's mean Rec.709 luminance is ~13% under plaid-off
+# (the old dark navy/green sett, picked for a Normal blend, was -67%).
+# Blue has to be pushed hard (B = 1.0, little red): a pale blue times the
+# warm tweed lands on grey. Constant interpolation, stops on eighths so each
+# stripe edge falls on a thread edge at the default 8-thread weave with
+# Sett repeat 1.
 _PLAID_SETT = [
-    (0.0, 0.12, 0.15, 0.28),
-    (0.375, 0.16, 0.28, 0.20),
-    (0.625, 0.58, 0.16, 0.13),
-    (0.75, 0.16, 0.28, 0.20),
-    (0.875, 0.80, 0.74, 0.58),
+    (0.0, 1.00, 0.97, 0.90),
+    (0.375, 0.76, 0.94, 0.74),
+    (0.625, 1.00, 0.58, 0.48),
+    (0.75, 0.66, 0.80, 1.00),
+    (0.875, 1.00, 1.00, 1.00),
 ]
 
 
