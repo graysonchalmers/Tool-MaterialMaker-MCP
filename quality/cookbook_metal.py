@@ -396,6 +396,9 @@ def build_m06_car_paint(catalog: dict) -> str:
     # here rather than editing that shared helper call. Starting point for
     # the render-and-look loop, not a locked value.
     set_param(g, "normal_map_0", "param1", 0.10)
+    # Direct normal path (2026-09-27): the helper's buffered param4=1 races to a
+    # flat normal headless; param4=0 at the same param1 matches within 0.37/255.
+    set_param(g, "normal_map_0", "param4", 0)
 
     group_into_subgraph(
         g, ["perlin_0", "colorize_0", "colorize_rough", "voronoi_0",

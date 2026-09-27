@@ -89,6 +89,9 @@ def build_w03_painted_wood_siding(catalog: dict) -> str:
     texture) and the exposed wood warmed up so the worn boards read as
     natural timber."""
     g = load_example("wooden_floor")
+    # Direct normal path (2026-09-27): the donor's buffered param4=1 races to a
+    # flat normal headless; param4=0 at the same param1 matches within 0.37/255.
+    set_param(g, "normal_map_0", "param4", 0)
     # Warm the exposed plank wood (wooden_floor's default is a dark, oddly
     # cool reddish ramp) so where paint has worn off it reads as real timber.
     set_gradient(g, "colorize_0", [
@@ -214,6 +217,9 @@ def build_w05_dark_walnut(catalog: dict) -> str:
     finished/sealed surface, not raw weathered timber). Pure recolor of
     `wood`'s working chain, same lever as w04/w02."""
     g = load_example("wood")
+    # Direct normal path (2026-09-27): the donor's buffered param4=1 races to a
+    # flat normal headless; param4=0 at the same param1 matches within 0.37/255.
+    set_param(g, "normal_map_0", "param4", 0)
     set_gradient(g, "colorize_2", [    # deep walnut brown, dark grain lines
         (0.0, 0.12, 0.07, 0.04),
         (0.5, 0.28, 0.16, 0.09),

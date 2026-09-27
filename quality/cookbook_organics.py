@@ -306,6 +306,9 @@ def build_o01_mossy_forest_floor(catalog: dict) -> str:
     Ground Relief group, with the two shared perlin sources left top-level
     because each feeds both groups."""
     g = take_variant(author.build_o01_mossy_forest_floor, _LABEL, 1)
+    # Direct normal path (2026-09-27): the donor's buffered param4=1 races to a
+    # flat normal headless; param4=0 at the same param1 matches within 0.37/255.
+    set_param(g, "normal_map_0", "param4", 0)
     group_into_subgraph(
         g, ["voronoi_0", "colorize_1", "warp_0", "colorize_0", "blend_0", "colorize_3"],
         "ground_color", "Ground Color",

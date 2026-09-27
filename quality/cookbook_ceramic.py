@@ -46,6 +46,9 @@ def build_man02_ceramic_hex_tiles(catalog: dict) -> str:
     `uniform_greyscale` (metallic 0) stays top-level as a single
     donor-default constant."""
     g = take_variant(author.build_man02_ceramic_hex_tiles, _LABEL, 1)
+    # Direct normal path (2026-09-27): the donor's buffered param4=1 races to a
+    # flat normal headless; param4=0 at the same param1 matches within 0.37/255.
+    set_param(g, "normal_map", "param4", 0)
     group_into_subgraph(
         g, ["beehive_2", "colorize_5", "colorize_4"],
         "tile_pattern", "Tile Pattern",
