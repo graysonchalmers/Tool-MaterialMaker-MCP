@@ -1,6 +1,6 @@
 # 🧭 Session Handoff: Tool-MaterialMaker-MCP
 
-_Last updated: 2026-09-27 18:25 CDT. `main` @ `129a4ca` + wrap-up, pushed. Release PR #16 merged as **v0.10.0** (release job was queued at wrap-up). Nothing in flight._
+_Last updated: 2026-09-27 19:05 CDT. `main` @ `c461bc1` + wrap-up, pushed. **v0.10.0** released; release-please will open the next PR for the two fixes below. Nothing in flight._
 
 The session baton. Read at pickup, rewrite at wrap-up. **Shape rule (2026-09-05, teardown #3):**
 - "Current state" describes the latest session only.
@@ -15,7 +15,8 @@ Late-evening session, 2026-09-27 (four subagent worktrees, all merged, pushed, r
 - **man02 tile host** absorbs s05 + man03: Layout switch (hex / skewed bricks), Tone switch (clean / per-cell stone via a twin stone-tone chain), Surface Grain (default off). Default: 1 normal px at 1/255 (NormalMix's presence; accepted by Grayson), else 0 px. man03 preset 0 px; s05 preset 0 px except normal ≤3/255 (its param4=1). **s05, man03 retired.** No param4=1 graph remains except o03 (an approved cut).
 - **m02 renamed `m02_brushed_metal`** (byte-identical graph, no alias: `load_example("m02_brushed_aluminum")` is now not-found).
 - **Slider ranges:** new `widen_widget` helper (`quality/author_helpers.py`) converts an exposed slider to a named parameter with its own range; `play/sliders.py` reads it. Applied to s07/s14/f07/man02/gl01/m02/m06/pm01/pm02/pm05/s02/s12/t03/l06; a test now asserts every shipped value is inside its range. All default renders 0 px before vs after.
-- **f07 Plaid Overlay** now multiplies (blend_type 2). Defaults/presets 0 px; plaid on reads much darker (sett × tweed).
+- **f07 Plaid Overlay** now multiplies (blend_type 2) with a lightened sett (`d3074bd`): plaid 1 is -13% luminance vs plaid-off (was -67%); blue band reads slate. Defaults/presets 0 px.
+- **man02 hex grout now recessed** (`3c71ea3`): relief = 1 - max(S, 0.15·C) (Darken), grout height 56 vs faces 241 (was 208/88 raised); terraces kept subtle. Albedo/ORM 0 px at default + s05; brick mode 0 px on all maps.
 - **North Star** adopts "Library shape: depth over breadth" (`9930809`). t01/s09 stale docstrings fixed.
 - **Gates:** promote `--check` in sync; fast suite 1187; CI green on `588bb67`.
 
@@ -33,17 +34,15 @@ Alternatives:
 
 ## ❓ Open questions
 
-- **man02 hex grout is a raised ridge** (measured: grout height ~208 vs faces ~88, height and normal agree; brick mode has recessed mortar). Invert the hex relief so grout recesses? Changes the hex normal too, needs boards.
-- **f07 plaid under multiply reads dark.** Retune the sett to lighter colours?
 - **Widened sliders in the MM GUI:** wired only (read from MM's `gen_remote.gd`); mm-play live path for named parameters untested (falls back to a headless render).
 
 ## 🗂️ Changed this session
 
-- **Commits on `main`:** `816d14d` docstrings · `9930809` North Star · `3a7feca` w05 host · `e760289` rename/ranges/plaid · `5023e78` retire w04/w06 · `a18aaf0` man02 host · `aa017e9` retire s05/man03 · `4e1bdae` widen remaining widgets · `588bb67` man02 card grout note · `129a4ca` release 0.10.0.
+- **Commits on `main`:** `816d14d` docstrings · `9930809` North Star · `3a7feca` w05 host · `e760289` rename/ranges/plaid · `5023e78` retire w04/w06 · `a18aaf0` man02 host · `aa017e9` retire s05/man03 · `4e1bdae` widen remaining widgets · `588bb67` man02 card grout note · `129a4ca` release 0.10.0 · `0958af4` f07 lighter sett · `c461bc1` man02 groove.
 - **Decisions and why:**
   - **Host normals stay param4=0** even though absorbed presets then differ ≤3/255 from their param4=1 originals: the buffered path races flat headless; controls with param4=0 prove 0 px.
   - **man02's 1-px default drift accepted** (Grayson): removing it would drop brick mode.
-  - **man02 heightmap NOT flipped:** flipping height alone would contradict the normal. Card corrected instead; inversion is an open question.
+  - **man02 groove via the relief chain, not a `1 - x` flip of height alone:** height and normal both derive from it, so they stay consistent; a plain inversion would have dropped the 0.97-tone cells to grout level. Grayson approved the boards.
   - **Retired files copied first** to `_to_delete\MaterialMaker-retired-w04-w06-2026-09-27` and `...-s05-man03-2026-09-27`.
   - **Parallel host agents shared a render lock** (`mkdir scratchpad\godot.lock`), since MM is single-instance. Worked: no hangs across 4 agents.
 
@@ -65,7 +64,7 @@ Alternatives:
 
 Newest first. Keep at most 8; older ones are in `git log` (search commit subjects).
 
-- **2026-09-27 late** (w05 + man02 hosts, w04/w06/s05/man03 retired, cookbook 58; m02 → m02_brushed_metal; widen_widget; f07 multiply plaid; North Star amendment; v0.10.0): see git log `816d14d..129a4ca`.
+- **2026-09-27 late** (w05 + man02 hosts, w04/w06/s05/man03 retired, cookbook 58; m02 → m02_brushed_metal; widen_widget; f07 multiply plaid + lighter sett; man02 hex groove; North Star amendment; v0.10.0): see git log `816d14d..c461bc1`.
 - **2026-09-27 evening** (f07 host + f01/f05/f08/f09 retired, cookbook 62; s14 damp tile; param4=0 on 11 normals; render retry mtime race; v0.9.0): see git log `53a4832..6505f17`.
 - **2026-09-27** (teardown #6, truth pass, PRs #13/#7, hosts m02/s14/s07; cookbook 74→66): see git log `bfeaac1..a132a9f`.
 - **2026-09-15/16** (iteration-and-parallax, merged): s14/m06 retunes; the Deep Parallax prototype on `s09_ashlar_wall`; the BlockAO/BlockHeight swap fixed.
