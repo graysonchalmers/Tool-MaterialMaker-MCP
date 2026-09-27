@@ -13,10 +13,22 @@
    "to_port": 1
   },
   {
+   "from": "pebble_pattern",
+   "from_port": 3,
+   "to": "stone_profile",
+   "to_port": 2
+  },
+  {
    "from": "stone_profile",
+   "from_port": 1,
+   "to": "stone_color",
+   "to_port": 0
+  },
+  {
+   "from": "material_finish",
    "from_port": 0,
    "to": "Material",
-   "to_port": 0
+   "to_port": 1
   },
   {
    "from": "pebble_pattern",
@@ -26,39 +38,117 @@
   },
   {
    "from": "stone_profile",
-   "from_port": 1,
+   "from_port": 0,
    "to": "material_finish",
    "to_port": 1
   },
   {
-   "from": "stone_profile",
-   "from_port": 3,
-   "to": "material_finish",
-   "to_port": 2
+   "from": "stone_color",
+   "from_port": 0,
+   "to": "dry_layer",
+   "to_port": 0
+  },
+  {
+   "from": "stone_color",
+   "from_port": 1,
+   "to": "dry_layer",
+   "to_port": 1
   },
   {
    "from": "material_finish",
+   "from_port": 1,
+   "to": "dry_layer",
+   "to_port": 2
+  },
+  {
+   "from": "pebble_pattern",
+   "from_port": 0,
+   "to": "dry_layer",
+   "to_port": 3
+  },
+  {
+   "from": "stone_profile",
+   "from_port": 0,
+   "to": "dry_layer",
+   "to_port": 4
+  },
+  {
+   "from": "dry_layer",
+   "from_port": 0,
+   "to": "surface_grain",
+   "to_port": 0
+  },
+  {
+   "from": "stone_profile",
+   "from_port": 0,
+   "to": "surface_grain",
+   "to_port": 1
+  },
+  {
+   "from": "pebble_pattern",
+   "from_port": 2,
+   "to": "contact_gaps",
+   "to_port": 0
+  },
+  {
+   "from": "surface_grain",
+   "from_port": 0,
+   "to": "contact_gaps",
+   "to_port": 1
+  },
+  {
+   "from": "surface_grain",
+   "from_port": 1,
+   "to": "contact_gaps",
+   "to_port": 2
+  },
+  {
+   "from": "sediment_bed",
    "from_port": 0,
    "to": "Material",
-   "to_port": 1
+   "to_port": 0
   },
   {
-   "from": "material_finish",
+   "from": "sediment_bed",
    "from_port": 1,
    "to": "Material",
    "to_port": 2
   },
   {
-   "from": "stone_profile",
-   "from_port": 2,
-   "to": "relief",
+   "from": "pebble_pattern",
+   "from_port": 0,
+   "to": "sediment_bed",
    "to_port": 0
+  },
+  {
+   "from": "contact_gaps",
+   "from_port": 0,
+   "to": "sediment_bed",
+   "to_port": 1
+  },
+  {
+   "from": "dry_layer",
+   "from_port": 1,
+   "to": "sediment_bed",
+   "to_port": 2
+  },
+  {
+   "from": "contact_gaps",
+   "from_port": 1,
+   "to": "sediment_bed",
+   "to_port": 3
   },
   {
    "from": "relief",
    "from_port": 0,
    "to": "Material",
    "to_port": 4
+  },
+  {
+   "from": "sediment_bed",
+   "from_port": 2,
+   "to": "relief",
+   "to_port": 0
   }
  ],
  "label": "Graph",
@@ -71,8 +161,8 @@
   {
    "name": "Material",
    "node_position": {
-    "x": 768,
-    "y": 239
+    "x": 1500,
+    "y": 0
    },
    "parameters": {
     "albedo_color": {
@@ -99,52 +189,11 @@
    "label": "Pebble Pattern",
    "type": "graph",
    "node_position": {
-    "x": 269.75,
-    "y": 333.75
+    "x": -900,
+    "y": 0
    },
    "parameters": {
-    "param0": 7,
-    "param1": {
-     "interpolation": 1,
-     "points": [
-      {
-       "a": 1,
-       "r": 0.05,
-       "g": 0.05,
-       "b": 0.05,
-       "pos": 0.0
-      },
-      {
-       "a": 1,
-       "r": 0.1,
-       "g": 0.08,
-       "b": 0.07,
-       "pos": 0.28
-      },
-      {
-       "a": 1,
-       "r": 0.14,
-       "g": 0.13,
-       "b": 0.12,
-       "pos": 0.52
-      },
-      {
-       "a": 1,
-       "r": 0.09,
-       "g": 0.1,
-       "b": 0.11,
-       "pos": 0.74
-      },
-      {
-       "a": 1,
-       "r": 0.06,
-       "g": 0.05,
-       "b": 0.05,
-       "pos": 1.0
-      }
-     ],
-     "type": "Gradient"
-    }
+    "param0": 7
    },
    "seed_int": 0,
    "nodes": [
@@ -152,8 +201,8 @@
      "name": "gen_inputs",
      "type": "ios",
      "node_position": {
-      "x": -130.25,
-      "y": 333.75
+      "x": -250,
+      "y": 250
      },
      "parameters": {},
      "ports": [],
@@ -164,24 +213,29 @@
      "name": "gen_outputs",
      "type": "ios",
      "node_position": {
-      "x": 669.75,
-      "y": 333.75
+      "x": 600,
+      "y": 380
      },
      "parameters": {},
      "ports": [
       {
-       "name": "out0",
+       "name": "noise",
        "type": "f",
        "group_size": 0
       },
       {
-       "name": "out1",
+       "name": "cells",
        "type": "f",
        "group_size": 0
       },
       {
-       "name": "out2",
-       "type": "rgba",
+       "name": "borders",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "cell_random",
+       "type": "rgb",
        "group_size": 0
       }
      ],
@@ -191,52 +245,11 @@
      "name": "gen_parameters",
      "type": "remote",
      "node_position": {
-      "x": -130.25,
-      "y": 533.75
+      "x": -250,
+      "y": 450
      },
      "parameters": {
-      "param0": 7,
-      "param1": {
-       "interpolation": 1,
-       "points": [
-        {
-         "a": 1,
-         "r": 0.05,
-         "g": 0.05,
-         "b": 0.05,
-         "pos": 0.0
-        },
-        {
-         "a": 1,
-         "r": 0.1,
-         "g": 0.08,
-         "b": 0.07,
-         "pos": 0.28
-        },
-        {
-         "a": 1,
-         "r": 0.14,
-         "g": 0.13,
-         "b": 0.12,
-         "pos": 0.52
-        },
-        {
-         "a": 1,
-         "r": 0.09,
-         "g": 0.1,
-         "b": 0.11,
-         "pos": 0.74
-        },
-        {
-         "a": 1,
-         "r": 0.06,
-         "g": 0.05,
-         "b": 0.05,
-         "pos": 1.0
-        }
-       ],
-       "type": "Gradient"
-      }
+      "param0": 7
      },
      "seed": 0,
      "widgets": [
@@ -249,76 +262,17 @@
         {
          "node": "PebbleCells",
          "widget": "scale_x"
-        }
-       ]
-      },
-      {
-       "name": "param1",
-       "shortdesc": "Pebble color",
-       "label": "",
-       "type": "linked_control",
-       "linked_widgets": [
+        },
         {
-         "node": "WetStoneColor",
-         "widget": "gradient"
+         "node": "PebbleCells",
+         "widget": "scale_y"
         }
        ]
       }
      ]
     },
     {
-     "name": "WetStoneColor",
-     "node_position": {
-      "x": 530,
-      "y": 171
-     },
-     "parameters": {
-      "gradient": {
-       "interpolation": 1,
-       "points": [
-        {
-         "a": 1,
-         "r": 0.05,
-         "g": 0.05,
-         "b": 0.05,
-         "pos": 0.0
-        },
-        {
-         "a": 1,
-         "r": 0.1,
-         "g": 0.08,
-         "b": 0.07,
-         "pos": 0.28
-        },
-        {
-         "a": 1,
-         "r": 0.14,
-         "g": 0.13,
-         "b": 0.12,
-         "pos": 0.52
-        },
-        {
-         "a": 1,
-         "r": 0.09,
-         "g": 0.1,
-         "b": 0.11,
-         "pos": 0.74
-        },
-        {
-         "a": 1,
-         "r": 0.06,
-         "g": 0.05,
-         "b": 0.05,
-         "pos": 1.0
-        }
-       ],
-       "type": "Gradient"
-      }
-     },
-     "type": "colorize"
-    },
-    {
-     "name": "PebbleNoiseUnused",
+     "name": "SurfaceNoise",
      "node_position": {
       "x": 105,
       "y": 305
@@ -374,19 +328,13 @@
      "to_port": 1
     },
     {
-     "from": "PebbleNoiseUnused",
+     "from": "SurfaceNoise",
      "from_port": 0,
      "to": "PebbleBlendUnused",
      "to_port": 2
     },
     {
-     "from": "PebbleCells",
-     "from_port": 2,
-     "to": "WetStoneColor",
-     "to_port": 0
-    },
-    {
-     "from": "PebbleNoiseUnused",
+     "from": "SurfaceNoise",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
@@ -398,10 +346,16 @@
      "to_port": 1
     },
     {
-     "from": "WetStoneColor",
-     "from_port": 0,
+     "from": "PebbleCells",
+     "from_port": 1,
      "to": "gen_outputs",
      "to_port": 2
+    },
+    {
+     "from": "PebbleCells",
+     "from_port": 2,
+     "to": "gen_outputs",
+     "to_port": 3
     }
    ]
   },
@@ -410,13 +364,14 @@
    "label": "Stone Profile",
    "type": "graph",
    "node_position": {
-    "x": 0.0,
-    "y": 0.0
+    "x": -600,
+    "y": 0
    },
    "parameters": {
     "param0": 18,
     "param1": 0.65,
-    "param2": 1.0
+    "param2": 1.0,
+    "param3": 0
    },
    "seed_int": 0,
    "nodes": [
@@ -424,19 +379,24 @@
      "name": "gen_inputs",
      "type": "ios",
      "node_position": {
-      "x": -400.0,
-      "y": 0.0
+      "x": -1050,
+      "y": -250
      },
      "parameters": {},
      "ports": [
       {
-       "name": "in0",
+       "name": "cells",
        "type": "f",
        "group_size": 0
       },
       {
-       "name": "in1",
-       "type": "rgba",
+       "name": "borders",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "cell_random",
+       "type": "rgb",
        "group_size": 0
       }
      ],
@@ -447,29 +407,19 @@
      "name": "gen_outputs",
      "type": "ios",
      "node_position": {
-      "x": 400.0,
-      "y": 0.0
+      "x": 1800,
+      "y": 0
      },
      "parameters": {},
      "ports": [
       {
-       "name": "out0",
+       "name": "height",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "stone_random",
        "type": "rgba",
-       "group_size": 0
-      },
-      {
-       "name": "out1",
-       "type": "f",
-       "group_size": 0
-      },
-      {
-       "name": "out2",
-       "type": "f",
-       "group_size": 0
-      },
-      {
-       "name": "out3",
-       "type": "f",
        "group_size": 0
       }
      ],
@@ -479,13 +429,14 @@
      "name": "gen_parameters",
      "type": "remote",
      "node_position": {
-      "x": -400.0,
-      "y": 200.0
+      "x": -1050,
+      "y": 150
      },
      "parameters": {
       "param0": 18,
       "param1": 0.65,
-      "param2": 1.0
+      "param2": 1.0,
+      "param3": 0
      },
      "seed": 0,
      "widgets": [
@@ -498,6 +449,10 @@
         {
          "node": "SmallStoneCells",
          "widget": "scale_x"
+        },
+        {
+         "node": "SmallStoneCells",
+         "widget": "scale_y"
         }
        ]
       },
@@ -522,6 +477,22 @@
         {
          "node": "DomeFlatten",
          "widget": "default_in2"
+        },
+        {
+         "node": "SmallDomeFlatten",
+         "widget": "default_in2"
+        }
+       ]
+      },
+      {
+       "name": "param3",
+       "shortdesc": "Packing",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "PackingOffset",
+         "widget": "default_in2"
         }
        ]
       }
@@ -531,8 +502,8 @@
      "name": "DomeCurve",
      "type": "math",
      "node_position": {
-      "x": 0,
-      "y": 0
+      "x": 250,
+      "y": -250
      },
      "parameters": {
       "op": 16,
@@ -544,8 +515,8 @@
      "name": "DomeFlatten",
      "type": "math",
      "node_position": {
-      "x": 0,
-      "y": 0
+      "x": 500,
+      "y": -250
      },
      "parameters": {
       "op": 2,
@@ -557,12 +528,59 @@
      "name": "DomeSmooth",
      "type": "math",
      "node_position": {
-      "x": 0,
-      "y": 0
+      "x": 750,
+      "y": -250
      },
      "parameters": {
       "op": 20,
       "clamp": true
+     }
+    },
+    {
+     "name": "PlateDistance",
+     "type": "math",
+     "node_position": {
+      "x": -750,
+      "y": -500
+     },
+     "parameters": {
+      "op": 1,
+      "default_in1": 0.6041524333826525,
+      "clamp": true
+     }
+    },
+    {
+     "name": "ShapeDelta",
+     "type": "math",
+     "node_position": {
+      "x": -500,
+      "y": -500
+     },
+     "parameters": {
+      "op": 1
+     }
+    },
+    {
+     "name": "PackingOffset",
+     "type": "math",
+     "node_position": {
+      "x": -250,
+      "y": -500
+     },
+     "parameters": {
+      "op": 2,
+      "default_in2": 0
+     }
+    },
+    {
+     "name": "DomeInput",
+     "type": "math",
+     "node_position": {
+      "x": 0,
+      "y": -300
+     },
+     "parameters": {
+      "op": 0
      }
     },
     {
@@ -582,7 +600,7 @@
      "name": "SmallDomeCurve",
      "type": "math",
      "node_position": {
-      "x": 0,
+      "x": 250,
       "y": 0
      },
      "parameters": {
@@ -595,7 +613,7 @@
      "name": "SmallDomeFlatten",
      "type": "math",
      "node_position": {
-      "x": 0,
+      "x": 500,
       "y": 0
      },
      "parameters": {
@@ -608,7 +626,7 @@
      "name": "SmallDomeSmooth",
      "type": "math",
      "node_position": {
-      "x": 0,
+      "x": 750,
       "y": 0
      },
      "parameters": {
@@ -620,7 +638,7 @@
      "name": "SmallStoneHeight",
      "type": "math",
      "node_position": {
-      "x": 0,
+      "x": 1000,
       "y": 0
      },
      "parameters": {
@@ -632,8 +650,8 @@
      "name": "StoneHeightMix",
      "type": "math",
      "node_position": {
-      "x": 0,
-      "y": 0
+      "x": 1250,
+      "y": -200
      },
      "parameters": {
       "op": 14
@@ -643,70 +661,19 @@
      "name": "SmallStoneMask",
      "type": "math",
      "node_position": {
-      "x": 0,
-      "y": 0
+      "x": 1250,
+      "y": 50
      },
      "parameters": {
       "op": 15
      }
     },
     {
-     "name": "SmallStoneColor",
-     "type": "colorize",
-     "node_position": {
-      "x": 0,
-      "y": 0
-     },
-     "parameters": {
-      "gradient": {
-       "interpolation": 1,
-       "type": "Gradient",
-       "points": [
-        {
-         "a": 1,
-         "r": 0.05,
-         "g": 0.05,
-         "b": 0.05,
-         "pos": 0.0
-        },
-        {
-         "a": 1,
-         "r": 0.1,
-         "g": 0.08,
-         "b": 0.07,
-         "pos": 0.28
-        },
-        {
-         "a": 1,
-         "r": 0.14,
-         "g": 0.13,
-         "b": 0.12,
-         "pos": 0.52
-        },
-        {
-         "a": 1,
-         "r": 0.09,
-         "g": 0.1,
-         "b": 0.11,
-         "pos": 0.74
-        },
-        {
-         "a": 1,
-         "r": 0.06,
-         "g": 0.05,
-         "b": 0.05,
-         "pos": 1.0
-        }
-       ]
-      }
-     }
-    },
-    {
-     "name": "StoneColorMix",
+     "name": "StoneRandomMix",
      "type": "blend",
      "node_position": {
-      "x": 0,
-      "y": 0
+      "x": 1500,
+      "y": 250
      },
      "parameters": {
       "blend_type": 0,
@@ -725,6 +692,30 @@
      "from": "DomeFlatten",
      "from_port": 0,
      "to": "DomeSmooth",
+     "to_port": 0
+    },
+    {
+     "from": "PlateDistance",
+     "from_port": 0,
+     "to": "ShapeDelta",
+     "to_port": 0
+    },
+    {
+     "from": "ShapeDelta",
+     "from_port": 0,
+     "to": "PackingOffset",
+     "to_port": 0
+    },
+    {
+     "from": "PackingOffset",
+     "from_port": 0,
+     "to": "DomeInput",
+     "to_port": 1
+    },
+    {
+     "from": "DomeInput",
+     "from_port": 0,
+     "to": "DomeCurve",
      "to_port": 0
     },
     {
@@ -778,66 +769,443 @@
     {
      "from": "SmallStoneCells",
      "from_port": 2,
-     "to": "SmallStoneColor",
-     "to_port": 0
-    },
-    {
-     "from": "SmallStoneColor",
-     "from_port": 0,
-     "to": "StoneColorMix",
+     "to": "StoneRandomMix",
      "to_port": 0
     },
     {
      "from": "SmallStoneMask",
      "from_port": 0,
-     "to": "StoneColorMix",
+     "to": "StoneRandomMix",
      "to_port": 2
-    },
-    {
-     "from": "gen_inputs",
-     "from_port": 0,
-     "to": "DomeCurve",
-     "to_port": 0
     },
     {
      "from": "gen_inputs",
      "from_port": 1,
-     "to": "StoneColorMix",
+     "to": "PlateDistance",
      "to_port": 1
     },
     {
-     "from": "StoneColorMix",
+     "from": "gen_inputs",
+     "from_port": 0,
+     "to": "ShapeDelta",
+     "to_port": 1
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 0,
+     "to": "DomeInput",
+     "to_port": 0
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 2,
+     "to": "StoneRandomMix",
+     "to_port": 1
+    },
+    {
+     "from": "StoneHeightMix",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
-     "from": "StoneHeightMix",
+     "from": "StoneRandomMix",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1
+    }
+   ]
+  },
+  {
+   "name": "stone_color",
+   "label": "Stone Color",
+   "type": "graph",
+   "node_position": {
+    "x": -300,
+    "y": -200
+   },
+   "parameters": {
+    "param0": {
+     "interpolation": 1,
+     "points": [
+      {
+       "a": 1,
+       "r": 0.05,
+       "g": 0.05,
+       "b": 0.05,
+       "pos": 0.0
+      },
+      {
+       "a": 1,
+       "r": 0.1,
+       "g": 0.08,
+       "b": 0.07,
+       "pos": 0.28
+      },
+      {
+       "a": 1,
+       "r": 0.14,
+       "g": 0.13,
+       "b": 0.12,
+       "pos": 0.52
+      },
+      {
+       "a": 1,
+       "r": 0.09,
+       "g": 0.1,
+       "b": 0.11,
+       "pos": 0.74
+      },
+      {
+       "a": 1,
+       "r": 0.06,
+       "g": 0.05,
+       "b": 0.05,
+       "pos": 1.0
+      }
+     ],
+     "type": "Gradient"
+    },
+    "param1": {
+     "interpolation": 1,
+     "type": "Gradient",
+     "points": [
+      {
+       "a": 1,
+       "r": 0.18,
+       "g": 0.17,
+       "b": 0.16,
+       "pos": 0.0
+      },
+      {
+       "a": 1,
+       "r": 0.34,
+       "g": 0.3,
+       "b": 0.26,
+       "pos": 0.28
+      },
+      {
+       "a": 1,
+       "r": 0.52,
+       "g": 0.48,
+       "b": 0.42,
+       "pos": 0.52
+      },
+      {
+       "a": 1,
+       "r": 0.44,
+       "g": 0.45,
+       "b": 0.47,
+       "pos": 0.74
+      },
+      {
+       "a": 1,
+       "r": 0.3,
+       "g": 0.27,
+       "b": 0.24,
+       "pos": 1.0
+      }
+     ]
+    }
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": -350,
+      "y": 100
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "stone_random",
+       "type": "rgba",
+       "group_size": 0
+      }
+     ],
+     "seed": 0,
+     "seed_locked": true
     },
     {
-     "from": "StoneHeightMix",
-     "from_port": 0,
-     "to": "gen_outputs",
-     "to_port": 2
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 350,
+      "y": 100
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "wet_albedo",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "dry_albedo",
+       "type": "rgba",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
     },
     {
-     "from": "StoneHeightMix",
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -350,
+      "y": 350
+     },
+     "parameters": {
+      "param0": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0.05,
+         "g": 0.05,
+         "b": 0.05,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.1,
+         "g": 0.08,
+         "b": 0.07,
+         "pos": 0.28
+        },
+        {
+         "a": 1,
+         "r": 0.14,
+         "g": 0.13,
+         "b": 0.12,
+         "pos": 0.52
+        },
+        {
+         "a": 1,
+         "r": 0.09,
+         "g": 0.1,
+         "b": 0.11,
+         "pos": 0.74
+        },
+        {
+         "a": 1,
+         "r": 0.06,
+         "g": 0.05,
+         "b": 0.05,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      },
+      "param1": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.18,
+         "g": 0.17,
+         "b": 0.16,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.34,
+         "g": 0.3,
+         "b": 0.26,
+         "pos": 0.28
+        },
+        {
+         "a": 1,
+         "r": 0.52,
+         "g": 0.48,
+         "b": 0.42,
+         "pos": 0.52
+        },
+        {
+         "a": 1,
+         "r": 0.44,
+         "g": 0.45,
+         "b": 0.47,
+         "pos": 0.74
+        },
+        {
+         "a": 1,
+         "r": 0.3,
+         "g": 0.27,
+         "b": 0.24,
+         "pos": 1.0
+        }
+       ]
+      }
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Wet color",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "WetStoneColor",
+         "widget": "gradient"
+        }
+       ]
+      },
+      {
+       "name": "param1",
+       "shortdesc": "Dry color",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "DryStoneColor",
+         "widget": "gradient"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "WetStoneColor",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 0.05,
+         "g": 0.05,
+         "b": 0.05,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.1,
+         "g": 0.08,
+         "b": 0.07,
+         "pos": 0.28
+        },
+        {
+         "a": 1,
+         "r": 0.14,
+         "g": 0.13,
+         "b": 0.12,
+         "pos": 0.52
+        },
+        {
+         "a": 1,
+         "r": 0.09,
+         "g": 0.1,
+         "b": 0.11,
+         "pos": 0.74
+        },
+        {
+         "a": 1,
+         "r": 0.06,
+         "g": 0.05,
+         "b": 0.05,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      }
+     },
+     "type": "colorize"
+    },
+    {
+     "name": "DryStoneColor",
+     "type": "colorize",
+     "node_position": {
+      "x": 0,
+      "y": 250
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.18,
+         "g": 0.17,
+         "b": 0.16,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.34,
+         "g": 0.3,
+         "b": 0.26,
+         "pos": 0.28
+        },
+        {
+         "a": 1,
+         "r": 0.52,
+         "g": 0.48,
+         "b": 0.42,
+         "pos": 0.52
+        },
+        {
+         "a": 1,
+         "r": 0.44,
+         "g": 0.45,
+         "b": 0.47,
+         "pos": 0.74
+        },
+        {
+         "a": 1,
+         "r": 0.3,
+         "g": 0.27,
+         "b": 0.24,
+         "pos": 1.0
+        }
+       ]
+      }
+     }
+    }
+   ],
+   "connections": [
+    {
+     "from": "gen_inputs",
+     "from_port": 0,
+     "to": "WetStoneColor",
+     "to_port": 0
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 0,
+     "to": "DryStoneColor",
+     "to_port": 0
+    },
+    {
+     "from": "WetStoneColor",
      "from_port": 0,
      "to": "gen_outputs",
-     "to_port": 3
+     "to_port": 0
+    },
+    {
+     "from": "DryStoneColor",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 1
     }
    ]
   },
   {
    "name": "material_finish",
-   "label": "Material Finish",
+   "label": "Wet Finish",
    "type": "graph",
    "node_position": {
-    "x": 176.5,
-    "y": 100.16666666666667
+    "x": -300,
+    "y": 250
    },
    "parameters": {
     "param0": {
@@ -902,23 +1270,18 @@
      "name": "gen_inputs",
      "type": "ios",
      "node_position": {
-      "x": -223.5,
-      "y": 100.16666666666667
+      "x": -300,
+      "y": -250
      },
      "parameters": {},
      "ports": [
       {
-       "name": "in0",
+       "name": "noise",
        "type": "f",
        "group_size": 0
       },
       {
-       "name": "in1",
-       "type": "f",
-       "group_size": 0
-      },
-      {
-       "name": "in2",
+       "name": "height",
        "type": "f",
        "group_size": 0
       }
@@ -930,18 +1293,18 @@
      "name": "gen_outputs",
      "type": "ios",
      "node_position": {
-      "x": 576.5,
-      "y": 100.16666666666667
+      "x": 850,
+      "y": 0
      },
      "parameters": {},
      "ports": [
       {
-       "name": "out0",
+       "name": "metallic",
        "type": "rgba",
        "group_size": 0
       },
       {
-       "name": "out1",
+       "name": "roughness",
        "type": "rgba",
        "group_size": 0
       }
@@ -952,8 +1315,8 @@
      "name": "gen_parameters",
      "type": "remote",
      "node_position": {
-      "x": -223.5,
-      "y": 300.1666666666667
+      "x": -300,
+      "y": 450
      },
      "parameters": {
       "param0": {
@@ -1028,12 +1391,12 @@
       },
       {
        "name": "param1",
-       "shortdesc": "Dry top roughness",
+       "shortdesc": "Damp patch roughness",
        "label": "",
        "type": "linked_control",
        "linked_widgets": [
         {
-         "node": "DryRoughness",
+         "node": "DampPatchRoughness",
          "widget": "gradient"
         }
        ]
@@ -1047,6 +1410,10 @@
         {
          "node": "PatchNoise",
          "widget": "scale_x"
+        },
+        {
+         "node": "PatchNoise",
+         "widget": "scale_y"
         }
        ]
       }
@@ -1055,8 +1422,8 @@
     {
      "name": "NonMetallic",
      "node_position": {
-      "x": 533,
-      "y": 343
+      "x": 250,
+      "y": 250
      },
      "parameters": {
       "gradient": {
@@ -1085,8 +1452,8 @@
     {
      "name": "WetRoughness",
      "node_position": {
-      "x": 526,
-      "y": 258
+      "x": 250,
+      "y": -350
      },
      "parameters": {
       "gradient": {
@@ -1120,11 +1487,11 @@
      "type": "colorize"
     },
     {
-     "name": "DryRoughness",
+     "name": "DampPatchRoughness",
      "type": "colorize",
      "node_position": {
-      "x": 0,
-      "y": 0
+      "x": 250,
+      "y": -175
      },
      "parameters": {
       "gradient": {
@@ -1173,7 +1540,7 @@
      "name": "PatchMask",
      "type": "colorize",
      "node_position": {
-      "x": 0,
+      "x": 250,
       "y": 0
      },
      "parameters": {
@@ -1217,8 +1584,8 @@
      "name": "RoughnessPatchComposite",
      "type": "blend",
      "node_position": {
-      "x": 0,
-      "y": 0
+      "x": 550,
+      "y": -200
      },
      "parameters": {
       "blend_type": 0,
@@ -1240,7 +1607,7 @@
      "to_port": 0
     },
     {
-     "from": "DryRoughness",
+     "from": "DampPatchRoughness",
      "from_port": 0,
      "to": "RoughnessPatchComposite",
      "to_port": 1
@@ -1265,8 +1632,8 @@
     },
     {
      "from": "gen_inputs",
-     "from_port": 2,
-     "to": "DryRoughness",
+     "from_port": 1,
+     "to": "DampPatchRoughness",
      "to_port": 0
     },
     {
@@ -1284,12 +1651,1414 @@
    ]
   },
   {
+   "name": "dry_layer",
+   "label": "Dry Layer",
+   "type": "graph",
+   "node_position": {
+    "x": 0,
+    "y": 0
+   },
+   "parameters": {
+    "param0": 0,
+    "param1": {
+     "interpolation": 1,
+     "type": "Gradient",
+     "points": [
+      {
+       "a": 1,
+       "r": 0.42,
+       "g": 0.42,
+       "b": 0.42,
+       "pos": 0.0
+      },
+      {
+       "a": 1,
+       "r": 0.6,
+       "g": 0.6,
+       "b": 0.6,
+       "pos": 1.0
+      }
+     ]
+    },
+    "param2": {
+     "interpolation": 1,
+     "type": "Gradient",
+     "points": [
+      {
+       "a": 1,
+       "r": 0.86,
+       "g": 0.86,
+       "b": 0.86,
+       "pos": 0.0
+      },
+      {
+       "a": 1,
+       "r": 0.93,
+       "g": 0.93,
+       "b": 0.93,
+       "pos": 1.0
+      }
+     ]
+    }
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": -400,
+      "y": 0
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "wet_albedo",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "dry_albedo",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "wet_roughness",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "noise",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "height",
+       "type": "f",
+       "group_size": 0
+      }
+     ],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 900,
+      "y": 100
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "albedo",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "roughness",
+       "type": "rgba",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -400,
+      "y": 450
+     },
+     "parameters": {
+      "param0": 0,
+      "param1": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.42,
+         "g": 0.42,
+         "b": 0.42,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.6,
+         "g": 0.6,
+         "b": 0.6,
+         "pos": 1.0
+        }
+       ]
+      },
+      "param2": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.86,
+         "g": 0.86,
+         "b": 0.86,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.93,
+         "g": 0.93,
+         "b": 0.93,
+         "pos": 1.0
+        }
+       ]
+      }
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Dryness",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "Dryness",
+         "widget": "color"
+        }
+       ]
+      },
+      {
+       "name": "param1",
+       "shortdesc": "Dry stone roughness",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "DryStoneRoughness",
+         "widget": "gradient"
+        }
+       ]
+      },
+      {
+       "name": "param2",
+       "shortdesc": "Dry seam roughness",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "DrySeamRoughness",
+         "widget": "gradient"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "Dryness",
+     "type": "uniform_greyscale",
+     "node_position": {
+      "x": 0,
+      "y": 500
+     },
+     "parameters": {
+      "color": 0
+     }
+    },
+    {
+     "name": "DryColorComposite",
+     "type": "blend",
+     "node_position": {
+      "x": 300,
+      "y": -100
+     },
+     "parameters": {
+      "blend_type": 0,
+      "amount": 1
+     }
+    },
+    {
+     "name": "DryStoneRoughness",
+     "type": "colorize",
+     "node_position": {
+      "x": 0,
+      "y": 150
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.42,
+         "g": 0.42,
+         "b": 0.42,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.6,
+         "g": 0.6,
+         "b": 0.6,
+         "pos": 1.0
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "DrySeamRoughness",
+     "type": "colorize",
+     "node_position": {
+      "x": 0,
+      "y": 320
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.86,
+         "g": 0.86,
+         "b": 0.86,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.93,
+         "g": 0.93,
+         "b": 0.93,
+         "pos": 1.0
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "DryRoughnessMix",
+     "type": "blend",
+     "node_position": {
+      "x": 300,
+      "y": 220
+     },
+     "parameters": {
+      "blend_type": 0,
+      "amount": 1
+     }
+    },
+    {
+     "name": "DryRoughnessComposite",
+     "type": "blend",
+     "node_position": {
+      "x": 600,
+      "y": 300
+     },
+     "parameters": {
+      "blend_type": 0,
+      "amount": 1
+     }
+    }
+   ],
+   "connections": [
+    {
+     "from": "Dryness",
+     "from_port": 0,
+     "to": "DryColorComposite",
+     "to_port": 2
+    },
+    {
+     "from": "DryStoneRoughness",
+     "from_port": 0,
+     "to": "DryRoughnessMix",
+     "to_port": 0
+    },
+    {
+     "from": "DrySeamRoughness",
+     "from_port": 0,
+     "to": "DryRoughnessMix",
+     "to_port": 1
+    },
+    {
+     "from": "DryRoughnessMix",
+     "from_port": 0,
+     "to": "DryRoughnessComposite",
+     "to_port": 0
+    },
+    {
+     "from": "Dryness",
+     "from_port": 0,
+     "to": "DryRoughnessComposite",
+     "to_port": 2
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 3,
+     "to": "DryStoneRoughness",
+     "to_port": 0
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 3,
+     "to": "DrySeamRoughness",
+     "to_port": 0
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 4,
+     "to": "DryRoughnessMix",
+     "to_port": 2
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 1,
+     "to": "DryColorComposite",
+     "to_port": 0
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 0,
+     "to": "DryColorComposite",
+     "to_port": 1
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 2,
+     "to": "DryRoughnessComposite",
+     "to_port": 1
+    },
+    {
+     "from": "DryColorComposite",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    },
+    {
+     "from": "DryRoughnessComposite",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 1
+    }
+   ]
+  },
+  {
+   "name": "surface_grain",
+   "label": "Surface Grain",
+   "type": "graph",
+   "node_position": {
+    "x": 300,
+    "y": 0
+   },
+   "parameters": {
+    "param0": 0,
+    "param1": 40
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": -350,
+      "y": -150
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "albedo",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "height",
+       "type": "f",
+       "group_size": 0
+      }
+     ],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 1050,
+      "y": 0
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "albedo",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "height",
+       "type": "f",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -350,
+      "y": 300
+     },
+     "parameters": {
+      "param0": 0,
+      "param1": 40
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Grain amount",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "GrainAmount",
+         "widget": "color"
+        }
+       ]
+      },
+      {
+       "name": "param1",
+       "shortdesc": "Grain scale",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "GrainNoise",
+         "widget": "scale_x"
+        },
+        {
+         "node": "GrainNoise",
+         "widget": "scale_y"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "GrainNoise",
+     "type": "perlin",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "scale_x": 40,
+      "scale_y": 40,
+      "iterations": 5
+     }
+    },
+    {
+     "name": "GrainContrast",
+     "type": "colorize",
+     "node_position": {
+      "x": 250,
+      "y": -150
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.82,
+         "g": 0.82,
+         "b": 0.82,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 1.0,
+         "g": 1.0,
+         "b": 1.0,
+         "pos": 1.0
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "GrainAmount",
+     "type": "uniform_greyscale",
+     "node_position": {
+      "x": 0,
+      "y": 300
+     },
+     "parameters": {
+      "color": 0
+     }
+    },
+    {
+     "name": "GrainColorComposite",
+     "type": "blend",
+     "node_position": {
+      "x": 550,
+      "y": -150
+     },
+     "parameters": {
+      "blend_type": 2,
+      "amount": 1
+     }
+    },
+    {
+     "name": "GrainWeight",
+     "type": "math",
+     "node_position": {
+      "x": 250,
+      "y": 300
+     },
+     "parameters": {
+      "op": 2,
+      "default_in2": 0.15
+     }
+    },
+    {
+     "name": "GrainHeight",
+     "type": "math",
+     "node_position": {
+      "x": 500,
+      "y": 200
+     },
+     "parameters": {
+      "op": 2
+     }
+    },
+    {
+     "name": "GrainReliefHeight",
+     "type": "math",
+     "node_position": {
+      "x": 800,
+      "y": 150
+     },
+     "parameters": {
+      "op": 0
+     }
+    }
+   ],
+   "connections": [
+    {
+     "from": "GrainNoise",
+     "from_port": 0,
+     "to": "GrainContrast",
+     "to_port": 0
+    },
+    {
+     "from": "GrainContrast",
+     "from_port": 0,
+     "to": "GrainColorComposite",
+     "to_port": 0
+    },
+    {
+     "from": "GrainAmount",
+     "from_port": 0,
+     "to": "GrainColorComposite",
+     "to_port": 2
+    },
+    {
+     "from": "GrainAmount",
+     "from_port": 0,
+     "to": "GrainWeight",
+     "to_port": 0
+    },
+    {
+     "from": "GrainNoise",
+     "from_port": 0,
+     "to": "GrainHeight",
+     "to_port": 0
+    },
+    {
+     "from": "GrainWeight",
+     "from_port": 0,
+     "to": "GrainHeight",
+     "to_port": 1
+    },
+    {
+     "from": "GrainHeight",
+     "from_port": 0,
+     "to": "GrainReliefHeight",
+     "to_port": 1
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 1,
+     "to": "GrainReliefHeight",
+     "to_port": 0
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 0,
+     "to": "GrainColorComposite",
+     "to_port": 1
+    },
+    {
+     "from": "GrainColorComposite",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    },
+    {
+     "from": "GrainReliefHeight",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 1
+    }
+   ]
+  },
+  {
+   "name": "contact_gaps",
+   "label": "Contact Gaps",
+   "type": "graph",
+   "node_position": {
+    "x": 600,
+    "y": 0
+   },
+   "parameters": {
+    "param0": 0
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": -350,
+      "y": 0
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "borders",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "albedo",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "height",
+       "type": "f",
+       "group_size": 0
+      }
+     ],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 1050,
+      "y": 50
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "albedo",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "height",
+       "type": "f",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -350,
+      "y": 300
+     },
+     "parameters": {
+      "param0": 0
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Gap depth",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "GapDepth",
+         "widget": "color"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "ContactEdges",
+     "type": "colorize",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 1,
+         "g": 1,
+         "b": 1,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0,
+         "g": 0,
+         "b": 0,
+         "pos": 0.064
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "GapDepth",
+     "type": "uniform_greyscale",
+     "node_position": {
+      "x": 0,
+      "y": 250
+     },
+     "parameters": {
+      "color": 0
+     }
+    },
+    {
+     "name": "ContactMask",
+     "type": "math",
+     "node_position": {
+      "x": 250,
+      "y": 100
+     },
+     "parameters": {
+      "op": 2
+     }
+    },
+    {
+     "name": "GapShade",
+     "type": "uniform",
+     "node_position": {
+      "x": 250,
+      "y": -150
+     },
+     "parameters": {
+      "color": {
+       "a": 1,
+       "r": 0,
+       "g": 0,
+       "b": 0,
+       "type": "Color"
+      }
+     }
+    },
+    {
+     "name": "ContactColorComposite",
+     "type": "blend",
+     "node_position": {
+      "x": 550,
+      "y": -100
+     },
+     "parameters": {
+      "blend_type": 0,
+      "amount": 1
+     }
+    },
+    {
+     "name": "ContactHeightKeep",
+     "type": "math",
+     "node_position": {
+      "x": 550,
+      "y": 200
+     },
+     "parameters": {
+      "op": 1,
+      "default_in1": 1
+     }
+    },
+    {
+     "name": "ContactHeight",
+     "type": "math",
+     "node_position": {
+      "x": 800,
+      "y": 250
+     },
+     "parameters": {
+      "op": 2
+     }
+    }
+   ],
+   "connections": [
+    {
+     "from": "ContactEdges",
+     "from_port": 0,
+     "to": "ContactMask",
+     "to_port": 0
+    },
+    {
+     "from": "GapDepth",
+     "from_port": 0,
+     "to": "ContactMask",
+     "to_port": 1
+    },
+    {
+     "from": "GapShade",
+     "from_port": 0,
+     "to": "ContactColorComposite",
+     "to_port": 0
+    },
+    {
+     "from": "ContactMask",
+     "from_port": 0,
+     "to": "ContactColorComposite",
+     "to_port": 2
+    },
+    {
+     "from": "ContactMask",
+     "from_port": 0,
+     "to": "ContactHeightKeep",
+     "to_port": 1
+    },
+    {
+     "from": "ContactHeightKeep",
+     "from_port": 0,
+     "to": "ContactHeight",
+     "to_port": 1
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 0,
+     "to": "ContactEdges",
+     "to_port": 0
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 1,
+     "to": "ContactColorComposite",
+     "to_port": 1
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 2,
+     "to": "ContactHeight",
+     "to_port": 0
+    },
+    {
+     "from": "ContactColorComposite",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    },
+    {
+     "from": "ContactHeight",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 1
+    }
+   ]
+  },
+  {
+   "name": "sediment_bed",
+   "label": "Sediment Bed",
+   "type": "graph",
+   "node_position": {
+    "x": 900,
+    "y": 0
+   },
+   "parameters": {
+    "param0": 0,
+    "param1": {
+     "interpolation": 1,
+     "type": "Gradient",
+     "points": [
+      {
+       "a": 1,
+       "r": 0.62,
+       "g": 0.54,
+       "b": 0.4,
+       "pos": 0.0
+      },
+      {
+       "a": 1,
+       "r": 0.7,
+       "g": 0.62,
+       "b": 0.47,
+       "pos": 1.0
+      }
+     ]
+    },
+    "param2": {
+     "interpolation": 1,
+     "type": "Gradient",
+     "points": [
+      {
+       "a": 1,
+       "r": 0.78,
+       "g": 0.78,
+       "b": 0.78,
+       "pos": 0.0
+      },
+      {
+       "a": 1,
+       "r": 0.85,
+       "g": 0.85,
+       "b": 0.85,
+       "pos": 1.0
+      }
+     ]
+    }
+   },
+   "seed_int": 0,
+   "nodes": [
+    {
+     "name": "gen_inputs",
+     "type": "ios",
+     "node_position": {
+      "x": -350,
+      "y": 100
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "noise",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "albedo",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "roughness",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "height",
+       "type": "f",
+       "group_size": 0
+      }
+     ],
+     "seed": 0,
+     "seed_locked": true
+    },
+    {
+     "name": "gen_outputs",
+     "type": "ios",
+     "node_position": {
+      "x": 1550,
+      "y": 50
+     },
+     "parameters": {},
+     "ports": [
+      {
+       "name": "albedo",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "roughness",
+       "type": "rgba",
+       "group_size": 0
+      },
+      {
+       "name": "height",
+       "type": "f",
+       "group_size": 0
+      }
+     ],
+     "seed": 0
+    },
+    {
+     "name": "gen_parameters",
+     "type": "remote",
+     "node_position": {
+      "x": -350,
+      "y": 450
+     },
+     "parameters": {
+      "param0": 0,
+      "param1": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.62,
+         "g": 0.54,
+         "b": 0.4,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.7,
+         "g": 0.62,
+         "b": 0.47,
+         "pos": 1.0
+        }
+       ]
+      },
+      "param2": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.78,
+         "g": 0.78,
+         "b": 0.78,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.85,
+         "g": 0.85,
+         "b": 0.85,
+         "pos": 1.0
+        }
+       ]
+      }
+     },
+     "seed": 0,
+     "widgets": [
+      {
+       "name": "param0",
+       "shortdesc": "Bed level",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "BedLevel",
+         "widget": "color"
+        }
+       ]
+      },
+      {
+       "name": "param1",
+       "shortdesc": "Bed color",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "BedColor",
+         "widget": "gradient"
+        }
+       ]
+      },
+      {
+       "name": "param2",
+       "shortdesc": "Bed roughness",
+       "label": "",
+       "type": "linked_control",
+       "linked_widgets": [
+        {
+         "node": "BedRoughness",
+         "widget": "gradient"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "BedLevel",
+     "type": "uniform_greyscale",
+     "node_position": {
+      "x": 0,
+      "y": 400
+     },
+     "parameters": {
+      "color": 0
+     }
+    },
+    {
+     "name": "BedDepth",
+     "type": "math",
+     "node_position": {
+      "x": 250,
+      "y": 350
+     },
+     "parameters": {
+      "op": 1,
+      "clamp": true
+     }
+    },
+    {
+     "name": "BedRamp",
+     "type": "math",
+     "node_position": {
+      "x": 500,
+      "y": 350
+     },
+     "parameters": {
+      "op": 2,
+      "default_in2": 4,
+      "clamp": true
+     }
+    },
+    {
+     "name": "BedMask",
+     "type": "math",
+     "node_position": {
+      "x": 750,
+      "y": 550
+     },
+     "parameters": {
+      "op": 20,
+      "clamp": true
+     }
+    },
+    {
+     "name": "BedColor",
+     "type": "colorize",
+     "node_position": {
+      "x": 0,
+      "y": -200
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.62,
+         "g": 0.54,
+         "b": 0.4,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.7,
+         "g": 0.62,
+         "b": 0.47,
+         "pos": 1.0
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "BedRoughness",
+     "type": "colorize",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "type": "Gradient",
+       "points": [
+        {
+         "a": 1,
+         "r": 0.78,
+         "g": 0.78,
+         "b": 0.78,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 0.85,
+         "g": 0.85,
+         "b": 0.85,
+         "pos": 1.0
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "BedColorComposite",
+     "type": "blend",
+     "node_position": {
+      "x": 1000,
+      "y": -200
+     },
+     "parameters": {
+      "blend_type": 0,
+      "amount": 1
+     }
+    },
+    {
+     "name": "BedRoughnessComposite",
+     "type": "blend",
+     "node_position": {
+      "x": 1000,
+      "y": 50
+     },
+     "parameters": {
+      "blend_type": 0,
+      "amount": 1
+     }
+    },
+    {
+     "name": "BedFill",
+     "type": "math",
+     "node_position": {
+      "x": 1000,
+      "y": 450
+     },
+     "parameters": {
+      "op": 2
+     }
+    },
+    {
+     "name": "BedHeight",
+     "type": "math",
+     "node_position": {
+      "x": 1250,
+      "y": 300
+     },
+     "parameters": {
+      "op": 0
+     }
+    }
+   ],
+   "connections": [
+    {
+     "from": "BedLevel",
+     "from_port": 0,
+     "to": "BedDepth",
+     "to_port": 0
+    },
+    {
+     "from": "BedDepth",
+     "from_port": 0,
+     "to": "BedRamp",
+     "to_port": 0
+    },
+    {
+     "from": "BedRamp",
+     "from_port": 0,
+     "to": "BedMask",
+     "to_port": 0
+    },
+    {
+     "from": "BedColor",
+     "from_port": 0,
+     "to": "BedColorComposite",
+     "to_port": 0
+    },
+    {
+     "from": "BedMask",
+     "from_port": 0,
+     "to": "BedColorComposite",
+     "to_port": 2
+    },
+    {
+     "from": "BedRoughness",
+     "from_port": 0,
+     "to": "BedRoughnessComposite",
+     "to_port": 0
+    },
+    {
+     "from": "BedMask",
+     "from_port": 0,
+     "to": "BedRoughnessComposite",
+     "to_port": 2
+    },
+    {
+     "from": "BedDepth",
+     "from_port": 0,
+     "to": "BedFill",
+     "to_port": 0
+    },
+    {
+     "from": "BedMask",
+     "from_port": 0,
+     "to": "BedFill",
+     "to_port": 1
+    },
+    {
+     "from": "BedFill",
+     "from_port": 0,
+     "to": "BedHeight",
+     "to_port": 1
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 0,
+     "to": "BedColor",
+     "to_port": 0
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 0,
+     "to": "BedRoughness",
+     "to_port": 0
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 2,
+     "to": "BedRoughnessComposite",
+     "to_port": 1
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 3,
+     "to": "BedDepth",
+     "to_port": 1
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 1,
+     "to": "BedColorComposite",
+     "to_port": 1
+    },
+    {
+     "from": "gen_inputs",
+     "from_port": 3,
+     "to": "BedHeight",
+     "to_port": 0
+    },
+    {
+     "from": "BedColorComposite",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 0
+    },
+    {
+     "from": "BedRoughnessComposite",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 1
+    },
+    {
+     "from": "BedHeight",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 2
+    }
+   ]
+  },
+  {
    "name": "relief",
    "label": "Relief",
    "type": "graph",
    "node_position": {
-    "x": 583.0,
-    "y": 463.0
+    "x": 1200,
+    "y": 150
    },
    "parameters": {
     "param0": 0.6
@@ -1306,7 +3075,7 @@
      "parameters": {},
      "ports": [
       {
-       "name": "in0",
+       "name": "height",
        "type": "f",
        "group_size": 0
       }
@@ -1324,7 +3093,7 @@
      "parameters": {},
      "ports": [
       {
-       "name": "out0",
+       "name": "normal",
        "type": "rgb",
        "group_size": 0
       }
