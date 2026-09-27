@@ -17,8 +17,7 @@ out of the box, so no `param4` fix is needed here. First-pass hit.
 ## Subgraph structure
 
 Grouped per the "Grouping into subgraphs" lever in `docs/AUTHORING.md` (the
-identical grouping used by `cookbook/wood/w04_driftwood_gray.ptex` and
-`w05_dark_walnut.ptex`, since this clones `wood`'s same 11-node graph
+grouping used by `cookbook/wood/w05_dark_walnut.ptex`, since this clones `wood`'s same 11-node graph
 unmodified structurally, per the recipe above). Opening the graph shows 3
 top-level nodes (these two groups plus `Material`) instead of the raw
 11-node `wood` tangle:

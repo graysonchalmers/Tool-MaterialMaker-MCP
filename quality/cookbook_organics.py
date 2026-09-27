@@ -106,11 +106,11 @@ def build_o03_tree_bark(catalog: dict) -> str:
     ])
 
     # Same donor (`wood`, unmodified structurally, per the docstring) and
-    # same identical 11-node graph as cookbook_wood.py's w04 (w05 added a
-    # Burl Swirl pair to it when it became the wood host), which grouped
+    # same 11-node graph cookbook_wood.py's retired w04 used (w05, the wood
+    # host, adds a Burl Swirl pair to it), which grouped
     # it into the noise/pattern generator + albedo colorize ("Wood Grain")
     # and the roughness ramp + normal map ("Surface Finish") -- see that
-    # file's build_w04_driftwood_gray for the full reasoning on why
+    # file's build_w05_dark_walnut for the full reasoning on why
     # colorize_2 rides into the generator group rather than being left with
     # only untouched donor defaults. Bark reuses the identical grouping,
     # relabeled for the bark context.
@@ -260,7 +260,7 @@ def build_o06_lichen_crusted_rock(catalog: dict) -> str:
     # small group since its gradient is a real, explicitly-tuned knob (the
     # widened threshold), not an untouched donor default. `colorize_0` and
     # `colorize_4` are untouched rusted_metal defaults but stay inside
-    # surface_finish as internal-only members (same pattern as w04's
+    # surface_finish as internal-only members (same pattern as w05's
     # untouched colorize_1/warp_0/warp_1 riding inside wood_grain).
     group_into_subgraph(
         g, ["perlin_1", "colorize_2", "colorize_1", "blend_0"],

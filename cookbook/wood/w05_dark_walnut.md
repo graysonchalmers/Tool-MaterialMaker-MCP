@@ -62,7 +62,7 @@ Set these on the collapsed nodes. Colors are gradient stops (position: R, G,
 B in 0-1). Anything not listed stays at its default. Every value is inside
 its slider range. Each preset was rendered at 2048 and diffed against the
 original material: albedo and ORM are 0 px for both. The normal differs
-only because w04 and w06 still ship the donor's buffered `normal_map`
+only because w04 and w06 shipped the donor's buffered `normal_map`
 (`param4=1`), and the host is on the direct path (`param4=0`, like w05 since
 2026-09-27): max 3/255, mean 0.11/255 (w04) and 0.08/255 (w06). Against
 w04 and w06 with just `param4` set to 0, all three maps are 0 px.

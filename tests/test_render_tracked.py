@@ -22,14 +22,14 @@ def _entry(category, name):
 
 def test_compare_dirs_reports_only_mismatching_maps(tmp_path):
     base, cur = tmp_path / "base", tmp_path / "cur"
-    e = _entry("wood", "w04_driftwood_gray")
+    e = _entry("wood", "w05_dark_walnut")
     for m in MAPS:
-        _png(base / "wood" / f"w04_driftwood_gray_{m}.png", 100)
-        _png(cur / "wood" / f"w04_driftwood_gray_{m}.png", 100)
-    _png(cur / "wood" / "w04_driftwood_gray_normal.png", 180)   # moved
+        _png(base / "wood" / f"w05_dark_walnut_{m}.png", 100)
+        _png(cur / "wood" / f"w05_dark_walnut_{m}.png", 100)
+    _png(cur / "wood" / "w05_dark_walnut_normal.png", 180)   # moved
     problems = compare_dirs(base, cur, [e])
     assert len(problems) == 1
-    assert "w04_driftwood_gray_normal.png" in problems[0]
+    assert "w05_dark_walnut_normal.png" in problems[0]
 
 
 def test_compare_dirs_flags_missing_files(tmp_path):
@@ -87,7 +87,7 @@ def test_main_resolves_out_and_compare_to_absolute_paths(tmp_path, monkeypatch):
 
     monkeypatch.setattr(rt, "render_entries", fake_render_entries)
     monkeypatch.setattr(rt, "compare_dirs", fake_compare_dirs)
-    monkeypatch.setattr(rt, "list_cookbook", lambda d: [_entry("wood", "w04_driftwood_gray")])
+    monkeypatch.setattr(rt, "list_cookbook", lambda d: [_entry("wood", "w05_dark_walnut")])
     monkeypatch.chdir(tmp_path)
     assert rt.main(["--out", "rel-out", "--compare", "rel-base"]) == 0
     assert seen["out"].is_absolute() and seen["out"] == (tmp_path / "rel-out").resolve()
