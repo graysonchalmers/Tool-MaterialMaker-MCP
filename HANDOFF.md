@@ -1,6 +1,6 @@
 # 🧭 Session Handoff: Tool-MaterialMaker-MCP
 
-_Last updated: 2026-09-27 19:05 CDT. `main` @ `c461bc1` + wrap-up, pushed. **v0.10.0** released; release-please will open the next PR for the two fixes below. Nothing in flight._
+_Last updated: 2026-09-27 19:30 CDT. `main` @ `3b20a22` + baton, pushed. **v0.10.0** released; release-please will open the next PR for the two fixes below. Nothing in flight._
 
 The session baton. Read at pickup, rewrite at wrap-up. **Shape rule (2026-09-05, teardown #3):**
 - "Current state" describes the latest session only.
@@ -10,9 +10,10 @@ The session baton. Read at pickup, rewrite at wrap-up. **Shape rule (2026-09-05,
 
 ## 🎯 Current state
 
-Late-evening session, 2026-09-27 (four subagent worktrees, all merged, pushed, retired). **Cookbook 62 → 58.**
+Late-evening session, 2026-09-27 (six subagent worktrees, all merged, pushed, retired). **Cookbook 62 → 55.**
+- **Approved cuts done** (`3b20a22`): sf03 circuit board, o03 tree bark, o05 coral; copies in `_to_delete\MaterialMaker-cut-sf03-o03-o05-2026-09-27`. o03 was the last param4=1 graph: **every cookbook normal is now on the direct path.**
 - **w05 wood host** absorbs w04 + w06: w04 is a preset (ramps only); w06's `SwirlField`+`BurlSwirl(warp2)` chained after `RingWarp` (either warp at 0 passes the other through). Exposed: Ring figure, Burl swirl (default 0), Burl size. Default 0 px; presets 0 px albedo/ORM, normal ≤3/255 (their param4=1 only; 0 px vs param4=0 controls). **w04, w06 retired.**
-- **man02 tile host** absorbs s05 + man03: Layout switch (hex / skewed bricks), Tone switch (clean / per-cell stone via a twin stone-tone chain), Surface Grain (default off). Default: 1 normal px at 1/255 (NormalMix's presence; accepted by Grayson), else 0 px. man03 preset 0 px; s05 preset 0 px except normal ≤3/255 (its param4=1). **s05, man03 retired.** No param4=1 graph remains except o03 (an approved cut).
+- **man02 tile host** absorbs s05 + man03: Layout switch (hex / skewed bricks), Tone switch (clean / per-cell stone via a twin stone-tone chain), Surface Grain (default off). Default: 1 normal px at 1/255 (NormalMix's presence; accepted by Grayson), else 0 px. man03 preset 0 px; s05 preset 0 px except normal ≤3/255 (its param4=1). **s05, man03 retired.** 
 - **m02 renamed `m02_brushed_metal`** (byte-identical graph, no alias: `load_example("m02_brushed_aluminum")` is now not-found).
 - **Slider ranges:** new `widen_widget` helper (`quality/author_helpers.py`) converts an exposed slider to a named parameter with its own range; `play/sliders.py` reads it. Applied to s07/s14/f07/man02/gl01/m02/m06/pm01/pm02/pm05/s02/s12/t03/l06; a test now asserts every shipped value is inside its range. All default renders 0 px before vs after.
 - **f07 Plaid Overlay** now multiplies (blend_type 2) with a lightened sett (`d3074bd`): plaid 1 is -13% luminance vs plaid-off (was -67%); blue band reads slate. Defaults/presets 0 px.
@@ -26,11 +27,11 @@ Clean. Every branch merged, every session worktree retired, v0.10.0 release PR m
 
 ## ▶️ Next concrete step
 
-**Execute the three approved cuts** from the teardown appendix (`docs/teardowns/TEARDOWN-2026-09-27.md:289-317`): sf03 circuit board, o03 tree bark (it is also the LAST param4=1 graph), o05 coral. Copy to `_to_delete\` first, `git rm`, drop builders, fix cross-refs, recount README/STATUS. Cheap and needs no boards.
+**Next host round** from the teardown appendix (`docs/teardowns/TEARDOWN-2026-09-27.md:289-317`): **s11 marble absorbs s13** (one absorbee, smallest round). Same recipe: defaults 0 px by Pillow diff at 2048, boards, retire only after Grayson approves. Parallel agents share the `mkdir godot.lock` render lock.
 
 Alternatives:
-- **Next host round:** s11 marble absorbs s13 (one absorbee, small), or s09 ashlar absorbs s12 + o06. Same recipe: defaults 0 px by Pillow diff at 2048, boards, retire only after Grayson approves.
-- **Grayson hands-on step-3 session:** open a host in MM, check the widened sliders show in the GUI (only headless-verified), save a hand-edit to `saved_graphs/`.
+- **s09 ashlar absorbs s12 + o06** (the parallax host): bigger round, more value.
+- **Grayson hands-on step-3 session:** check the widened sliders in the MM GUI, save a hand-edit to `saved_graphs/`.
 
 ## ❓ Open questions
 
@@ -38,7 +39,7 @@ Alternatives:
 
 ## 🗂️ Changed this session
 
-- **Commits on `main`:** `816d14d` docstrings · `9930809` North Star · `3a7feca` w05 host · `e760289` rename/ranges/plaid · `5023e78` retire w04/w06 · `a18aaf0` man02 host · `aa017e9` retire s05/man03 · `4e1bdae` widen remaining widgets · `588bb67` man02 card grout note · `129a4ca` release 0.10.0 · `0958af4` f07 lighter sett · `c461bc1` man02 groove.
+- **Commits on `main`:** `816d14d` docstrings · `9930809` North Star · `3a7feca` w05 host · `e760289` rename/ranges/plaid · `5023e78` retire w04/w06 · `a18aaf0` man02 host · `aa017e9` retire s05/man03 · `4e1bdae` widen remaining widgets · `588bb67` man02 card grout note · `129a4ca` release 0.10.0 · `0958af4` f07 lighter sett · `c461bc1` man02 groove · `3b20a22` cuts.
 - **Decisions and why:**
   - **Host normals stay param4=0** even though absorbed presets then differ ≤3/255 from their param4=1 originals: the buffered path races flat headless; controls with param4=0 prove 0 px.
   - **man02's 1-px default drift accepted** (Grayson): removing it would drop brick mode.
@@ -64,7 +65,7 @@ Alternatives:
 
 Newest first. Keep at most 8; older ones are in `git log` (search commit subjects).
 
-- **2026-09-27 late** (w05 + man02 hosts, w04/w06/s05/man03 retired, cookbook 58; m02 → m02_brushed_metal; widen_widget; f07 multiply plaid + lighter sett; man02 hex groove; North Star amendment; v0.10.0): see git log `816d14d..c461bc1`.
+- **2026-09-27 late** (w05 + man02 hosts, w04/w06/s05/man03 retired, sf03/o03/o05 cut, cookbook 55; m02 → m02_brushed_metal; widen_widget; f07 multiply plaid + lighter sett; man02 hex groove; North Star amendment; v0.10.0): see git log `816d14d..3b20a22`.
 - **2026-09-27 evening** (f07 host + f01/f05/f08/f09 retired, cookbook 62; s14 damp tile; param4=0 on 11 normals; render retry mtime race; v0.9.0): see git log `53a4832..6505f17`.
 - **2026-09-27** (teardown #6, truth pass, PRs #13/#7, hosts m02/s14/s07; cookbook 74→66): see git log `bfeaac1..a132a9f`.
 - **2026-09-15/16** (iteration-and-parallax, merged): s14/m06 retunes; the Deep Parallax prototype on `s09_ashlar_wall`; the BlockAO/BlockHeight swap fixed.
