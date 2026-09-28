@@ -9,8 +9,8 @@ Then: python -m quality.render_cookbook cookbook-organics
 """
 import sys
 
-from quality.author_helpers import (load_example, node, set_gradient, set_param, retype,
-                     rewire, drop_conn, add_node, save_variant, group_into_subgraph,
+from quality.author_helpers import (load_example, node, set_gradient, set_param,
+                     drop_conn, add_node, save_variant, group_into_subgraph,
                      take_variant, rename_nodes)
 from quality import author  # shared builder base; regression guard is promote_cookbook --check
 
@@ -18,24 +18,6 @@ from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.config import load_config
 
 _LABEL = "cookbook-organics"
-
-# Worked mapping for `wood` cloned unmodified structurally (o03; see
-# cookbook_wood.py's _WOOD_NAMES for the identical donor graph -- same 11
-# nodes, same wiring, just bark wording instead of wood wording since bark
-# wants ridges/furrows, not annual rings).
-_BARK_NAMES = {
-    "perlin_0": "GrainNoiseFine",
-    "perlin_1": "GrainNoiseCoarse",
-    "perlin_2": "GrainWobble",
-    "voronoi_0": "BarkRidges",       # furrow/ridge pattern (wood's ring pattern, recast)
-    "colorize_1": "RidgeContrast",
-    "warp_0": "GrainWarp",
-    "warp_1": "RidgeWarp",           # the knot-overlay waviness this builder keeps
-    "blend_0": "GrainMask",
-    "colorize_2": "BarkColor",
-    "colorize_0": "BarkRoughness",
-    "normal_map_0": "BarkNormal",
-}
 
 # Worked mapping for `dry_earth` cloned unmodified structurally (o01): the
 # shared perlin_0/perlin_1 sources feed both groups (see the docstring),
@@ -86,53 +68,6 @@ def _group_crocodile_skin_pattern(g, catalog, *, pattern_size_label,
     )
 
 
-def build_o03_tree_bark(catalog: dict) -> str:
-    """Tree bark: clone `wood` UNMODIFIED structurally (unlike m02 aluminum,
-    which straightens out the knots) -- bark wants the grain AND the knotty
-    waviness, so keep wood's blend_0<-warp_1 knot-overlay chain as-is. Just
-    recolor to weathered gray-brown bark and push roughness high. wood's own
-    normal chain (blend_0 -> normal_map_0) already works (w01/w02 are HITs
-    with it unmodified), so no param4 fix needed here."""
-    g = load_example("wood")
-    set_gradient(g, "colorize_2", [    # weathered bark, not wood-finish brown
-        (0.0, 0.16, 0.12, 0.09),
-        (0.3, 0.30, 0.24, 0.18),
-        (0.6, 0.22, 0.17, 0.12),
-        (1.0, 0.12, 0.09, 0.07),
-    ])
-    set_gradient(g, "colorize_0", [    # rough, matte bark
-        (0.0, 0.80, 0.80, 0.80),
-        (1.0, 0.95, 0.95, 0.95),
-    ])
-
-    # Same donor (`wood`, unmodified structurally, per the docstring) and
-    # same 11-node graph cookbook_wood.py's retired w04 used (w05, the wood
-    # host, adds a Burl Swirl pair to it), which grouped
-    # it into the noise/pattern generator + albedo colorize ("Wood Grain")
-    # and the roughness ramp + normal map ("Surface Finish") -- see that
-    # file's build_w05_dark_walnut for the full reasoning on why
-    # colorize_2 rides into the generator group rather than being left with
-    # only untouched donor defaults. Bark reuses the identical grouping,
-    # relabeled for the bark context.
-    group_into_subgraph(
-        g,
-        ["perlin_0", "perlin_1", "perlin_2", "voronoi_0", "colorize_1",
-         "warp_0", "warp_1", "blend_0", "colorize_2"],
-        "bark_grain", "Bark Grain",
-        [("colorize_2", "gradient", "param0", "Bark color")],
-        catalog,
-    )
-    group_into_subgraph(
-        g,
-        ["colorize_0", "normal_map_0"],
-        "surface_finish", "Surface Finish",
-        [("colorize_0", "gradient", "param0", "Bark sheen")],
-        catalog,
-    )
-    rename_nodes(g, _BARK_NAMES)
-    return save_variant(g, _LABEL, "o03_tree_bark", 1)
-
-
 def build_o04_snake_scales(catalog: dict) -> str:
     """Snake scales: crocodile_skin's OWN default voronoi cellular pattern is
     already a reptile-scale layout (it's what it was built for) -- no
@@ -174,49 +109,6 @@ def build_o04_snake_scales(catalog: dict) -> str:
         "uniform_0": "NonMetallic",
     })
     return save_variant(g, _LABEL, "o04_snake_scales", 1)
-
-
-def build_o05_coral(catalog: dict) -> str:
-    """Coral: retype the generator to `fbm` with Cellular noise (enum value
-    2) -- a porous, bumpy, organic cell pattern distinct from voronoi's flat-
-    faceted cells, closer to coral's irregular pitted surface. Coral
-    pink/orange, matte-ish, pronounced normal relief (param4=0, higher
-    strength) for the porous bumpy surface."""
-    g = load_example("crocodile_skin")
-    retype(g, "voronoi_0", "fbm",
-           {"noise": 2, "scale_x": 18, "scale_y": 18, "folds": 2,
-            "iterations": 5, "persistence": 0.6})
-    set_gradient(g, "colorize_1", [    # coral pink/orange
-        (0.0, 0.55, 0.18, 0.14),
-        (1.0, 0.92, 0.48, 0.34),
-    ])
-    set_gradient(g, "colorize_3", [    # matte, porous
-        (0.0, 0.70, 0.70, 0.70),
-        (1.0, 0.88, 0.88, 0.88),
-    ])
-    set_gradient(g, "colorize_0", [(0.0, 0, 0, 0), (1.0, 1, 1, 1)])
-    node(g, "normal_map_0")["parameters"] = {
-        "param0": 11, "param1": 0.5, "param2": 0, "param4": 0}
-
-    # See _group_crocodile_skin_pattern's docstring: shared with
-    # o04_snake_scales, both clone crocodile_skin's identical 6-node graph
-    # (the fbm retype of voronoi_0 changes its noise, not its name/wiring).
-    # `uniform_0` (Material's metallic scalar, untouched donor default) is
-    # left top-level.
-    _group_crocodile_skin_pattern(
-        g, catalog,
-        pattern_size_label="Cell size", pattern_color_label="Coral color",
-        sheen_label="Surface tone", relief_label="Pore relief",
-    )
-    rename_nodes(g, {
-        "voronoi_0": "PolypCells",     # fbm Cellular: porous, still noise not a rigid layout
-        "colorize_1": "CoralColor",
-        "colorize_3": "CoralSheen",
-        "colorize_0": "CoralHeight",
-        "normal_map_0": "CoralNormal",
-        "uniform_0": "NonMetallic",
-    })
-    return save_variant(g, _LABEL, "o05_coral", 1)
 
 
 def build_o06_lichen_crusted_rock(catalog: dict) -> str:
@@ -331,9 +223,7 @@ def build_o01_mossy_forest_floor(catalog: dict) -> str:
 
 BUILDERS = {
     "o01_mossy_forest_floor": build_o01_mossy_forest_floor,
-    "o03_tree_bark": build_o03_tree_bark,
     "o04_snake_scales": build_o04_snake_scales,
-    "o05_coral": build_o05_coral,
     "o06_lichen_crusted_rock": build_o06_lichen_crusted_rock,
 }
 

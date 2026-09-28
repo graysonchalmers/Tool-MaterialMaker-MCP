@@ -18,8 +18,8 @@ Then: python -m quality.render_cookbook cookbook-scifi
 """
 import sys
 
-from quality.author_helpers import (load_example, node, set_gradient, set_param, add_node,
-                             rewire, save_variant, group_into_subgraph, rename_nodes)
+from quality.author_helpers import (load_example, set_gradient, set_param, add_node,
+                             save_variant, group_into_subgraph, rename_nodes)
 
 from mm_mcp.catalog_builder import build_catalog
 from mm_mcp.config import load_config
@@ -49,25 +49,6 @@ _SF02_NAMES = {
     "transform_0": "StripeRotate",
     "colorize_rgh": "StripeRoughness",
     "normal_map_0": "StripeNormal",
-}
-
-# from-scratch mapping for sf03 (PCB circuit board). *Mask names the hard
-# 0/1 opacity mask for each blend's port 2, split off from the albedo
-# colorize per the bleed-through fix in docs/AUTHORING.md (a mid-value
-# albedo colorize must never double as the opacity mask).
-_SF03_NAMES = {
-    "perlin_0": "BoardNoise",
-    "colorize_base": "BoardColor",
-    "pattern_traces": "TraceWave",
-    "colorize_traces": "TraceColor",
-    "colorize_traces_mask": "TraceMask",
-    "blend_traces": "TraceComposite",
-    "voronoi_chips": "ChipLayout",
-    "colorize_chips": "ChipColor",
-    "colorize_chips_mask": "ChipMask",
-    "blend_chips": "ChipComposite",
-    "colorize_rgh": "BoardRoughness",
-    "normal_map_0": "BoardNormal",
 }
 
 # from-scratch mapping for sf04 (square-hole vent grille).
@@ -218,138 +199,6 @@ def build_sf02_hazard_stripe_panel(catalog: dict) -> str:
     )
     rename_nodes(g, _SF02_NAMES)
     return save_variant(g, _LABEL, "sf02_hazard_stripe_panel", 1)
-
-
-def build_sf03_circuit_board(catalog: dict) -> str:
-    """PCB circuit board: dark green base, thin bright traces (fine `pattern`
-    Square wave, hard-thresholded, reused as its own mask), plus a few
-    brighter chip blocks on top. PARTIAL, not a clean HIT -- see the
-    AUTHORING.md writeup for the two dead ends this went through and the
-    real bug still unresolved (trace stripes faintly bleed through the chip
-    shapes even where the mask should be fully opaque). Kept the recipe
-    because "camo-patched circuit board" is a usable enough sci-fi texture,
-    not because the underlying issue is understood."""
-    g = _new_graph()
-    add_node(g, "perlin_0", "perlin", {"scale_x": 6, "scale_y": 6, "iterations": 3})
-    add_node(g, "colorize_base", "colorize", {})
-    set_gradient(g, "colorize_base", [
-        (0.0, 0.03, 0.10, 0.05),
-        (1.0, 0.05, 0.16, 0.08),
-    ])
-    add_node(g, "pattern_traces", "pattern",
-             {"mix": 0, "x_wave": 2, "x_scale": 28, "y_wave": 4, "y_scale": 1})
-    add_node(g, "colorize_traces", "colorize", {})
-    set_gradient(g, "colorize_traces", [
-        (0.0, 0, 0, 0), (0.48, 0, 0, 0),
-        (0.52, 0.72, 0.55, 0.20), (1.0, 0.72, 0.55, 0.20),
-    ])
-    # Same split-mask fix as the chips (below): colorize_traces' "on" value is
-    # gold (luminance ~0.57), so reusing it as the port-2 opacity made the
-    # traces only ~57% opaque and the dark base bled ~43% through them (muted
-    # olive traces). A hard 0/1 mask on the SAME pattern threshold makes the
-    # gold traces solid. The 0.48->0.52 band is kept (not razor-thin) because
-    # the `pattern` wave IS continuous at stripe edges, so the band gives real
-    # edge anti-aliasing here (unlike the flat-per-cell voronoi chip mask).
-    add_node(g, "colorize_traces_mask", "colorize", {})
-    set_gradient(g, "colorize_traces_mask", [
-        (0.0, 0, 0, 0), (0.48, 0, 0, 0),
-        (0.52, 1, 1, 1), (1.0, 1, 1, 1),
-    ])
-    add_node(g, "blend_traces", "blend", {"blend_type": 0, "amount": 1})
-    add_node(g, "voronoi_chips", "voronoi",
-             {"scale_x": 18, "scale_y": 18, "randomness": 1, "intensity": 1,
-              "stretch_x": 1, "stretch_y": 1})
-    add_node(g, "colorize_chips", "colorize", {})
-    set_gradient(g, "colorize_chips", [    # smaller/sparser cells this time
-        # near-hard step (was a 0.70->0.74 ramp): voronoi port 2 is FLAT per
-        # cell, so a wide ramp doesn't anti-alias edges, it just leaves cells
-        # whose random lands mid-band as faint partial chips. Same tight
-        # threshold on the mask below keeps colour and opacity in lockstep.
-        (0.0, 0, 0, 0), (0.735, 0, 0, 0),
-        (0.74, 0.65, 0.66, 0.68), (1.0, 0.65, 0.66, 0.68),
-    ])
-    # ROOT-CAUSE FIX for the long-standing trace-bleed-through bug: blend's
-    # opacity is `amount * a($uv)` (see blend.mmg), where `a` is the port-2
-    # mask. This recipe used to feed colorize_chips (the CHIP ALBEDO, whose
-    # "on" value is 0.65 gray) as that mask, so chips rendered at only ~0.65
-    # opacity and ~35% of the trace stripes bled straight through them. Split
-    # the mask off from the albedo: a hard 0/1 mask on the same voronoi
-    # threshold drives opacity, colorize_chips still drives colour.
-    add_node(g, "colorize_chips_mask", "colorize", {})
-    set_gradient(g, "colorize_chips_mask", [
-        (0.0, 0, 0, 0), (0.735, 0, 0, 0),
-        (0.74, 1, 1, 1), (1.0, 1, 1, 1),
-    ])
-    add_node(g, "blend_chips", "blend", {"blend_type": 0, "amount": 1})
-    add_node(g, "colorize_rgh", "colorize", {})
-    set_gradient(g, "colorize_rgh", [    # traces/chips glossier than base
-        (0.0, 0.55, 0.55, 0.55),
-        (1.0, 0.25, 0.25, 0.25),
-    ])
-    add_node(g, "normal_map_0", "normal_map",
-             {"param0": 10, "param1": 0.15, "param2": 0, "param4": 0})
-    add_node(g, "Material", "material", {"metallic": 0.15})
-    g["connections"] += [
-        {"from": "perlin_0", "from_port": 0, "to": "colorize_base", "to_port": 0},
-        {"from": "pattern_traces", "from_port": 0, "to": "colorize_traces", "to_port": 0},
-        {"from": "pattern_traces", "from_port": 0, "to": "colorize_traces_mask", "to_port": 0},
-        {"from": "colorize_traces", "from_port": 0, "to": "blend_traces", "to_port": 0},
-        {"from": "colorize_base", "from_port": 0, "to": "blend_traces", "to_port": 1},
-        {"from": "colorize_traces_mask", "from_port": 0, "to": "blend_traces", "to_port": 2},
-        {"from": "voronoi_chips", "from_port": 2, "to": "colorize_chips", "to_port": 0},
-        {"from": "voronoi_chips", "from_port": 2, "to": "colorize_chips_mask", "to_port": 0},
-        {"from": "colorize_chips", "from_port": 0, "to": "blend_chips", "to_port": 0},
-        {"from": "blend_traces", "from_port": 0, "to": "blend_chips", "to_port": 1},
-        {"from": "colorize_chips_mask", "from_port": 0, "to": "blend_chips", "to_port": 2},
-        {"from": "blend_chips", "from_port": 0, "to": "Material", "to_port": 0},
-        {"from": "blend_chips", "from_port": 0, "to": "colorize_rgh", "to_port": 0},
-        {"from": "colorize_rgh", "from_port": 0, "to": "Material", "to_port": 2},
-        {"from": "blend_traces", "from_port": 0, "to": "normal_map_0", "to_port": 0},
-        {"from": "normal_map_0", "from_port": 0, "to": "Material", "to_port": 4},
-    ]
-
-    # Grouping care for the documented blend/opacity-mask bug (see the
-    # colorize_traces_mask/colorize_chips_mask comments above and
-    # AUTHORING.md): `blend`'s opacity is amount * the port-2 mask, and this
-    # recipe's whole fix was splitting each mask off into its OWN hard 0/1
-    # colorize rather than reusing the albedo colorize as the mask. Each
-    # mask colorize here has exactly ONE consumer (its own blend's port 2),
-    # unlike o06's colorize_3 (a genuinely shared 3-way signal) -- so each
-    # mask is grouped together with the blend it feeds and nothing else,
-    # keeping the mask -> blend port-2 connection fully INTERNAL to one
-    # subgraph (group_into_subgraph copies internal connections verbatim, so
-    # this cannot change from/to/port). Critically, neither mask colorize's
-    # gradient is exposed as a friendly parameter below -- only the ALBEDO
-    # colorize's gradient is exposed in each group, so an end user turning a
-    # "trace color"/"chip color" knob can never touch the hard-threshold
-    # opacity mask that the bug fix depends on. Verified after building via
-    # renders_match against this material's own pre-retrofit baseline (see
-    # the task report) rather than assuming the general process's 0.0-diff
-    # track record carries over automatically.
-    group_into_subgraph(
-        g, ["perlin_0", "colorize_base", "pattern_traces", "colorize_traces",
-            "colorize_traces_mask", "blend_traces"],
-        "circuit_traces", "Circuit Traces",
-        [("colorize_base", "gradient", "param0", "Board color"),
-         ("pattern_traces", "x_scale", "param1", "Trace density"),
-         ("colorize_traces", "gradient", "param2", "Trace color")],
-        catalog,
-    )
-    group_into_subgraph(
-        g, ["voronoi_chips", "colorize_chips", "colorize_chips_mask", "blend_chips"],
-        "chip_blocks", "Chip Blocks",
-        [("voronoi_chips", "scale_x", "param0", "Chip size"),
-         ("colorize_chips", "gradient", "param1", "Chip color")],
-        catalog,
-    )
-    group_into_subgraph(
-        g, ["colorize_rgh", "normal_map_0"], "surface_finish", "Surface Finish",
-        [("colorize_rgh", "gradient", "param0", "Surface sheen"),
-         ("normal_map_0", "param1", "param1", "Relief strength")],
-        catalog,
-    )
-    rename_nodes(g, _SF03_NAMES)
-    return save_variant(g, _LABEL, "sf03_circuit_board", 1)
 
 
 def build_sf04_vent_grille_panel(catalog: dict) -> str:
@@ -605,7 +454,6 @@ def build_sf05_circuit_maze_panel(catalog: dict) -> str:
 BUILDERS = {
     "sf01_hull_plating": build_sf01_hull_plating,
     "sf02_hazard_stripe_panel": build_sf02_hazard_stripe_panel,
-    "sf03_circuit_board": build_sf03_circuit_board,
     "sf04_vent_grille_panel": build_sf04_vent_grille_panel,
     "sf05_circuit_maze_panel": build_sf05_circuit_maze_panel,
     "sf07_conduit_panel": build_sf07_conduit_panel,
