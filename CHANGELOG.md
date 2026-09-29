@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.11.0](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/compare/v0.10.0...v0.11.0) (2026-09-29)
+
+
+### Features
+
+* **opacity:** sf04 drives opacity_tex; preview rig scissors albedo alpha ([9632444](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/96324445b3217ffaf307bbbc40f37635efd5f92f))
+
+
+### Bug Fixes
+
+* **cookbook:** f07 plaid sett lightened for the multiply blend ([d3074bd](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/d3074bd998bb19634038ddbbe477fd600347ee15))
+* **cookbook:** man02 hex grout recesses below the tile faces ([3c71ea3](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/3c71ea3be4a1f152242048a4be6cc00df70c509c))
+
+
+### Documentation
+
+* baton - cuts done (cookbook 55), next s11 host ([6a31341](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/6a31341044e03eb3326f841d26391ab852710c94))
+* wrap up - man02 hex groove + f07 lighter sett merged ([17abdc3](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/17abdc303d5c727102e10a501d90a637422b634a))
+* wrap up - release PR [#17](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/issues/17) open, baton current ([99b4432](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/99b4432b3a6acb5c2065f3f6a5c27bdb3eca85b0))
+* wrap up - w05 + man02 hosts (cookbook 58), m02_brushed_metal, widened sliders, v0.10.0 ([e6407f9](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/commit/e6407f9ed832811d3e8df73269f6767690635ff4))
+
 ## [0.10.0](https://github.com/graysonchalmers/Tool-MaterialMaker-MCP/compare/v0.9.0...v0.10.0) (2026-09-27)
 
 
