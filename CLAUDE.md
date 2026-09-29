@@ -63,6 +63,25 @@ doesn't serve that loop, check with Grayson before building it.
 - The MM project needs `steam_appid.txt` (`4110830`) or it self-relaunches and
   exits immediately. Already present in the z-Git clone.
 
+## Verification cadence
+
+Renders pop windows on Grayson's screen and the full suite takes ~10 min, so
+run the cheapest check that can catch the change, and the big ones once:
+
+- **Every iteration:** render and preview only the material being edited
+  (`quality.render_one`, one preview). No suite, no regression set.
+- **Graph or builder change:** `promote_cookbook --check` plus a map diff of
+  the affected graphs only.
+- **`preview.gd` change:** `quality.preview_regress` once, when the rig edit
+  is settled, not per tweak. Keep the HEAD baseline PNGs and rebuild them
+  only when main's rig changes.
+- **Before wrap-up or merge:** the full fast suite once, plus
+  `preview_regress` only if the rig changed this session.
+- **Env trap:** set `PYTHONPATH=".;src"` (semicolon) in a worktree from Git
+  Bash. `.:src` silently imports the MAIN checkout's `mm_mcp`, so renders and
+  regression runs use the old rig and "pass". Check `mm_mcp.preview.
+  _PREVIEW_PROJECT` if a rig change has no visible effect.
+
 ## Conventions
 
 - Gate rule: never start Phase N+1 until Phase N's gate is green and recorded in STATUS.md.

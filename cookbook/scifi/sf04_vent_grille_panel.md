@@ -2,27 +2,35 @@
 
 _Category: scifi. Open the graph: `cookbook/scifi/sf04_vent_grille_panel.ptex`._
 
-A metal panel punched with a grid of small square vent holes, distinct from the hexagonal grating look used elsewhere in this project.
+A metal panel punched with a grid of small square vent holes that are real cutouts: the holes are transparent (`opacity_tex`), each with a chamfered rim. The first cookbook opacity example.
 
 ## Recipe
 
-Built with a single `pattern` node, using both `x_wave` and `y_wave` set to Square with `mix=Min`: the minimum of two square waves is their intersection, which gives a grid of small square holes in one node with no separate mask or composite step needed. This is deliberately distinct from a beehive-based hexagonal grating, which uses hex cells instead of a square punch pattern.
+One `pattern` node (Triangle x Triangle, `mix=Min`) is a field that peaks at each cell centre with square contours. Three colorize nodes read that single field, so the maps register:
 
-Pitfall: none, this recipe hit target on the first structural idea. Note: an emission-only "glowing tech panel" variant of this category was considered and ruled out before building, since the render pipeline's export target only produces albedo, normal, heightmap, and orm maps, so an emission-only material would be invisible in the actual product output; this vent grille was built in its place.
+- `HoleCutout` -> `opacity_tex`: a hard 0/1 threshold at 0.55 opens the holes. Opacity stays hard-edged on purpose (alpha scissor, no fringe).
+- `HoleChamfer` -> normal: a ramp from 0.30 to 0.55 (plate height 1 down to the hole edge at 0) is the bevel. The normal reads only this ramp, and the ramp ends exactly at the opacity threshold, so the chamfer lands on the cut edge.
+- `HolePlateColor` -> albedo: steel outside 0.55, dark inside.
+
+The `Material` node has `flags_transparent` on: Material Maker's Godot export only writes `transparency = 1` into the `.tres` when that box is ticked, and the alpha itself rides in the `_albedo.png`.
+
+Pitfall: the first version used Square waves with `mix=Min`, which is 1 only where BOTH waves are high, so the steel was isolated squares on black (inverted holes). Harmless as a dark-recess albedo, wrong as a cutout, where it would leave floating plates. The Triangle field peaks in the middle of each hole, so the holes are the high side and the plate is one connected sheet.
+
+Preview: `preview.gd` scissors the albedo alpha (threshold 0.5), draws front faces only so you see through to what is behind, and adds a lit floor sheet under the ground; all of it only when the albedo really has alpha, so opaque materials are untouched. Channel coverage across the library: `docs/CHANNEL_COVERAGE.md`.
 
 ## Subgraph structure
 
 Grouped per the "Grouping into subgraphs" lever in `docs/AUTHORING.md`.
 Opening the graph shows 3 top-level nodes (two groups plus `Material`)
-instead of the raw 5-node graph:
+instead of the raw 8-node graph:
 
-- **Hole Pattern** — `HoleLayout`, `HolePlateColor`. `HoleLayout` also
-  feeds `GrilleRoughness` and `GrilleNormal` in Surface Finish directly (one
-  upstream node feeding multiple downstream groups, producing expected
+- **Hole Pattern** — `HoleLayout`, `HolePlateColor`, `HoleCutout`. `HoleLayout`
+  also feeds `HoleChamfer` and `GrilleRoughness` in Surface Finish directly
+  (one upstream node feeding multiple downstream groups, producing expected
   extra boundary output ports). Exposed: `Hole density` (`HoleLayout`'s
   `x_scale`), `Hole vs plate color` (`HolePlateColor`'s gradient).
-- **Surface Finish** — `GrilleRoughness`, `GrilleNormal`. Exposed: `Recess
-  roughness`, `Relief strength`.
+- **Surface Finish** — `HoleChamfer`, `GrilleRoughness`, `GrilleNormal`. Exposed:
+  `Rim roughness`, `Relief strength`.
 
 ## See also
 
@@ -42,6 +50,8 @@ do not edit by hand. Open the `.ptex` and look for these names.
 | (top level) | surface_finish | graph |
 | hole_pattern | HoleLayout | pattern |
 | hole_pattern | HolePlateColor | colorize |
+| hole_pattern | HoleCutout | colorize |
+| surface_finish | HoleChamfer | colorize |
 | surface_finish | GrilleRoughness | colorize |
 | surface_finish | GrilleNormal | normal_map |
 <!-- nodes:end -->

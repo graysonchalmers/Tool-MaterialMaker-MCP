@@ -55,6 +55,8 @@ _SF02_NAMES = {
 _SF04_NAMES = {
     "pattern_holes": "HoleLayout",
     "colorize_0": "HolePlateColor",
+    "colorize_opacity": "HoleCutout",
+    "colorize_bevel": "HoleChamfer",
     "colorize_rgh": "GrilleRoughness",
     "normal_map_0": "GrilleNormal",
 }
@@ -202,51 +204,69 @@ def build_sf02_hazard_stripe_panel(catalog: dict) -> str:
 
 
 def build_sf04_vent_grille_panel(catalog: dict) -> str:
-    """Perforated square-hole vent grille: ONE `pattern` node with BOTH
-    x_wave and y_wave set to Square and mix=Min gives a grid of small square
-    holes in a single node (Min of two square waves = their intersection).
-    Distinct from man01's hexagonal grating (beehive-based) -- this is a
-    square punch pattern, a different bundled-example gap entirely."""
+    """Punched square-hole vent grille with real cutouts: ONE `pattern` node
+    (Triangle x Triangle, mix=Min) is a field that peaks at each cell centre
+    with square contours, so a single field drives everything and the maps
+    register: a colorize threshold opens the holes (opacity_tex, hard 0/1),
+    and a ramp just outside that threshold is the chamfer (height, then
+    normal). The first version used Square waves and had the polarity
+    backwards: steel islands on black, which as a cutout would leave floating
+    plates. Distinct from man01's hexagonal grating (beehive-based)."""
     g = _new_graph()
     add_node(g, "pattern_holes", "pattern",
-             {"mix": 3, "x_wave": 2, "x_scale": 10, "y_wave": 2, "y_scale": 10})
+             {"mix": 3, "x_wave": 1, "x_scale": 10, "y_wave": 1, "y_scale": 10})
     add_node(g, "colorize_0", "colorize", {})
     set_gradient(g, "colorize_0", [
-        (0.0, 0.03, 0.03, 0.03),   # punched-through hole, dark
-        (0.55, 0.03, 0.03, 0.03),
-        (0.60, 0.58, 0.59, 0.61),  # surrounding steel
-        (1.0, 0.58, 0.59, 0.61),
+        (0.0, 0.58, 0.59, 0.61),   # surrounding steel
+        (0.55, 0.58, 0.59, 0.61),
+        (0.56, 0.03, 0.03, 0.03),  # punched-through hole, dark
+        (1.0, 0.03, 0.03, 0.03),
+    ])
+    add_node(g, "colorize_opacity", "colorize", {})
+    set_gradient(g, "colorize_opacity", [   # hard cut at the hole edge
+        (0.0, 1.0, 1.0, 1.0),
+        (0.55, 1.0, 1.0, 1.0),
+        (0.56, 0.0, 0.0, 0.0),
+        (1.0, 0.0, 0.0, 0.0),
+    ])
+    add_node(g, "colorize_bevel", "colorize", {})
+    set_gradient(g, "colorize_bevel", [     # flat plate, chamfer down to the hole edge
+        (0.0, 1.0, 1.0, 1.0),
+        (0.30, 1.0, 1.0, 1.0),
+        (0.55, 0.0, 0.0, 0.0),
+        (1.0, 0.0, 0.0, 0.0),
     ])
     add_node(g, "colorize_rgh", "colorize", {})
-    set_gradient(g, "colorize_rgh", [    # holes duller (recessed grime) than plate
-        (0.0, 0.65, 0.65, 0.65),
-        (1.0, 0.35, 0.35, 0.35),
+    set_gradient(g, "colorize_rgh", [    # plate duller than the chamfered rim
+        (0.0, 0.55, 0.55, 0.55),
+        (1.0, 0.30, 0.30, 0.30),
     ])
     add_node(g, "normal_map_0", "normal_map",
              {"param0": 10, "param1": 0.5, "param2": 0, "param4": 0})
-    add_node(g, "Material", "material", {"metallic": 1})
+    add_node(g, "Material", "material", {"metallic": 1, "flags_transparent": True})
     g["connections"] += [
         {"from": "pattern_holes", "from_port": 0, "to": "colorize_0", "to_port": 0},
         {"from": "colorize_0", "from_port": 0, "to": "Material", "to_port": 0},
+        {"from": "pattern_holes", "from_port": 0, "to": "colorize_opacity", "to_port": 0},
+        {"from": "colorize_opacity", "from_port": 0, "to": "Material", "to_port": 7},
+        {"from": "pattern_holes", "from_port": 0, "to": "colorize_bevel", "to_port": 0},
+        {"from": "colorize_bevel", "from_port": 0, "to": "normal_map_0", "to_port": 0},
         {"from": "pattern_holes", "from_port": 0, "to": "colorize_rgh", "to_port": 0},
         {"from": "colorize_rgh", "from_port": 0, "to": "Material", "to_port": 2},
-        {"from": "pattern_holes", "from_port": 0, "to": "normal_map_0", "to_port": 0},
         {"from": "normal_map_0", "from_port": 0, "to": "Material", "to_port": 4},
     ]
 
-    # Built from scratch; pattern_holes feeds colorize_rgh and normal_map_0
-    # directly in addition to colorize_0 below (single-upstream-node-feeds-
-    # multiple-groups case), producing extra boundary output ports on
-    # pattern_holes, expected.
+    # pattern_holes feeds several downstream nodes (opacity, roughness,
+    # bevel), producing extra boundary output ports, expected.
     group_into_subgraph(
-        g, ["pattern_holes", "colorize_0"], "hole_pattern", "Hole Pattern",
+        g, ["pattern_holes", "colorize_0", "colorize_opacity"], "hole_pattern", "Hole Pattern",
         [("pattern_holes", "x_scale", "param0", "Hole density"),
          ("colorize_0", "gradient", "param1", "Hole vs plate color")],
         catalog,
     )
     group_into_subgraph(
-        g, ["colorize_rgh", "normal_map_0"], "surface_finish", "Surface Finish",
-        [("colorize_rgh", "gradient", "param0", "Recess roughness"),
+        g, ["colorize_bevel", "colorize_rgh", "normal_map_0"], "surface_finish", "Surface Finish",
+        [("colorize_rgh", "gradient", "param0", "Rim roughness"),
          ("normal_map_0", "param1", "param1", "Relief strength")],
         catalog,
     )

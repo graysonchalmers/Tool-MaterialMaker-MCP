@@ -165,6 +165,7 @@ func _ready() -> void:
 		if height_tex != null:
 			sphere_mat = ORMMaterial3D.new()
 			sphere_mat.albedo_texture = albedo_tex
+			_apply_cutout(sphere_mat, albedo_tex)
 			sphere_mat.normal_enabled = true
 			sphere_mat.normal_texture = normal_tex
 			sphere_mat.orm_texture = orm_tex
@@ -207,7 +208,13 @@ func _ready() -> void:
 	# Cull-disabled clone of the shared material: the lathe is a hand-built mesh,
 	# so double-sided sidesteps any triangle-winding mistake showing as holes.
 	var rook_mat := mat.duplicate()
-	rook_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	# For a cutout, double-sided would show the inside of the far wall through
+	# every hole, so cull one side instead. The lathe winds inward-facing, so
+	# the near (outer) wall is the one CULL_FRONT keeps.
+	if mat.transparency == BaseMaterial3D.TRANSPARENCY_DISABLED:
+		rook_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	else:
+		rook_mat.cull_mode = BaseMaterial3D.CULL_FRONT
 	# Profile: Vector2(radius, y), bottom to top; r==0 endpoints cap the axis.
 	# y spans -OBJECT_RADIUS (base on the ground) to +0.72*OBJECT_RADIUS (crown
 	# platform); the merlons carry the silhouette up to the cube height.
@@ -243,6 +250,20 @@ func _ready() -> void:
 	body.set_surface_override_material(0, rook_mat)
 	rook.add_child(body)
 	add_child(rook)
+
+	# Cutout materials get a lit neutral sheet under the ground, so the grate's
+	# holes show a floor and its shadows land on something instead of the black
+	# void. The shapes themselves get nothing: with back faces culled you see
+	# straight through their holes to the ground behind. Opaque materials skip it.
+	if albedo_tex.get_image().detect_alpha() != Image.ALPHA_NONE:
+		var floor_mat := StandardMaterial3D.new()
+		floor_mat.albedo_color = Color(0.8, 0.8, 0.82)
+		floor_mat.roughness = 1.0
+		var sheet := MeshInstance3D.new()
+		sheet.mesh = ground.mesh
+		sheet.position = ground.position - Vector3(0, 0.35, 0)
+		sheet.set_surface_override_material(0, floor_mat)
+		add_child(sheet)
 
 	var cam := Camera3D.new()
 	cam.position = Vector3(0, 1.4, 6.5)
@@ -443,6 +464,19 @@ func _load_tex(path: String) -> ImageTexture:
 	return tex
 
 
+func _apply_cutout(mat: ORMMaterial3D, albedo_tex: ImageTexture) -> void:
+	# Opacity rides in the albedo PNG's alpha channel (Material Maker's export
+	# packs opacity_tex there). Scissor it, so holes are hard-edged and cast
+	# real shadows. Front faces only (the default), so the far half of a shape
+	# is culled and a hole shows what is really behind the object.
+	# Gated on the image genuinely having alpha: an opaque material (every
+	# graph that leaves opacity_tex unconnected) keeps its material untouched.
+	if albedo_tex.get_image().detect_alpha() == Image.ALPHA_NONE:
+		return
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+	mat.alpha_scissor_threshold = 0.5
+
+
 func _make_material(albedo_tex: ImageTexture, normal_tex: ImageTexture,
 		orm_tex: ImageTexture, tile: float, clearcoat: float = 0.0,
 		clearcoat_roughness: float = 0.5) -> ORMMaterial3D:
@@ -460,6 +494,7 @@ func _make_material(albedo_tex: ImageTexture, normal_tex: ImageTexture,
 		mat.clearcoat_enabled = true
 		mat.clearcoat = clearcoat
 		mat.clearcoat_roughness = clearcoat_roughness
+	_apply_cutout(mat, albedo_tex)
 	# Deep Parallax (Godot's native parallax occlusion mapping) is NOT set
 	# here: this material always ends up with uv1_triplanar = true at the
 	# call site, and Godot does not support heightmap/parallax on a

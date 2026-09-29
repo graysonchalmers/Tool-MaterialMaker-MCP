@@ -1,6 +1,6 @@
 # 🧭 Session Handoff: Tool-MaterialMaker-MCP
 
-_Last updated: 2026-09-29. `main` @ `6a31341` + wrap-up, pushed. **v0.10.0** released; release PR #17 (0.10.1: f07 sett, man02 groove, sf03/o03/o05 cuts) open, needs Grayson's merge. Nothing in flight._
+_Last updated: 2026-09-29. Opacity cutouts merged to `main`. **v0.10.0** released; release PR #17 (0.10.1) open, needs Grayson's merge. Nothing in flight._
 
 The session baton. Read at pickup, rewrite at wrap-up. **Shape rule (2026-09-05, teardown #3):**
 - "Current state" describes the latest session only.
@@ -10,26 +10,25 @@ The session baton. Read at pickup, rewrite at wrap-up. **Shape rule (2026-09-05,
 
 ## 🎯 Current state
 
-Late-evening session, 2026-09-27 (six subagent worktrees, all merged, pushed, retired). **Cookbook 62 → 55.**
-- **Approved cuts done** (`3b20a22`): sf03 circuit board, o03 tree bark, o05 coral; copies in `_to_delete\MaterialMaker-cut-sf03-o03-o05-2026-09-27`. o03 was the last param4=1 graph: **every cookbook normal is now on the direct path.**
-- **w05 wood host** absorbs w04 + w06: w04 is a preset (ramps only); w06's `SwirlField`+`BurlSwirl(warp2)` chained after `RingWarp` (either warp at 0 passes the other through). Exposed: Ring figure, Burl swirl (default 0), Burl size. Default 0 px; presets 0 px albedo/ORM, normal ≤3/255 (their param4=1 only; 0 px vs param4=0 controls). **w04, w06 retired.**
-- **man02 tile host** absorbs s05 + man03: Layout switch (hex / skewed bricks), Tone switch (clean / per-cell stone via a twin stone-tone chain), Surface Grain (default off). Default: 1 normal px at 1/255 (NormalMix's presence; accepted by Grayson), else 0 px. man03 preset 0 px; s05 preset 0 px except normal ≤3/255 (its param4=1). **s05, man03 retired.** 
-- **m02 renamed `m02_brushed_metal`** (byte-identical graph, no alias: `load_example("m02_brushed_aluminum")` is now not-found).
-- **Slider ranges:** new `widen_widget` helper (`quality/author_helpers.py`) converts an exposed slider to a named parameter with its own range; `play/sliders.py` reads it. Applied to s07/s14/f07/man02/gl01/m02/m06/pm01/pm02/pm05/s02/s12/t03/l06; a test now asserts every shipped value is inside its range. All default renders 0 px before vs after.
-- **f07 Plaid Overlay** now multiplies (blend_type 2) with a lightened sett (`d3074bd`): plaid 1 is -13% luminance vs plaid-off (was -67%); blue band reads slate. Defaults/presets 0 px.
-- **man02 hex grout now recessed** (`3c71ea3`): relief = 1 - max(S, 0.15·C) (Darken), grout height 56 vs faces 241 (was 208/88 raised); terraces kept subtle. Albedo/ORM 0 px at default + s05; brick mode 0 px on all maps.
-- **North Star** adopts "Library shape: depth over breadth" (`9930809`). t01/s09 stale docstrings fixed.
-- **Gates:** promote `--check` in sync; fast suite 1187; CI green on `588bb67`.
+Short session, 2026-09-29: **opacity is now wired** (cookbook still 55).
+- **Finding:** `opacity_tex` (Material port 7) rides in the albedo PNG's alpha and MM's Godot export already writes `transparency = 1`, but 0 of 55 graphs drove it and `preview.gd` ignored alpha. Full channel table: `docs/CHANNEL_COVERAGE.md` (emission/SSS also never show in the rig; AO is flat on 54 of 55).
+- **sf04 vent grille reworked** (`quality/cookbook_scifi.py`): it had inverted polarity (steel islands on black; as a cutout it would leave floating plates). Now one Triangle x Triangle `pattern` (Min) feeds a hard opacity threshold (HoleCutout), a chamfer ramp (HoleChamfer -> normal) and the albedo, so the maps register. Material has `flags_transparent` on. Card and thumbnail updated.
+- **`preview.gd`:** `_apply_cutout` scissors alpha (0.5) only when the albedo has alpha; FRONT faces only, so holes show what is behind (double-sided showed the far wall's inside and read as black); rook's lathe winds inward so it uses CULL_FRONT for cutouts; a lit grey sheet under the ground. Opaque materials untouched: `preview_regress` 0 problems.
+- **Thumbnails:** `_make_previews` composites RGBA albedo over a checker.
+- **CLAUDE.md** gained a "Verification cadence" section (cheap checks per iteration, `preview_regress` once per settled rig change, full suite once before wrap-up) and the PYTHONPATH trap.
+- **Gates:** promote `--check` in sync; full suite green.
 
 ## 📌 Where we stopped
 
-Clean. Every branch merged, every session worktree retired, v0.10.0 release PR merged.
+Clean. Opacity work merged; the worktree retired.
 
 ## ▶️ Next concrete step
 
-**Next host round** from the teardown appendix (`docs/teardowns/TEARDOWN-2026-09-27.md:289-317`): **s11 marble absorbs s13** (one absorbee, smallest round). Same recipe: defaults 0 px by Pillow diff at 2048, boards, retire only after Grayson approves. Parallel agents share the `mkdir godot.lock` render lock.
+**Next host round** (unchanged) from the teardown appendix (`docs/teardowns/TEARDOWN-2026-09-27.md:289-317`): **s11 marble absorbs s13** (one absorbee, smallest round). Same recipe: defaults 0 px by Pillow diff at 2048, boards, retire only after Grayson approves. Parallel agents share the `mkdir godot.lock` render lock.
 
 Alternatives:
+- **gl01 glass rework** (teardown appendix): real alpha-BLEND translucency; the rig only does cutouts, so it needs a blend path first.
+- **Rig gaps** (`docs/CHANNEL_COVERAGE.md`): show emission (t06) and SSS in `preview.gd`; wire AO on more materials.
 - **s09 ashlar absorbs s12 + o06** (the parallax host): bigger round, more value.
 - **Grayson hands-on step-3 session:** check the widened sliders in the MM GUI, save a hand-edit to `saved_graphs/`.
 
@@ -49,6 +48,8 @@ Alternatives:
 
 ## ⚠️ Heads-up for the next agent
 
+- **Worktree env trap:** from Git Bash set `PYTHONPATH=".;src"` (semicolon). `.:src` silently imports the MAIN checkout's `mm_mcp`, so rig changes have no effect and regression runs compare old vs old. Details in CLAUDE.md "Verification cadence".
+- **Opacity in the rig is cutout only** (scissor). MM's own export is alpha blend; soft translucency is not previewed.
 - **Direction (Grayson, 2026-09-27): no new cookbook materials.** Add features to existing materials. Node-coverage counts are a diagnostic, not a goal. Now written into `docs/NORTH_STAR.md`.
 - **Widening a slider = `widen_widget`**, not a catalog range edit: MM gives a linked slider the inner node's range. `--check` can't prove a widen is render-neutral; diff default renders.
 - **"invalid shader" in the MM log is not a flat-normal signal on its own.** `_flat_normal` checks both the log line and the pixels; keep it that way.
@@ -65,6 +66,7 @@ Alternatives:
 
 Newest first. Keep at most 8; older ones are in `git log` (search commit subjects).
 
+- **2026-09-29** (opacity cutouts: sf04 rework, `preview.gd` alpha scissor, channel coverage doc, verification cadence): see git log `99b4432..HEAD`.
 - **2026-09-27 late** (w05 + man02 hosts, w04/w06/s05/man03 retired, sf03/o03/o05 cut, cookbook 55; m02 → m02_brushed_metal; widen_widget; f07 multiply plaid + lighter sett; man02 hex groove; North Star amendment; v0.10.0): see git log `816d14d..3b20a22`.
 - **2026-09-27 evening** (f07 host + f01/f05/f08/f09 retired, cookbook 62; s14 damp tile; param4=0 on 11 normals; render retry mtime race; v0.9.0): see git log `53a4832..6505f17`.
 - **2026-09-27** (teardown #6, truth pass, PRs #13/#7, hosts m02/s14/s07; cookbook 74→66): see git log `bfeaac1..a132a9f`.
@@ -72,4 +74,3 @@ Newest first. Keep at most 8; older ones are in `git log` (search commit subject
 - **2026-09-15** (reflections cycle, merged `007d493`): sun-disc, SSR and opt-in clearcoat rig; the global normal green-flip was reverted (`4e239da`).
 - **2026-09-14 night** (rig overhaul, `24ff854`): rounded-box cube, unified triplanar, lathed rook; front page recurated.
 - **2026-09-14 late** (`4b0948f`): coin profile and two-scale gravel for s06/t03.
-- **2026-09-14 evening** (merged): `normal_albedo_audit.py` and `_make_showcase.py`; 5 normal-registration fixes.

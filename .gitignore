@@ -41,3 +41,6 @@ _godot/
 
 # Session scratch (SDD baselines, calibration renders)
 scratchpad/
+
+# Screenshot-proof captures (see user-level CLAUDE.md)
+.proof/

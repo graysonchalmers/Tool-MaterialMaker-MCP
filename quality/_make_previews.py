@@ -13,6 +13,16 @@ _ROOT = Path(__file__).resolve().parent.parent
 SIZE = 512
 
 
+def _checker(size: int, cell: int = 16) -> Image.Image:
+    bg = Image.new("RGBA", (size, size), (245, 245, 245, 255))
+    dark = Image.new("RGBA", (cell, cell), (215, 215, 215, 255))
+    for y in range(0, size, cell):
+        for x in range(0, size, cell):
+            if (x // cell + y // cell) % 2:
+                bg.paste(dark, (x, y))
+    return bg
+
+
 def main() -> int:
     label = sys.argv[1] if len(sys.argv) > 1 else "cookbook-fabrics"
     src = _ROOT / "quality" / "cookbook" / label
@@ -25,8 +35,13 @@ def main() -> int:
         if not albedo:
             print(f"skip {case_dir.name}: no albedo")
             continue
-        im = Image.open(albedo).convert("RGB")
+        im = Image.open(albedo)
         im = im.resize((SIZE, SIZE), Image.LANCZOS)
+        if im.mode == "RGBA":
+            # opacity_tex rides in albedo alpha: show the cutouts over a
+            # checker instead of letting convert("RGB") hide them.
+            im = Image.alpha_composite(_checker(SIZE), im)
+        im = im.convert("RGB")
         out_file = out_dir / f"{case_dir.name}.png"
         im.save(out_file, optimize=True)
         print(f"{case_dir.name}: {out_file}")

@@ -17,12 +17,18 @@
   {
    "from": "hole_pattern",
    "from_port": 1,
+   "to": "Material",
+   "to_port": 7
+  },
+  {
+   "from": "hole_pattern",
+   "from_port": 2,
    "to": "surface_finish",
    "to_port": 0
   },
   {
    "from": "hole_pattern",
-   "from_port": 2,
+   "from_port": 3,
    "to": "surface_finish",
    "to_port": 1
   },
@@ -48,7 +54,8 @@
     "y": 0
    },
    "parameters": {
-    "metallic": 1
+    "metallic": 1,
+    "flags_transparent": true
    }
   },
   {
@@ -66,30 +73,30 @@
      "points": [
       {
        "a": 1,
-       "r": 0.03,
-       "g": 0.03,
-       "b": 0.03,
+       "r": 0.58,
+       "g": 0.59,
+       "b": 0.61,
        "pos": 0.0
       },
       {
        "a": 1,
-       "r": 0.03,
-       "g": 0.03,
-       "b": 0.03,
+       "r": 0.58,
+       "g": 0.59,
+       "b": 0.61,
        "pos": 0.55
       },
       {
        "a": 1,
-       "r": 0.58,
-       "g": 0.59,
-       "b": 0.61,
-       "pos": 0.6
+       "r": 0.03,
+       "g": 0.03,
+       "b": 0.03,
+       "pos": 0.56
       },
       {
        "a": 1,
-       "r": 0.58,
-       "g": 0.59,
-       "b": 0.61,
+       "r": 0.03,
+       "g": 0.03,
+       "b": 0.03,
        "pos": 1.0
       }
      ],
@@ -126,11 +133,16 @@
       },
       {
        "name": "out1",
-       "type": "f",
+       "type": "rgba",
        "group_size": 0
       },
       {
        "name": "out2",
+       "type": "f",
+       "group_size": 0
+      },
+      {
+       "name": "out3",
        "type": "f",
        "group_size": 0
       }
@@ -151,30 +163,30 @@
        "points": [
         {
          "a": 1,
-         "r": 0.03,
-         "g": 0.03,
-         "b": 0.03,
+         "r": 0.58,
+         "g": 0.59,
+         "b": 0.61,
          "pos": 0.0
         },
         {
          "a": 1,
-         "r": 0.03,
-         "g": 0.03,
-         "b": 0.03,
+         "r": 0.58,
+         "g": 0.59,
+         "b": 0.61,
          "pos": 0.55
         },
         {
          "a": 1,
-         "r": 0.58,
-         "g": 0.59,
-         "b": 0.61,
-         "pos": 0.6
+         "r": 0.03,
+         "g": 0.03,
+         "b": 0.03,
+         "pos": 0.56
         },
         {
          "a": 1,
-         "r": 0.58,
-         "g": 0.59,
-         "b": 0.61,
+         "r": 0.03,
+         "g": 0.03,
+         "b": 0.03,
          "pos": 1.0
         }
        ],
@@ -218,9 +230,9 @@
      },
      "parameters": {
       "mix": 3,
-      "x_wave": 2,
+      "x_wave": 1,
       "x_scale": 10,
-      "y_wave": 2,
+      "y_wave": 1,
       "y_scale": 10
      }
     },
@@ -237,30 +249,74 @@
        "points": [
         {
          "a": 1,
-         "r": 0.03,
-         "g": 0.03,
-         "b": 0.03,
+         "r": 0.58,
+         "g": 0.59,
+         "b": 0.61,
          "pos": 0.0
         },
         {
          "a": 1,
-         "r": 0.03,
-         "g": 0.03,
-         "b": 0.03,
+         "r": 0.58,
+         "g": 0.59,
+         "b": 0.61,
          "pos": 0.55
         },
         {
          "a": 1,
-         "r": 0.58,
-         "g": 0.59,
-         "b": 0.61,
-         "pos": 0.6
+         "r": 0.03,
+         "g": 0.03,
+         "b": 0.03,
+         "pos": 0.56
         },
         {
          "a": 1,
-         "r": 0.58,
-         "g": 0.59,
-         "b": 0.61,
+         "r": 0.03,
+         "g": 0.03,
+         "b": 0.03,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      }
+     }
+    },
+    {
+     "name": "HoleCutout",
+     "type": "colorize",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 1.0,
+         "g": 1.0,
+         "b": 1.0,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 1.0,
+         "g": 1.0,
+         "b": 1.0,
+         "pos": 0.55
+        },
+        {
+         "a": 1,
+         "r": 0.0,
+         "g": 0.0,
+         "b": 0.0,
+         "pos": 0.56
+        },
+        {
+         "a": 1,
+         "r": 0.0,
+         "g": 0.0,
+         "b": 0.0,
          "pos": 1.0
         }
        ],
@@ -277,13 +333,19 @@
      "to_port": 0
     },
     {
+     "from": "HoleLayout",
+     "from_port": 0,
+     "to": "HoleCutout",
+     "to_port": 0
+    },
+    {
      "from": "HolePlateColor",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 0
     },
     {
-     "from": "HoleLayout",
+     "from": "HoleCutout",
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 1
@@ -293,6 +355,12 @@
      "from_port": 0,
      "to": "gen_outputs",
      "to_port": 2
+    },
+    {
+     "from": "HoleLayout",
+     "from_port": 0,
+     "to": "gen_outputs",
+     "to_port": 3
     }
    ]
   },
@@ -310,16 +378,16 @@
      "points": [
       {
        "a": 1,
-       "r": 0.65,
-       "g": 0.65,
-       "b": 0.65,
+       "r": 0.55,
+       "g": 0.55,
+       "b": 0.55,
        "pos": 0.0
       },
       {
        "a": 1,
-       "r": 0.35,
-       "g": 0.35,
-       "b": 0.35,
+       "r": 0.3,
+       "g": 0.3,
+       "b": 0.3,
        "pos": 1.0
       }
      ],
@@ -387,16 +455,16 @@
        "points": [
         {
          "a": 1,
-         "r": 0.65,
-         "g": 0.65,
-         "b": 0.65,
+         "r": 0.55,
+         "g": 0.55,
+         "b": 0.55,
          "pos": 0.0
         },
         {
          "a": 1,
-         "r": 0.35,
-         "g": 0.35,
-         "b": 0.35,
+         "r": 0.3,
+         "g": 0.3,
+         "b": 0.3,
          "pos": 1.0
         }
        ],
@@ -408,7 +476,7 @@
      "widgets": [
       {
        "name": "param0",
-       "shortdesc": "Recess roughness",
+       "shortdesc": "Rim roughness",
        "label": "",
        "type": "linked_control",
        "linked_widgets": [
@@ -433,6 +501,50 @@
      ]
     },
     {
+     "name": "HoleChamfer",
+     "type": "colorize",
+     "node_position": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": {
+      "gradient": {
+       "interpolation": 1,
+       "points": [
+        {
+         "a": 1,
+         "r": 1.0,
+         "g": 1.0,
+         "b": 1.0,
+         "pos": 0.0
+        },
+        {
+         "a": 1,
+         "r": 1.0,
+         "g": 1.0,
+         "b": 1.0,
+         "pos": 0.3
+        },
+        {
+         "a": 1,
+         "r": 0.0,
+         "g": 0.0,
+         "b": 0.0,
+         "pos": 0.55
+        },
+        {
+         "a": 1,
+         "r": 0.0,
+         "g": 0.0,
+         "b": 0.0,
+         "pos": 1.0
+        }
+       ],
+       "type": "Gradient"
+      }
+     }
+    },
+    {
      "name": "GrilleRoughness",
      "type": "colorize",
      "node_position": {
@@ -445,16 +557,16 @@
        "points": [
         {
          "a": 1,
-         "r": 0.65,
-         "g": 0.65,
-         "b": 0.65,
+         "r": 0.55,
+         "g": 0.55,
+         "b": 0.55,
          "pos": 0.0
         },
         {
          "a": 1,
-         "r": 0.35,
-         "g": 0.35,
-         "b": 0.35,
+         "r": 0.3,
+         "g": 0.3,
+         "b": 0.3,
          "pos": 1.0
         }
        ],
@@ -479,15 +591,21 @@
    ],
    "connections": [
     {
+     "from": "HoleChamfer",
+     "from_port": 0,
+     "to": "GrilleNormal",
+     "to_port": 0
+    },
+    {
      "from": "gen_inputs",
      "from_port": 0,
-     "to": "GrilleRoughness",
+     "to": "HoleChamfer",
      "to_port": 0
     },
     {
      "from": "gen_inputs",
      "from_port": 1,
-     "to": "GrilleNormal",
+     "to": "GrilleRoughness",
      "to_port": 0
     },
     {
