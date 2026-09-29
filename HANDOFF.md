@@ -1,6 +1,6 @@
 # 🧭 Session Handoff: Tool-MaterialMaker-MCP
 
-_Last updated: 2026-09-27 19:30 CDT. `main` @ `3b20a22` + baton, pushed. **v0.10.0** released; release-please will open the next PR for the two fixes below. Nothing in flight._
+_Last updated: 2026-09-29. `main` @ `6a31341` + wrap-up, pushed. **v0.10.0** released; release PR #17 (0.10.1: f07 sett, man02 groove, sf03/o03/o05 cuts) open, needs Grayson's merge. Nothing in flight._
 
 The session baton. Read at pickup, rewrite at wrap-up. **Shape rule (2026-09-05, teardown #3):**
 - "Current state" describes the latest session only.
