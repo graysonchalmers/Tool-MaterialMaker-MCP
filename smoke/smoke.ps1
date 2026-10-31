@@ -42,7 +42,13 @@ New-Item -ItemType Directory -Path $outdir | Out-Null
 # flag is --export-material. parse_args.tscn is the project main scene, so it must
 # NOT be passed as an argument (it would be treated as a material file to load).
 Write-Host "Rendering bricks.ptex -> $outdir ..."
-& $godot --path $project --export-material $example -t "Godot/Godot 4 Standard" -o $outdir --size 256 *> (Join-Path $outdir "render.log")
+# Through the Legion queue (legion-heavy ledger) when engine-q.ps1 exists; the pinned $godot binary is kept via -Exe. Other machines run it directly.
+$q = "C:\Projects-local\_agent-commons\tools\engine-q.ps1"
+if (Test-Path $q) {
+    & powershell -NoProfile -File $q -Engine godot -Name mm-smoke -Exe $godot -- --path $project --export-material $example -t "Godot/Godot 4 Standard" -o $outdir --size 256 *> (Join-Path $outdir "render.log")
+} else {
+    & $godot --path $project --export-material $example -t "Godot/Godot 4 Standard" -o $outdir --size 256 *> (Join-Path $outdir "render.log")
+}
 
 $pngs = Get-ChildItem -Path $outdir -Filter *.png -ErrorAction SilentlyContinue | Where-Object { $_.Length -gt 0 }
 if ($pngs.Count -gt 0) {
