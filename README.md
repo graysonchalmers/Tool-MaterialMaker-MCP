@@ -297,6 +297,38 @@ Resource `catalog://nodes` exposes the full node catalog. Resource
 `guide://authoring` exposes the authoring guide (the invariants; see
 "Material cookbook" above for the per-material recipe cards).
 
+## Unity project revisions and exports
+
+Set `MM_PROJECT_READ_ROOTS` to explicitly approved project roots (`os.pathsep`
+separated) and `MM_PROJECT_STAGE_ROOT` to a dedicated writable artifact store,
+for example an ignored `Builds/MaterialMakerMCP` directory. Registered project
+sources can be opened and inspected. `save_graph` cannot write to them.
+The existing Godot-based tools are still available with their usual settings.
+
+Configure `MM_NATIVE_BINARY` as the standalone Material Maker executable and
+`MM_NATIVE_BINARY_SHA256` as its pinned SHA-256 for the Unity profile. The
+`crowned-mountain-metric-surface` profile requires a verified twelve-family
+Crowned Mountain manifest and its matching Material Maker binary. It supports
+the project's self-contained procedural graphs, including custom shader ports
+and the three additional native PNG exports.
+
+1. Call `project_capabilities` with an optional `project_path` to check source
+   access and discover the configured renderer and export profile.
+2. Call `open_project_graph(path)` for a revision ID, controls, and named ports.
+3. Call `patch_project_graph(revision, edits)` with operations such as
+   `{"op":"set_param","node":"SubstrateLayout","parameter":"joints","value":0.03}`.
+   Changes apply atomically to a new staged revision. `connect` and `disconnect`
+   accept `from_node`, `from_port`, `to_node`, and `to_port` by name.
+4. Call `preview_project_graph(revision, project_root, family_id)` to run two
+   independent native bakes and verify that the outputs match. The result
+   includes an inline tiled and grazing-light comparison with seam and relief
+   measurements. The source textures retain their full resolution and precision.
+5. Call `stage_unity_export(preview_id)` to stage the exact previewed revision.
+   `stage_path/overlay` contains the changed graph, five textures, and complete
+   importer manifest at their project-relative paths. It is an overlay for the
+   original project, whose other eleven material families the server verifies.
+   The server does not install the overlay or export Unity `.meta` files into it.
+
 ## Live mode (optional)
 
 Batch mode above (`render_graph` et al.) is the default, simplest path: no

@@ -14,12 +14,22 @@ def _as_int(s):
         return None
 
 
+def _parse_port(port: dict) -> dict:
+    result = {"type": port.get("type")}
+    if port.get("name"):
+        result["name"] = port["name"]
+    description = port.get("shortdesc") or port.get("longdesc")
+    if description:
+        result["desc"] = description
+    return result
+
+
 def _parse_param(p: dict) -> dict:
     out = {
         "name": p.get("name"),
         "type": p.get("type"),
         "default": p.get("default"),
-        "desc": p.get("shortdesc") or p.get("longdesc") or "",
+        "desc": p.get("shortdesc") or p.get("longdesc") or p.get("label") or "",
     }
     if p.get("type") == "enum":
         entries = p.get("values", [])
@@ -74,7 +84,7 @@ def _parse_generic_node(data: dict, type_name: str,
          "desc": p.get("shortdesc") or p.get("longdesc") or ""}
         for p in gen_inputs.get("ports", [])
     ]
-    outputs = [{"type": p.get("type")} for p in gen_outputs.get("ports", [])]
+    outputs = [_parse_port(p) for p in gen_outputs.get("ports", [])]
     parameters = []
     for n in child_nodes:
         if n.get("type") != "remote":
@@ -86,7 +96,7 @@ def _parse_generic_node(data: dict, type_name: str,
                 continue
             param = {
                 "name": pname, "type": None, "default": None,
-                "desc": w.get("shortdesc") or w.get("longdesc") or "",
+                "desc": w.get("shortdesc") or w.get("longdesc") or w.get("label") or "",
             }
             resolved = _resolve_widget_range(child_nodes, w, full_catalog)
             if resolved is not None:
@@ -219,10 +229,26 @@ def _parse_node_data(data: dict, type_name: str) -> dict | None:
                  "desc": i.get("shortdesc") or i.get("longdesc") or ""}
         reps = generic_size if "#" in (i.get("name") or "") else 1
         inputs.extend(dict(entry) for _ in range(reps))
-    outputs = [{"type": o.get("type")} for o in sm.get("outputs", [])]
+    outputs = [_parse_port(o) for o in sm.get("outputs", [])]
     parameters = [_parse_param(p) for p in sm.get("parameters", [])]
     return {"type": type_name, "inputs": inputs,
             "outputs": outputs, "parameters": parameters}
+
+
+# Export is implemented in gen_export.gd, so it has no .mmg catalog entry.
+EXPORT_NODE = {
+    "type": "export",
+    "inputs": [{"name": "in", "type": "rgba"}],
+    "outputs": [],
+    "parameters": [
+        {"name": "size", "type": "size", "default": 10, "min": 4, "max": 13,
+         "desc": "Power-of-two texture-size exponent"},
+        {"name": "format", "type": "enum", "default": 0, "min": 0, "max": 3,
+         "values": ["PNG", "JPG", "WEBP", "EXR"]},
+        {"name": "suffix", "type": "string", "default": "$project",
+         "desc": "Filename template supporting $project, $node, $idx, and $resolution"},
+    ],
+}
 
 
 SPECIAL_TYPES = {"graph", "comment", "remote", "shader",
@@ -272,6 +298,7 @@ def build_catalog(nodes_dir: str) -> dict:
                 generic_raw_data[node["type"]] = data
 
     _resolve_generic_nodes_to_fixpoint(catalog, generic_raw_data)
+    catalog.setdefault("export", copy.deepcopy(EXPORT_NODE))
     return catalog
 
 

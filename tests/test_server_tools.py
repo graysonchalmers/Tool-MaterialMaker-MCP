@@ -141,6 +141,20 @@ def test_save_graph_writes_file(tmp_path):
         assert json.load(fh)["type"] == "graph"
 
 
+def test_registered_project_root_can_be_inspected_but_not_written(tmp_path, monkeypatch):
+    source = tmp_path / "source"
+    source.mkdir()
+    path = source / "material.ptex"
+    original = b'{"type":"graph","nodes":[],"connections":[]}\n'
+    path.write_bytes(original)
+    monkeypatch.setenv("MM_ALLOWED_ROOTS", str(tmp_path / "legacy"))
+    monkeypatch.setenv("MM_PROJECT_READ_ROOTS", str(source))
+
+    assert server.inspect_project(str(path))["ok"]
+    assert not server.save_graph({"different": True}, str(path))["ok"]
+    assert path.read_bytes() == original
+
+
 def test_render_graph_forwards_target_to_render(monkeypatch):
     """render_graph's target param must reach render(), not get dropped —
     this is what actually lets a caller pick Unity/Unreal instead of Godot."""

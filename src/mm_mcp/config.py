@@ -1,5 +1,5 @@
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from dotenv import dotenv_values
 
 # Config is env-var-first (an MCP client sets MM_* in its server "env" block).
@@ -18,6 +18,10 @@ _DEFAULTS = {
     "MM_COOKBOOK_DIR": "",
     "MM_PLAY_PORT": "8788",
     "MM_IDLE_EXIT_MINUTES": "0",
+    "MM_PROJECT_READ_ROOTS": "",
+    "MM_PROJECT_STAGE_ROOT": "",
+    "MM_NATIVE_BINARY": "",
+    "MM_NATIVE_BINARY_SHA256": "",
 }
 
 
@@ -41,6 +45,10 @@ class Config:
     cookbook_dir: str = ""
     play_port: int = 8788
     idle_exit_minutes: int = 0
+    project_read_roots: list[str] = field(default_factory=list)
+    project_stage_root: str = ""
+    native_binary: str = ""
+    native_binary_sha256: str = ""
 
 
 def _resolve_console(godot_binary: str) -> str:
@@ -131,4 +139,8 @@ def load_config(overrides: dict | None = None) -> Config:
         cookbook_dir=cookbook_dir,
         play_port=play_port,
         idle_exit_minutes=idle_exit_minutes,
+        project_read_roots=[p for p in env["MM_PROJECT_READ_ROOTS"].split(os.pathsep) if p],
+        project_stage_root=env["MM_PROJECT_STAGE_ROOT"],
+        native_binary=env["MM_NATIVE_BINARY"],
+        native_binary_sha256=env["MM_NATIVE_BINARY_SHA256"],
     )

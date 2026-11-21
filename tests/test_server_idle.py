@@ -1,4 +1,4 @@
-import inspect
+import asyncio
 
 import pytest
 from mm_mcp import server
@@ -8,8 +8,10 @@ from mm_mcp.idle import IdleWatchdog
 
 @pytest.fixture(autouse=True)
 def _reset_idle():
+    server._reset()
     server._idle = None
     yield
+    server._reset()
     server._idle = None
 
 
@@ -108,6 +110,11 @@ _ALL_TOOL_NAMES = [
     "live_render_node_output",
     "live_clear",
     "live_load",
+    "project_capabilities",
+    "open_project_graph",
+    "patch_project_graph",
+    "preview_project_graph",
+    "stage_unity_export",
 ]
 
 
@@ -131,17 +138,9 @@ def _expect_sentinel(fn, *args, **kwargs):
 
 
 def test_tool_registration_count_matches_covered_list():
-    """Guards the coverage list itself: if a new tool is registered with
-    mcp.tool() and this test file is not updated to cover it, this
-    assertion (not a silent skip) is what catches it."""
-    source = inspect.getsource(server)
-    registration_count = source.count("mcp.tool()(")
-    assert registration_count == len(_ALL_TOOL_NAMES), (
-        f"server.py registers {registration_count} tools via mcp.tool()(...) "
-        f"but tests/test_server_idle.py only covers {len(_ALL_TOOL_NAMES)}; "
-        "add the missing tool(s) to _ALL_TOOL_NAMES and to the touch test "
-        "below."
-    )
+    """Every tool advertised by MCP must have an idle watchdog test."""
+    registered = {tool.name for tool in asyncio.run(server.mcp.list_tools())}
+    assert registered == set(_ALL_TOOL_NAMES)
 
 
 def test_every_registered_tool_touches_idle_watchdog(monkeypatch, tmp_path):
@@ -154,6 +153,9 @@ def test_every_registered_tool_touches_idle_watchdog(monkeypatch, tmp_path):
     monkeypatch.setattr(server, "render", raise_sentinel)
     monkeypatch.setattr(server, "_render_preview", raise_sentinel)
     monkeypatch.setattr(server, "_render_preview_sweep", raise_sentinel)
+    for tool in ("project_capabilities", "open_project_graph", "apply_project_patch",
+                 "make_project_preview", "stage_project_export"):
+        monkeypatch.setattr(server.project_workflow, tool, raise_sentinel)
 
     invalid_ptex = {"type": "graph",
                      "nodes": [{"name": "x", "type": "not_a_real_node_type", "parameters": {}}],
@@ -192,6 +194,12 @@ def test_every_registered_tool_touches_idle_watchdog(monkeypatch, tmp_path):
         "live_clear": lambda: _expect_sentinel(server.live_clear),
         "live_load": lambda: _expect_sentinel(
             server.live_load, {"nodes": [], "connections": []}),
+        "project_capabilities": lambda: _expect_sentinel(server.project_capabilities),
+        "open_project_graph": lambda: _expect_sentinel(server.open_project_graph, missing_path),
+        "patch_project_graph": lambda: _expect_sentinel(server.patch_project_graph, "revision", []),
+        "preview_project_graph": lambda: _expect_sentinel(
+            server.preview_project_graph, "revision", str(tmp_path), "refined-stone"),
+        "stage_unity_export": lambda: _expect_sentinel(server.stage_unity_export, "preview"),
     }
 
     assert set(calls) == set(_ALL_TOOL_NAMES), (
