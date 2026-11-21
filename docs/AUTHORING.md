@@ -5,6 +5,63 @@
 > set now scores 15/15. See `docs/evidence/phase3/` for the scorecards and
 > STATUS.md for the phase gate.
 
+## Editing a saved project graph
+
+Use [project workflow configuration](../README.md#unity-project-revisions-and-exports)
+to register the source directory and staging store. `project_capabilities`
+reports source access, the available backends, and export profiles. Call
+`open_project_graph` with the path to the `.ptex`. Its `revision` is the SHA-256
+of the saved graph bytes. The result lists editable controls and ports,
+including graph-local custom shader declarations and native Export nodes.
+
+Pass that revision to `patch_project_graph`. For a graph with a
+`SubstrateLayout` node and a `joints` control, a tool payload looks like this:
+
+```json
+{
+  "revision": "<revision returned by open_project_graph>",
+  "edits": [
+    {"op": "set_param", "node": "SubstrateLayout", "parameter": "joints", "value": 0.03}
+  ]
+}
+```
+
+Select controls and ports from the open result. Enum controls accept option
+labels or native indices. `connect` and `disconnect` accept `from_node`,
+`from_port`, `to_node`, and `to_port`. A port selector can be a name or its
+index. On success, use the returned `revision` for the next edit or preview.
+If a batch fails, read the problem's code, affected control or port, and any
+available alternatives before retrying. The original revision remains usable.
+
+### Previewing and staging the Unity profile
+
+`preview_project_graph` takes the candidate `revision`, the approved
+`project_root`, and the existing `family_id` (for example, `refined-stone`).
+The `crowned-mountain-metric-surface` profile uses a pinned standalone Material
+Maker executable, the native `Unity/URP` target, and self-contained procedural
+graphs. It runs two independent bakes and checks their PNGs byte for byte. The
+tool returns a PNG comparison against the project's current family maps and
+structured measurements for tile seams and normal-to-height agreement.
+
+Pass `preview_id` to `stage_unity_export` to reuse the verified preview maps.
+The tool rechecks the source manifest and the project files, then publishes an
+overlay under the returned `stage_path`. The `overlay` and `manifest` fields
+are relative to `stage_path` and its overlay directory, respectively. The
+overlay contains the editable graph, its five normalized 2048 × 2048 maps,
+and a complete twelve-family manifest. The raw native outputs and logs are
+available separately in the `evidence` archive.
+
+- Base color is sRGB. The normal map uses OpenGL +Y tangent-space normals.
+- The linear ORM channels are occlusion, perceptual roughness, and metallic.
+- Height is 16-bit and high values represent raised surfaces.
+- Linear susceptibility channels represent moisture, moss, and exposure.
+
+Review the preview, then apply the overlay at the original project-relative
+paths and run the project's Unity material importer. Keep the existing Unity
+`.meta` files alongside the textures to retain their asset GUIDs. If staging
+reports a changed source manifest, generate a new preview against the current
+project revision.
+
 ## Scoring rubric (frozen with the test set)
 
 A prompt-to-graph attempt is scored per `docs/evidence/phase3/test_set.json`:

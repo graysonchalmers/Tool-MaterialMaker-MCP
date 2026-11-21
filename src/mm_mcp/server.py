@@ -1,10 +1,17 @@
 import atexit
+import base64
 import glob
 import json
 import os
 import sys
+from pathlib import Path
+from typing import Any, Literal
+
 from mcp.server.mcpserver import MCPServer
+from mcp.types import CallToolResult, ImageContent, TextContent, ToolAnnotations
+from pydantic import BaseModel, ConfigDict, StrictInt, StrictStr
 from mm_mcp import __version__, live
+from mm_mcp.authoring import GraphEditError
 from mm_mcp.config import load_config, require_valid
 from mm_mcp.paths import ensure_within_roots, reject_path_fragment, PathNotAllowed
 from mm_mcp.catalog_builder import build_catalog
@@ -18,6 +25,8 @@ from mm_mcp.preview import render_preview_sweep as _render_preview_sweep
 from mm_mcp.doctor import run_check
 from mm_mcp.inspect import inspect_ptex
 from mm_mcp.idle import IdleWatchdog
+from mm_mcp import project_workflow
+from mm_mcp.unity_export import UnityExportError
 
 # Startup is lazy: importing this module must NOT validate config or build the
 # catalog, so `mm-mcp --check` / `--version` work even when config is broken
@@ -262,8 +271,11 @@ def save_graph(ptex: dict, path: str) -> dict:
     MM_ALLOWED_ROOTS when set. Returns {"ok": True, "path": <absolute
     path>} or {"ok": False, "error": ...} as data."""
     _touch_idle()
+    cfg = load_config()
+    if project_workflow.is_project_source(path, cfg):
+        return {"ok": False, "error": "Registered project sources are read-only. Patch a project graph into staging instead."}
     try:
-        path = ensure_within_roots(path, load_config().allowed_roots)
+        path = ensure_within_roots(path, cfg.allowed_roots)
     except PathNotAllowed as exc:
         return {"ok": False, "error": str(exc)}
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
@@ -276,10 +288,11 @@ def inspect_project(path: str) -> dict:
     """Read-only metrics for a .ptex file on disk: file sha256, node and
     connection counts, a node-type histogram, and the material-output node
     names. For inspecting a hand-edited graph coming back through the round
-    trip. Bounded by MM_ALLOWED_ROOTS when set."""
+    trip. Bounded by MM_ALLOWED_ROOTS and registered project read roots when set."""
     _touch_idle()
+    cfg = load_config()
     try:
-        path = ensure_within_roots(path, load_config().allowed_roots)
+        path = ensure_within_roots(path, cfg.allowed_roots + cfg.project_read_roots)
     except PathNotAllowed as exc:
         return {"ok": False, "error": str(exc)}
     try:
@@ -608,6 +621,104 @@ def live_load(graph: dict | None = None, path: str | None = None) -> dict:
     return {"ok": result.ok, "error": result.error, "data": result.data}
 
 
+class SetProjectParameter(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    op: Literal["set_param"]
+    node: str
+    parameter: str
+    value: Any
+
+
+class ProjectConnectionEdit(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    op: Literal["connect", "disconnect"]
+    from_node: str
+    from_port: StrictStr | StrictInt
+    to_node: str
+    to_port: StrictStr | StrictInt
+
+
+def _project_problem(exc: Exception, default_code: str) -> dict:
+    if isinstance(exc, GraphEditError):
+        return {"ok": False, "error": exc.problem}
+    if isinstance(exc, UnityExportError):
+        return {"ok": False, "error": {"code": exc.code, "message": str(exc), "details": exc.details}}
+    if isinstance(exc, project_workflow.ProjectWorkflowError):
+        result = {"ok": False, "error": {"code": exc.code, "where": exc.where, "message": str(exc)}}
+        if exc.problems is not None:
+            result["problems"] = exc.problems
+        return result
+    return {"ok": False, "error": {"code": default_code, "message": str(exc)}}
+
+
+def project_capabilities(project_path: str | None = None) -> dict[str, Any]:
+    """Discover approved project read roots, staging, renderer versions, and verified-backend export profiles.
+
+    Pass project_path to check access to a specific source before opening it.
+    """
+    cfg, _ = _ensure_ready()
+    return project_workflow.project_capabilities(cfg, project_path)
+
+
+def open_project_graph(path: str) -> dict[str, Any]:
+    """Open an approved .ptex as an immutable revision with named controls, ports, and exports.
+
+    The source stays in place. Use the returned revision with patch_project_graph or preview_project_graph.
+    """
+    cfg, catalog = _ensure_ready()
+    try:
+        return project_workflow.open_project_graph(path, cfg, catalog)
+    except (OSError, ValueError) as exc:
+        return _project_problem(exc, "open_graph_failed")
+
+
+def patch_project_graph(revision: str, edits: list[SetProjectParameter | ProjectConnectionEdit]) -> dict[str, Any]:
+    """Apply named controls or connections atomically to a graph revision, returning a new revision and diff.
+
+    Use the node and parameter identifiers from open_project_graph. Connections also accept named ports,
+    and enum parameters accept option labels. On failure, no partial revision is published.
+    """
+    cfg, catalog = _ensure_ready()
+    try:
+        return project_workflow.apply_project_patch(revision, [edit.model_dump() for edit in edits], cfg, catalog)
+    except (OSError, ValueError) as exc:
+        return _project_problem(exc, "patch_graph_failed")
+
+
+def preview_project_graph(
+    revision: str, project_root: str, family_id: str,
+    profile: str = project_workflow.PROFILE,
+) -> CallToolResult:
+    """Bake a candidate revision, then return a tiled and grazing-light comparison with numerical diagnostics.
+
+    project_root is an approved Unity checkout. The existing family is the comparison baseline.
+    Pass preview_id to stage_unity_export to use the exact verified preview maps.
+    """
+    cfg, catalog = _ensure_ready()
+    try:
+        data = project_workflow.make_project_preview(revision, project_root, family_id, profile, cfg, catalog)
+        image = base64.b64encode(Path(data["feedback"]["image"]).read_bytes()).decode("ascii")
+    except (OSError, ValueError, RuntimeError) as exc:
+        data = _project_problem(exc, "preview_failed")
+        return CallToolResult(content=[TextContent(type="text", text=json.dumps(data))], structured_content=data, is_error=True)
+    return CallToolResult(
+        content=[TextContent(type="text", text=json.dumps(data)), ImageContent(type="image", data=image, mimeType="image/png")],
+        structured_content=data,
+    )
+
+
+def stage_unity_export(preview_id: str) -> dict[str, Any]:
+    """Stage the exact previewed graph, verified maps, and merged Unity manifest as an immutable overlay.
+
+    Returns the overlay directory and manifest location. The active project and its GUIDs remain under Unity's ownership.
+    """
+    cfg, _ = _ensure_ready()
+    try:
+        return project_workflow.stage_project_export(preview_id, cfg)
+    except (OSError, ValueError, RuntimeError) as exc:
+        return _project_problem(exc, "stage_export_failed")
+
+
 # Register the plain functions as MCP tools.
 mcp.tool()(list_node_types)
 mcp.tool()(describe_node)
@@ -627,6 +738,11 @@ mcp.tool()(live_render)
 mcp.tool()(live_render_node_output)
 mcp.tool()(live_clear)
 mcp.tool()(live_load)
+mcp.tool(annotations=ToolAnnotations(readOnlyHint=True), structured_output=True)(project_capabilities)
+mcp.tool(structured_output=True)(open_project_graph)
+mcp.tool(structured_output=True)(patch_project_graph)
+mcp.tool()(preview_project_graph)
+mcp.tool(structured_output=True)(stage_unity_export)
 
 
 @mcp.resource("catalog://nodes")
