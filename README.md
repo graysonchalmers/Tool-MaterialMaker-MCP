@@ -277,7 +277,8 @@ but is not the right default for every client.
 
 ## Tools
 
-The server exposes 11 batch-mode tools and two resources (plus 7 more in Live mode, below):
+The server exposes 11 general batch tools, five project workflow tools, and
+two resources (plus 7 more in Live mode).
 
 | Tool | What it does |
 |---|---|
@@ -299,26 +300,37 @@ Resource `catalog://nodes` exposes the full node catalog. Resource
 
 ## Unity project revisions and exports
 
-Set `MM_PROJECT_READ_ROOTS` to explicitly approved project roots (`os.pathsep`
-separated) and `MM_PROJECT_STAGE_ROOT` to a dedicated writable artifact store,
-for example an ignored `Builds/MaterialMakerMCP` directory. Registered project
-sources can be opened and inspected. `save_graph` cannot write to them.
-The existing Godot-based tools are still available with their usual settings.
+The project workflow opens an existing `.ptex` and works on staged revisions.
+It uses the same Godot and Material Maker checkout configuration as the batch
+tools for the node catalog. Set these optional variables to enable project access:
 
-Configure `MM_NATIVE_BINARY` as the standalone Material Maker executable and
-`MM_NATIVE_BINARY_SHA256` as its pinned SHA-256 for the Unity profile. The
-`crowned-mountain-metric-surface` profile requires a verified twelve-family
-Crowned Mountain manifest and its matching Material Maker binary. It supports
-the project's self-contained procedural graphs, including custom shader ports
-and the three additional native PNG exports.
+```dotenv
+MM_PROJECT_READ_ROOTS=/path/to/my-project
+MM_PROJECT_STAGE_ROOT=/path/to/material-staging
+```
+
+Separate multiple approved read roots with `os.pathsep` (`;` on Windows, `:`
+on macOS and Linux). An empty read-root list grants the project tools no source
+access. The project workflow reads from source roots and writes its artifacts
+to staging. `save_graph` also refuses writes into registered source roots.
+Keep the staging store in a dedicated directory controlled by the server or
+a trusted local user. It holds graph revisions, previews, and exports.
+
+For the standalone Unity bake, also set `MM_NATIVE_BINARY` to the Material
+Maker executable and `MM_NATIVE_BINARY_SHA256` to its SHA-256. The available
+profile, `crowned-mountain-metric-surface`, prepares inputs for the Crowned
+Mountain project's existing Unity material importer and its
+`PreDeluge/CrownedMountain/MetricSurface` shader. It needs that project's
+verified twelve-family manifest, source assets, and matching native executable.
+Opening and patching graphs uses the project scope and node catalog
+independently of this export profile.
 
 1. Call `project_capabilities` with an optional `project_path` to check source
    access and discover the configured renderer and export profile.
 2. Call `open_project_graph(path)` for a revision ID, controls, and named ports.
-3. Call `patch_project_graph(revision, edits)` with operations such as
-   `{"op":"set_param","node":"SubstrateLayout","parameter":"joints","value":0.03}`.
-   Changes apply atomically to a new staged revision. `connect` and `disconnect`
-   accept `from_node`, `from_port`, `to_node`, and `to_port` by name.
+3. Call `patch_project_graph(revision, edits)` with the returned revision ID
+   and a batch of named edits. The tool returns the new revision and an edit
+   diff, or a structured problem that identifies the failed edit.
 4. Call `preview_project_graph(revision, project_root, family_id)` to run two
    independent native bakes and verify that the outputs match. The result
    includes an inline tiled and grazing-light comparison with seam and relief
@@ -327,7 +339,11 @@ and the three additional native PNG exports.
    `stage_path/overlay` contains the changed graph, five textures, and complete
    importer manifest at their project-relative paths. It is an overlay for the
    original project, whose other eleven material families the server verifies.
-   The server does not install the overlay or export Unity `.meta` files into it.
+   The receiving Unity project retains ownership of its material and texture
+   GUIDs when the overlay files are applied to the existing asset paths.
+
+See the [project revision authoring guide](docs/AUTHORING.md#editing-a-saved-project-graph)
+for edit payloads, diagnostics, and the Unity artifact layout.
 
 ## Live mode (optional)
 
